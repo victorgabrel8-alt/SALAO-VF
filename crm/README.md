@@ -38,6 +38,12 @@ lib/
 proxy.ts              ← manda para /login quem não entrou
 ```
 
+## Dados de teste
+
+`dev/clientes-ficticias.sql` cria 10 clientes de salão fictícias no Salão Demo (hidratação,
+mega hair, retoque, coloração, teste de mecha…). Cole no **SQL Editor** do Supabase e rode;
+pode rodar de novo para recriar com as datas de hoje.
+
 ## Deploy na Vercel
 
 1. Em vercel.com, **Add New → Project** → importe o repositório do GitHub.
@@ -48,7 +54,7 @@ proxy.ts              ← manda para /login quem não entrou
 ## Fases
 
 - [x] Fase 1: login, 4 abas, PWA, leitura do Salão Demo
-- [ ] Fase 2: Clientes + Ficha
+- [x] Fase 2: Clientes + Ficha (com retornos por procedimento e origem da cliente)
 - [ ] Fase 3: Início + Agenda + Registrar atendimento
 - [ ] Fase 4: Conversas (tempo real) + Pausar IA + Mandar alô
 - [ ] Fase 5: Configurações + acabamento

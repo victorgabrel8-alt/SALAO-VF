@@ -4,14 +4,15 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Cabecalho } from "@/components/Cabecalho";
 import { useEmpresa } from "@/lib/empresa";
+import { STATUS, type StatusCliente } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
 
-const STATUS = [
-  { chave: "em_dia", rotulo: "Em dia", cor: "bg-green-100 text-green-900" },
-  { chave: "retorno_chegando", rotulo: "Retorno chegando", cor: "bg-yellow-100 text-yellow-900" },
-  { chave: "retorno_atrasado", rotulo: "Atrasadas", cor: "bg-orange-100 text-orange-900" },
-  { chave: "inativa", rotulo: "Inativas", cor: "bg-red-100 text-red-900" },
-  { chave: "sem_visita", rotulo: "Sem visita", cor: "bg-neutral-100 text-neutral-800" },
+const CARTOES: { status: StatusCliente; rotulo: string }[] = [
+  { status: "em_dia", rotulo: "Em dia" },
+  { status: "retorno_chegando", rotulo: "Retorno chegando" },
+  { status: "retorno_atrasado", rotulo: "Atrasadas" },
+  { status: "inativa", rotulo: "Inativas" },
+  { status: "sem_visita", rotulo: "Sem visita" },
 ];
 
 export default function InicioPage() {
@@ -60,10 +61,15 @@ export default function InicioPage() {
         {!contagem && !erro && <p className="text-neutral-500">Carregando…</p>}
         {contagem && (
           <ul className="grid grid-cols-2 gap-3">
-            {STATUS.map((s) => (
-              <li key={s.chave} className={`rounded-2xl p-4 ${s.cor}`}>
-                <p className="text-3xl font-bold">{contagem[s.chave] ?? 0}</p>
-                <p className="font-medium">{s.rotulo}</p>
+            {CARTOES.map((c) => (
+              <li key={c.status}>
+                <Link
+                  href={`/clientes?filtro=${c.status}`}
+                  className={`block rounded-2xl p-4 active:opacity-80 ${STATUS[c.status].cartao}`}
+                >
+                  <p className="text-3xl font-bold">{contagem[c.status] ?? 0}</p>
+                  <p className="font-medium">{c.rotulo}</p>
+                </Link>
               </li>
             ))}
           </ul>

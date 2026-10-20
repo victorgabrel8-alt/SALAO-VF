@@ -1,0 +1,72 @@
+import { FUSO } from "@/lib/config";
+
+// O banco só aceita telefone como 55 + DDD + número, só dígitos (ex.: 5566999998888).
+// Aceita o que a dona digitar: "(66) 99999-8888", "66999998888", "+55 66 99999-8888".
+export function normalizarTelefone(texto: string): string {
+  let digitos = texto.replace(/\D/g, "");
+  if (digitos.startsWith("0")) digitos = digitos.replace(/^0+/, "");
+  if (digitos.length === 10 || digitos.length === 11) digitos = "55" + digitos;
+  return digitos;
+}
+
+export function telefoneValido(telefone: string): boolean {
+  return /^55[0-9]{10,11}$/.test(telefone);
+}
+
+// 5566999998888 -> (66) 99999-8888
+export function formatarTelefone(telefone: string): string {
+  const local = telefone.startsWith("55") ? telefone.slice(2) : telefone;
+  const ddd = local.slice(0, 2);
+  const numero = local.slice(2);
+  if (numero.length === 9) return `(${ddd}) ${numero.slice(0, 5)}-${numero.slice(5)}`;
+  if (numero.length === 8) return `(${ddd}) ${numero.slice(0, 4)}-${numero.slice(4)}`;
+  return telefone;
+}
+
+export function primeiroNome(nome: string | null): string {
+  return nome?.trim().split(/\s+/)[0] ?? "";
+}
+
+// Data de hoje no fuso do salão, como "2026-10-20"
+export function hojeNoSalao(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: FUSO });
+}
+
+// Converte um timestamptz para a data "AAAA-MM-DD" no fuso do salão
+export function dataNoSalao(instante: string): string {
+  return new Date(instante).toLocaleDateString("en-CA", { timeZone: FUSO });
+}
+
+// Diferença em dias entre duas datas "AAAA-MM-DD" (b - a)
+export function diasEntre(a: string, b: string): number {
+  return Math.round((Date.parse(b) - Date.parse(a)) / 86_400_000);
+}
+
+// "2026-10-20" ou timestamptz -> "20/10/2026"
+export function formatarData(valor: string): string {
+  const data = valor.length === 10 ? valor : dataNoSalao(valor);
+  const [ano, mes, dia] = data.split("-");
+  return `${dia}/${mes}/${ano}`;
+}
+
+export function formatarHora(instante: string): string {
+  return new Date(instante).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
+}
+
+// "hoje", "ontem", "há 47 dias"
+export function haQuantoTempo(instante: string): string {
+  const dias = diasEntre(dataNoSalao(instante), hojeNoSalao());
+  if (dias <= 0) return "hoje";
+  if (dias === 1) return "ontem";
+  return `há ${dias} dias`;
+}
+
+// Para datas futuras ou passadas: "hoje", "amanhã", "em 5 dias", "atrasado 3 dias"
+export function prazo(data: string): string {
+  const dias = diasEntre(hojeNoSalao(), data);
+  if (dias === 0) return "hoje";
+  if (dias === 1) return "amanhã";
+  if (dias > 1) return `em ${dias} dias`;
+  if (dias === -1) return "atrasado 1 dia";
+  return `atrasado ${-dias} dias`;
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 
 const ABAS = [
   { href: "/", rotulo: "Início", icone: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" },
@@ -10,10 +11,21 @@ const ABAS = [
   { href: "/clientes", rotulo: "Clientes", icone: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6" },
 ];
 
-// Barra fixa embaixo, acima da área segura do iPhone.
+// Barra fixa embaixo, acima da área segura do iPhone. Fica atrás de um <Suspense> porque
+// usePathname() lê a URL; enquanto isso, a mesma barra aparece sem aba marcada.
 export function BarraAbas() {
-  const caminho = usePathname();
+  return (
+    <Suspense fallback={<Abas caminho="" />}>
+      <AbasComRota />
+    </Suspense>
+  );
+}
 
+function AbasComRota() {
+  return <Abas caminho={usePathname()} />;
+}
+
+function Abas({ caminho }: { caminho: string }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white pb-safe">
       <ul className="mx-auto flex max-w-xl">
