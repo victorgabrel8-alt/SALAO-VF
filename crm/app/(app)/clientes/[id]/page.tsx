@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import {
@@ -13,6 +12,7 @@ import {
   prazo,
 } from "@/lib/formato";
 import { useDialogo } from "@/components/Dialogo";
+import { pausarOuReativarIa } from "@/lib/ia";
 import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
 import { ORIGENS, etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem, type Origem } from "@/lib/origem";
 import { Etiquetas } from "@/components/Etiquetas";
@@ -127,14 +127,14 @@ function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () =>
       return;
     }
     if (excluida) aoMudar();
-    else router.replace("/clientes");
+    else router.back();
   }
 
   return (
     <section className="px-4 pt-2">
       {excluida && (
         <p className="mb-2 rounded-xl border border-neutral-200 bg-white p-3 text-neutral-700">
-          Esta cliente está em <strong>Clientes excluídas</strong>: não aparece no Início, na Agenda nem em Clientes.
+          Esta cliente está em <strong>Clientes excluídas</strong>: não aparece no Início, na Agenda nem nas Conversas.
         </p>
       )}
       <button
@@ -153,19 +153,11 @@ function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () =>
 
 function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
   const [salvando, setSalvando] = useState(false);
+  const router = useRouter();
 
-  // Pausar: a IA para de responder esta cliente por 12 horas (o n8n lê ia_pausada_ate)
   async function alternarIa() {
     setSalvando(true);
-    const pausar = !cliente.ia_pausada;
-    await supabase()
-      .from("clientes")
-      .update(
-        pausar
-          ? { ia_pausada_ate: new Date(Date.now() + 12 * 3_600_000).toISOString(), motivo_pausa: "manual" }
-          : { ia_pausada_ate: null, motivo_pausa: null },
-      )
-      .eq("id", cliente.id);
+    await pausarOuReativarIa(cliente.id, !cliente.ia_pausada);
     setSalvando(false);
     aoMudar();
   }
@@ -180,9 +172,13 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
 
   return (
     <section className="space-y-3 px-4 pt-2">
-      <Link href="/clientes" className="inline-flex h-11 items-center text-lg font-semibold text-[var(--cor-principal)]">
-        ‹ Clientes
-      </Link>
+      {/* Sem aba de clientes neste app: a ficha abre pela Agenda, Início ou Conversas */}
+      <button
+        onClick={() => router.back()}
+        className="inline-flex h-11 items-center text-lg font-semibold text-[var(--cor-principal)]"
+      >
+        ‹ Voltar
+      </button>
       <div>
         <h1 className="text-3xl font-bold">{cliente.nome ?? "Sem nome"}</h1>
         <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} />

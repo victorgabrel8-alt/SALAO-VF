@@ -1,9 +1,15 @@
 // Único lugar que monta o link do WhatsApp. A dona tem o WhatsApp pessoal e o Business
-// no iPhone; o link comum (wa.me) pode abrir o pessoal. Na fase 4 vamos testar no
-// iPhone dela e, se precisar, trocar o tipo de link só aqui.
-export function linkWhatsApp(telefone: string, texto?: string): string {
-  const mensagem = texto ? `?text=${encodeURIComponent(texto)}` : "";
-  return `https://wa.me/${telefone}${mensagem}`;
+// no iPhone, e nenhum link garante qual dos dois abre (ver "WhatsApp no iPhone" no README).
+// Para testar no iPhone dela, troque TIPO_LINK e publique de novo:
+//   "wa.me"    -> https://wa.me/55...?text=   (link universal, o oficial do WhatsApp)
+//   "esquema"  -> whatsapp://send?phone=55...&text=   (abre direto o app, sem passar pelo Safari)
+type TipoLink = "wa.me" | "esquema";
+export const TIPO_LINK: TipoLink = "wa.me";
+
+export function linkWhatsApp(telefone: string, texto?: string, tipo: TipoLink = TIPO_LINK): string {
+  const mensagem = texto ? encodeURIComponent(texto) : "";
+  if (tipo === "esquema") return `whatsapp://send?phone=${telefone}${mensagem ? `&text=${mensagem}` : ""}`;
+  return `https://wa.me/${telefone}${mensagem ? `?text=${mensagem}` : ""}`;
 }
 
 export function abrirWhatsApp(telefone: string, texto?: string) {

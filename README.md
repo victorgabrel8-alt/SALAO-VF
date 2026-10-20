@@ -17,7 +17,8 @@ O **Supabase é a única ligação** entre as duas partes. Quem trabalha no n8n 
 salao-ia/
 ├── README.md                  ← você está aqui
 ├── CONTRATO.md                ← acordo entre atendimento e CRM (tabelas, regras, integração)
-├── crm/                       ← app da dona (Next.js) — amigo
+├── crm/                       ← app da dona no iPhone (Next.js): Início, Conversas, Agenda — José Paulo
+├── painel-crm/                ← site da agência no computador (Next.js): CRM completo — José Paulo
 ├── n8n/                       ← workflows exportados em JSON — Victor
 ├── supabase/
 │   ├── 001_schema.sql         ← cria o banco inteiro (rodar 1 vez)

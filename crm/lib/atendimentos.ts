@@ -89,14 +89,30 @@ export function ultimoReagendamento(a: Atendimento): string | null {
 // Cor fixa por profissional (pela ordem do nome), para a dona reconhecer de longe na agenda
 // Tons suaves: a cor só identifica, não chama atenção.
 const CORES_PROFISSIONAL = [
-  { borda: "border-l-rose-300", ponto: "bg-rose-300" },
-  { borda: "border-l-sky-300", ponto: "bg-sky-300" },
-  { borda: "border-l-violet-300", ponto: "bg-violet-300" },
-  { borda: "border-l-emerald-300", ponto: "bg-emerald-300" },
-  { borda: "border-l-amber-300", ponto: "bg-amber-300" },
-  { borda: "border-l-stone-400", ponto: "bg-stone-400" },
+  { borda: "border-l-rose-300", ponto: "bg-rose-300", capsula: "bg-rose-200 text-rose-900" },
+  { borda: "border-l-sky-300", ponto: "bg-sky-300", capsula: "bg-sky-200 text-sky-900" },
+  { borda: "border-l-violet-300", ponto: "bg-violet-300", capsula: "bg-violet-200 text-violet-900" },
+  { borda: "border-l-emerald-300", ponto: "bg-emerald-300", capsula: "bg-emerald-200 text-emerald-900" },
+  { borda: "border-l-amber-300", ponto: "bg-amber-300", capsula: "bg-amber-200 text-amber-900" },
+  { borda: "border-l-stone-400", ponto: "bg-stone-400", capsula: "bg-stone-200 text-stone-900" },
 ];
-const SEM_PROFISSIONAL = { borda: "border-l-neutral-200", ponto: "bg-neutral-200" };
+const SEM_PROFISSIONAL = { borda: "border-l-neutral-200", ponto: "bg-neutral-200", capsula: "bg-neutral-200 text-neutral-700" };
+
+// Dias da semana que têm horário (para os pontinhos da faixa da semana)
+export async function buscarDiasComHorario(empresaId: string, de: string, ate: string) {
+  const { data } = await supabase()
+    .from("agendamentos")
+    .select("inicio, clientes (etiquetas)")
+    .eq("empresa_id", empresaId)
+    .neq("status", "cancelado")
+    .gte("inicio", inicioDoDia(de))
+    .lt("inicio", inicioDoDia(somarDias(ate, 1)));
+  const dias = new Set<string>();
+  for (const a of (data ?? []) as unknown as { inicio: string; clientes: { etiquetas: string[] } | null }[]) {
+    if (!estaExcluida(a.clientes?.etiquetas)) dias.add(dataNoSalao(a.inicio));
+  }
+  return dias;
+}
 
 export function corDaProfissional(profissionalId: string | null, ordem: string[]) {
   const i = profissionalId ? ordem.indexOf(profissionalId) : -1;

@@ -26,11 +26,14 @@ export type ModoAtendimento = "registrar" | "agendar";
 export function FormAtendimento({
   modo,
   dia,
+  horaInicial,
   aoFechar,
   aoSalvar,
 }: {
   modo: ModoAtendimento;
   dia?: string;
+  // Ex.: tocar num intervalo livre da Agenda já sugere aquele horário
+  horaInicial?: string;
   aoFechar: () => void;
   aoSalvar: () => void;
 }) {
@@ -50,7 +53,7 @@ export function FormAtendimento({
   const [servicoId, setServicoId] = useState("");
   const [profissionalId, setProfissionalId] = useState("");
   const [data, setData] = useState(dia ?? agora.data);
-  const [hora, setHora] = useState(modo === "registrar" ? agora.hora : "09:00");
+  const [hora, setHora] = useState(horaInicial ?? (modo === "registrar" ? agora.hora : "09:00"));
 
   // Retorno: o banco calcula a data sozinho (dia do atendimento + dias de retorno do serviço).
   // A dona vê a data na hora e pode já deixar o horário do retorno marcado.

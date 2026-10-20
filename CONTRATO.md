@@ -5,7 +5,8 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 | Parte | Responsável | Pasta |
 |---|---|---|
 | Atendimento (IA no WhatsApp) | Victor | `/n8n` |
-| CRM (app da dona) | [nome do amigo] | `/crm` |
+| App da dona (Início, Conversas, Agenda) | José Paulo | `/crm` |
+| Painel CRM da agência (clientes, IA de retorno) | José Paulo | `/painel-crm` |
 | Banco (guardião) | [definir: um só] | `/supabase` |
 
 ---
@@ -29,6 +30,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 | "Hoje" | sempre no fuso do salão | função `hoje_cuiaba()` |
 | Empresa | todo registro tem `empresa_id` | demo: `00000000-0000-0000-0000-000000000001` |
 | Número de alerta | `empresas.config.whatsapp_alerta`, mesmo formato do telefone (ou `null`) | `5566996834918` (José Paulo, até configurar o da dona) |
+| Limite do celular | `empresas.config.dias_limite_celular` (padrão 30): no celular da dona, atrasadas há mais que isso (contando da **data de retorno**) só aparecem no CRM do computador | `30` |
 
 ---
 
@@ -110,7 +112,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 
 - Responder pelo app (hoje: botão abre o WhatsApp Business)
 - Notificações push no iPhone
-- Envio automático de retorno/reativação pela IA (templates pagos da API oficial)
+- Envio automático de retorno/reativação pela IA (templates pagos da API oficial). **Combinado:** a dona não manda alô pelo celular; uma IA chama a cliente na data do retorno. Cada envio deve gravar uma linha em `contatos` com `canal='ia'` e `tipo='retorno'` ou `'reativacao'` — assim o CRM mostra "Chamada há X dias" e o banco marca sozinho `respondeu`/`agendou`. O botão "Mandar alô" fica só no CRM do computador, como plano B manual.
 - Aniversários, campanhas, relatórios
 - Cancelar no CRM apagando também do Google Agenda
 - Comissão, estoque, financeiro

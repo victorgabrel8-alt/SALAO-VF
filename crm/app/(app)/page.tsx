@@ -22,18 +22,10 @@ import {
   hojeNoSalao,
   inicioDoDia,
 } from "@/lib/formato";
-import { PontoStatus, STATUS, type StatusCliente } from "@/lib/status";
+import { PontoStatus } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
 import { abrirWhatsApp } from "@/lib/whatsapp";
-
-const LINHAS_CLIENTES: { status: StatusCliente; rotulo: string }[] = [
-  { status: "retorno_chegando", rotulo: "Retorno chegando" },
-  { status: "retorno_atrasado", rotulo: "Atrasadas" },
-  { status: "inativa", rotulo: "Inativas" },
-  { status: "em_dia", rotulo: "Em dia" },
-  { status: "sem_visita", rotulo: "Sem visita" },
-];
 
 const MOTIVOS: Record<string, string> = {
   pediu_humano: "Pediu para falar com você",
@@ -51,7 +43,6 @@ type Resumo = {
   hoje: Atendimento[];
   // Os que já foram resolvidos hoje saem da lista e vão para estas abas
   resolvidos: Record<Resolvido, Atendimento[]>;
-  contagem: Record<string, number>;
   ordemProfissionais: string[];
   iaConversou: number;
   iaMarcou: number;
@@ -61,11 +52,14 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   const db = supabase();
   const hoje = hojeNoSalao();
   const desde = inicioDoDia(hoje);
+  // Leve: não baixa a lista de clientes, só quem precisa da dona agora
   const [clientes, atendimentos, reagendados, profissionais, mensagensIa, marcadosIa] = await Promise.all([
     db
       .from("clientes_status")
-      .select("id, nome, telefone, status, ia_pausada, motivo_pausa, etiquetas")
-      .eq("empresa_id", empresaId),
+      .select("id, nome, telefone, motivo_pausa, etiquetas")
+      .eq("empresa_id", empresaId)
+      .eq("ia_pausada", true)
+      .in("motivo_pausa", Object.keys(MOTIVOS)),
     buscarAtendimentosDoDia(empresaId, hoje),
     buscarReagendadosDoDia(empresaId, hoje),
     db.from("profissionais").select("id").eq("empresa_id", empresaId).order("nome"),
@@ -83,12 +77,8 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   if (reagendados.erro) return { erro: reagendados.erro };
   const doDia = atendimentos.atendimentos;
 
-  const lista = (clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas));
-  const contagem: Record<string, number> = {};
-  for (const c of lista) contagem[c.status] = (contagem[c.status] ?? 0) + 1;
-
   return {
-    precisam: lista.filter((c) => c.ia_pausada && c.motivo_pausa in MOTIVOS) as Precisa[],
+    precisam: (clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas)) as Precisa[],
     hoje: doDia.filter((a) => a.status === "agendado"),
     resolvidos: {
       realizado: doDia.filter((a) => a.status === "realizado"),
@@ -96,7 +86,6 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
       cancelado: doDia.filter((a) => a.status === "cancelado"),
       reagendado: reagendados.atendimentos,
     },
-    contagem,
     ordemProfissionais: (profissionais.data ?? []).map((p) => p.id),
     iaConversou: new Set((mensagensIa.data ?? []).map((m) => m.cliente_id)).size,
     iaMarcou: marcadosIa.count ?? 0,
@@ -218,10 +207,6 @@ export default function InicioPage() {
   // A IA grava sozinha: quando chega mensagem ou horário novo, a tela se atualiza
   useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, recarregar);
 
-  const paraChamar = resumo && !("erro" in resumo)
-    ? (resumo.contagem.retorno_chegando ?? 0) + (resumo.contagem.retorno_atrasado ?? 0)
-    : 0;
-
   return (
     <>
       <Cabecalho
@@ -250,7 +235,7 @@ export default function InicioPage() {
           {/* Resumo do dia em três números */}
           <section className="mx-4 grid grid-cols-3 gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm">
             <Numero valor={resumo.hoje.length} rotulo="para atender hoje" href="/agenda" />
-            <Numero valor={paraChamar} rotulo="para chamar" href="/clientes?filtro=para_chamar" />
+            <Numero valor={resumo.iaConversou} rotulo="conversas da IA hoje" href="/conversas" />
             <Numero valor={resumo.iaMarcou} rotulo="marcados pela IA" />
           </section>
 
@@ -267,8 +252,8 @@ export default function InicioPage() {
               <ul className="space-y-2">
                 {resumo.precisam.map((c) => (
                   <li key={c.id} className="flex items-center gap-3 rounded-xl bg-neutral-50 p-3">
-                    {/* Na fase 4 este toque abre a conversa */}
-                    <Link href={`/clientes/${c.id}`} className="min-w-0 flex-1">
+                    {/* Toque abre a conversa com a IA, para a dona ver o que ela pediu */}
+                    <Link href={`/conversas/${c.id}`} className="min-w-0 flex-1">
                       <p className="truncate font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</p>
                       <p className="text-sm text-red-700">{MOTIVOS[c.motivo_pausa]}</p>
                       <p className="text-sm text-neutral-500">{formatarTelefone(c.telefone)}</p>
@@ -318,33 +303,6 @@ export default function InicioPage() {
             aoMudar={recarregar}
           />
 
-          <Caixa titulo="Suas clientes">
-            <ul className="divide-y divide-neutral-100">
-              {LINHAS_CLIENTES.map((l) => (
-                <li key={l.status}>
-                  <Link
-                    href={`/clientes?filtro=${l.status}`}
-                    className="flex h-12 items-center justify-between gap-2 active:bg-neutral-50"
-                  >
-                    <span className="flex items-center gap-2 text-neutral-800">
-                      <PontoStatus cor={STATUS[l.status].ponto} />
-                      {l.rotulo}
-                    </span>
-                    <span className="flex items-center gap-2 font-semibold">
-                      {resumo.contagem[l.status] ?? 0}
-                      <span className="text-xl text-neutral-400" aria-hidden>
-                        ›
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Caixa>
-
-          <p className="px-4 text-center text-sm text-neutral-500">
-            Hoje a IA conversou com {resumo.iaConversou} {resumo.iaConversou === 1 ? "cliente" : "clientes"}.
-          </p>
         </div>
       )}
 

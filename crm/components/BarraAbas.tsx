@@ -8,8 +8,8 @@ const ABAS = [
   { href: "/", rotulo: "Início", icone: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" },
   { href: "/conversas", rotulo: "Conversas", icone: "M4 5h16v11H8l-4 4z" },
   { href: "/agenda", rotulo: "Agenda", icone: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" },
-  { href: "/clientes", rotulo: "Clientes", icone: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21a7 7 0 0 1 14 0M17 11a3 3 0 1 0 0-6M22 21a6 6 0 0 0-4-5.6" },
 ];
+// A lista de clientes (CRM) saiu deste app: fica no site separado painel-crm, da agência.
 
 // Barra fixa embaixo, acima da área segura do iPhone. Fica atrás de um <Suspense> porque
 // usePathname() lê a URL; enquanto isso, a mesma barra aparece sem aba marcada.
