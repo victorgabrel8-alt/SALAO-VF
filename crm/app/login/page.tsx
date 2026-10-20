@@ -53,7 +53,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-14 w-full rounded-xl border-2 border-neutral-300 px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+              className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
             />
           </label>
           <label className="block space-y-1">
@@ -64,7 +64,7 @@ export default function LoginPage() {
               required
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              className="h-14 w-full rounded-xl border-2 border-neutral-300 px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+              className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
             />
           </label>
 

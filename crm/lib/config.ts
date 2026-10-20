@@ -7,3 +7,5 @@ export const SALAO = {
 
 // Fuso do salão: todas as datas e horas do app são mostradas neste fuso.
 export const FUSO = "America/Cuiaba";
+// Cuiabá é UTC-4 o ano todo (sem horário de verão desde 2019)
+export const FUSO_OFFSET = "-04:00";

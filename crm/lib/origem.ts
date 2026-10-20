@@ -30,7 +30,15 @@ export function trocarOrigem(etiquetas: string[], origem: Origem | null): string
   return origem ? [...outras, PREFIXO + origem] : outras;
 }
 
-// Etiquetas que a dona vê (sem a origem, que tem campo próprio na tela)
+// Etiquetas internas do app (ex.: "sistema:excluida"): nunca aparecem para a dona
+export const PREFIXO_SISTEMA = "sistema:";
+
+// Etiquetas que a dona vê (sem a origem, que tem campo próprio na tela, e sem as internas)
 export function etiquetasVisiveis(etiquetas: string[]): string[] {
-  return etiquetas.filter((e) => !e.startsWith(PREFIXO));
+  return etiquetas.filter((e) => !e.startsWith(PREFIXO) && !e.startsWith(PREFIXO_SISTEMA));
+}
+
+// Etiquetas internas, para preservar ao salvar a ficha
+export function etiquetasDoSistema(etiquetas: string[]): string[] {
+  return etiquetas.filter((e) => e.startsWith(PREFIXO_SISTEMA));
 }

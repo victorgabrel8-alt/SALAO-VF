@@ -1,4 +1,4 @@
-import { FUSO } from "@/lib/config";
+import { FUSO, FUSO_OFFSET } from "@/lib/config";
 
 // O banco só aceita telefone como 55 + DDD + número, só dígitos (ex.: 5566999998888).
 // Aceita o que a dona digitar: "(66) 99999-8888", "66999998888", "+55 66 99999-8888".
@@ -59,6 +59,42 @@ export function haQuantoTempo(instante: string): string {
   if (dias <= 0) return "hoje";
   if (dias === 1) return "ontem";
   return `há ${dias} dias`;
+}
+
+// Data e hora de agora no fuso do salão: { data: "2026-10-20", hora: "14:35" }
+export function agoraNoSalao(): { data: string; hora: string } {
+  const agora = new Date();
+  return {
+    data: agora.toLocaleDateString("en-CA", { timeZone: FUSO }),
+    hora: agora.toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }),
+  };
+}
+
+// "2026-10-20" + "14:30" (horário do salão) -> instante ISO para gravar no banco
+export function instanteNoSalao(data: string, hora: string): string {
+  return new Date(`${data}T${hora}:00${FUSO_OFFSET}`).toISOString();
+}
+
+// Começo do dia no fuso do salão, como instante ISO (para filtrar no banco)
+export function inicioDoDia(data: string): string {
+  return instanteNoSalao(data, "00:00");
+}
+
+export function somarDias(data: string, dias: number): string {
+  const d = new Date(`${data}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + dias);
+  return d.toISOString().slice(0, 10);
+}
+
+// "2026-10-20" -> "Terça-feira, 20 de outubro"
+export function formatarDiaLongo(data: string): string {
+  const texto = new Date(`${data}T12:00:00Z`).toLocaleDateString("pt-BR", {
+    timeZone: "UTC",
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
 // Para datas futuras ou passadas: "hoje", "amanhã", "em 5 dias", "atrasado 3 dias"

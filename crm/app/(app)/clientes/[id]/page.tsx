@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import { useEmpresa } from "@/lib/empresa";
 import {
   dataNoSalao,
   diasEntre,
@@ -13,10 +12,13 @@ import {
   hojeNoSalao,
   prazo,
 } from "@/lib/formato";
-import { ORIGENS, etiquetasVisiveis, lerOrigem, trocarOrigem, type Origem } from "@/lib/origem";
-import { SeloStatus } from "@/lib/status";
+import { useDialogo } from "@/components/Dialogo";
+import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
+import { ORIGENS, etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem, type Origem } from "@/lib/origem";
+import { Etiquetas } from "@/components/Etiquetas";
+import { PontoStatus, SeloStatus } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
-import type { ClienteStatus, Profissional, RetornoServico } from "@/lib/tipos";
+import type { ClienteStatus, RetornoServico } from "@/lib/tipos";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
 type Atendimento = {
@@ -33,7 +35,6 @@ type Mensagem = { criado_em: string };
 type Ficha = {
   cliente: ClienteStatus;
   retornos: RetornoServico[];
-  profissionais: Profissional[];
   atendimentos: Atendimento[];
   contatos: Contato[];
   mensagens: Mensagem[];
@@ -41,12 +42,11 @@ type Ficha = {
 
 const ETIQUETAS_SUGERIDAS = ["vip", "alergia", "mega hair", "coloração", "química", "gestante"];
 
-async function buscarFicha(id: string, empresaId: string): Promise<Ficha | { erro: string }> {
+async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
   const db = supabase();
-  const [cliente, retornos, profissionais, atendimentos, contatos, mensagens] = await Promise.all([
+  const [cliente, retornos, atendimentos, contatos, mensagens] = await Promise.all([
     db.from("clientes_status").select("*").eq("id", id).maybeSingle(),
     db.from("retornos_por_servico").select("servico_id, servico_nome, ultima_vez, retorno_previsto").eq("cliente_id", id),
-    db.from("profissionais").select("id, nome").eq("empresa_id", empresaId).eq("ativo", true).order("nome"),
     db
       .from("agendamentos")
       .select("id, inicio, status, origem, servicos (nome), profissionais (nome)")
@@ -55,13 +55,12 @@ async function buscarFicha(id: string, empresaId: string): Promise<Ficha | { err
     db.from("contatos").select("id, tipo, resultado, criado_em").eq("cliente_id", id),
     db.from("mensagens").select("criado_em").eq("cliente_id", id),
   ]);
-  const falha = [cliente, retornos, profissionais, atendimentos, contatos, mensagens].find((r) => r.error);
+  const falha = [cliente, retornos, atendimentos, contatos, mensagens].find((r) => r.error);
   if (falha?.error) return { erro: falha.error.message };
   if (!cliente.data) return { erro: "Cliente não encontrada." };
   return {
     cliente: cliente.data as ClienteStatus,
     retornos: retornos.data as RetornoServico[],
-    profissionais: profissionais.data as Profissional[],
     atendimentos: atendimentos.data as unknown as Atendimento[],
     contatos: contatos.data as Contato[],
     mensagens: mensagens.data as Mensagem[],
@@ -78,7 +77,6 @@ export default function FichaClientePage() {
 
 function FichaCliente() {
   const { id } = useParams<{ id: string }>();
-  const empresa = useEmpresa();
   const [resultado, setResultado] = useState<Ficha | { erro: string } | null>(null);
   // Muda a cada salvamento para buscar a ficha de novo
   const [versao, setVersao] = useState(0);
@@ -86,13 +84,13 @@ function FichaCliente() {
 
   useEffect(() => {
     let ativo = true;
-    buscarFicha(id, empresa.id).then((r) => {
+    buscarFicha(id).then((r) => {
       if (ativo) setResultado(r);
     });
     return () => {
       ativo = false;
     };
-  }, [id, empresa.id, versao]);
+  }, [id, versao]);
 
   if (!resultado) return <p className="p-4 text-neutral-500">Carregando…</p>;
   if ("erro" in resultado) return <p className="m-4 rounded-xl bg-red-100 p-4 text-red-900">{resultado.erro}</p>;
@@ -103,9 +101,53 @@ function FichaCliente() {
     <div className="space-y-6 pb-4">
       <Topo cliente={ficha.cliente} aoMudar={carregar} />
       <Retornos retornos={ficha.retornos} />
-      <Dados cliente={ficha.cliente} profissionais={ficha.profissionais} aoSalvar={carregar} />
+      {/* key: se uma etiqueta for tirada lá em cima, o formulário recomeça com as etiquetas certas */}
+      <Dados key={ficha.cliente.etiquetas.join("|")} cliente={ficha.cliente} aoSalvar={carregar} />
       <LinhaDoTempo ficha={ficha} />
+      <Exclusao cliente={ficha.cliente} aoMudar={carregar} />
     </div>
+  );
+}
+
+// No fim da ficha: excluir a cliente (vai para Configurações → Clientes excluídas) ou,
+// se ela já está lá, restaurar.
+function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
+  const router = useRouter();
+  const [salvando, setSalvando] = useState(false);
+  const { dialogo, perguntar, avisar } = useDialogo();
+  const excluida = estaExcluida(cliente.etiquetas);
+
+  async function alternar() {
+    if (!excluida && !(await perguntar(textoExclusao(cliente.nome), { confirmar: "Excluir", perigo: true }))) return;
+    setSalvando(true);
+    const erro = excluida ? await restaurarCliente(cliente.id) : await excluirCliente(cliente.id);
+    setSalvando(false);
+    if (erro) {
+      await avisar(`Não foi possível salvar: ${erro}`);
+      return;
+    }
+    if (excluida) aoMudar();
+    else router.replace("/clientes");
+  }
+
+  return (
+    <section className="px-4 pt-2">
+      {excluida && (
+        <p className="mb-2 rounded-xl border border-neutral-200 bg-white p-3 text-neutral-700">
+          Esta cliente está em <strong>Clientes excluídas</strong>: não aparece no Início, na Agenda nem em Clientes.
+        </p>
+      )}
+      <button
+        onClick={alternar}
+        disabled={salvando}
+        className={`h-12 w-full rounded-xl border bg-white font-semibold disabled:opacity-50 ${
+          excluida ? "border-neutral-300 text-neutral-800" : "border-red-200 text-red-700 active:bg-red-50"
+        }`}
+      >
+        {excluida ? "Restaurar cliente" : "Excluir cliente"}
+      </button>
+      {dialogo}
+    </section>
   );
 }
 
@@ -128,6 +170,14 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
     aoMudar();
   }
 
+  async function removerEtiqueta(etiqueta: string) {
+    await supabase()
+      .from("clientes")
+      .update({ etiquetas: cliente.etiquetas.filter((e) => e !== etiqueta) })
+      .eq("id", cliente.id);
+    aoMudar();
+  }
+
   return (
     <section className="space-y-3 px-4 pt-2">
       <Link href="/clientes" className="inline-flex h-11 items-center text-lg font-semibold text-[var(--cor-principal)]">
@@ -135,11 +185,13 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
       </Link>
       <div>
         <h1 className="text-3xl font-bold">{cliente.nome ?? "Sem nome"}</h1>
-        <p className="text-lg text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
+        <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} />
+        <p className="mt-1 text-lg text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <SeloStatus status={cliente.status} />
           {cliente.ia_pausada && (
-            <span className="rounded-full bg-yellow-100 px-2.5 py-0.5 text-sm font-semibold text-yellow-900">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-0.5 text-sm font-medium text-neutral-700">
+              <PontoStatus cor="bg-yellow-400" />
               IA pausada
             </span>
           )}
@@ -148,14 +200,14 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={() => abrirWhatsApp(cliente.telefone)}
-          className="h-12 rounded-xl bg-green-600 text-lg font-bold text-white active:bg-green-700"
+          className="h-12 rounded-xl border border-neutral-300 bg-white text-lg font-semibold text-green-700 active:bg-neutral-100"
         >
           WhatsApp
         </button>
         <button
           onClick={alternarIa}
           disabled={salvando}
-          className="h-12 rounded-xl border-2 border-neutral-300 text-lg font-bold active:bg-neutral-100 disabled:opacity-50"
+          className="h-12 rounded-xl border border-neutral-300 bg-white text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
         >
           {cliente.ia_pausada ? "Reativar IA" : "Pausar IA"}
         </button>
@@ -181,19 +233,16 @@ function Retornos({ retornos }: { retornos: RetornoServico[] }) {
       <ul className="space-y-2">
         {ordenados.map((r) => {
           const dias = r.retorno_previsto ? diasEntre(hoje, r.retorno_previsto) : null;
-          const cor =
-            dias === null
-              ? "border-neutral-200"
-              : dias < 0
-                ? "border-orange-400 bg-orange-50"
-                : dias <= 7
-                  ? "border-yellow-400 bg-yellow-50"
-                  : "border-green-400 bg-green-50";
+          const ponto =
+            dias === null ? "bg-neutral-300" : dias < 0 ? "bg-orange-500" : dias <= 7 ? "bg-yellow-400" : "bg-green-500";
           return (
-            <li key={r.servico_id} className={`rounded-xl border-2 p-3 ${cor}`}>
-              <p className="text-lg font-semibold">{r.servico_nome}</p>
-              <p className="text-neutral-700">Última vez: {formatarData(r.ultima_vez)}</p>
-              <p className="font-medium">
+            <li key={r.servico_id} className="rounded-xl border border-neutral-200 bg-white p-3">
+              <p className="flex items-center gap-2 text-lg font-semibold">
+                <PontoStatus cor={ponto} />
+                {r.servico_nome}
+              </p>
+              <p className="text-neutral-600">Última vez: {formatarData(r.ultima_vez)}</p>
+              <p className={`font-medium ${dias !== null && dias < 0 ? "text-orange-700" : ""}`}>
                 {r.retorno_previsto
                   ? `Voltar: ${formatarData(r.retorno_previsto)} (${prazo(r.retorno_previsto)})`
                   : "Sem retorno programado"}
@@ -206,18 +255,8 @@ function Retornos({ retornos }: { retornos: RetornoServico[] }) {
   );
 }
 
-function Dados({
-  cliente,
-  profissionais,
-  aoSalvar,
-}: {
-  cliente: ClienteStatus;
-  profissionais: Profissional[];
-  aoSalvar: () => void;
-}) {
+function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => void }) {
   const [nome, setNome] = useState(cliente.nome ?? "");
-  const [aniversario, setAniversario] = useState(cliente.aniversario ?? "");
-  const [profissional, setProfissional] = useState(cliente.profissional_preferida_id ?? "");
   const [observacoes, setObservacoes] = useState(cliente.observacoes ?? "");
   const [origem, setOrigem] = useState<Origem | null>(lerOrigem(cliente.etiquetas));
   const [etiquetas, setEtiquetas] = useState(etiquetasVisiveis(cliente.etiquetas));
@@ -229,23 +268,20 @@ function Dados({
     setEtiquetas((atuais) => (atuais.includes(etiqueta) ? atuais.filter((e) => e !== etiqueta) : [...atuais, etiqueta]));
   }
 
-  function adicionarEtiqueta() {
-    const etiqueta = novaEtiqueta.trim().toLowerCase();
-    if (etiqueta && !etiquetas.includes(etiqueta)) setEtiquetas([...etiquetas, etiqueta]);
-    setNovaEtiqueta("");
-  }
-
+  // A etiqueta escrita em "Nova etiqueta" entra ao tocar em Salvar e aparece só embaixo do
+  // nome (com × para tirar), não na lista de opções abaixo.
   async function salvar() {
     setSalvando(true);
     setAviso("");
+    const nova = novaEtiqueta.trim().toLowerCase();
+    const finais = nova && !etiquetas.includes(nova) ? [...etiquetas, nova] : etiquetas;
     const { error } = await supabase()
       .from("clientes")
       .update({
         nome: nome.trim() || null,
-        aniversario: aniversario || null,
-        profissional_preferida_id: profissional || null,
         observacoes: observacoes.trim() || null,
-        etiquetas: trocarOrigem(etiquetas, origem),
+        // Mantém as etiquetas internas do app (ex.: cliente excluída)
+        etiquetas: [...trocarOrigem(finais, origem), ...etiquetasDoSistema(cliente.etiquetas)],
       })
       .eq("id", cliente.id);
     setSalvando(false);
@@ -253,13 +289,12 @@ function Dados({
       setAviso(`Não foi possível salvar: ${error.message}`);
       return;
     }
+    setNovaEtiqueta("");
     setAviso("Salvo ✓");
     aoSalvar();
   }
-
-  const todasEtiquetas = [...new Set([...ETIQUETAS_SUGERIDAS, ...etiquetas])];
   const campo =
-    "h-12 w-full rounded-xl border-2 border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
+    "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
 
   return (
     <section className="space-y-4 px-4">
@@ -280,31 +315,13 @@ function Dados({
               onClick={() => setOrigem(origem === o.chave ? null : o.chave)}
               aria-pressed={origem === o.chave}
               className={`h-11 rounded-full px-4 font-semibold ${
-                origem === o.chave ? "bg-[var(--cor-principal)] text-white" : "bg-neutral-100 text-neutral-800"
+                origem === o.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-800"
               }`}
             >
               {o.rotulo}
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <label className="block space-y-1">
-          <span className="font-medium">Aniversário</span>
-          <input type="date" value={aniversario} onChange={(e) => setAniversario(e.target.value)} className={campo} />
-        </label>
-        <label className="block space-y-1">
-          <span className="font-medium">Profissional</span>
-          <select value={profissional} onChange={(e) => setProfissional(e.target.value)} className={campo}>
-            <option value="">Qualquer</option>
-            {profissionais.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nome}
-              </option>
-            ))}
-          </select>
-        </label>
       </div>
 
       <label className="block space-y-1">
@@ -314,43 +331,34 @@ function Dados({
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           placeholder="Alergias, fórmula da cor, método do mega hair, preferências…"
-          className="w-full rounded-xl border-2 border-neutral-300 p-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+          className="w-full rounded-xl border border-neutral-300 bg-white p-4 text-lg outline-none focus:border-[var(--cor-principal)]"
         />
       </label>
 
       <div className="space-y-2">
         <span className="font-medium">Etiquetas</span>
         <div className="flex flex-wrap gap-2">
-          {todasEtiquetas.map((e) => (
+          {ETIQUETAS_SUGERIDAS.map((e) => (
             <button
               key={e}
               type="button"
               onClick={() => alternarEtiqueta(e)}
               aria-pressed={etiquetas.includes(e)}
               className={`h-11 rounded-full px-4 font-semibold ${
-                etiquetas.includes(e) ? "bg-neutral-800 text-white" : "bg-neutral-100 text-neutral-700"
+                etiquetas.includes(e) ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
               }`}
             >
               {e}
             </button>
           ))}
         </div>
-        <div className="flex gap-2">
-          <input
-            value={novaEtiqueta}
-            onChange={(e) => setNovaEtiqueta(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && adicionarEtiqueta()}
-            placeholder="Nova etiqueta"
-            className={campo}
-          />
-          <button
-            type="button"
-            onClick={adicionarEtiqueta}
-            className="h-12 shrink-0 rounded-xl border-2 border-neutral-300 px-4 font-semibold active:bg-neutral-100"
-          >
-            Adicionar
-          </button>
-        </div>
+        <input
+          value={novaEtiqueta}
+          onChange={(e) => setNovaEtiqueta(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && salvar()}
+          placeholder="Nova etiqueta (aparece embaixo do nome ao salvar)"
+          className={campo}
+        />
       </div>
 
       <button

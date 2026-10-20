@@ -28,6 +28,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 | Datas/horas | `timestamptz` (o banco guarda em UTC) | o app mostra em `America/Cuiaba` |
 | "Hoje" | sempre no fuso do salão | função `hoje_cuiaba()` |
 | Empresa | todo registro tem `empresa_id` | demo: `00000000-0000-0000-0000-000000000001` |
+| Número de alerta | `empresas.config.whatsapp_alerta`, mesmo formato do telefone (ou `null`) | `5566996834918` (José Paulo, até configurar o da dona) |
 
 ---
 
@@ -83,7 +84,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 |---|---|---|
 | Mensagem chega | chama `n8n_registrar_entrada`; se `ia_pausada = true`, **não responde** | mostra em tempo real (Realtime na tabela `mensagens`) |
 | IA responde | envia e chama `n8n_registrar_saida(..., autor='ia', wa_message_id do envio)` | mostra o balão como "IA" |
-| Cliente pede humano / reclama / fora do escopo | grava a resposta da IA com `n8n_registrar_saida(..., autor='ia', pausar_horas=12, motivo_pausa='pediu_humano')` (ou `reclamacao`, `fora_escopo`) | mostra em **"Precisam de você"** no Início |
+| Cliente pede humano / reclama / fora do escopo | grava a resposta da IA com `n8n_registrar_saida(..., autor='ia', pausar_horas=12, motivo_pausa='pediu_humano')` (ou `reclamacao`, `fora_escopo`) **e manda um WhatsApp para `empresas.config.whatsapp_alerta`** com nome, telefone da cliente e o que ela pediu | mostra em **"Precisam de você"** no Início, com botão para abrir o WhatsApp da cliente; o número de alerta é editado em **Configurações → WhatsApp para alertas** |
 | Dona responde pelo WhatsApp Business | chama `n8n_registrar_saida(..., autor='humano', pausar_horas=12)` (motivo vira `dona_respondeu`) | mostra o balão como "Você" |
 | Dona aperta "Pausar IA" / "Reativar IA" | lê `ia_pausada_ate` antes de cada resposta | grava `ia_pausada_ate` (`now()+12h` ou `null`) e `motivo_pausa='manual'` |
 | IA agenda | cria evento no Google Agenda **e** grava em `agendamentos` (`origem='ia'`, `google_event_id`) | mostra na Agenda |

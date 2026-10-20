@@ -55,6 +55,6 @@ pode rodar de novo para recriar com as datas de hoje.
 
 - [x] Fase 1: login, 4 abas, PWA, leitura do Salão Demo
 - [x] Fase 2: Clientes + Ficha (com retornos por procedimento e origem da cliente)
-- [ ] Fase 3: Início + Agenda + Registrar atendimento
+- [x] Fase 3: Início + Agenda + Registrar atendimento
 - [ ] Fase 4: Conversas (tempo real) + Pausar IA + Mandar alô
 - [ ] Fase 5: Configurações + acabamento
