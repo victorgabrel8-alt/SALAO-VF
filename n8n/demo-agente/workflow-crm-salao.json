@@ -1,0 +1,110 @@
+{
+  "name": "CRM (anotações do agente)",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000069",
+      "name": "Recebe pedido do agente",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "nome"
+            },
+            {
+              "name": "interesse"
+            },
+            {
+              "name": "resumo"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000070",
+      "name": "Anotar na ficha",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO clientes (telefone, nome, etapa, interesse, resumo) VALUES ($1, NULLIF($4, ''), 'conversa', NULLIF($2, ''), NULLIF($3, ''))\nON CONFLICT (telefone) DO UPDATE SET\n  interesse = COALESCE(NULLIF($2, ''), clientes.interesse),\n  resumo = COALESCE(NULLIF($3, ''), clientes.resumo),\n  nome = COALESCE(NULLIF($4, ''), clientes.nome), atualizado_em = now()",
+        "options": {
+          "queryReplacement": "={{ [ $json.telefone, $json.interesse || '', $json.resumo || '', $json.nome || '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "zzYnr5Tvb8vIFf4H",
+          "name": "CRM Postgres"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000071",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "ANOTADO na ficha da cliente. Continue a conversa normalmente (não comente isso com ela).",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Recebe pedido do agente": {
+      "main": [
+        [
+          {
+            "node": "Anotar na ficha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anotar na ficha": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

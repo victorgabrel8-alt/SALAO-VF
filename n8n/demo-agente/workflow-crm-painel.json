@@ -1,0 +1,211 @@
+{
+  "name": "CRM - Painel",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000072",
+      "name": "Abrir painel",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "crm",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "4e5f6071-8293-4a4b-8c3d-f40516273849"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000073",
+      "name": "Ler clientes",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM clientes WHERE telefone NOT LIKE 'teste-%' ORDER BY COALESCE(agendamento, ultimo_contato) DESC",
+        "options": {
+          "queryReplacement": "={{ [] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "zzYnr5Tvb8vIFf4H",
+          "name": "CRM Postgres"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000074",
+      "name": "Montar painel",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const ETAPAS = [[\"novo\",\"Novo\",\"#64748b\"],[\"conversa\",\"Em conversa\",\"#2563eb\"],[\"agendado\",\"Agendado\",\"#16a34a\"],[\"humano\",\"Com humano\",\"#dc2626\"],[\"atendido\",\"Atendido\",\"#7c3aed\"],[\"perdido\",\"Perdido\",\"#9ca3af\"]];\nconst esc = (s) => String(s ?? '').replace(/[&<>\"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', \"'\": '&#39;' }[c]));\nconst fmt = (d, f) => d ? DateTime.fromISO(new Date(d).toISOString()).setZone('America/Cuiaba').setLocale('pt-BR').toFormat(f) : '';\nconst tel = (t) => String(t).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3');\nconst rows = $input.all().map((i) => i.json).filter((r) => r.telefone);\nconst col = (k) => rows.filter((r) => r.etapa === k);\nconst card = (r) => `<div class=\"card\">\n  <div class=\"top\"><b>${esc(r.nome || 'Sem nome')}</b><a href=\"https://wa.me/${esc(r.telefone)}\" target=\"_blank\">${esc(tel(r.telefone))}</a></div>\n  ${r.interesse ? `<div class=\"int\">${esc(r.interesse)}</div>` : ''}\n  ${r.agendamento ? `<div class=\"ag\">📅 ${fmt(r.agendamento, \"ccc dd/LL 'às' HH'h'mm\")}${r.servico_agendado ? ' · ' + esc(r.servico_agendado) : ''}</div>` : ''}\n  ${r.resumo ? `<div class=\"res\">${esc(r.resumo)}</div>` : ''}\n  <div class=\"meta\">Último contato ${fmt(r.ultimo_contato, \"dd/LL HH'h'mm\")} · ${r.total_mensagens} msg</div>\n  <form method=\"post\" action=\"/webhook/crm-salvar\">\n    <input type=\"hidden\" name=\"telefone\" value=\"${esc(r.telefone)}\">\n    <select name=\"etapa\">${ETAPAS.map(([k, n]) => `<option value=\"${k}\"${k === r.etapa ? ' selected' : ''}>${n}</option>`).join('')}</select>\n    <textarea name=\"observacoes\" placeholder=\"Anotações da Gleide…\">${esc(r.observacoes)}</textarea>\n    <button>Salvar</button>\n  </form>\n</div>`;\nconst html = `<!doctype html><html lang=\"pt-BR\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">\n<title>CRM Toda Bonita</title><style>\n*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#f4f1ee;color:#1f2937}\nheader{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px;background:#3b2a25;color:#fff;flex-wrap:wrap}\nheader h1{font-size:18px;margin:0}header .n{font-size:13px;opacity:.85}header a{color:#fff;background:#ffffff22;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:13px}\n.board{display:flex;gap:12px;padding:14px;overflow-x:auto;align-items:flex-start}\n.col{min-width:270px;max-width:300px;flex:1;background:#ebe5df;border-radius:12px;padding:10px}\n.col h2{font-size:14px;margin:2px 4px 10px;display:flex;justify-content:space-between}.col h2 span{border-radius:10px;padding:0 8px;color:#fff;font-size:12px;line-height:20px}\n.card{background:#fff;border-radius:10px;padding:10px;margin-bottom:10px;box-shadow:0 1px 2px #0001;font-size:13px}\n.top{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}.top a{color:#16a34a;text-decoration:none;white-space:nowrap}\n.int{background:#fdf2e9;border-radius:6px;padding:4px 6px;margin-bottom:6px}.ag{font-weight:600;margin-bottom:6px}\n.res{color:#4b5563;margin-bottom:6px}.meta{color:#9ca3af;font-size:11px;margin-bottom:6px}\nform{display:grid;gap:6px}select,textarea,button{font:inherit;font-size:12px;border:1px solid #ddd;border-radius:6px;padding:5px}\ntextarea{min-height:34px;resize:vertical}button{background:#3b2a25;color:#fff;border:0;cursor:pointer}\n.vazio{color:#9ca3af;font-size:12px;text-align:center;padding:12px}\n</style></head><body>\n<header><div><h1>CRM · Toda Bonita Mega Hair</h1><div class=\"n\">${rows.length} ${rows.length === 1 ? 'cliente' : 'clientes'} · atualizado ${fmt(new Date(), \"dd/LL HH'h'mm\")}</div></div><a href=\"/webhook/crm\">↻ Atualizar</a></header>\n<div class=\"board\">${ETAPAS.map(([k, n, c]) => `<section class=\"col\"><h2>${n}<span style=\"background:${c}\">${col(k).length}</span></h2>${col(k).map(card).join('') || '<div class=\"vazio\">—</div>'}</section>`).join('')}</div>\n</body></html>`;\nreturn [{ json: { html } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000075",
+      "name": "Responder painel",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.html }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000076",
+      "name": "Salvar ficha (form)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        300
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "crm-salvar",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "5f607182-93a4-4b5c-9d4e-051627384950"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000077",
+      "name": "Salvar etapa e anotações",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        220,
+        300
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE clientes SET etapa = $2, observacoes = NULLIF($3, ''), atualizado_em = now() WHERE telefone = $1",
+        "options": {
+          "queryReplacement": "={{ [ $json.body.telefone, $json.body.etapa, $json.body.observacoes || '' ] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "zzYnr5Tvb8vIFf4H",
+          "name": "CRM Postgres"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000078",
+      "name": "Voltar ao painel",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        440,
+        300
+      ],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "<!doctype html><meta charset=\"utf-8\"><meta http-equiv=\"refresh\" content=\"0;url=/webhook/crm\"><p style=\"font-family:sans-serif\">Salvo! Voltando ao painel…</p>",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "text/html; charset=utf-8"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Abrir painel": {
+      "main": [
+        [
+          {
+            "node": "Ler clientes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler clientes": {
+      "main": [
+        [
+          {
+            "node": "Montar painel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar painel": {
+      "main": [
+        [
+          {
+            "node": "Responder painel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar ficha (form)": {
+      "main": [
+        [
+          {
+            "node": "Salvar etapa e anotações",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Salvar etapa e anotações": {
+      "main": [
+        [
+          {
+            "node": "Voltar ao painel",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all"
+  }
+}

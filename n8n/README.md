@@ -2,6 +2,8 @@
 
 Responsável: Victor
 
+**Demo atual:** `demo-agente/` — "Demo Salão - Agente WhatsApp" (n8n + Evolution API rodando local no Docker). Veja `demo-agente/README.md`. Para rodar, copie `.env.example` para `.env` e preencha.
+
 Workflows exportados em JSON (n8n → menu do workflow → Download). **Antes de exportar, confira que nenhuma chave aparece no JSON** — credenciais ficam só dentro do n8n.
 
 | Arquivo | O que faz |
