@@ -60,7 +60,7 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) =>
   const M = "$('Montar entrada').item.json";
   workflow.nodes.push(
     supa('Supabase: ficha da cliente', 'GET',
-      'clientes_status?select=id,nome,status,ultima_visita,total_visitas,proximo_agendamento,retorno_previsto,observacoes' +
+      'clientes_status?select=id,nome,status,criado_em,ultima_visita,total_visitas,proximo_agendamento,retorno_previsto,observacoes' +
       `&empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${M}.telefone`)} }}`, null),
     supa('Supabase: histórico da cliente', 'GET',
       'agendamentos?select=inicio,status,retorno_previsto,servicos(nome)&status=neq.cancelado&order=inicio.desc&limit=12' +
@@ -71,7 +71,12 @@ const ficha = $('Supabase: ficha da cliente').first().json;
 const hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);
 const dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');
 const data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');
-if (!ficha.id) return [{ json: { texto: 'Cliente nova: nunca falou com o salão antes e não tem histórico.' } }];
+const NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';
+if (!ficha.id) return [{ json: { texto: NOVA } }];
+// A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então "sem visita" sozinho não diz se é nova:
+// nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).
+const recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });
+if (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: NOVA + (ficha.observacoes ? '\nObservações da Gleide: ' + ficha.observacoes : '') } }];
 
 const SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',
   inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };
