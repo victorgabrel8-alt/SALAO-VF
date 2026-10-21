@@ -13,14 +13,14 @@ export type Atendimento = {
   google_event_id: string | null;
   profissional_id: string | null;
   observacoes: string | null;
-  valor: number | null;
-  clientes: { id: string; nome: string | null; telefone: string; etiquetas: string[] } | null;
-  servicos: { nome: string; preco: number | null } | null;
-  profissionais: { nome: string } | null;
+  clientes: { id: string; nome: string | null; telefone: string; etiquetas: string[]; observacoes: string | null } | null;
+  servicos: { nome: string } | null;
 };
 
+// Sem valores: o painel do salão controla atendimentos, não dinheiro (a tabela de preços
+// fica com a profissional e a IA)
 const CAMPOS =
-  "id, inicio, fim, status, origem, google_event_id, profissional_id, observacoes, valor, clientes (id, nome, telefone, etiquetas), servicos (nome, preco), profissionais (nome)";
+  "id, inicio, fim, status, origem, google_event_id, profissional_id, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
 
 // Atendimentos de um dia (no fuso do salão), em ordem de horário
 export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {

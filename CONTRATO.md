@@ -30,6 +30,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 | "Hoje" | sempre no fuso do salão | função `hoje_cuiaba()` |
 | Empresa | todo registro tem `empresa_id` | demo: `00000000-0000-0000-0000-000000000001` |
 | Número de alerta | `empresas.config.whatsapp_alerta`, mesmo formato do telefone (ou `null`) | `5566996834918` (José Paulo, até configurar o da dona) |
+| Horário de almoço | `empresas.config.almoco = {"inicio":"11:00","fim":"13:00"}` (sem nada salvo, o app usa 11:00–13:00; `null` desliga). O app não deixa marcar/reagendar nesse intervalo; **a IA também não deve oferecer esses horários** | `{"inicio":"11:00","fim":"13:00"}` |
 | Limite do celular | `empresas.config.dias_limite_celular` (padrão 30): no celular da dona, atrasadas há mais que isso (contando da **data de retorno**) só aparecem no CRM do computador | `30` |
 
 ---

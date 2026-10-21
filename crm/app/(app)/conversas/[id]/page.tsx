@@ -108,26 +108,28 @@ function ConversaCliente() {
       ? `até ${dataNoSalao(cliente.ia_pausada_ate) === hojeNoSalao() ? "hoje" : "amanhã"} às ${formatarHora(cliente.ia_pausada_ate)}`
       : "";
 
-  // Visual inspirado no WhatsApp: barra de cima com foto e nome, fundo bege,
-  // balões brancos (cliente) e verdes (IA / você), e uma barra de baixo com as ações.
+  // Visual próprio do app: topo branco com a cliente e a situação da IA, fundo claro com
+  // textura leve, balões por autor (cliente / IA / você) e as ações num cartão flutuante.
   return (
-    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-[#efeae2] pt-[env(safe-area-inset-top)]">
-      <header className="sticky top-0 z-10 flex items-center gap-2 border-b border-neutral-200 bg-[#f6f6f6] px-2 py-2">
+    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-[#f5f3f1] bg-[radial-gradient(#e6e1dc_1px,transparent_1px)] [background-size:18px_18px] pt-[env(safe-area-inset-top)]">
+      <header className="sticky top-0 z-10 flex items-center gap-2 bg-white/95 px-2 py-2 shadow-sm backdrop-blur">
         <Link
           href="/conversas"
           aria-label="Voltar para Conversas"
-          className="flex h-11 w-9 shrink-0 items-center justify-center text-3xl text-[#1da851]"
+          className="flex h-11 w-9 shrink-0 items-center justify-center text-3xl text-[var(--cor-principal)]"
         >
           ‹
         </Link>
-        <Link href={`/clientes/${cliente.id}`} className="flex min-w-0 flex-1 items-center gap-2">
-          <Avatar id={cliente.id} nome={cliente.nome} tamanho="h-10 w-10 text-base" />
+        <Link href={`/clientes/${cliente.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="relative shrink-0">
+            <Avatar id={cliente.id} nome={cliente.nome} tamanho="h-11 w-11 text-base" />
+            <span className={`absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${selo.ponto}`} />
+          </span>
           <div className="min-w-0">
             <p className="truncate text-[17px] leading-tight font-semibold">
               {cliente.nome ?? formatarTelefone(cliente.telefone)}
             </p>
-            <p className="flex items-center gap-1 truncate text-xs text-neutral-500">
-              <span className={`h-2 w-2 shrink-0 rounded-full ${selo.ponto}`} />
+            <p className="truncate text-xs text-neutral-500">
               {selo.rotulo}
               {pausaAte && ` · ${pausaAte}`}
             </p>
@@ -135,22 +137,26 @@ function ConversaCliente() {
         </Link>
         <Link
           href={`/clientes/${cliente.id}`}
-          className="flex h-9 shrink-0 items-center rounded-full px-3 text-sm font-semibold text-[#1da851] active:bg-neutral-200"
+          className="flex h-9 shrink-0 items-center rounded-full border border-neutral-200 px-3 text-sm font-semibold text-neutral-700 active:bg-neutral-100"
         >
           Ficha
         </Link>
       </header>
 
       {/* Só leitura: o app não envia mensagem; a dona responde pelo WhatsApp Business */}
-      <div className="space-y-1.5 px-3 py-3">
-        <Etiquetas etiquetas={cliente.etiquetas} className="mb-2 justify-center" />
+      <div className="space-y-1 px-3 py-4">
+        {/* Etiquetas e aviso no começo, como um "cartão" da cliente */}
+        {cliente.etiquetas.length > 0 && <Etiquetas etiquetas={cliente.etiquetas} className="mb-3 justify-center" />}
         {situacao === "precisa" && cliente.motivo_pausa && (
-          <p className="mx-auto mb-2 w-fit max-w-[90%] rounded-lg bg-[#fff3c4] px-3 py-1.5 text-center text-sm text-neutral-800 shadow-sm">
-            ⚠️ {MOTIVOS_PRECISA[cliente.motivo_pausa]}. A IA parou de responder.
-          </p>
+          <div className="mx-auto mb-3 flex max-w-[92%] items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <span aria-hidden>⚠️</span>
+            <p>
+              <strong>{MOTIVOS_PRECISA[cliente.motivo_pausa]}.</strong> A IA parou de responder — responda pelo WhatsApp.
+            </p>
+          </div>
         )}
         {mensagens.length === 0 && (
-          <p className="mx-auto w-fit rounded-lg bg-white px-3 py-1.5 text-sm text-neutral-500 shadow-sm">
+          <p className="mx-auto w-fit rounded-full bg-white px-4 py-1.5 text-sm text-neutral-500 shadow-sm">
             Nenhuma mensagem ainda.
           </p>
         )}
@@ -159,46 +165,73 @@ function ConversaCliente() {
           const novoDia = i === 0 || dataNoSalao(mensagens[i - 1].criado_em) !== dia;
           const mesmoAutor = i > 0 && !novoDia && mensagens[i - 1].autor === m.autor;
           return (
-            <div key={m.id} className={mesmoAutor ? "" : "pt-1.5"}>
+            <div key={m.id} className={mesmoAutor ? "" : "pt-2"}>
               {novoDia && (
-                <p className="mx-auto my-3 w-fit rounded-lg bg-white px-3 py-1 text-xs font-medium text-neutral-600 shadow-sm">
-                  {dia === hojeNoSalao() ? "Hoje" : formatarDiaLongo(dia)}
-                </p>
+                <div className="my-3 flex items-center gap-3 px-6">
+                  <span className="h-px flex-1 bg-neutral-300/70" />
+                  <span className="text-xs font-semibold text-neutral-500">
+                    {dia === hojeNoSalao() ? "Hoje" : formatarDiaLongo(dia)}
+                  </span>
+                  <span className="h-px flex-1 bg-neutral-300/70" />
+                </div>
               )}
-              <Balao mensagem={m} comPonta={!mesmoAutor} />
+              <Balao mensagem={m} primeiro={!mesmoAutor} />
             </div>
           );
         })}
-        <div ref={fim} className="h-20" />
+        <div ref={fim} className="h-28" />
       </div>
 
-      {/* Barra de baixo (no lugar do campo de digitar do WhatsApp) */}
-      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-10 mx-auto flex max-w-xl gap-2 bg-[#f6f6f6] px-3 py-2">
-        <button
-          onClick={alternarIa}
-          disabled={salvando}
-          className="h-11 shrink-0 rounded-full border border-neutral-300 bg-white px-4 font-semibold active:bg-neutral-100 disabled:opacity-50"
-        >
-          {cliente.ia_pausada ? "Reativar IA" : "Pausar IA"}
-        </button>
-        <button
-          onClick={() => abrirWhatsApp(cliente.telefone)}
-          className="h-11 flex-1 rounded-full bg-[#1da851] font-semibold text-white active:bg-[#178a43]"
-        >
-          Responder no WhatsApp
-        </button>
+      {/* Ações num cartão flutuante acima da barra de abas */}
+      <div className="fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)] z-10 mx-auto max-w-xl px-3">
+        <div className="flex gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-lg">
+          <button
+            onClick={alternarIa}
+            disabled={salvando}
+            className={`h-12 shrink-0 rounded-xl px-4 font-semibold disabled:opacity-50 ${
+              cliente.ia_pausada ? "bg-violet-50 text-violet-700 active:bg-violet-100" : "bg-neutral-100 text-neutral-700 active:bg-neutral-200"
+            }`}
+          >
+            {cliente.ia_pausada ? "▶ Reativar IA" : "⏸ Pausar IA"}
+          </button>
+          <button
+            onClick={() => abrirWhatsApp(cliente.telefone)}
+            className="h-12 flex-1 rounded-xl bg-emerald-600 font-semibold text-white active:bg-emerald-700"
+          >
+            Responder no WhatsApp
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-const AUTOR: Record<Mensagem["autor"], { rotulo: string; lado: string; balao: string; ponta: string }> = {
-  cliente: { rotulo: "Cliente", lado: "justify-start", balao: "bg-white", ponta: "rounded-tl-none" },
-  ia: { rotulo: "IA", lado: "justify-end", balao: "bg-[#d9fdd3]", ponta: "rounded-tr-none" },
-  humano: { rotulo: "Você", lado: "justify-end", balao: "bg-[#d9fdd3]", ponta: "rounded-tr-none" },
+// Cada autor tem um balão com cor e lado próprios
+const AUTOR: Record<Mensagem["autor"], { rotulo: string; lado: string; balao: string; canto: string; etiqueta: string }> = {
+  cliente: {
+    rotulo: "",
+    lado: "justify-start",
+    balao: "bg-white text-neutral-900",
+    canto: "rounded-bl-md",
+    etiqueta: "",
+  },
+  ia: {
+    rotulo: "✨ IA",
+    lado: "justify-end",
+    balao: "border border-violet-100 bg-violet-50 text-neutral-900",
+    canto: "rounded-br-md",
+    etiqueta: "text-violet-600",
+  },
+  humano: {
+    rotulo: "Você",
+    lado: "justify-end",
+    balao: "chip-ativo text-neutral-900",
+    canto: "rounded-br-md",
+    etiqueta: "text-[var(--cor-principal)]",
+  },
 };
 
-function Balao({ mensagem: m, comPonta }: { mensagem: Mensagem; comPonta: boolean }) {
+function Balao({ mensagem: m, primeiro }: { mensagem: Mensagem; primeiro: boolean }) {
   const a = AUTOR[m.autor];
   const texto =
     m.tipo === "audio"
@@ -208,20 +241,11 @@ function Balao({ mensagem: m, comPonta }: { mensagem: Mensagem; comPonta: boolea
         : (m.conteudo ?? "(mensagem sem texto)");
   return (
     <div className={`flex ${a.lado}`}>
-      <div className={`max-w-[82%] rounded-lg px-2.5 pt-1.5 pb-1 shadow-sm ${a.balao} ${comPonta ? a.ponta : ""}`}>
+      <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 shadow-sm ${a.balao} ${primeiro ? a.canto : ""}`}>
         {/* Quem respondeu: a IA ou a dona */}
-        {m.autor !== "cliente" && comPonta && (
-          <p className={`text-xs font-semibold ${m.autor === "ia" ? "text-violet-600" : "text-[#1da851]"}`}>{a.rotulo}</p>
-        )}
-        <p className="text-[15px] leading-snug whitespace-pre-wrap text-neutral-900">
-          {texto}
-          {/* Espaço para a hora caber na última linha, como no WhatsApp */}
-          <span className="inline-block w-14" />
-        </p>
-        <p className="-mt-4 text-right text-[11px] text-neutral-500">
-          {formatarHora(m.criado_em)}
-          {m.autor !== "cliente" && <span className="ml-1 text-sky-500">✓✓</span>}
-        </p>
+        {a.rotulo && primeiro && <p className={`mb-0.5 text-xs font-bold ${a.etiqueta}`}>{a.rotulo}</p>}
+        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{texto}</p>
+        <p className="mt-0.5 text-right text-[11px] text-neutral-400">{formatarHora(m.criado_em)}</p>
       </div>
     </div>
   );

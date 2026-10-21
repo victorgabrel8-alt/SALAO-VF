@@ -4,24 +4,12 @@ import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
 import { BotaoFlutuante } from "@/components/BotaoFlutuante";
 import { Cabecalho } from "@/components/Cabecalho";
-import { CartaoAtendimento } from "@/components/CartaoAtendimento";
 import { FormAtendimento } from "@/components/FormAtendimento";
-import {
-  buscarAtendimentosDoDia,
-  buscarReagendadosDoDia,
-  corDaProfissional,
-  type Atendimento,
-} from "@/lib/atendimentos";
+import { Observacao } from "@/components/Observacao";
+import { buscarAtendimentosDoDia, type Atendimento } from "@/lib/atendimentos";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
-import {
-  formatarData,
-  formatarDiaLongo,
-  formatarHora,
-  formatarTelefone,
-  hojeNoSalao,
-  inicioDoDia,
-} from "@/lib/formato";
+import { formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, inicioDoDia } from "@/lib/formato";
 import { PontoStatus } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
@@ -35,15 +23,10 @@ const MOTIVOS: Record<string, string> = {
 
 type Precisa = { id: string; nome: string | null; telefone: string; motivo_pausa: string };
 
-type Resolvido = "realizado" | "faltou" | "cancelado" | "reagendado";
-
 type Resumo = {
   precisam: Precisa[];
   // Só os horários que ainda esperam a dona (status "agendado")
   hoje: Atendimento[];
-  // Os que já foram resolvidos hoje saem da lista e vão para estas abas
-  resolvidos: Record<Resolvido, Atendimento[]>;
-  ordemProfissionais: string[];
   iaConversou: number;
   iaMarcou: number;
 };
@@ -53,7 +36,7 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   const hoje = hojeNoSalao();
   const desde = inicioDoDia(hoje);
   // Leve: não baixa a lista de clientes, só quem precisa da dona agora
-  const [clientes, atendimentos, reagendados, profissionais, mensagensIa, marcadosIa] = await Promise.all([
+  const [clientes, atendimentos, mensagensIa, marcadosIa] = await Promise.all([
     db
       .from("clientes_status")
       .select("id, nome, telefone, motivo_pausa, etiquetas")
@@ -61,8 +44,6 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
       .eq("ia_pausada", true)
       .in("motivo_pausa", Object.keys(MOTIVOS)),
     buscarAtendimentosDoDia(empresaId, hoje),
-    buscarReagendadosDoDia(empresaId, hoje),
-    db.from("profissionais").select("id").eq("empresa_id", empresaId).order("nome"),
     db.from("mensagens").select("cliente_id").eq("empresa_id", empresaId).eq("autor", "ia").gte("criado_em", desde),
     db
       .from("agendamentos")
@@ -71,22 +52,13 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
       .eq("origem", "ia")
       .gte("criado_em", desde),
   ]);
-  const erro = clientes.error ?? profissionais.error ?? mensagensIa.error ?? marcadosIa.error;
+  const erro = clientes.error ?? mensagensIa.error ?? marcadosIa.error;
   if (erro) return { erro: erro.message };
   if (atendimentos.erro) return { erro: atendimentos.erro };
-  if (reagendados.erro) return { erro: reagendados.erro };
-  const doDia = atendimentos.atendimentos;
 
   return {
     precisam: (clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas)) as Precisa[],
-    hoje: doDia.filter((a) => a.status === "agendado"),
-    resolvidos: {
-      realizado: doDia.filter((a) => a.status === "realizado"),
-      faltou: doDia.filter((a) => a.status === "faltou"),
-      cancelado: doDia.filter((a) => a.status === "cancelado"),
-      reagendado: reagendados.atendimentos,
-    },
-    ordemProfissionais: (profissionais.data ?? []).map((p) => p.id),
+    hoje: atendimentos.atendimentos.filter((a) => a.status === "agendado"),
     iaConversou: new Set((mensagensIa.data ?? []).map((m) => m.cliente_id)).size,
     iaMarcou: marcadosIa.count ?? 0,
   };
@@ -119,71 +91,6 @@ function Numero({ valor, rotulo, href }: { valor: number; rotulo: string; href?:
     </Link>
   ) : (
     <div className="rounded-xl bg-neutral-50 p-3">{conteudo}</div>
-  );
-}
-
-const ABAS_RESOLVIDOS: { chave: Resolvido; rotulo: string; vazio: string }[] = [
-  { chave: "realizado", rotulo: "Realizados", vazio: "Nenhum atendimento realizado hoje ainda." },
-  { chave: "faltou", rotulo: "Faltaram", vazio: "Ninguém faltou hoje." },
-  { chave: "cancelado", rotulo: "Cancelados", vazio: "Nenhum horário cancelado hoje." },
-  { chave: "reagendado", rotulo: "Reagendados", vazio: "Nenhum horário de hoje foi reagendado." },
-];
-
-// Horários de hoje que já foram resolvidos, separados em quatro abas. Tocar de novo no
-// botão do status (ex.: "Realizado") desfaz e o horário volta para "Para atender hoje".
-function ResolvidosHoje({
-  resolvidos,
-  ordemProfissionais,
-  aoMudar,
-}: {
-  resolvidos: Record<Resolvido, Atendimento[]>;
-  ordemProfissionais: string[];
-  aoMudar: () => void;
-}) {
-  const [aba, setAba] = useState<Resolvido>("realizado");
-  const atual = ABAS_RESOLVIDOS.find((a) => a.chave === aba)!;
-  const lista = resolvidos[aba];
-
-  return (
-    <Caixa titulo="Resolvidos hoje">
-      <div className="grid grid-cols-2 gap-2">
-        {ABAS_RESOLVIDOS.map((a) => (
-          <button
-            key={a.chave}
-            onClick={() => setAba(a.chave)}
-            aria-pressed={aba === a.chave}
-            className={`h-11 rounded-xl font-semibold ${
-              aba === a.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
-            }`}
-          >
-            {a.rotulo} ({resolvidos[a.chave].length})
-          </button>
-        ))}
-      </div>
-
-      <div className="mt-3 space-y-3">
-        {lista.length === 0 && <p className="text-neutral-500">{atual.vazio}</p>}
-        {aba === "reagendado"
-          ? lista.map((a) => (
-              <div key={a.id} className="rounded-xl bg-neutral-50 p-3">
-                <p className="font-semibold">{a.clientes?.nome ?? "Cliente"}</p>
-                <p className="text-sm text-neutral-600">{a.servicos?.nome ?? "Serviço não informado"}</p>
-                <p className="text-sm">
-                  Nova data: <strong>{formatarData(a.inicio).slice(0, 5)} às {formatarHora(a.inicio)}</strong>
-                </p>
-              </div>
-            ))
-          : lista.map((a) => (
-              <CartaoAtendimento
-                key={a.id}
-                atendimento={a}
-                cor={corDaProfissional(a.profissional_id, ordemProfissionais).borda}
-                aoMudar={aoMudar}
-                permitirExcluir
-              />
-            ))}
-      </div>
-    </Caixa>
   );
 }
 
@@ -271,38 +178,31 @@ export default function InicioPage() {
             </Caixa>
           )}
 
-          {/* Os horários já são caixinhas: ficam soltos, sem outra caixa em volta */}
-          <section className="space-y-3 px-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Para atender hoje</h2>
-              <span className="text-sm text-neutral-500">{resumo.hoje.length}</span>
-            </div>
-            {resumo.hoje.length === 0 && (
-              <p className="rounded-2xl border border-neutral-200 bg-white p-4 text-neutral-500">
-                {Object.values(resumo.resolvidos).some((l) => l.length > 0)
-                  ? "Todos os horários de hoje já foram resolvidos."
-                  : "Nenhum horário para hoje."}
-              </p>
+          {/* Para atender hoje: só horário e nome. As ações (realizado, faltou...) ficam na Agenda. */}
+          <Caixa titulo="Para atender hoje" extra={<span className="text-sm text-neutral-500">{resumo.hoje.length}</span>}>
+            {resumo.hoje.length === 0 ? (
+              <p className="text-neutral-500">Ninguém esperando atendimento hoje.</p>
+            ) : (
+              <ul className="divide-y divide-neutral-100">
+                {resumo.hoje.map((a) => (
+                  <li key={a.id}>
+                    <Link
+                      href={a.clientes ? `/clientes/${a.clientes.id}` : "/agenda"}
+                      className="flex items-start gap-4 py-3 active:bg-neutral-50"
+                    >
+                      <span className="w-14 shrink-0 text-lg font-bold">{formatarHora(a.inicio)}</span>
+                      <span className="min-w-0">
+                        <span className="block truncate text-lg font-semibold">
+                          {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
+                        </span>
+                        <Observacao texto={a.clientes?.observacoes} />
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             )}
-            <div className="space-y-3">
-              {resumo.hoje.map((a) => (
-                <CartaoAtendimento
-                  key={a.id}
-                  atendimento={a}
-                  cor={corDaProfissional(a.profissional_id, resumo.ordemProfissionais).borda}
-                  aoMudar={recarregar}
-                  permitirExcluir
-                />
-              ))}
-            </div>
-          </section>
-
-          <ResolvidosHoje
-            resolvidos={resumo.resolvidos}
-            ordemProfissionais={resumo.ordemProfissionais}
-            aoMudar={recarregar}
-          />
-
+          </Caixa>
         </div>
       )}
 

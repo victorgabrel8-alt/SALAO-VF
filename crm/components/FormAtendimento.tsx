@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida, restaurarCliente } from "@/lib/excluidas";
 import {
@@ -14,9 +15,8 @@ import {
   telefoneValido,
 } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
-import type { Profissional } from "@/lib/tipos";
 
-type Servico = { id: string; nome: string; preco: number | null; dias_retorno: number | null };
+type Servico = { id: string; nome: string; dias_retorno: number | null; duracao_min: number };
 type ClienteBusca = { id: string; nome: string | null; telefone: string; etiquetas: string[] };
 
 // "registrar": cliente que já foi atendida (chegou sem agendar) -> grava como realizado, padrão agora.
@@ -41,7 +41,6 @@ export function FormAtendimento({
   const agora = agoraNoSalao();
 
   const [servicos, setServicos] = useState<Servico[]>([]);
-  const [profissionais, setProfissionais] = useState<Profissional[]>([]);
 
   const [busca, setBusca] = useState("");
   const [resultados, setResultados] = useState<ClienteBusca[]>([]);
@@ -51,7 +50,6 @@ export function FormAtendimento({
   const [telefoneNova, setTelefoneNova] = useState("");
 
   const [servicoId, setServicoId] = useState("");
-  const [profissionalId, setProfissionalId] = useState("");
   const [data, setData] = useState(dia ?? agora.data);
   const [hora, setHora] = useState(horaInicial ?? (modo === "registrar" ? agora.hora : "09:00"));
 
@@ -65,22 +63,17 @@ export function FormAtendimento({
   const [salvando, setSalvando] = useState(false);
 
   const servico = servicos.find((s) => s.id === servicoId);
+  const almocoDoSalao = lerAlmoco(empresa.config);
   const retornoPrevisto = servico?.dias_retorno ? somarDias(data, servico.dias_retorno) : null;
 
   useEffect(() => {
     const db = supabase();
     db.from("servicos")
-      .select("id, nome, preco, dias_retorno")
+      .select("id, nome, dias_retorno, duracao_min")
       .eq("empresa_id", empresa.id)
       .eq("ativo", true)
       .order("nome")
       .then(({ data }) => setServicos((data ?? []) as Servico[]));
-    db.from("profissionais")
-      .select("id, nome")
-      .eq("empresa_id", empresa.id)
-      .eq("ativo", true)
-      .order("nome")
-      .then(({ data }) => setProfissionais((data ?? []) as Profissional[]));
   }, [empresa.id]);
 
   // Busca por nome ou telefone enquanto a dona digita
@@ -152,6 +145,17 @@ export function FormAtendimento({
       setErro("Escolha o serviço.");
       return;
     }
+    // Não marca horário no almoço (registrar um atendimento que já aconteceu continua liberado)
+    const almoco = lerAlmoco(empresa.config);
+    const duracao = servico?.duracao_min ?? 60;
+    if (almoco && modo === "agendar" && conflitaComAlmoco(almoco, hora, duracao)) {
+      setErro(avisoAlmoco(almoco));
+      return;
+    }
+    if (almoco && modo === "registrar" && marcarRetorno && conflitaComAlmoco(almoco, retornoHora ?? hora, duracao)) {
+      setErro(`O horário do retorno cai no almoço (${almoco.inicio} às ${almoco.fim}). Escolha outro.`);
+      return;
+    }
     setSalvando(true);
     const clienteId = await clienteEscolhida();
     if (!clienteId) {
@@ -163,7 +167,8 @@ export function FormAtendimento({
       empresa_id: empresa.id,
       cliente_id: clienteId,
       servico_id: servicoId,
-      profissional_id: profissionalId || null,
+      // Sem escolha de profissional no app da dona
+      profissional_id: null,
       origem: "manual",
     };
     const novos = [
@@ -171,7 +176,8 @@ export function FormAtendimento({
         ...base,
         inicio: instanteNoSalao(data, hora),
         status: realizado ? "realizado" : "agendado",
-        valor: realizado ? (servico?.preco ?? null) : null,
+        // Sem valor: o app não controla dinheiro
+        valor: null,
       },
     ];
     const diaRetorno = retornoData ?? retornoPrevisto;
@@ -282,23 +288,6 @@ export function FormAtendimento({
           </div>
         </section>
 
-        {/* Profissional */}
-        <section className="space-y-2">
-          <h3 className="text-lg font-semibold">Profissional</h3>
-          <div className="flex flex-wrap gap-2">
-            {profissionais.map((p) => (
-              <button
-                key={p.id}
-                onClick={() => setProfissionalId(profissionalId === p.id ? "" : p.id)}
-                aria-pressed={profissionalId === p.id}
-                className={chip(profissionalId === p.id)}
-              >
-                {p.nome}
-              </button>
-            ))}
-          </div>
-        </section>
-
         {/* Quando */}
         <section className="grid grid-cols-2 gap-3">
           <label className="block space-y-1">
@@ -310,6 +299,14 @@ export function FormAtendimento({
             <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={campo} />
           </label>
         </section>
+        {/* Aviso na hora, antes de salvar */}
+        {modo === "agendar" &&
+          almocoDoSalao &&
+          conflitaComAlmoco(almocoDoSalao, hora, servico?.duracao_min ?? 60) && (
+            <p className="-mt-3 text-sm font-medium text-amber-700">
+              Cai no almoço ({almocoDoSalao.inicio} às {almocoDoSalao.fim}).
+            </p>
+          )}
 
         {/* Retorno: aparece assim que a dona escolhe o serviço */}
         {modo === "registrar" && servico && (

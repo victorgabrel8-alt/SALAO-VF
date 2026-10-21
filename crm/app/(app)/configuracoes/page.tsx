@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Cabecalho, EmBreve } from "@/components/Cabecalho";
+import { lerAlmoco } from "@/lib/almoco";
 import { BotaoSair, useEmpresa } from "@/lib/empresa";
 import { formatarTelefone, normalizarTelefone, telefoneValido } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
@@ -20,6 +21,7 @@ export default function ConfiguracoesPage() {
       />
       <div className="space-y-4">
         <AlertaWhatsApp />
+        <HorarioAlmoco />
         <Link
           href="/configuracoes/excluidas"
           className="mx-4 flex h-14 items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 shadow-sm active:bg-neutral-50"
@@ -35,6 +37,82 @@ export default function ConfiguracoesPage() {
         </div>
       </div>
     </>
+  );
+}
+
+// Salva um pedaço de empresas.config sem apagar o resto
+async function salvarConfig(empresaId: string, mudanca: Record<string, unknown>) {
+  const db = supabase();
+  const atual = await db.from("empresas").select("config").eq("id", empresaId).single();
+  if (atual.error) return atual.error.message;
+  const config = { ...(atual.data.config as Record<string, unknown>), ...mudanca };
+  const { error } = await db.from("empresas").update({ config }).eq("id", empresaId);
+  return error?.message;
+}
+
+// Horário de almoço: a Agenda não deixa marcar nem reagendar nesse intervalo, e a IA
+// também deve respeitar (empresas.config.almoco, ver CONTRATO.md)
+function HorarioAlmoco() {
+  const empresa = useEmpresa();
+  const inicial = lerAlmoco(empresa.config);
+  const [ativo, setAtivo] = useState(inicial !== null);
+  const [inicio, setInicio] = useState(inicial?.inicio ?? "11:00");
+  const [fim, setFim] = useState(inicial?.fim ?? "13:00");
+  const [aviso, setAviso] = useState("");
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    setAviso("");
+    if (ativo && inicio >= fim) {
+      setAviso("O fim do almoço precisa ser depois do começo.");
+      return;
+    }
+    setSalvando(true);
+    const erro = await salvarConfig(empresa.id, { almoco: ativo ? { inicio, fim } : null });
+    setSalvando(false);
+    setAviso(erro ? `Não foi possível salvar: ${erro}` : "Salvo ✓");
+  }
+
+  const campo = "h-12 w-full rounded-xl border border-neutral-300 bg-white px-3 text-lg";
+
+  return (
+    <section className="mx-4 space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-lg font-semibold">Horário de almoço</h2>
+          <p className="text-neutral-600">Nesse intervalo não dá para marcar horário.</p>
+        </div>
+        <button
+          onClick={() => setAtivo(!ativo)}
+          role="switch"
+          aria-checked={ativo}
+          aria-label="Bloquear horário de almoço"
+          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${ativo ? "bg-[var(--cor-principal)]" : "bg-neutral-300"}`}
+        >
+          <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${ativo ? "left-7" : "left-1"}`} />
+        </button>
+      </div>
+      {ativo && (
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block space-y-1">
+            <span className="font-medium">Começa</span>
+            <input type="time" value={inicio} onChange={(e) => setInicio(e.target.value)} className={campo} />
+          </label>
+          <label className="block space-y-1">
+            <span className="font-medium">Termina</span>
+            <input type="time" value={fim} onChange={(e) => setFim(e.target.value)} className={campo} />
+          </label>
+        </div>
+      )}
+      <button
+        onClick={salvar}
+        disabled={salvando}
+        className="h-12 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
+      >
+        {salvando ? "Salvando…" : "Salvar almoço"}
+      </button>
+      {aviso && <p className="text-center font-medium">{aviso}</p>}
+    </section>
   );
 }
 

@@ -1,7 +1,7 @@
-// Painel CRM da agência (computador). A cor segue a do app da dona.
+// Painel CRM da agência (computador). Cor própria (azul anil), diferente do rosa do app da dona.
 export const SALAO = {
   nomeApp: "Painel CRM",
-  corPrincipal: "#be185d",
+  corPrincipal: "#4f46e5",
   icone: "/icone-192.png",
 };
 

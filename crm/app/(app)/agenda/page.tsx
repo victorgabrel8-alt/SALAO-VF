@@ -1,10 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { BotaoFlutuante } from "@/components/BotaoFlutuante";
-import { CartaoAtendimento } from "@/components/CartaoAtendimento";
 import { Etiquetas } from "@/components/Etiquetas";
-import { FormAtendimento } from "@/components/FormAtendimento";
+import { Observacao } from "@/components/Observacao";
 import {
   buscarAtendimentosDoDia,
   buscarDiasComHorario,
@@ -15,8 +14,17 @@ import {
   type Atendimento,
   type StatusAtendimento,
 } from "@/lib/atendimentos";
+import { lerAlmoco, textoAlmoco } from "@/lib/almoco";
 import { useEmpresa } from "@/lib/empresa";
-import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao, somarDias } from "@/lib/formato";
+import {
+  dataNoSalao,
+  formatarData,
+  formatarHora,
+  formatarTelefone,
+  hojeNoSalao,
+  instanteNoSalao,
+  somarDias,
+} from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
 import type { Profissional } from "@/lib/tipos";
@@ -69,6 +77,10 @@ async function buscarDia(empresaId: string, dia: string): Promise<Dia> {
   };
 }
 
+type Entrada =
+  | { tipo: "atendimento"; atendimento: Atendimento; inicio: number; fim: number }
+  | { tipo: "almoco"; inicio: number; fim: number };
+
 function minutos(a: Atendimento): number {
   if (!a.fim) return 60;
   return Math.max(15, Math.round((Date.parse(a.fim) - Date.parse(a.inicio)) / 60_000));
@@ -86,7 +98,6 @@ export default function AgendaPage() {
   const [camada, setCamada] = useState<Camada>("todos");
   const [resultado, setResultado] = useState<{ dia: string; dados: Dia } | null>(null);
   const [versao, setVersao] = useState(0);
-  const [novo, setNovo] = useState<{ hora?: string } | null>(null);
   const [aberto, setAberto] = useState<string | null>(null);
   const recarregar = () => setVersao((v) => v + 1);
 
@@ -120,6 +131,26 @@ export default function AgendaPage() {
   };
   const lista = !ok ? [] : camada === "todos" ? ok.atendimentos : ok.atendimentos.filter((a) => a.status === camada);
   const selecionado = ok?.atendimentos.find((a) => a.id === aberto) ?? null;
+
+  // Linha do tempo: os horários e, em "Todos", o bloco do almoço no lugar certo
+  const almoco = lerAlmoco(empresa.config);
+  const entradas: Entrada[] = [
+    ...lista.map((a) => ({
+      tipo: "atendimento" as const,
+      atendimento: a,
+      inicio: Date.parse(a.inicio),
+      fim: Date.parse(a.inicio) + minutos(a) * 60_000,
+    })),
+    ...(almoco && camada === "todos"
+      ? [
+          {
+            tipo: "almoco" as const,
+            inicio: Date.parse(instanteNoSalao(dia, almoco.inicio)),
+            fim: Date.parse(instanteNoSalao(dia, almoco.fim)),
+          },
+        ]
+      : []),
+  ].sort((x, y) => x.inicio - y.inicio);
 
   async function alternarRealizado(a: Atendimento) {
     await mudarStatus(a.id, a.status === "realizado" ? "agendado" : "realizado");
@@ -225,46 +256,34 @@ export default function AgendaPage() {
               <Vazio texto={camada === "todos" ? "Dia livre. Nenhum horário marcado." : "Nenhum horário aqui neste dia."} />
             )}
             <ol>
-              {lista.map((a, i) => {
-                const anterior = lista[i - 1];
-                const fimAnterior = anterior ? Date.parse(anterior.fim ?? anterior.inicio) + (anterior.fim ? 0 : 3_600_000) : null;
-                const livre = fimAnterior ? Math.round((Date.parse(a.inicio) - fimAnterior) / 60_000) : 0;
+              {entradas.map((e, i) => {
+                const fimAnterior = i > 0 ? Math.max(...entradas.slice(0, i).map((x) => x.fim)) : null;
+                const livre = fimAnterior ? Math.round((e.inicio - fimAnterior) / 60_000) : 0;
+                const ultimo = i === entradas.length - 1;
                 return (
-                  <li key={a.id}>
-                    {camada === "todos" && livre >= 30 && anterior && (
-                      <IntervaloLivre
-                        minutos={livre}
-                        aoMarcar={() => setNovo({ hora: formatarHora(new Date(fimAnterior!).toISOString()) })}
+                  <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id}>
+                    {camada === "todos" && livre >= 30 && <IntervaloLivre minutos={livre} />}
+                    {e.tipo === "almoco" ? (
+                      <BlocoAlmoco texto={textoAlmoco(almoco!)} ultimo={ultimo} />
+                    ) : (
+                      <ItemLinhaDoTempo
+                        atendimento={e.atendimento}
+                        barra={corDaProfissional(e.atendimento.profissional_id, ordem).ponto}
+                        ultimo={ultimo}
+                        aoAbrir={() => setAberto(e.atendimento.id)}
+                        aoMarcar={() => alternarRealizado(e.atendimento)}
                       />
                     )}
-                    <ItemLinhaDoTempo
-                      atendimento={a}
-                      capsula={corDaProfissional(a.profissional_id, ordem).capsula}
-                      ultimo={i === lista.length - 1}
-                      aoAbrir={() => setAberto(a.id)}
-                      aoMarcar={() => alternarRealizado(a)}
-                    />
                   </li>
                 );
               })}
             </ol>
           </>
         )}
-
-        {ok && ok.profissionais.length > 0 && (
-          <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
-            {ok.profissionais.map((p) => (
-              <li key={p.id} className="flex items-center gap-1.5 text-sm text-neutral-500">
-                <span className={`h-3 w-3 rounded-full ${corDaProfissional(p.id, ordem).ponto}`} />
-                {p.nome}
-              </li>
-            ))}
-          </ul>
-        )}
       </section>
 
-      <div className="h-20" />
-      <BotaoFlutuante rotulo="+ Novo horário" aoTocar={() => setNovo({})} />
+      {/* Sem "+ Novo horário": quem marca os horários é a IA */}
+      <div className="h-6" />
 
       {/* Detalhes do horário: tudo do cartão completo, numa folha que sobe de baixo */}
       {selecionado && (
@@ -276,13 +295,7 @@ export default function AgendaPage() {
             className="mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[var(--background)] px-4 pt-3 pb-safe"
           >
             <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-300" />
-            <CartaoAtendimento
-              atendimento={selecionado}
-              cor={corDaProfissional(selecionado.profissional_id, ordem).borda}
-              aoMudar={recarregar}
-              permitirExcluir
-              detalhado
-            />
+            <DetalheHorario atendimento={selecionado} />
             <button
               onClick={() => setAberto(null)}
               className="my-4 h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
@@ -292,19 +305,6 @@ export default function AgendaPage() {
           </div>
         </div>
       )}
-
-      {novo && (
-        <FormAtendimento
-          modo="agendar"
-          dia={dia}
-          horaInicial={novo.hora}
-          aoFechar={() => setNovo(null)}
-          aoSalvar={() => {
-            setNovo(null);
-            recarregar();
-          }}
-        />
-      )}
     </>
   );
 }
@@ -313,29 +313,32 @@ function Vazio({ texto }: { texto: string }) {
   return <p className="rounded-2xl border border-neutral-200 bg-white p-6 text-center text-neutral-500">{texto}</p>;
 }
 
+// Círculo de status, discreto: vazio = a atender, ✓ = realizado, ✕ = faltou, – = cancelado
 const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string; rotulo: string }> = {
-  agendado: { simbolo: "", classe: "border-2 border-neutral-300 bg-white", rotulo: "Marcar como realizado" },
-  realizado: { simbolo: "✓", classe: "bg-green-500 text-white", rotulo: "Realizado (tocar desfaz)" },
-  faltou: { simbolo: "✕", classe: "bg-red-500 text-white", rotulo: "Faltou" },
-  cancelado: { simbolo: "–", classe: "bg-neutral-400 text-white", rotulo: "Cancelado" },
+  agendado: { simbolo: "", classe: "border-[1.5px] border-neutral-300 bg-white", rotulo: "Marcar como realizado" },
+  realizado: { simbolo: "✓", classe: "bg-emerald-500 text-white", rotulo: "Realizado (tocar desfaz)" },
+  faltou: { simbolo: "✕", classe: "bg-red-400 text-white", rotulo: "Faltou" },
+  cancelado: { simbolo: "–", classe: "bg-neutral-300 text-white", rotulo: "Cancelado" },
 };
 
+// Linha do tempo enxuta: hora, uma barrinha fina (altura = duração, cor = profissional),
+// e o texto. Sem ícones nem efeitos.
 function ItemLinhaDoTempo({
   atendimento: a,
-  capsula,
+  barra,
   ultimo,
   aoAbrir,
   aoMarcar,
 }: {
   atendimento: Atendimento;
-  capsula: string;
+  barra: string;
   ultimo: boolean;
   aoAbrir: () => void;
   aoMarcar: () => void;
 }) {
   const min = minutos(a);
-  // Altura da cápsula acompanha a duração (com limites para caber na tela)
-  const altura = Math.min(140, Math.max(56, Math.round(min * 0.9)));
+  // Altura da barra acompanha a duração (com limites para caber na tela)
+  const altura = Math.min(110, Math.max(40, Math.round(min * 0.7)));
   const icone = ICONE_STATUS[a.status];
   const apagado = a.status === "cancelado" || a.status === "faltou";
   const reagendado = ultimoReagendamento(a);
@@ -343,48 +346,43 @@ function ItemLinhaDoTempo({
   return (
     <div className="flex gap-3">
       {/* Coluna da hora */}
-      <p className="w-11 shrink-0 pt-2 text-right text-sm font-medium text-neutral-500">{formatarHora(a.inicio)}</p>
+      <p className="w-10 shrink-0 pt-0.5 text-right text-xs font-semibold text-neutral-400">{formatarHora(a.inicio)}</p>
 
-      {/* Cápsula + linha que liga um horário ao próximo */}
-      <div className="relative flex w-12 shrink-0 justify-center">
-        {!ultimo && <span className="absolute top-2 bottom-0 left-1/2 w-px -translate-x-1/2 border-l-2 border-dotted border-neutral-300" />}
-        <button
-          onClick={aoAbrir}
-          aria-label={`Abrir horário de ${a.clientes?.nome ?? "cliente"}`}
-          style={{ height: altura }}
-          className={`relative flex w-11 items-start justify-center rounded-full pt-3 text-lg ${capsula} ${apagado ? "opacity-40" : ""}`}
-        >
-          {a.origem === "ia" ? "✨" : "✂️"}
-        </button>
+      {/* Barrinha + linha fina até o próximo horário */}
+      <div className="relative flex w-3 shrink-0 justify-center">
+        {!ultimo && <span className="absolute top-1 bottom-0 left-1/2 w-px -translate-x-1/2 bg-neutral-200" />}
+        <span style={{ height: altura }} className={`relative w-1.5 rounded-full ${barra} ${apagado ? "opacity-40" : ""}`} />
       </div>
 
       {/* Informações */}
-      <button onClick={aoAbrir} className="min-w-0 flex-1 pt-1 pb-5 text-left">
-        <p className="text-sm text-neutral-500">
+      <button onClick={aoAbrir} className="min-w-0 flex-1 pb-5 text-left">
+        <p className="text-xs text-neutral-400">
           {formatarHora(a.inicio)}
-          {a.fim && ` – ${formatarHora(a.fim)}`} ({duracao(min)})
+          {a.fim && ` – ${formatarHora(a.fim)}`} · {duracao(min)}
+          {a.origem === "ia" && " · IA"}
         </p>
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className={`text-lg leading-tight font-semibold ${a.status === "cancelado" ? "text-neutral-400 line-through" : ""}`}>
+          <p className={`text-base leading-snug font-semibold ${a.status === "cancelado" ? "text-neutral-400 line-through" : ""}`}>
             {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
           </p>
           {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
         </div>
-        <p className="text-neutral-600">
-          {[a.servicos?.nome ?? "Serviço não informado", a.profissionais?.nome].filter(Boolean).join(" · ")}
+        <Observacao texto={a.clientes?.observacoes} />
+        <p className="text-sm text-neutral-500">
+          {a.servicos?.nome ?? "Serviço não informado"}
         </p>
-        {a.status === "faltou" && <p className="text-sm font-medium text-red-600">Faltou</p>}
-        {a.status === "cancelado" && <p className="text-sm font-medium text-neutral-500">Cancelado</p>}
-        {reagendado && <p className="text-sm text-neutral-500">{reagendado}</p>}
+        {a.status === "faltou" && <p className="text-xs font-semibold text-red-500">Faltou</p>}
+        {a.status === "cancelado" && <p className="text-xs font-semibold text-neutral-400">Cancelado</p>}
+        {reagendado && <p className="text-xs text-neutral-400">{reagendado}</p>}
       </button>
 
-      {/* Círculo de concluído (como no Structured): um toque marca realizado */}
-      <div className="shrink-0 pt-3">
+      {/* Círculo de concluído: um toque marca realizado */}
+      <div className="shrink-0 pt-0.5">
         <button
           onClick={aoMarcar}
           disabled={a.status === "faltou" || a.status === "cancelado"}
           aria-label={icone.rotulo}
-          className={`flex h-8 w-8 items-center justify-center rounded-full text-base font-bold ${icone.classe}`}
+          className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${icone.classe}`}
         >
           {icone.simbolo}
         </button>
@@ -393,16 +391,77 @@ function ItemLinhaDoTempo({
   );
 }
 
-function IntervaloLivre({ minutos: min, aoMarcar }: { minutos: number; aoMarcar: () => void }) {
+// Almoço na linha do tempo: uma faixa cinza simples, sem ações
+function BlocoAlmoco({ texto, ultimo }: { texto: string; ultimo: boolean }) {
   return (
     <div className="flex gap-3">
-      <span className="w-11 shrink-0" />
-      <div className="relative flex w-12 shrink-0 justify-center">
-        <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 border-l-2 border-dotted border-neutral-300" />
+      <p className="w-10 shrink-0 pt-0.5 text-right text-xs font-semibold text-neutral-300">{texto.slice(0, 5)}</p>
+      <div className="relative flex w-3 shrink-0 justify-center">
+        {!ultimo && <span className="absolute top-1 bottom-0 left-1/2 w-px -translate-x-1/2 bg-neutral-200" />}
+        <span className="relative h-10 w-1.5 rounded-full bg-neutral-200" />
       </div>
-      <button onClick={aoMarcar} className="flex-1 py-2 text-left text-sm text-neutral-500 active:text-neutral-700">
-        {duracao(min)} livre · <span className="font-semibold text-[var(--cor-principal)]">+ marcar</span>
-      </button>
+      <p className="flex-1 pb-5 text-sm text-neutral-400">
+        <span className="font-semibold text-neutral-500">Almoço</span> · {texto}
+      </p>
+    </div>
+  );
+}
+
+const ROTULO_STATUS: Record<StatusAtendimento, string> = {
+  agendado: "A atender",
+  realizado: "Realizado",
+  faltou: "Faltou",
+  cancelado: "Cancelado",
+};
+
+// Folha ao tocar no horário: só informação (sem ações nem valores — quem cuida da agenda
+// e dos valores é a IA). Dá para abrir a ficha da cliente.
+function DetalheHorario({ atendimento: a }: { atendimento: Atendimento }) {
+  const reagendado = ultimoReagendamento(a);
+  const linhas: [string, string][] = [
+    ["Horário", `${formatarHora(a.inicio)}${a.fim ? ` até ${formatarHora(a.fim)}` : ""}`],
+    ["Serviço", a.servicos?.nome ?? "Não informado"],
+    ...(a.clientes ? ([["Telefone", formatarTelefone(a.clientes.telefone)]] as [string, string][]) : []),
+    ["Situação", ROTULO_STATUS[a.status]],
+    ...(reagendado ? ([["Reagendado", reagendado.replace("Reagendado de ", "era ")]] as [string, string][]) : []),
+    ...(a.origem === "ia" ? ([["Marcado por", "IA"]] as [string, string][]) : []),
+  ];
+  return (
+    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className="text-xl font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
+        {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
+      </div>
+      <Observacao texto={a.clientes?.observacoes} />
+      <dl className="mt-3 divide-y divide-neutral-100">
+        {linhas.map(([rotulo, valor]) => (
+          <div key={rotulo} className="flex justify-between gap-4 py-2">
+            <dt className="text-neutral-500">{rotulo}</dt>
+            <dd className="text-right font-medium">{valor}</dd>
+          </div>
+        ))}
+      </dl>
+      {a.clientes && (
+        <Link
+          href={`/clientes/${a.clientes.id}`}
+          className="mt-3 flex h-11 items-center justify-center rounded-xl border border-neutral-300 font-semibold active:bg-neutral-100"
+        >
+          Ver ficha da cliente
+        </Link>
+      )}
+    </div>
+  );
+}
+
+// Só informa o tempo livre entre os horários (quem marca é a IA)
+function IntervaloLivre({ minutos: min }: { minutos: number }) {
+  return (
+    <div className="flex gap-3">
+      <span className="w-10 shrink-0" />
+      <div className="relative flex w-3 shrink-0 justify-center">
+        <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 border-l border-dashed border-neutral-300" />
+      </div>
+      <p className="-mt-2 flex-1 pb-4 text-xs text-neutral-400">{duracao(min)} livre</p>
     </div>
   );
 }
@@ -417,7 +476,7 @@ function CartaoReagendado({ atendimento: a, aoVerDia }: { atendimento: Atendimen
         {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
       </div>
       <p className="text-neutral-600">
-        {[a.servicos?.nome ?? "Serviço não informado", a.profissionais?.nome].filter(Boolean).join(" · ")}
+        {a.servicos?.nome ?? "Serviço não informado"}
       </p>
       <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-neutral-50 p-2 text-sm">
         <div>

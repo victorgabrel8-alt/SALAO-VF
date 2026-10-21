@@ -2,69 +2,35 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
-import {
-  dataNoSalao,
-  diasEntre,
-  formatarData,
-  formatarHora,
-  formatarTelefone,
-  hojeNoSalao,
-  prazo,
-} from "@/lib/formato";
+import { diasEntre, formatarData, formatarTelefone, hojeNoSalao, prazo } from "@/lib/formato";
 import { useDialogo } from "@/components/Dialogo";
-import { pausarOuReativarIa } from "@/lib/ia";
 import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
-import { ORIGENS, etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem, type Origem } from "@/lib/origem";
+import { etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem } from "@/lib/origem";
 import { Etiquetas } from "@/components/Etiquetas";
 import { PontoStatus, SeloStatus } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
 import type { ClienteStatus, RetornoServico } from "@/lib/tipos";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
-type Atendimento = {
-  id: string;
-  inicio: string;
-  status: "agendado" | "realizado" | "cancelado" | "faltou";
-  origem: "ia" | "manual";
-  servicos: { nome: string } | null;
-  profissionais: { nome: string } | null;
-};
-type Contato = { id: string; tipo: string; resultado: string; criado_em: string };
-type Mensagem = { criado_em: string };
-
+// Ficha enxuta da dona: dados, retornos e observações. Origem, linha do tempo e IA ficam no
+// CRM da agência (painel-crm).
 type Ficha = {
   cliente: ClienteStatus;
   retornos: RetornoServico[];
-  atendimentos: Atendimento[];
-  contatos: Contato[];
-  mensagens: Mensagem[];
 };
 
 const ETIQUETAS_SUGERIDAS = ["vip", "alergia", "mega hair", "coloração", "química", "gestante"];
 
 async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
   const db = supabase();
-  const [cliente, retornos, atendimentos, contatos, mensagens] = await Promise.all([
+  const [cliente, retornos] = await Promise.all([
     db.from("clientes_status").select("*").eq("id", id).maybeSingle(),
     db.from("retornos_por_servico").select("servico_id, servico_nome, ultima_vez, retorno_previsto").eq("cliente_id", id),
-    db
-      .from("agendamentos")
-      .select("id, inicio, status, origem, servicos (nome), profissionais (nome)")
-      .eq("cliente_id", id)
-      .order("inicio", { ascending: false }),
-    db.from("contatos").select("id, tipo, resultado, criado_em").eq("cliente_id", id),
-    db.from("mensagens").select("criado_em").eq("cliente_id", id),
   ]);
-  const falha = [cliente, retornos, atendimentos, contatos, mensagens].find((r) => r.error);
+  const falha = [cliente, retornos].find((r) => r.error);
   if (falha?.error) return { erro: falha.error.message };
   if (!cliente.data) return { erro: "Cliente não encontrada." };
-  return {
-    cliente: cliente.data as ClienteStatus,
-    retornos: retornos.data as RetornoServico[],
-    atendimentos: atendimentos.data as unknown as Atendimento[],
-    contatos: contatos.data as Contato[],
-    mensagens: mensagens.data as Mensagem[],
-  };
+  return { cliente: cliente.data as ClienteStatus, retornos: retornos.data as RetornoServico[] };
 }
 
 export default function FichaClientePage() {
@@ -103,7 +69,6 @@ function FichaCliente() {
       <Retornos retornos={ficha.retornos} />
       {/* key: se uma etiqueta for tirada lá em cima, o formulário recomeça com as etiquetas certas */}
       <Dados key={ficha.cliente.etiquetas.join("|")} cliente={ficha.cliente} aoSalvar={carregar} />
-      <LinhaDoTempo ficha={ficha} />
       <Exclusao cliente={ficha.cliente} aoMudar={carregar} />
     </div>
   );
@@ -151,16 +116,9 @@ function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () =>
   );
 }
 
+// Sem "Pausar IA" aqui: cuidar da IA não é tarefa da dona (fica no CRM da agência)
 function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
-  const [salvando, setSalvando] = useState(false);
   const router = useRouter();
-
-  async function alternarIa() {
-    setSalvando(true);
-    await pausarOuReativarIa(cliente.id, !cliente.ia_pausada);
-    setSalvando(false);
-    aoMudar();
-  }
 
   async function removerEtiqueta(etiqueta: string) {
     await supabase()
@@ -193,21 +151,12 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => abrirWhatsApp(cliente.telefone)}
-          className="h-12 rounded-xl border border-neutral-300 bg-white text-lg font-semibold text-green-700 active:bg-neutral-100"
-        >
-          WhatsApp
-        </button>
-        <button
-          onClick={alternarIa}
-          disabled={salvando}
-          className="h-12 rounded-xl border border-neutral-300 bg-white text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
-        >
-          {cliente.ia_pausada ? "Reativar IA" : "Pausar IA"}
-        </button>
-      </div>
+      <button
+        onClick={() => abrirWhatsApp(cliente.telefone)}
+        className="h-12 w-full rounded-xl border border-neutral-300 bg-white text-lg font-semibold text-green-700 active:bg-neutral-100"
+      >
+        WhatsApp
+      </button>
     </section>
   );
 }
@@ -254,7 +203,8 @@ function Retornos({ retornos }: { retornos: RetornoServico[] }) {
 function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => void }) {
   const [nome, setNome] = useState(cliente.nome ?? "");
   const [observacoes, setObservacoes] = useState(cliente.observacoes ?? "");
-  const [origem, setOrigem] = useState<Origem | null>(lerOrigem(cliente.etiquetas));
+  // A origem não aparece aqui (é do CRM), mas continua guardada ao salvar
+  const origem = lerOrigem(cliente.etiquetas);
   const [etiquetas, setEtiquetas] = useState(etiquetasVisiveis(cliente.etiquetas));
   const [novaEtiqueta, setNovaEtiqueta] = useState("");
   const [aviso, setAviso] = useState("");
@@ -301,25 +251,6 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
         <input value={nome} onChange={(e) => setNome(e.target.value)} className={campo} />
       </label>
 
-      <div className="space-y-1">
-        <span className="font-medium">Como conheceu o salão?</span>
-        <div className="flex flex-wrap gap-2">
-          {ORIGENS.map((o) => (
-            <button
-              key={o.chave}
-              type="button"
-              onClick={() => setOrigem(origem === o.chave ? null : o.chave)}
-              aria-pressed={origem === o.chave}
-              className={`h-11 rounded-full px-4 font-semibold ${
-                origem === o.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-800"
-              }`}
-            >
-              {o.rotulo}
-            </button>
-          ))}
-        </div>
-      </div>
-
       <label className="block space-y-1">
         <span className="font-medium">Observações</span>
         <textarea
@@ -365,67 +296,6 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
         {salvando ? "Salvando…" : "Salvar"}
       </button>
       {aviso && <p className="text-center text-lg font-medium">{aviso}</p>}
-    </section>
-  );
-}
-
-const STATUS_ATENDIMENTO: Record<Atendimento["status"], string> = {
-  agendado: "Agendado",
-  realizado: "Realizado",
-  cancelado: "Cancelado",
-  faltou: "Faltou",
-};
-
-const RESULTADO_CONTATO: Record<string, string> = {
-  pendente: "aguardando resposta",
-  sem_resposta: "sem resposta",
-  respondeu: "respondeu",
-  agendou: "agendou",
-};
-
-type Evento = { quando: string; titulo: string; detalhe: string };
-
-// Junta atendimentos, contatos ("Mandar alô") e mensagens (agrupadas por dia) em ordem de data
-function LinhaDoTempo({ ficha }: { ficha: Ficha }) {
-  const eventos: Evento[] = [
-    ...ficha.atendimentos.map((a) => ({
-      quando: a.inicio,
-      titulo: `${a.servicos?.nome ?? "Atendimento"} — ${STATUS_ATENDIMENTO[a.status]}`,
-      detalhe: [formatarHora(a.inicio), a.profissionais?.nome, a.origem === "ia" ? "marcado pela IA" : null]
-        .filter(Boolean)
-        .join(" · "),
-    })),
-    ...ficha.contatos.map((c) => ({
-      quando: c.criado_em,
-      titulo: c.tipo === "reativacao" ? "Alô de reativação enviado" : "Alô de retorno enviado",
-      detalhe: RESULTADO_CONTATO[c.resultado] ?? c.resultado,
-    })),
-    ...Object.entries(
-      ficha.mensagens.reduce<Record<string, number>>((dias, m) => {
-        const dia = dataNoSalao(m.criado_em);
-        dias[dia] = (dias[dia] ?? 0) + 1;
-        return dias;
-      }, {}),
-    ).map(([dia, total]) => ({
-      quando: `${dia}T12:00:00-04:00`,
-      titulo: "Conversa no WhatsApp",
-      detalhe: `${total} ${total === 1 ? "mensagem" : "mensagens"}`,
-    })),
-  ].sort((a, b) => Date.parse(b.quando) - Date.parse(a.quando));
-
-  return (
-    <section className="space-y-2 px-4">
-      <h2 className="text-xl font-semibold">Linha do tempo</h2>
-      {eventos.length === 0 && <p className="text-neutral-500">Nada registrado ainda.</p>}
-      <ol className="space-y-3 border-l-2 border-neutral-200 pl-4">
-        {eventos.map((e, i) => (
-          <li key={i}>
-            <p className="text-sm font-semibold text-neutral-500">{formatarData(e.quando)}</p>
-            <p className="text-lg font-medium">{e.titulo}</p>
-            <p className="text-neutral-600">{e.detalhe}</p>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

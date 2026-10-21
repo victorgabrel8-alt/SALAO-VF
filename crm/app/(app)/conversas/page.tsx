@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/Avatar";
-import { Cabecalho } from "@/components/Cabecalho";
 import { useEmpresa } from "@/lib/empresa";
 import { buscarExcluidas } from "@/lib/excluidas";
 import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao } from "@/lib/formato";
-import { situacaoIa } from "@/lib/ia";
+import { MOTIVOS_PRECISA, situacaoIa, type SituacaoIa } from "@/lib/ia";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
 
@@ -47,13 +46,35 @@ function quando(instante: string): string {
   return formatarData(instante).slice(0, 5);
 }
 
-const PREFIXO_AUTOR: Record<Conversa["ultimo_autor"], string> = { cliente: "", ia: "IA: ", humano: "Você: " };
+type Filtro = "todas" | "precisa" | "pausada";
+
+const FILTROS: { chave: Filtro; rotulo: string }[] = [
+  { chave: "todas", rotulo: "Todas" },
+  { chave: "precisa", rotulo: "Atenção" },
+  { chave: "pausada", rotulo: "IA pausada" },
+];
+
+// Pontinho no canto do avatar: verde = IA atendendo, amarelo = pausada, vermelho = precisa de você
+const PONTO: Record<SituacaoIa, string> = {
+  atendendo: "bg-emerald-500",
+  pausada: "bg-amber-400",
+  precisa: "bg-red-500",
+};
+
+function AvatarComStatus({ id, nome, situacao, tamanho }: { id: string; nome: string | null; situacao: SituacaoIa; tamanho?: string }) {
+  return (
+    <span className="relative shrink-0">
+      <Avatar id={id} nome={nome} tamanho={tamanho} />
+      <span className={`absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-white ${PONTO[situacao]}`} />
+    </span>
+  );
+}
 
 export default function ConversasPage() {
   const empresa = useEmpresa();
   const [resultado, setResultado] = useState<{ conversas: Conversa[] } | { erro: string } | null>(null);
   const [versao, setVersao] = useState(0);
-  const [soPrecisam, setSoPrecisam] = useState(false);
+  const [filtro, setFiltro] = useState<Filtro>("todas");
   const [busca, setBusca] = useState("");
 
   useEffect(() => {
@@ -70,102 +91,156 @@ export default function ConversasPage() {
   useTempoReal(["mensagens", "clientes"], empresa.id, () => setVersao((v) => v + 1));
 
   const conversas = useMemo(() => (resultado && "conversas" in resultado ? resultado.conversas : []), [resultado]);
-  const precisam = conversas.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "precisa").length;
+  const precisam = conversas.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "precisa");
+  const total: Record<Filtro, number> = {
+    todas: conversas.length,
+    precisa: precisam.length,
+    pausada: conversas.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "pausada").length,
+  };
+
   const lista = useMemo(() => {
     const termo = busca.trim().toLowerCase();
     const digitos = busca.replace(/\D/g, "");
     return conversas
-      .filter((c) => !soPrecisam || situacaoIa(c.ia_pausada, c.motivo_pausa) === "precisa")
+      .filter((c) => filtro === "todas" || situacaoIa(c.ia_pausada, c.motivo_pausa) === filtro)
       .filter(
         (c) =>
           !termo ||
           (c.nome ?? "").toLowerCase().includes(termo) ||
           (digitos.length >= 3 && c.telefone.includes(digitos)),
       );
-  }, [conversas, soPrecisam, busca]);
+  }, [conversas, filtro, busca]);
 
-  // Visual inspirado na lista de conversas do WhatsApp: fundo branco, foto (iniciais),
-  // nome e hora na mesma linha, prévia da última mensagem e o aviso à direita.
+  // Em "Todas", quem precisa de você aparece em destaque no topo (e não repete embaixo)
+  const destacar = filtro === "todas" && !busca.trim() && precisam.length > 0;
+  const recentes = destacar ? lista.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) !== "precisa") : lista;
+
   return (
-    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-white pt-[env(safe-area-inset-top)]">
-      <Cabecalho titulo="Conversas" />
-      <div className="space-y-3 px-4 pb-2">
-        <label className="flex h-11 items-center gap-2 rounded-full bg-neutral-100 px-4">
-          <svg viewBox="0 0 24 24" className="h-5 w-5 text-neutral-500" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
+    <>
+      <header className="px-4 pt-4 pb-3">
+        <h1 className="text-3xl font-bold">Conversas</h1>
+        <p className="text-neutral-500">
+          {total.todas} {total.todas === 1 ? "conversa" : "conversas"}
+          {total.precisa > 0 && (
+            <>
+              {" · "}
+              <span className="font-semibold text-red-600">
+                {total.precisa} {total.precisa === 1 ? "precisa" : "precisam"} de você
+              </span>
+            </>
+          )}
+        </p>
+      </header>
+
+      <div className="space-y-3 px-4">
+        <label className="flex h-12 items-center gap-2 rounded-2xl border border-neutral-200 bg-white px-4 shadow-sm">
+          <svg viewBox="0 0 24 24" className="h-5 w-5 text-neutral-400" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden>
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
           <input
             type="search"
-            placeholder="Pesquisar"
+            placeholder="Buscar cliente"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
             className="h-full min-w-0 flex-1 bg-transparent text-lg outline-none"
           />
         </label>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setSoPrecisam(false)}
-            aria-pressed={!soPrecisam}
-            className={`h-9 rounded-full px-4 font-medium ${!soPrecisam ? "bg-[#d9fdd3] text-[#0a5c2f]" : "bg-neutral-100 text-neutral-600"}`}
-          >
-            Tudo
-          </button>
-          <button
-            onClick={() => setSoPrecisam(true)}
-            aria-pressed={soPrecisam}
-            className={`h-9 rounded-full px-4 font-medium ${soPrecisam ? "bg-[#d9fdd3] text-[#0a5c2f]" : "bg-neutral-100 text-neutral-600"}`}
-          >
-            Precisam de você {precisam > 0 && `(${precisam})`}
-          </button>
+
+        {/* Seletor em pílula: um toque troca o filtro */}
+        <div className="grid grid-cols-3 gap-1 rounded-2xl bg-neutral-200/70 p-1">
+          {FILTROS.map((f) => (
+            <button
+              key={f.chave}
+              onClick={() => setFiltro(f.chave)}
+              aria-pressed={filtro === f.chave}
+              className={`h-10 rounded-xl px-1 text-sm font-semibold leading-tight ${
+                filtro === f.chave ? "bg-white text-neutral-900 shadow-sm" : "text-neutral-500"
+              }`}
+            >
+              {f.rotulo}
+              {total[f.chave] > 0 && f.chave !== "todas" && <span className="ml-1 text-neutral-400">{total[f.chave]}</span>}
+            </button>
+          ))}
         </div>
       </div>
 
-      {!resultado && <p className="px-4 text-neutral-500">Carregando…</p>}
+      {!resultado && <p className="px-4 pt-4 text-neutral-500">Carregando…</p>}
       {resultado && "erro" in resultado && (
-        <p className="mx-4 rounded-xl bg-red-100 p-4 text-red-900">Erro ao ler as conversas: {resultado.erro}</p>
-      )}
-      {resultado && "conversas" in resultado && lista.length === 0 && (
-        <p className="px-4 py-10 text-center text-neutral-500">Nenhuma conversa aqui.</p>
+        <p className="m-4 rounded-xl bg-red-100 p-4 text-red-900">Erro ao ler as conversas: {resultado.erro}</p>
       )}
 
-      <ul>
-        {lista.map((c) => {
-          const situacao = situacaoIa(c.ia_pausada, c.motivo_pausa);
-          return (
-            <li key={c.cliente_id}>
-              <Link href={`/conversas/${c.cliente_id}`} className="flex items-center gap-3 pl-4 active:bg-neutral-100">
-                <Avatar id={c.cliente_id} nome={c.nome} />
-                <div className="min-w-0 flex-1 border-b border-neutral-100 py-3 pr-4">
-                  <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate text-[17px] font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</p>
-                    <span
-                      className={`shrink-0 text-xs ${situacao === "precisa" ? "font-semibold text-[#1da851]" : "text-neutral-500"}`}
-                    >
-                      {quando(c.ultima_mensagem_em)}
-                    </span>
-                  </div>
-                  <div className="mt-0.5 flex items-center justify-between gap-2">
-                    <p className="truncate text-[15px] text-neutral-500">
-                      {c.ultimo_autor !== "cliente" && <span className="text-sky-500">✓✓ </span>}
-                      {PREFIXO_AUTOR[c.ultimo_autor]}
-                      {c.ultima_mensagem ?? "(mensagem sem texto)"}
-                    </p>
-                    {situacao === "precisa" && (
-                      <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-[#1da851] px-1.5 text-xs font-bold text-white">
-                        !
-                      </span>
-                    )}
-                    {situacao === "pausada" && (
-                      <span className="shrink-0 text-xs font-medium text-amber-600">IA pausada</span>
-                    )}
+      {/* Destaque: quem pediu para falar com a dona */}
+      {destacar && (
+        <section className="mt-5">
+          <h2 className="px-4 text-xs font-bold tracking-wide text-red-600 uppercase">Precisam de você</h2>
+          <div className="mt-2 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+            {precisam.map((c) => (
+              <Link
+                key={c.cliente_id}
+                href={`/conversas/${c.cliente_id}`}
+                className="w-60 shrink-0 rounded-2xl border border-red-100 bg-white p-3 shadow-sm active:bg-red-50"
+              >
+                <div className="flex items-center gap-2">
+                  <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao="precisa" tamanho="h-10 w-10 text-base" />
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</p>
+                    <p className="text-xs text-neutral-500">{quando(c.ultima_mensagem_em)}</p>
                   </div>
                 </div>
+                <p className="mt-2 text-sm font-medium text-red-700">
+                  {c.motivo_pausa ? MOTIVOS_PRECISA[c.motivo_pausa] : "Precisa de você"}
+                </p>
+                <p className="truncate text-sm text-neutral-600">“{c.ultima_mensagem ?? "…"}”</p>
               </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {resultado && "conversas" in resultado && (
+        <section className="mt-5 px-4">
+          {destacar && <h2 className="mb-2 text-xs font-bold tracking-wide text-neutral-500 uppercase">Recentes</h2>}
+          {recentes.length === 0 ? (
+            <p className="rounded-2xl border border-neutral-200 bg-white p-6 text-center text-neutral-500">
+              {busca.trim() ? "Nenhuma conversa com esse nome." : "Nenhuma conversa aqui."}
+            </p>
+          ) : (
+            <ul className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+              {recentes.map((c, i) => {
+                const situacao = situacaoIa(c.ia_pausada, c.motivo_pausa);
+                return (
+                  <li key={c.cliente_id}>
+                    <Link
+                      href={`/conversas/${c.cliente_id}`}
+                      className={`flex items-center gap-3 px-3 py-3 active:bg-neutral-50 ${i > 0 ? "border-t border-neutral-100" : ""}`}
+                    >
+                      <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao={situacao} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <p className="truncate text-[17px] font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</p>
+                          <span className="shrink-0 text-xs text-neutral-400">{quando(c.ultima_mensagem_em)}</span>
+                        </div>
+                        <p className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[15px] text-neutral-500">
+                          {c.ultimo_autor === "ia" && (
+                            <span className="shrink-0 rounded-md bg-violet-50 px-1.5 text-xs font-bold text-violet-600">IA</span>
+                          )}
+                          {c.ultimo_autor === "humano" && (
+                            <span className="chip-ativo shrink-0 rounded-md px-1.5 text-xs font-bold">Você</span>
+                          )}
+                          <span className={`truncate ${c.ultimo_autor === "cliente" ? "text-neutral-700" : ""}`}>
+                            {c.ultima_mensagem ?? "(mensagem sem texto)"}
+                          </span>
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+    </>
   );
 }

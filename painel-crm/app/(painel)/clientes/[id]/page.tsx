@@ -19,7 +19,6 @@ import { Etiquetas } from "@/components/Etiquetas";
 import { PontoStatus, SeloStatus } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
 import type { ClienteStatus, RetornoServico } from "@/lib/tipos";
-import { abrirWhatsApp } from "@/lib/whatsapp";
 
 type Atendimento = {
   id: string;
@@ -193,17 +192,12 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
           )}
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <button
-          onClick={() => abrirWhatsApp(cliente.telefone)}
-          className="h-12 rounded-xl border border-neutral-300 bg-white text-lg font-semibold text-green-700 active:bg-neutral-100"
-        >
-          WhatsApp
-        </button>
+      {/* Sem botão de WhatsApp: no CRM quem fala com a cliente é a IA */}
+      <div className="max-w-xs">
         <button
           onClick={alternarIa}
           disabled={salvando}
-          className="h-12 rounded-xl border border-neutral-300 bg-white text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
+          className="h-12 w-full rounded-xl border border-neutral-300 bg-white text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
         >
           {cliente.ia_pausada ? "Reativar IA" : "Pausar IA"}
         </button>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Etiquetas } from "@/components/Etiquetas";
-import { BotaoMandarAlo, textoChamada } from "@/components/MandarAlo";
+import type { StatusCliente } from "@/lib/status";
 import { diasDesdeContato } from "@/lib/alo";
 import { useEmpresa } from "@/lib/empresa";
 import { formatarData, formatarHora, formatarTelefone, haQuantoTempo, prazo } from "@/lib/formato";
@@ -30,8 +30,18 @@ const FILTROS: { chave: FiltroClientes; rotulo: string }[] = [
   { chave: "sem_visita", rotulo: "Sem visita" },
 ];
 
-// CRM completo do salão escolhido: tabela com todas as clientes, filtros, origem e o
-// "Mandar alô" manual (plano B; o normal é a IA de retorno chamar sozinha).
+// Linhas em destaque: atrasadas (laranja forte) e retorno chegando (amarelo forte)
+const DESTAQUE: Partial<Record<StatusCliente, { linha: string; borda: string; texto: string }>> = {
+  retorno_atrasado: { linha: "bg-orange-50 hover:bg-orange-100/70", borda: "border-orange-500", texto: "font-semibold text-orange-700" },
+  retorno_chegando: { linha: "bg-amber-50 hover:bg-amber-100/70", borda: "border-amber-400", texto: "font-semibold text-amber-700" },
+};
+
+function textoChamada(dias: number): string {
+  return dias === 0 ? "hoje" : `há ${dias} ${dias === 1 ? "dia" : "dias"}`;
+}
+
+// CRM completo do salão escolhido: tabela com todas as clientes, filtros e origem.
+// Quem chama as clientes é a IA de retorno; aqui a agência só acompanha.
 export default function CrmPage() {
   return (
     <Suspense fallback={<p className="py-8 text-neutral-500">Carregando…</p>}>
@@ -65,7 +75,7 @@ function Crm() {
   const filtro = FILTROS.find((f) => f.chave === params.get("filtro"))?.chave ?? "todas";
   const [busca, setBusca] = useState("");
   const [origem, setOrigem] = useState<string | null>(null);
-  const [versao, setVersao] = useState(0);
+  const versao = 0;
   const buscaAtrasada = useAtraso(busca);
   const diasLimite = diasLimiteCelular(empresa.config);
   const contagem = useContagemClientes(empresa.id, diasLimite, versao);
@@ -141,21 +151,20 @@ function Crm() {
               <th className="px-4 py-3 font-medium">Retorno / horário</th>
               <th className="px-4 py-3 font-medium">Visitas</th>
               <th className="px-4 py-3 font-medium">Origem</th>
-              <th className="px-4 py-3 font-medium">Último alô</th>
-              <th className="px-4 py-3" />
+              <th className="px-4 py-3 font-medium">Último contato</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
             {!lista && (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-neutral-500">
+                <td colSpan={8} className="px-4 py-6 text-neutral-500">
                   Carregando…
                 </td>
               </tr>
             )}
             {lista && !lista.erro && lista.itens.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-8 text-center text-neutral-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-neutral-500">
                   Nenhuma cliente aqui.
                 </td>
               </tr>
@@ -164,9 +173,10 @@ function Crm() {
               const proximo = textoProximo(c);
               const dias = diasDesdeContato(c.ultimo_contato);
               const o = lerOrigem(c.etiquetas);
+              const destaque = DESTAQUE[c.status];
               return (
-                <tr key={c.id} className="align-top hover:bg-neutral-50">
-                  <td className="px-4 py-3">
+                <tr key={c.id} className={`align-top ${destaque?.linha ?? "hover:bg-neutral-50"}`}>
+                  <td className={`px-4 py-3 ${destaque ? `border-l-4 ${destaque.borda}` : "border-l-4 border-transparent"}`}>
                     <Link href={`/clientes/${c.id}`} className="font-semibold hover:underline">
                       {c.nome ?? "Sem nome"}
                     </Link>
@@ -191,7 +201,7 @@ function Crm() {
                       <>
                         {proximo.rotulo === "Marcado" ? "Marcado " : ""}
                         {proximo.valor}
-                        <span className={`block text-sm ${proximo.atrasado ? "text-orange-700" : "text-neutral-500"}`}>
+                        <span className={`block text-sm ${destaque && proximo.rotulo !== "Marcado" ? destaque.texto : "text-neutral-500"}`}>
                           {proximo.detalhe}
                         </span>
                       </>
@@ -203,14 +213,6 @@ function Crm() {
                   <td className="px-4 py-3 whitespace-nowrap text-neutral-700">{o ? rotuloOrigem(o) : "—"}</td>
                   <td className="px-4 py-3 whitespace-nowrap text-neutral-700">
                     {dias === null ? "—" : textoChamada(dias)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <BotaoMandarAlo
-                      cliente={c}
-                      servico={lista.servicos[c.id] ?? null}
-                      aoChamar={() => setVersao((v) => v + 1)}
-                      compacto
-                    />
                   </td>
                 </tr>
               );
