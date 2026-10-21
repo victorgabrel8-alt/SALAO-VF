@@ -90,7 +90,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const TZ = 'America/Cuiaba';\nconst EXPEDIENTE = {\n  1: [['09:00', '12:00'], ['13:00', '18:00']], // segunda\n  2: [['09:00', '12:00'], ['13:00', '18:00']], // terça\n  3: [['09:00', '12:00'], ['13:00', '18:00']], // quarta\n  4: [['09:00', '12:00'], ['13:00', '18:00']], // quinta\n  5: [['09:00', '12:00'], ['13:00', '18:00']], // sexta\n  6: [['08:00', '14:00']],                      // sábado\n  7: [['08:00', '14:00']],                      // domingo\n};\nconst PASSO_MIN = 30;        // grade de horários\nconst ANTECEDENCIA_MIN = 60; // não oferece horário com menos de 1h\nconst DIAS_BUSCA = 7;        // procura vagas até 7 dias à frente\nconst fmt = (d) => d.setLocale('pt-BR').toFormat(\"cccc, dd/LL 'às' HH:mm\");\nconst iso = (d) => d.toFormat(\"yyyy-LL-dd'T'HH:mm\");\nconst lerData = (s) => {\n  s = String(s || '').trim().replace(' ', 'T');\n  let d = DateTime.fromISO(s, { zone: TZ });\n  if (!d.isValid) d = DateTime.fromFormat(s.slice(0, 10), 'dd/LL/yyyy', { zone: TZ });\n  return d;\n};\nconst intervalos = (dia) => (EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [\n  dia.set({ hour: +a.slice(0, 2), minute: +a.slice(3), second: 0, millisecond: 0 }),\n  dia.set({ hour: +b.slice(0, 2), minute: +b.slice(3), second: 0, millisecond: 0 }),\n]);\n\nconst e = $input.first().json;\nconst acao = e.acao;\nconst dur = Math.max(15, Number(e.duracao_minutos) || 60);\nconst agora = DateTime.now().setZone(TZ);\nlet timeMin, timeMax, inicio = null, novo = null, erro = null;\n\nif (['listar', 'cancelar', 'remarcar'].includes(acao)) {\n  // agendamento atual (opcional: se a cliente só tem um, não precisa)\n  if (e.data_hora_inicio) { inicio = lerData(e.data_hora_inicio); if (!inicio.isValid) inicio = null; }\n  timeMin = agora; timeMax = agora.plus({ days: 1 });\n  if (acao === 'remarcar') {\n    novo = lerData(e.data_hora_nova);\n    if (!novo.isValid) erro = 'data_hora_nova inválida. Use AAAA-MM-DDTHH:mm.';\n    else { timeMin = novo.startOf('day'); timeMax = timeMin.plus({ days: 1 }); }\n  }\n} else if (acao === 'consultar') {\n  let dia = lerData(e.data);\n  if (!dia.isValid) erro = 'Data inválida. Envie no formato AAAA-MM-DD.';\n  else {\n    // \"data\" com hora (AAAA-MM-DDTHH:mm) = a cliente pediu um horário específico\n    if (/T\\d{2}:\\d{2}/.test(String(e.data).replace(' ', 'T'))) inicio = dia;\n    dia = dia.startOf('day');\n    if (dia < agora.startOf('day')) dia = agora.startOf('day');\n    timeMin = dia; timeMax = dia.plus({ days: DIAS_BUSCA });\n  }\n} else {\n  inicio = lerData(e.data_hora_inicio);\n  if (!inicio.isValid) erro = 'data_hora_inicio inválida. Use AAAA-MM-DDTHH:mm.';\n  else { timeMin = inicio; timeMax = inicio.plus({ minutes: dur }); }\n}\n\nreturn [{ json: {\n  acao, dur, erro, periodo: (e.periodo || 'qualquer').toLowerCase(),\n  nome: e.nome || '', telefone: e.telefone || '', servico: e.servico || '',\n  motivo: String(e.motivo || '').trim(),\n  dia: timeMin ? timeMin.toISO() : null,\n  inicio: inicio && inicio.isValid ? inicio.toISO() : null,\n  novo: novo && novo.isValid ? novo.toISO() : null,\n  agoraUtc: agora.toUTC().toISO(),\n  timeMin: timeMin ? timeMin.toUTC().toISO() : null,\n  timeMax: timeMax ? timeMax.toUTC().toISO() : null,\n} }];"
+        "jsCode": "const TZ = 'America/Cuiaba';\nlet EXPEDIENTE = {\n  1: [['09:00', '12:00'], ['13:00', '18:00']], // segunda\n  2: [['09:00', '12:00'], ['13:00', '18:00']], // terça\n  3: [['09:00', '12:00'], ['13:00', '18:00']], // quarta\n  4: [['09:00', '12:00'], ['13:00', '18:00']], // quinta\n  5: [['09:00', '12:00'], ['13:00', '18:00']], // sexta\n  6: [['08:00', '14:00']],                      // sábado\n  7: [['08:00', '14:00']],                      // domingo\n};\nconst PASSO_MIN = 30;        // grade de horários\nconst ANTECEDENCIA_MIN = 60; // não oferece horário com menos de 1h\nconst DIAS_BUSCA = 7;        // procura vagas até 7 dias à frente\nconst fmt = (d) => d.setLocale('pt-BR').toFormat(\"cccc, dd/LL 'às' HH:mm\");\nconst iso = (d) => d.toFormat(\"yyyy-LL-dd'T'HH:mm\");\nconst lerData = (s) => {\n  s = String(s || '').trim().replace(' ', 'T');\n  let d = DateTime.fromISO(s, { zone: TZ });\n  if (!d.isValid) d = DateTime.fromFormat(s.slice(0, 10), 'dd/LL/yyyy', { zone: TZ });\n  return d;\n};\nconst intervalos = (dia) => (EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [\n  dia.set({ hour: +a.slice(0, 2), minute: +a.slice(3), second: 0, millisecond: 0 }),\n  dia.set({ hour: +b.slice(0, 2), minute: +b.slice(3), second: 0, millisecond: 0 }),\n]);\n\nconst e = $input.first().json;\nconst acao = e.acao;\nconst dur = Math.max(15, Number(e.duracao_minutos) || 60);\nconst agora = DateTime.now().setZone(TZ);\nlet timeMin, timeMax, inicio = null, novo = null, erro = null;\n\nif (['listar', 'cancelar', 'remarcar'].includes(acao)) {\n  // agendamento atual (opcional: se a cliente só tem um, não precisa)\n  if (e.data_hora_inicio) { inicio = lerData(e.data_hora_inicio); if (!inicio.isValid) inicio = null; }\n  timeMin = agora; timeMax = agora.plus({ days: 1 });\n  if (acao === 'remarcar') {\n    novo = lerData(e.data_hora_nova);\n    if (!novo.isValid) erro = 'data_hora_nova inválida. Use AAAA-MM-DDTHH:mm.';\n    else { timeMin = novo.startOf('day'); timeMax = timeMin.plus({ days: 1 }); }\n  }\n} else if (acao === 'consultar') {\n  let dia = lerData(e.data);\n  if (!dia.isValid) erro = 'Data inválida. Envie no formato AAAA-MM-DD.';\n  else {\n    // \"data\" com hora (AAAA-MM-DDTHH:mm) = a cliente pediu um horário específico\n    if (/T\\d{2}:\\d{2}/.test(String(e.data).replace(' ', 'T'))) inicio = dia;\n    dia = dia.startOf('day');\n    if (dia < agora.startOf('day')) dia = agora.startOf('day');\n    timeMin = dia; timeMax = dia.plus({ days: DIAS_BUSCA });\n  }\n} else {\n  inicio = lerData(e.data_hora_inicio);\n  if (!inicio.isValid) erro = 'data_hora_inicio inválida. Use AAAA-MM-DDTHH:mm.';\n  else { timeMin = inicio; timeMax = inicio.plus({ minutes: dur }); }\n}\n\nreturn [{ json: {\n  acao, dur, erro, periodo: (e.periodo || 'qualquer').toLowerCase(),\n  nome: e.nome || '', telefone: e.telefone || '', servico: e.servico || '',\n  motivo: String(e.motivo || '').trim(),\n  dia: timeMin ? timeMin.toISO() : null,\n  inicio: inicio && inicio.isValid ? inicio.toISO() : null,\n  novo: novo && novo.isValid ? novo.toISO() : null,\n  agoraUtc: agora.toUTC().toISO(),\n  timeMin: timeMin ? timeMin.toUTC().toISO() : null,\n  timeMax: timeMax ? timeMax.toUTC().toISO() : null,\n} }];"
       }
     },
     {
@@ -179,7 +179,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const TZ = 'America/Cuiaba';\nconst EXPEDIENTE = {\n  1: [['09:00', '12:00'], ['13:00', '18:00']], // segunda\n  2: [['09:00', '12:00'], ['13:00', '18:00']], // terça\n  3: [['09:00', '12:00'], ['13:00', '18:00']], // quarta\n  4: [['09:00', '12:00'], ['13:00', '18:00']], // quinta\n  5: [['09:00', '12:00'], ['13:00', '18:00']], // sexta\n  6: [['08:00', '14:00']],                      // sábado\n  7: [['08:00', '14:00']],                      // domingo\n};\nconst PASSO_MIN = 30;        // grade de horários\nconst ANTECEDENCIA_MIN = 60; // não oferece horário com menos de 1h\nconst DIAS_BUSCA = 7;        // procura vagas até 7 dias à frente\nconst fmt = (d) => d.setLocale('pt-BR').toFormat(\"cccc, dd/LL 'às' HH:mm\");\nconst iso = (d) => d.toFormat(\"yyyy-LL-dd'T'HH:mm\");\nconst lerData = (s) => {\n  s = String(s || '').trim().replace(' ', 'T');\n  let d = DateTime.fromISO(s, { zone: TZ });\n  if (!d.isValid) d = DateTime.fromFormat(s.slice(0, 10), 'dd/LL/yyyy', { zone: TZ });\n  return d;\n};\nconst intervalos = (dia) => (EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [\n  dia.set({ hour: +a.slice(0, 2), minute: +a.slice(3), second: 0, millisecond: 0 }),\n  dia.set({ hour: +b.slice(0, 2), minute: +b.slice(3), second: 0, millisecond: 0 }),\n]);\n\nconst p = $('Preparar').first().json;\nconst fb = $('Google: horários ocupados').first().json;\nconst agora = DateTime.now().setZone(TZ);\nconst saida = (o) => [{ json: { acao: p.acao, ok: false, ...o } }];\nconst FORA = 'A agenda está fora do ar agora. Peça desculpas à cliente e use transferir_para_humano para a equipe atender.';\n\nif (p.erro) return saida({ resposta: p.erro });\nif (fb.error || !fb.calendars) return saida({ resposta: FORA });\n\nconst cal = Object.values(fb.calendars)[0] || {};\nif (cal.errors) return saida({ resposta: FORA });\nconst ocupados = (cal.busy || []).map(b => [DateTime.fromISO(b.start).setZone(TZ), DateTime.fromISO(b.end).setZone(TZ)]);\n// Horários marcados pelo CRM (Supabase) também ocupam: a Gleide marca/remarca pelo app e isso não vai para o Google.\n// Sem fim gravado, conta 1 h. Se o Supabase não respondeu, segue só com o Google.\nlet doCrm = [];\ntry { doCrm = $('Supabase: horários ocupados').all().map(i => i.json).filter(a => a.inicio); } catch (e) {}\nfor (const a of doCrm) {\n  const ini = DateTime.fromISO(a.inicio).setZone(TZ);\n  ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);\n}\nconst livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);\nconst noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);\n\n// ---- agendamentos já feitos por esta cliente (achados pelo telefone na descrição do evento) ----\nif (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {\n  const ev = $('Google: agendamentos da cliente').first().json;\n  if (ev.error) return saida({ resposta: FORA });\n  const evs = (ev.items || []).filter(x => x.start && x.start.dateTime && x.status !== 'cancelled')\n    .map(x => ({ id: x.id, titulo: x.summary || '', ini: DateTime.fromISO(x.start.dateTime).setZone(TZ), fim: DateTime.fromISO(x.end.dateTime).setZone(TZ) }));\n  const listaEvs = evs.map(x => '- ' + x.titulo + ': ' + fmt(x.ini) + ' (data_hora_inicio: ' + iso(x.ini) + ')').join('\\n');\n  if (!evs.length) return saida({ resposta: 'Não encontrei nenhum agendamento futuro feito por este WhatsApp. Se ela marcou direto com a Gleide ou por outro número, use transferir_para_humano.' });\n  if (p.acao === 'listar') return [{ json: { acao: 'listar', ok: true, resposta: 'Agendamentos futuros desta cliente:\\n' + listaEvs } }];\n\n  let alvo = null;\n  if (p.inicio) alvo = evs.find(x => +x.ini === +DateTime.fromISO(p.inicio).setZone(TZ));\n  else if (evs.length === 1) alvo = evs[0];\n  if (!alvo) return saida({ resposta: 'A cliente tem mais de um agendamento (ou o horário informado não bate). Agendamentos dela:\\n' + listaEvs + '\\nPergunte qual e chame de novo com o data_hora_inicio certo.' });\n\n  if (p.acao === 'cancelar') return [{ json: { acao: 'cancelar', ok: true, eventId: alvo.id, de: fmt(alvo.ini) } }];\n\n  // remarcar: mesmo evento, novo horário (mesma duração). O horário atual dela não conta como ocupado.\n  const novo = DateTime.fromISO(p.novo).setZone(TZ);\n  const dur = alvo.fim.diff(alvo.ini, 'minutes').minutes;\n  const fimNovo = novo.plus({ minutes: dur });\n  const semEle = [];\n  for (const [a, b] of ocupados) {\n    if (b <= alvo.ini || a >= alvo.fim) { semEle.push([a, b]); continue; }\n    if (a < alvo.ini) semEle.push([a, alvo.ini]);\n    if (b > alvo.fim) semEle.push([alvo.fim, b]);\n  }\n  if (novo < agora.plus({ minutes: ANTECEDENCIA_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });\n  if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });\n  if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });\n  return [{ json: { acao: 'remarcar', ok: true, eventId: alvo.id, de: fmt(alvo.ini), quando: fmt(novo),\n    patch: { start: { dateTime: novo.toISO({ suppressMilliseconds: true }), timeZone: TZ }, end: { dateTime: fimNovo.toISO({ suppressMilliseconds: true }), timeZone: TZ } } } }];\n}\n\nif (p.acao === 'consultar') {\n  // TODOS os horários de início livres do dia (sem amostragem: a IA precisa do quadro completo\n  // para não \"mudar\" as opções a cada pergunta)\n  const vagasDoDia = (dia) => {\n    const v = [];\n    for (const [a, b] of intervalos(dia)) {\n      for (let t = a; t.plus({ minutes: p.dur }) <= b; t = t.plus({ minutes: PASSO_MIN })) {\n        if (t < agora.plus({ minutes: ANTECEDENCIA_MIN })) continue;\n        if (p.periodo.startsWith('manh') && t.hour >= 12) continue;\n        if (p.periodo.startsWith('tard') && t.hour < 12) continue;\n        if (livre(t, t.plus({ minutes: p.dur }))) v.push(t);\n      }\n    }\n    return v;\n  };\n  // agrupa horários seguidos em faixas: \"09:00 às 10:00; 14:30 às 16:00; 17:30\"\n  const faixas = (v) => {\n    const out = [];\n    for (const t of v) {\n      const f = out[out.length - 1];\n      if (f && t.diff(f[1], 'minutes').minutes === PASSO_MIN) f[1] = t; else out.push([t, t]);\n    }\n    return out.map(([a, b]) => (+a === +b ? a.toFormat('HH:mm') : a.toFormat('HH:mm') + ' às ' + b.toFormat('HH:mm'))).join('; ');\n  };\n  const quadro = (dia, v) => dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + ') — horários de INÍCIO livres para ' + p.dur +\n    ' min, de 30 em 30 min: ' + faixas(v) + '. Qualquer horário dentro dessas faixas está livre; fora delas, não.';\n  const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');\n  const fechado = !(EXPEDIENTE[pedido.weekday]);\n\n  // Horário específico pedido pela cliente\n  if (p.inicio && !fechado) {\n    const t = DateTime.fromISO(p.inicio).setZone(TZ);\n    const f = t.plus({ minutes: p.dur });\n    let motivo = null;\n    if (t < agora.plus({ minutes: ANTECEDENCIA_MIN })) motivo = 'já passou ou está muito em cima da hora';\n    else if (!noExpediente(t, f)) {\n      const ints = intervalos(pedido);\n      const noAlmoco = ints.some(([, fimA], k) => ints[k + 1] && t >= fimA && t < ints[k + 1][0]);\n      const comeca = ints.some(([a, b]) => t >= a && t < b);\n      motivo = noAlmoco ? 'é horário de almoço do salão (' + ints[0][1].toFormat('HH:mm') + ' às ' + ints[1][0].toFormat('HH:mm') + ')'\n        : comeca ? 'o serviço (' + p.dur + ' min) não termina antes do almoço/fechamento'\n        : 'fica fora do horário de funcionamento';\n    }\n    else if (!livre(t, f)) motivo = 'já está ocupado';\n    if (!motivo) return [{ json: { acao: 'consultar', ok: true, resposta: 'LIVRE: ' + fmt(t) + ' está disponível para ' + p.dur + ' min (data_hora_inicio: ' + iso(t) + '). Pode oferecer à cliente.' } }];\n    const alt = vagasDoDia(pedido);\n    return [{ json: { acao: 'consultar', ok: true, resposta: 'INDISPONÍVEL: ' + fmt(t) + ' ' + motivo + '.' +\n      (alt.length ? ' Quadro completo do dia: ' + quadro(pedido, alt) + ' Ofereça os horários livres mais próximos do que ela pediu.' : ' Não há outro horário livre nesse dia; consulte outro dia.') } }];\n  }\n  let opcoes = vagasDoDia(pedido);\n  let diaAlternativo = null;\n  for (let i = 1; !opcoes.length && i < DIAS_BUSCA; i++) {\n    const d = pedido.plus({ days: i });\n    const o = vagasDoDia(d);\n    if (o.length) { opcoes = o; diaAlternativo = d; }\n  }\n  const nomeDia = pedido.setLocale('pt-BR').toFormat('cccc, dd/LL');\n  let resposta;\n  if (!opcoes.length) resposta = 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';\n  else if (diaAlternativo) resposta = (fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +\n    ' Próximo dia com vaga: ' + quadro(diaAlternativo, opcoes);\n  else resposta = quadro(pedido, opcoes);\n  return [{ json: { acao: 'consultar', ok: true, resposta } }];\n}\n\n// criar\nconst ini = DateTime.fromISO(p.inicio).setZone(TZ);\nconst fim = ini.plus({ minutes: p.dur });\nif (ini < agora) return saida({ resposta: 'Esse horário já passou. Consulte os horários livres de novo.' });\nif (!noExpediente(ini, fim)) return saida({ resposta: 'Esse horário está fora do horário de funcionamento (ou não cabe a duração do serviço). Consulte os horários livres de novo.' });\nif (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' });\nreturn [{ json: {\n  acao: 'criar', ok: true,\n  quando: fmt(ini),\n  evento: {\n    // título com o motivo resumido, para a Gleide bater o olho na agenda e saber o que a cliente quer\n    summary: (p.servico + ' - ' + p.nome + (p.motivo ? ' | ' + p.motivo : '')).slice(0, 90),\n    description: 'Cliente: ' + p.nome + '\\nTelefone: ' + p.telefone + '\\nServiço: ' + p.servico +\n      '\\nO que a cliente quer: ' + (p.motivo || '(não informado)') +\n      '\\n\\nAgendado pelo WhatsApp (assistente virtual).',\n    start: { dateTime: ini.toISO({ suppressMilliseconds: true }), timeZone: TZ },\n    end: { dateTime: fim.toISO({ suppressMilliseconds: true }), timeZone: TZ },\n  },\n} }];"
+        "jsCode": "const TZ = 'America/Cuiaba';\nlet EXPEDIENTE = {\n  1: [['09:00', '12:00'], ['13:00', '18:00']], // segunda\n  2: [['09:00', '12:00'], ['13:00', '18:00']], // terça\n  3: [['09:00', '12:00'], ['13:00', '18:00']], // quarta\n  4: [['09:00', '12:00'], ['13:00', '18:00']], // quinta\n  5: [['09:00', '12:00'], ['13:00', '18:00']], // sexta\n  6: [['08:00', '14:00']],                      // sábado\n  7: [['08:00', '14:00']],                      // domingo\n};\nconst PASSO_MIN = 30;        // grade de horários\nconst ANTECEDENCIA_MIN = 60; // não oferece horário com menos de 1h\nconst DIAS_BUSCA = 7;        // procura vagas até 7 dias à frente\nconst fmt = (d) => d.setLocale('pt-BR').toFormat(\"cccc, dd/LL 'às' HH:mm\");\nconst iso = (d) => d.toFormat(\"yyyy-LL-dd'T'HH:mm\");\nconst lerData = (s) => {\n  s = String(s || '').trim().replace(' ', 'T');\n  let d = DateTime.fromISO(s, { zone: TZ });\n  if (!d.isValid) d = DateTime.fromFormat(s.slice(0, 10), 'dd/LL/yyyy', { zone: TZ });\n  return d;\n};\nconst intervalos = (dia) => (EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [\n  dia.set({ hour: +a.slice(0, 2), minute: +a.slice(3), second: 0, millisecond: 0 }),\n  dia.set({ hour: +b.slice(0, 2), minute: +b.slice(3), second: 0, millisecond: 0 }),\n]);\n\nconst p = $('Preparar').first().json;\nconst fb = $('Google: horários ocupados').first().json;\nconst agora = DateTime.now().setZone(TZ);\nconst saida = (o) => [{ json: { acao: p.acao, ok: false, ...o } }];\nconst FORA = 'A agenda está fora do ar agora. Peça desculpas à cliente e use transferir_para_humano para a equipe atender.';\n\n// Horário e almoço do salão vêm do CRM (empresas.config.horario_funcionamento = {\"ter\": \"09:00-19:00\",\n// \"seg\": null, ...} e config.almoco, padrão 11:00-13:00 como no app; almoco = null desliga).\ntry {\n  const cfg = $('Supabase: config do salão').first().json.config;\n  if (cfg && cfg.horario_funcionamento) {\n    const DIAS = { 1: 'seg', 2: 'ter', 3: 'qua', 4: 'qui', 5: 'sex', 6: 'sab', 7: 'dom' };\n    const alm = cfg.almoco === null ? null : (cfg.almoco && cfg.almoco.inicio ? cfg.almoco : { inicio: '11:00', fim: '13:00' });\n    const doSalao = {};\n    for (const [n, k] of Object.entries(DIAS)) {\n      const faixa = cfg.horario_funcionamento[k];\n      if (!faixa) continue;\n      const [abre, fecha] = faixa.split('-');\n      doSalao[n] = alm && alm.inicio > abre && alm.fim < fecha ? [[abre, alm.inicio], [alm.fim, fecha]] : [[abre, fecha]];\n    }\n    EXPEDIENTE = doSalao;\n  }\n} catch (e) {}\n\nif (p.erro) return saida({ resposta: p.erro });\nif (fb.error || !fb.calendars) return saida({ resposta: FORA });\n\nconst cal = Object.values(fb.calendars)[0] || {};\nif (cal.errors) return saida({ resposta: FORA });\nconst ocupados = (cal.busy || []).map(b => [DateTime.fromISO(b.start).setZone(TZ), DateTime.fromISO(b.end).setZone(TZ)]);\n// Horários marcados pelo CRM (Supabase) também ocupam: a Gleide marca/remarca pelo app e isso não vai para o Google.\n// Sem fim gravado, conta 1 h. Se o Supabase não respondeu, segue só com o Google.\nlet doCrm = [];\ntry { doCrm = $('Supabase: horários ocupados').all().map(i => i.json).filter(a => a.inicio); } catch (e) {}\nfor (const a of doCrm) {\n  const ini = DateTime.fromISO(a.inicio).setZone(TZ);\n  ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);\n}\nconst livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);\nconst noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);\n\n// ---- horários futuros desta cliente ----\n// Do CRM (Supabase): os marcados pela IA E pela Gleide no app, só os que ainda vão acontecer.\n// Se o Supabase não respondeu, usa os eventos do Google (só os que a IA marcou, achados pelo telefone).\nif (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {\n  let evs = null;\n  try {\n    const itens = $('Supabase: agendamentos da cliente').all().map(i => i.json);\n    if (!itens.some(x => x.error || x.code)) {\n      evs = itens.filter(x => x.id).map(x => {\n        const ini = DateTime.fromISO(x.inicio).setZone(TZ);\n        return { id: x.google_event_id || null, agendamentoId: x.id, obs: x.observacoes || '', titulo: (x.servicos && x.servicos.nome) || 'Horário',\n          ini, fim: x.fim ? DateTime.fromISO(x.fim).setZone(TZ) : ini.plus({ hours: 1 }) };\n      });\n    }\n  } catch (e) {}\n  if (!evs) {\n    const ev = $('Google: agendamentos da cliente').first().json;\n    if (ev.error) return saida({ resposta: FORA });\n    evs = (ev.items || []).filter(x => x.start && x.start.dateTime && x.status !== 'cancelled')\n      .map(x => ({ id: x.id, agendamentoId: null, obs: '', titulo: x.summary || '', ini: DateTime.fromISO(x.start.dateTime).setZone(TZ), fim: DateTime.fromISO(x.end.dateTime).setZone(TZ) }));\n  }\n  // \"HOJE\"/\"AMANHÃ\" escrito na lista: a IA errava o dia relativo fazendo a conta de cabeça\n  const relativo = (d) => { const n = Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days); return n === 0 ? 'HOJE, ' : n === 1 ? 'AMANHÃ, ' : ''; };\n  const listaEvs = evs.map(x => '- ' + x.titulo + ': ' + relativo(x.ini) + fmt(x.ini) + ' (data_hora_inicio: ' + iso(x.ini) + ')').join('\\n');\n  if (!evs.length) return saida({ resposta: 'Não encontrei nenhum horário futuro marcado para esta cliente. Se ela diz que marcou, pode ter sido por outro número: use transferir_para_humano.' });\n  if (p.acao === 'listar') return [{ json: { acao: 'listar', ok: true, resposta: 'Agendamentos futuros desta cliente:\\n' + listaEvs } }];\n\n  let alvo = null;\n  if (p.inicio) alvo = evs.find(x => +x.ini === +DateTime.fromISO(p.inicio).setZone(TZ));\n  else if (evs.length === 1) alvo = evs[0];\n  if (!alvo) return saida({ resposta: 'A cliente tem mais de um agendamento (ou o horário informado não bate). Agendamentos dela:\\n' + listaEvs + '\\nPergunte qual e chame de novo com o data_hora_inicio certo.' });\n\n  if (p.acao === 'cancelar') return [{ json: { acao: 'cancelar', ok: true, eventId: alvo.id, agendamentoId: alvo.agendamentoId, de: fmt(alvo.ini) } }];\n\n  // remarcar: mesmo evento, novo horário (mesma duração). O horário atual dela não conta como ocupado.\n  const novo = DateTime.fromISO(p.novo).setZone(TZ);\n  const dur = alvo.fim.diff(alvo.ini, 'minutes').minutes;\n  const fimNovo = novo.plus({ minutes: dur });\n  const semEle = [];\n  for (const [a, b] of ocupados) {\n    if (b <= alvo.ini || a >= alvo.fim) { semEle.push([a, b]); continue; }\n    if (a < alvo.ini) semEle.push([a, alvo.ini]);\n    if (b > alvo.fim) semEle.push([alvo.fim, b]);\n  }\n  if (novo < agora.plus({ minutes: ANTECEDENCIA_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });\n  if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });\n  if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });\n  // mesma anotação do CRM (\"Reagendado de 20/10 às 13:00\"): o app mostra o horário antigo\n  const observacoes = [alvo.obs, 'Reagendado de ' + alvo.ini.toFormat('dd/LL') + ' às ' + alvo.ini.toFormat('HH:mm')].filter(Boolean).join('\\n');\n  return [{ json: { acao: 'remarcar', ok: true, eventId: alvo.id, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo),\n    patch: { start: { dateTime: novo.toISO({ suppressMilliseconds: true }), timeZone: TZ }, end: { dateTime: fimNovo.toISO({ suppressMilliseconds: true }), timeZone: TZ } } } }];\n}\n\nif (p.acao === 'consultar') {\n  // TODOS os horários de início livres do dia (sem amostragem: a IA precisa do quadro completo\n  // para não \"mudar\" as opções a cada pergunta)\n  const vagasDoDia = (dia) => {\n    const v = [];\n    for (const [a, b] of intervalos(dia)) {\n      for (let t = a; t.plus({ minutes: p.dur }) <= b; t = t.plus({ minutes: PASSO_MIN })) {\n        if (t < agora.plus({ minutes: ANTECEDENCIA_MIN })) continue;\n        if (p.periodo.startsWith('manh') && t.hour >= 12) continue;\n        if (p.periodo.startsWith('tard') && t.hour < 12) continue;\n        if (livre(t, t.plus({ minutes: p.dur }))) v.push(t);\n      }\n    }\n    return v;\n  };\n  // agrupa horários seguidos em faixas: \"09:00 às 10:00; 14:30 às 16:00; 17:30\"\n  const faixas = (v) => {\n    const out = [];\n    for (const t of v) {\n      const f = out[out.length - 1];\n      if (f && t.diff(f[1], 'minutes').minutes === PASSO_MIN) f[1] = t; else out.push([t, t]);\n    }\n    return out.map(([a, b]) => (+a === +b ? a.toFormat('HH:mm') : a.toFormat('HH:mm') + ' às ' + b.toFormat('HH:mm'))).join('; ');\n  };\n  const quadro = (dia, v) => dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + ') — horários de INÍCIO livres para ' + p.dur +\n    ' min, de 30 em 30 min: ' + faixas(v) + '. Qualquer horário dentro dessas faixas está livre; fora delas, não.';\n  const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');\n  const fechado = !(EXPEDIENTE[pedido.weekday]);\n\n  // Horário específico pedido pela cliente\n  if (p.inicio && !fechado) {\n    const t = DateTime.fromISO(p.inicio).setZone(TZ);\n    const f = t.plus({ minutes: p.dur });\n    let motivo = null;\n    if (t < agora.plus({ minutes: ANTECEDENCIA_MIN })) motivo = 'já passou ou está muito em cima da hora';\n    else if (!noExpediente(t, f)) {\n      const ints = intervalos(pedido);\n      const noAlmoco = ints.some(([, fimA], k) => ints[k + 1] && t >= fimA && t < ints[k + 1][0]);\n      const comeca = ints.some(([a, b]) => t >= a && t < b);\n      motivo = noAlmoco ? 'é horário de almoço do salão (' + ints[0][1].toFormat('HH:mm') + ' às ' + ints[1][0].toFormat('HH:mm') + ')'\n        : comeca ? 'o serviço (' + p.dur + ' min) não termina antes do almoço/fechamento'\n        : 'fica fora do horário de funcionamento';\n    }\n    else if (!livre(t, f)) motivo = 'já está ocupado';\n    if (!motivo) return [{ json: { acao: 'consultar', ok: true, resposta: 'LIVRE: ' + fmt(t) + ' está disponível para ' + p.dur + ' min (data_hora_inicio: ' + iso(t) + '). Pode oferecer à cliente.' } }];\n    const alt = vagasDoDia(pedido);\n    return [{ json: { acao: 'consultar', ok: true, resposta: 'INDISPONÍVEL: ' + fmt(t) + ' ' + motivo + '.' +\n      (alt.length ? ' Quadro completo do dia: ' + quadro(pedido, alt) + ' Ofereça os horários livres mais próximos do que ela pediu.' : ' Não há outro horário livre nesse dia; consulte outro dia.') } }];\n  }\n  let opcoes = vagasDoDia(pedido);\n  let diaAlternativo = null;\n  for (let i = 1; !opcoes.length && i < DIAS_BUSCA; i++) {\n    const d = pedido.plus({ days: i });\n    const o = vagasDoDia(d);\n    if (o.length) { opcoes = o; diaAlternativo = d; }\n  }\n  const nomeDia = pedido.setLocale('pt-BR').toFormat('cccc, dd/LL');\n  let resposta;\n  if (!opcoes.length) resposta = 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';\n  else if (diaAlternativo) resposta = (fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +\n    ' Próximo dia com vaga: ' + quadro(diaAlternativo, opcoes);\n  else resposta = quadro(pedido, opcoes);\n  return [{ json: { acao: 'consultar', ok: true, resposta } }];\n}\n\n// criar\nconst ini = DateTime.fromISO(p.inicio).setZone(TZ);\nconst fim = ini.plus({ minutes: p.dur });\nif (ini < agora) return saida({ resposta: 'Esse horário já passou. Consulte os horários livres de novo.' });\nif (!noExpediente(ini, fim)) return saida({ resposta: 'Esse horário está fora do horário de funcionamento (ou não cabe a duração do serviço). Consulte os horários livres de novo.' });\nif (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' });\nreturn [{ json: {\n  acao: 'criar', ok: true,\n  quando: fmt(ini),\n  evento: {\n    // título com o motivo resumido, para a Gleide bater o olho na agenda e saber o que a cliente quer\n    summary: (p.servico + ' - ' + p.nome + (p.motivo ? ' | ' + p.motivo : '')).slice(0, 90),\n    description: 'Cliente: ' + p.nome + '\\nTelefone: ' + p.telefone + '\\nServiço: ' + p.servico +\n      '\\nO que a cliente quer: ' + (p.motivo || '(não informado)') +\n      '\\n\\nAgendado pelo WhatsApp (assistente virtual).',\n    start: { dateTime: ini.toISO({ suppressMilliseconds: true }), timeZone: TZ },\n    end: { dateTime: fim.toISO({ suppressMilliseconds: true }), timeZone: TZ },\n  },\n} }];"
       }
     },
     {
@@ -357,7 +357,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ $('Google: cancelar evento').item.json.error ? 'NÃO CANCELADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' : 'CANCELADO com sucesso: o agendamento de ' + $('Calcular').item.json.de + ' foi removido da agenda. Confirme para a cliente.' }}",
+              "value": "={{ $('Supabase: cancelar agendamento').item.json.id ? 'CANCELADO com sucesso: o agendamento de ' + $('Calcular').item.json.de + ' foi removido da agenda. Confirme para a cliente.' : 'NÃO CANCELADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' }}",
               "type": "string"
             }
           ]
@@ -450,7 +450,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ $('Google: remarcar evento').item.json.id ? 'REMARCADO com sucesso: o agendamento saiu de ' + $('Calcular').item.json.de + ' para ' + $('Calcular').item.json.quando + ' (é o MESMO agendamento, o horário antigo não existe mais). Confirme para a cliente.' : 'NÃO REMARCADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' }}",
+              "value": "={{ $('Supabase: remarcar agendamento').item.json.id ? 'REMARCADO com sucesso: o agendamento saiu de ' + $('Calcular').item.json.de + ' para ' + $('Calcular').item.json.quando + ' (é o MESMO agendamento, o horário antigo não existe mais). Confirme para a cliente.' : 'NÃO REMARCADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' }}",
               "type": "string"
             }
           ]
@@ -589,6 +589,75 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000089",
+      "name": "Supabase: config do salão",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        770,
+        320
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ $env.EMPRESA_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000090",
+      "name": "Supabase: agendamentos da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        990,
+        160
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id,inicio,fim,google_event_id,observacoes,servicos(nome),clientes!inner(telefone)&empresa_id=eq.{{ $env.EMPRESA_ID }}&status=eq.agendado&inicio=gt.{{ $now.toUTC().toISO() }}&clientes.telefone=eq.{{ (() => { const d = String($('Preparar').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}&order=inicio",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000091",
       "name": "Supabase: cliente e serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -622,7 +691,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000090",
+      "id": "00000000-0000-4000-8000-000000000092",
       "name": "Supabase: serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -657,7 +726,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000091",
+      "id": "00000000-0000-4000-8000-000000000093",
       "name": "Supabase: profissionais",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -692,7 +761,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000092",
+      "id": "00000000-0000-4000-8000-000000000094",
       "name": "Montar agendamento",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -705,7 +774,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000093",
+      "id": "00000000-0000-4000-8000-000000000095",
       "name": "Supabase: gravar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -742,7 +811,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000094",
+      "id": "00000000-0000-4000-8000-000000000096",
       "name": "Supabase: nome da cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -779,7 +848,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000095",
+      "id": "00000000-0000-4000-8000-000000000097",
       "name": "Supabase: cancelar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -789,7 +858,7 @@
       ],
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?empresa_id=eq.{{ $env.EMPRESA_ID }}&google_event_id=eq.{{ $('Calcular').item.json.eventId }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?empresa_id=eq.{{ $env.EMPRESA_ID }}&{{ $('Calcular').item.json.agendamentoId ? 'id=eq.' + $('Calcular').item.json.agendamentoId : 'google_event_id=eq.' + $('Calcular').item.json.eventId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -816,7 +885,41 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000096",
+      "id": "00000000-0000-4000-8000-000000000098",
+      "name": "Tem evento no Google (cancelar)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1490,
+        -40
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g-cancelar",
+              "leftValue": "={{ !!$('Calcular').item.json.eventId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000099",
       "name": "Supabase: remarcar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -826,7 +929,7 @@
       ],
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?empresa_id=eq.{{ $env.EMPRESA_ID }}&google_event_id=eq.{{ $('Calcular').item.json.eventId }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?empresa_id=eq.{{ $env.EMPRESA_ID }}&{{ $('Calcular').item.json.agendamentoId ? 'id=eq.' + $('Calcular').item.json.agendamentoId : 'google_event_id=eq.' + $('Calcular').item.json.eventId }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -846,11 +949,45 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ inicio: $('Calcular').item.json.patch.start.dateTime, fim: $('Calcular').item.json.patch.end.dateTime }) }}",
+        "jsonBody": "={{ JSON.stringify({ inicio: $('Calcular').item.json.patch.start.dateTime, fim: $('Calcular').item.json.patch.end.dateTime, ...($('Calcular').item.json.observacoes ? { observacoes: $('Calcular').item.json.observacoes } : {}) }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000100",
+      "name": "Tem evento no Google (remarcar)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1710,
+        340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g-remarcar",
+              "leftValue": "={{ !!$('Calcular').item.json.eventId }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -942,7 +1079,7 @@
       "main": [
         [
           {
-            "node": "Google: cancelar evento",
+            "node": "Tem evento no Google (cancelar)?",
             "type": "main",
             "index": 0
           }
@@ -971,7 +1108,7 @@
       "main": [
         [
           {
-            "node": "Google: remarcar evento",
+            "node": "Tem evento no Google (remarcar)?",
             "type": "main",
             "index": 0
           }
@@ -1030,6 +1167,28 @@
       ]
     },
     "Supabase: horários ocupados": {
+      "main": [
+        [
+          {
+            "node": "Supabase: config do salão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: config do salão": {
+      "main": [
+        [
+          {
+            "node": "Supabase: agendamentos da cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: agendamentos da cliente": {
       "main": [
         [
           {
@@ -1117,11 +1276,47 @@
         ]
       ]
     },
+    "Tem evento no Google (cancelar)?": {
+      "main": [
+        [
+          {
+            "node": "Google: cancelar evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CRM: cancelado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Supabase: remarcar agendamento": {
       "main": [
         [
           {
             "node": "Resposta (remarcado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem evento no Google (remarcar)?": {
+      "main": [
+        [
+          {
+            "node": "Google: remarcar evento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "CRM: remarcado",
             "type": "main",
             "index": 0
           }

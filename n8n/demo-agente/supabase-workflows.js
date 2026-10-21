@@ -145,8 +145,19 @@ Use a ficha como quem já conhece a cliente:
     `agendamentos?select=inicio,fim,google_event_id&empresa_id=eq.{{ ${EMPRESA} }}&status=in.(agendado,realizado)` +
     `&inicio=gte.{{ DateTime.fromISO(${Pr}.timeMin || $now.toISO()).minus({ hours: 12 }).toUTC().toISO() }}` +
     `&inicio=lt.{{ ${Pr}.timeMax || $now.plus({ days: 8 }).toUTC().toISO() }}`, null));
+  // horário de funcionamento e almoço do salão (os mesmos do CRM) e os horários futuros desta cliente
+  // (marcados pela IA ou pela Gleide no app) para ver / remarcar / cancelar
+  agendaWorkflow.nodes.push(
+    supa('Supabase: config do salão', 'GET', `empresas?select=config&id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }),
+    supa('Supabase: agendamentos da cliente', 'GET',
+      'agendamentos?select=id,inicio,fim,google_event_id,observacoes,servicos(nome),clientes!inner(telefone)' +
+      `&empresa_id=eq.{{ ${EMPRESA} }}&status=eq.agendado&inicio=gt.{{ $now.toUTC().toISO() }}` +
+      `&clientes.telefone=eq.{{ ${TEL_BR(`${Pr}.telefone`)} }}&order=inicio`, null),
+  );
   agendaWorkflow.connections['Google: agendamentos da cliente'] = main('Supabase: horários ocupados');
-  agendaWorkflow.connections['Supabase: horários ocupados'] = main('Calcular');
+  agendaWorkflow.connections['Supabase: horários ocupados'] = main('Supabase: config do salão');
+  agendaWorkflow.connections['Supabase: config do salão'] = main('Supabase: agendamentos da cliente');
+  agendaWorkflow.connections['Supabase: agendamentos da cliente'] = main('Calcular');
 
   // ---------- Agenda: criar ----------
   const ultimoCriar = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === 'Resposta (agendado)');
@@ -208,13 +219,45 @@ return [{ json: { pular: false, corpo: {
   achar(agendaWorkflow, 'Supabase: gravar agendamento').parameters.url =
     "={{ $env.SUPABASE_URL }}/rest/v1/{{ $json.pular ? 'nao_gravar' : 'agendamentos' }}";
 
-  // ---------- Agenda: cancelar / remarcar (pelo google_event_id) ----------
+  // ---------- Agenda: cancelar / remarcar ----------
+  // Pelo id do agendamento no Supabase (vale para o que a Gleide marcou no CRM). O Google só é mexido
+  // quando o horário tem evento lá (os marcados pela IA); a resposta para a IA depende do Supabase.
   const C = "$('Calcular').item.json";
-  const ultimoCancelar = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === 'Resposta (cancelado)');
-  entre(agendaWorkflow, ultimoCancelar, supa('Supabase: cancelar agendamento', 'PATCH',
-    `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&google_event_id=eq.{{ ${C}.eventId }}`, "{ status: 'cancelado' }"), 'Resposta (cancelado)');
-  const ultimoRemarcar = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === 'Resposta (remarcado)');
-  entre(agendaWorkflow, ultimoRemarcar, supa('Supabase: remarcar agendamento', 'PATCH',
-    `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&google_event_id=eq.{{ ${C}.eventId }}`,
-    `{ inicio: ${C}.patch.start.dateTime, fim: ${C}.patch.end.dateTime }`), 'Resposta (remarcado)');
+  const ALVO = `{{ ${C}.agendamentoId ? 'id=eq.' + ${C}.agendamentoId : 'google_event_id=eq.' + ${C}.eventId }}`;
+  for (const [acao, google, resposta, ok, falha] of [
+    ['cancelar', 'Google: cancelar evento', 'Resposta (cancelado)',
+      `'CANCELADO com sucesso: o agendamento de ' + ${C}.de + ' foi removido da agenda. Confirme para a cliente.'`,
+      "'NÃO CANCELADO: a agenda falhou. Peça desculpas e use transferir_para_humano.'"],
+    ['remarcar', 'Google: remarcar evento', 'Resposta (remarcado)',
+      `'REMARCADO com sucesso: o agendamento saiu de ' + ${C}.de + ' para ' + ${C}.quando + ' (é o MESMO agendamento, o horário antigo não existe mais). Confirme para a cliente.'`,
+      "'NÃO REMARCADO: a agenda falhou. Peça desculpas e use transferir_para_humano.'"],
+  ]) {
+    const nome = acao === 'cancelar' ? 'Supabase: cancelar agendamento' : 'Supabase: remarcar agendamento';
+    const ultimo = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === resposta);
+    entre(agendaWorkflow, ultimo, supa(nome, 'PATCH', `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&${ALVO}`,
+      acao === 'cancelar'
+        ? "{ status: 'cancelado' }"
+        : `{ inicio: ${C}.patch.start.dateTime, fim: ${C}.patch.end.dateTime, ...(${C}.observacoes ? { observacoes: ${C}.observacoes } : {}) }`),
+    resposta);
+    // sem evento no Google: pula o Google e vai direto para o que vinha depois dele
+    const se = `Tem evento no Google (${acao})?`;
+    const pergunta = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === google);
+    agendaWorkflow.nodes.push(node(se, 'n8n-nodes-base.if', 2.2, [0, 0], {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+        conditions: [{ id: `g-${acao}`, leftValue: `={{ !!${C}.eventId }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+      options: {},
+    }));
+    agendaWorkflow.connections[pergunta].main[0] = [{ node: se, type: 'main', index: 0 }];
+    agendaWorkflow.connections[se] = { main: [[{ node: google, type: 'main', index: 0 }], [{ node: agendaWorkflow.connections[google].main[0][0].node, type: 'main', index: 0 }]] };
+    // deu certo = o Supabase mudou o horário (o Google é secundário)
+    achar(agendaWorkflow, resposta).parameters.assignments.assignments[0].value = `={{ $('${nome}').item.json.id ? ${ok} : ${falha} }}`;
+  }
+
+  // a ferramenta de ver horários agora enxerga também o que a Gleide marcou no CRM
+  achar(workflow, 'ver_agendamentos').parameters.description =
+    'Lista os horários futuros desta cliente (marcados pela IA ou pela Gleide). Use quando ela perguntar o horário ' +
+    'dela, ou antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.';
 };

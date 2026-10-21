@@ -1,10 +1,11 @@
 // ===== Código dos nós Code do subworkflow "Agenda Salão" =====
 // O montar-workflow.js injeta PREPARAR e CALCULAR nos nós. Rodam dentro do n8n (Luxon = DateTime).
 
-// Horário de funcionamento (Luxon: 1=segunda ... 7=domingo). Manter igual ao prompt-agente.md.
+// Horário de funcionamento (Luxon: 1=segunda ... 7=domingo). Vale só se o Supabase não responder:
+// o normal é o CALCULAR trocar pelo horário e almoço do salão (empresas.config), os mesmos do CRM.
 const CONFIG = `
 const TZ = 'America/Cuiaba';
-const EXPEDIENTE = {
+let EXPEDIENTE = {
   1: [['09:00', '12:00'], ['13:00', '18:00']], // segunda
   2: [['09:00', '12:00'], ['13:00', '18:00']], // terça
   3: [['09:00', '12:00'], ['13:00', '18:00']], // quarta
@@ -82,6 +83,24 @@ const agora = DateTime.now().setZone(TZ);
 const saida = (o) => [{ json: { acao: p.acao, ok: false, ...o } }];
 const FORA = 'A agenda está fora do ar agora. Peça desculpas à cliente e use transferir_para_humano para a equipe atender.';
 
+// Horário e almoço do salão vêm do CRM (empresas.config.horario_funcionamento = {"ter": "09:00-19:00",
+// "seg": null, ...} e config.almoco, padrão 11:00-13:00 como no app; almoco = null desliga).
+try {
+  const cfg = $('Supabase: config do salão').first().json.config;
+  if (cfg && cfg.horario_funcionamento) {
+    const DIAS = { 1: 'seg', 2: 'ter', 3: 'qua', 4: 'qui', 5: 'sex', 6: 'sab', 7: 'dom' };
+    const alm = cfg.almoco === null ? null : (cfg.almoco && cfg.almoco.inicio ? cfg.almoco : { inicio: '11:00', fim: '13:00' });
+    const doSalao = {};
+    for (const [n, k] of Object.entries(DIAS)) {
+      const faixa = cfg.horario_funcionamento[k];
+      if (!faixa) continue;
+      const [abre, fecha] = faixa.split('-');
+      doSalao[n] = alm && alm.inicio > abre && alm.fim < fecha ? [[abre, alm.inicio], [alm.fim, fecha]] : [[abre, fecha]];
+    }
+    EXPEDIENTE = doSalao;
+  }
+} catch (e) {}
+
 if (p.erro) return saida({ resposta: p.erro });
 if (fb.error || !fb.calendars) return saida({ resposta: FORA });
 
@@ -99,14 +118,31 @@ for (const a of doCrm) {
 const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
-// ---- agendamentos já feitos por esta cliente (achados pelo telefone na descrição do evento) ----
+// ---- horários futuros desta cliente ----
+// Do CRM (Supabase): os marcados pela IA E pela Gleide no app, só os que ainda vão acontecer.
+// Se o Supabase não respondeu, usa os eventos do Google (só os que a IA marcou, achados pelo telefone).
 if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
-  const ev = $('Google: agendamentos da cliente').first().json;
-  if (ev.error) return saida({ resposta: FORA });
-  const evs = (ev.items || []).filter(x => x.start && x.start.dateTime && x.status !== 'cancelled')
-    .map(x => ({ id: x.id, titulo: x.summary || '', ini: DateTime.fromISO(x.start.dateTime).setZone(TZ), fim: DateTime.fromISO(x.end.dateTime).setZone(TZ) }));
-  const listaEvs = evs.map(x => '- ' + x.titulo + ': ' + fmt(x.ini) + ' (data_hora_inicio: ' + iso(x.ini) + ')').join('\\n');
-  if (!evs.length) return saida({ resposta: 'Não encontrei nenhum agendamento futuro feito por este WhatsApp. Se ela marcou direto com a Gleide ou por outro número, use transferir_para_humano.' });
+  let evs = null;
+  try {
+    const itens = $('Supabase: agendamentos da cliente').all().map(i => i.json);
+    if (!itens.some(x => x.error || x.code)) {
+      evs = itens.filter(x => x.id).map(x => {
+        const ini = DateTime.fromISO(x.inicio).setZone(TZ);
+        return { id: x.google_event_id || null, agendamentoId: x.id, obs: x.observacoes || '', titulo: (x.servicos && x.servicos.nome) || 'Horário',
+          ini, fim: x.fim ? DateTime.fromISO(x.fim).setZone(TZ) : ini.plus({ hours: 1 }) };
+      });
+    }
+  } catch (e) {}
+  if (!evs) {
+    const ev = $('Google: agendamentos da cliente').first().json;
+    if (ev.error) return saida({ resposta: FORA });
+    evs = (ev.items || []).filter(x => x.start && x.start.dateTime && x.status !== 'cancelled')
+      .map(x => ({ id: x.id, agendamentoId: null, obs: '', titulo: x.summary || '', ini: DateTime.fromISO(x.start.dateTime).setZone(TZ), fim: DateTime.fromISO(x.end.dateTime).setZone(TZ) }));
+  }
+  // "HOJE"/"AMANHÃ" escrito na lista: a IA errava o dia relativo fazendo a conta de cabeça
+  const relativo = (d) => { const n = Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days); return n === 0 ? 'HOJE, ' : n === 1 ? 'AMANHÃ, ' : ''; };
+  const listaEvs = evs.map(x => '- ' + x.titulo + ': ' + relativo(x.ini) + fmt(x.ini) + ' (data_hora_inicio: ' + iso(x.ini) + ')').join('\\n');
+  if (!evs.length) return saida({ resposta: 'Não encontrei nenhum horário futuro marcado para esta cliente. Se ela diz que marcou, pode ter sido por outro número: use transferir_para_humano.' });
   if (p.acao === 'listar') return [{ json: { acao: 'listar', ok: true, resposta: 'Agendamentos futuros desta cliente:\\n' + listaEvs } }];
 
   let alvo = null;
@@ -114,7 +150,7 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   else if (evs.length === 1) alvo = evs[0];
   if (!alvo) return saida({ resposta: 'A cliente tem mais de um agendamento (ou o horário informado não bate). Agendamentos dela:\\n' + listaEvs + '\\nPergunte qual e chame de novo com o data_hora_inicio certo.' });
 
-  if (p.acao === 'cancelar') return [{ json: { acao: 'cancelar', ok: true, eventId: alvo.id, de: fmt(alvo.ini) } }];
+  if (p.acao === 'cancelar') return [{ json: { acao: 'cancelar', ok: true, eventId: alvo.id, agendamentoId: alvo.agendamentoId, de: fmt(alvo.ini) } }];
 
   // remarcar: mesmo evento, novo horário (mesma duração). O horário atual dela não conta como ocupado.
   const novo = DateTime.fromISO(p.novo).setZone(TZ);
@@ -129,7 +165,9 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   if (novo < agora.plus({ minutes: ANTECEDENCIA_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
-  return [{ json: { acao: 'remarcar', ok: true, eventId: alvo.id, de: fmt(alvo.ini), quando: fmt(novo),
+  // mesma anotação do CRM ("Reagendado de 20/10 às 13:00"): o app mostra o horário antigo
+  const observacoes = [alvo.obs, 'Reagendado de ' + alvo.ini.toFormat('dd/LL') + ' às ' + alvo.ini.toFormat('HH:mm')].filter(Boolean).join('\\n');
+  return [{ json: { acao: 'remarcar', ok: true, eventId: alvo.id, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo),
     patch: { start: { dateTime: novo.toISO({ suppressMilliseconds: true }), timeZone: TZ }, end: { dateTime: fimNovo.toISO({ suppressMilliseconds: true }), timeZone: TZ } } } }];
 }
 
