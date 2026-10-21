@@ -1,41 +1,78 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
-import { diasEntre, formatarData, formatarTelefone, hojeNoSalao, prazo } from "@/lib/formato";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
+import { diasEntre, formatarData, formatarHora, formatarTelefone, hojeNoSalao, prazo } from "@/lib/formato";
 import { useDialogo } from "@/components/Dialogo";
 import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
 import { etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem } from "@/lib/origem";
 import { Etiquetas } from "@/components/Etiquetas";
-import { PontoStatus, SeloStatus } from "@/lib/status";
+import { STATUS, PontoStatus } from "@/lib/status";
 import { supabase } from "@/lib/supabase/client";
 import type { ClienteStatus, RetornoServico } from "@/lib/tipos";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
-// Ficha enxuta da dona: dados, retornos e observações. Origem, linha do tempo e IA ficam no
-// CRM da agência (painel-crm).
+// Ficha enxuta da dona: contato, próximo horário, preferências, retornos e histórico.
+// Origem, linha do tempo e IA ficam no CRM da agência (painel-crm).
+type Horario = {
+  id: string;
+  inicio: string;
+  valor: number | null;
+  servicos: { nome: string } | null;
+  profissionais: { nome: string } | null;
+};
+
 type Ficha = {
   cliente: ClienteStatus;
   retornos: RetornoServico[];
+  proximo: Horario | null;
+  historico: Horario[];
 };
 
 const ETIQUETAS_SUGERIDAS = ["vip", "alergia", "mega hair", "coloração", "química", "gestante"];
+const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 
 async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
   const db = supabase();
-  const [cliente, retornos] = await Promise.all([
+  const campos = "id, inicio, valor, servicos (nome), profissionais (nome)";
+  const [cliente, retornos, proximo, historico] = await Promise.all([
     db.from("clientes_status").select("*").eq("id", id).maybeSingle(),
     db.from("retornos_por_servico").select("servico_id, servico_nome, ultima_vez, retorno_previsto").eq("cliente_id", id),
+    db
+      .from("agendamentos")
+      .select(campos)
+      .eq("cliente_id", id)
+      .eq("status", "agendado")
+      .gt("inicio", new Date().toISOString())
+      .order("inicio")
+      .limit(1)
+      .maybeSingle(),
+    db.from("agendamentos").select(campos).eq("cliente_id", id).eq("status", "realizado").order("inicio", { ascending: false }).limit(10),
   ]);
-  const falha = [cliente, retornos].find((r) => r.error);
+  const falha = [cliente, retornos, proximo, historico].find((r) => r.error);
   if (falha?.error) return { erro: falha.error.message };
   if (!cliente.data) return { erro: "Cliente não encontrada." };
-  return { cliente: cliente.data as ClienteStatus, retornos: retornos.data as RetornoServico[] };
+  return {
+    cliente: cliente.data as ClienteStatus,
+    retornos: retornos.data as RetornoServico[],
+    proximo: proximo.data as unknown as Horario | null,
+    historico: historico.data as unknown as Horario[],
+  };
+}
+
+function iniciais(nome: string | null): string {
+  const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
+  if (partes.length === 0) return "?";
+  return (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+}
+
+function dinheiro(valor: number): string {
+  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 
 export default function FichaClientePage() {
   return (
-    <Suspense fallback={<p className="p-4 text-neutral-500">Carregando…</p>}>
+    <Suspense fallback={<p className="p-5 text-texto-2">Carregando…</p>}>
       <FichaCliente />
     </Suspense>
   );
@@ -46,6 +83,8 @@ function FichaCliente() {
   const [resultado, setResultado] = useState<Ficha | { erro: string } | null>(null);
   // Muda a cada salvamento para buscar a ficha de novo
   const [versao, setVersao] = useState(0);
+  // O lápis do topo abre a edição (nome, observações, etiquetas e excluir)
+  const [editando, setEditando] = useState(false);
   const recarregar = () => setVersao((v) => v + 1);
 
   useEffect(() => {
@@ -58,68 +97,139 @@ function FichaCliente() {
     };
   }, [id, versao]);
 
-  if (!resultado) return <p className="p-4 text-neutral-500">Carregando…</p>;
-  if ("erro" in resultado) return <p className="m-4 rounded-xl bg-red-100 p-4 text-red-900">{resultado.erro}</p>;
+  if (!resultado) return <p className="p-5 text-texto-2">Carregando…</p>;
+  if ("erro" in resultado) return <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">{resultado.erro}</p>;
   const ficha = resultado;
-  const carregar = recarregar;
 
   return (
-    <div className="space-y-6 pb-4">
-      <Topo cliente={ficha.cliente} aoMudar={carregar} />
-      <Retornos retornos={ficha.retornos} />
-      {/* key: se uma etiqueta for tirada lá em cima, o formulário recomeça com as etiquetas certas */}
-      <Dados key={ficha.cliente.etiquetas.join("|")} cliente={ficha.cliente} aoSalvar={carregar} />
-      <Exclusao cliente={ficha.cliente} aoMudar={carregar} />
+    <div className="pb-4">
+      <Topo cliente={ficha.cliente} editando={editando} aoEditar={() => setEditando((e) => !e)} />
+      <Contato cliente={ficha.cliente} />
+
+      <div className="flex flex-col gap-4 px-5 pt-5">
+        {editando && (
+          <>
+            {/* key: se uma etiqueta for tirada, o formulário recomeça com as etiquetas certas */}
+            <Dados key={ficha.cliente.etiquetas.join("|")} cliente={ficha.cliente} aoSalvar={recarregar} />
+            <Exclusao cliente={ficha.cliente} aoMudar={recarregar} />
+          </>
+        )}
+        {ficha.proximo && <ProximoHorario horario={ficha.proximo} />}
+        <Preferencias cliente={ficha.cliente} aoMudar={recarregar} aoEditar={() => setEditando(true)} />
+        <Retornos retornos={ficha.retornos} />
+        <Historico historico={ficha.historico} />
+      </div>
     </div>
   );
 }
 
-// No fim da ficha: excluir a cliente (vai para Clientes excluídas, no Painel CRM) ou,
-// se ela já está lá, restaurar.
-function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
-  const router = useRouter();
-  const [salvando, setSalvando] = useState(false);
-  const { dialogo, perguntar, avisar } = useDialogo();
-  const excluida = estaExcluida(cliente.etiquetas);
-
-  async function alternar() {
-    if (!excluida && !(await perguntar(textoExclusao(cliente.nome), { confirmar: "Excluir", perigo: true }))) return;
-    setSalvando(true);
-    const erro = excluida ? await restaurarCliente(cliente.id) : await excluirCliente(cliente.id);
-    setSalvando(false);
-    if (erro) {
-      await avisar(`Não foi possível salvar: ${erro}`);
-      return;
-    }
-    if (excluida) aoMudar();
-    else router.back();
-  }
-
+function Cartao({ titulo, children }: { titulo?: string; children: ReactNode }) {
   return (
-    <section className="px-4 pt-2">
-      {excluida && (
-        <p className="mb-2 rounded-xl border border-neutral-200 bg-white p-3 text-neutral-700">
-          Esta cliente está em <strong>Clientes excluídas</strong>: não aparece no Início, na Agenda nem nas Conversas.
-        </p>
-      )}
-      <button
-        onClick={alternar}
-        disabled={salvando}
-        className={`h-12 w-full rounded-xl border bg-white font-semibold disabled:opacity-50 ${
-          excluida ? "border-neutral-300 text-neutral-800" : "border-red-200 text-red-700 active:bg-red-50"
-        }`}
-      >
-        {excluida ? "Restaurar cliente" : "Excluir cliente"}
-      </button>
-      {dialogo}
+    <section className="flex flex-col gap-3 rounded-[22px] bg-card p-[18px]">
+      {titulo && <h2 className="font-serif text-[21px] font-semibold">{titulo}</h2>}
+      {children}
     </section>
   );
 }
 
+// Topo grafite: voltar, editar, iniciais, nome e "cliente desde"
 // Sem "Pausar IA" aqui: cuidar da IA não é tarefa da dona (fica no CRM da agência)
-function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
+function Topo({ cliente, editando, aoEditar }: { cliente: ClienteStatus; editando: boolean; aoEditar: () => void }) {
   const router = useRouter();
+  const desde = new Date(cliente.criado_em);
+  const status = STATUS[cliente.status];
+  const botao = "flex h-11 w-11 items-center justify-center rounded-[14px]";
 
+  return (
+    <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col items-center gap-2.5 overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(52px+env(safe-area-inset-top))] pb-16">
+      <span aria-hidden="true" className="absolute -top-[70px] -left-[50px] h-40 w-40 rounded-full border-[1.5px] border-bronze/55" />
+      <span aria-hidden="true" className="absolute -right-[70px] -bottom-[110px] h-[220px] w-[220px] rounded-full bg-white/[0.08]" />
+      <div className="relative flex self-stretch justify-between">
+        {/* Sem aba de clientes neste app: a ficha abre pela Agenda, Início ou Conversas */}
+        <button onClick={() => router.back()} aria-label="Voltar" className={`${botao} bg-white/[0.16]`}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+        <button onClick={aoEditar} aria-label={editando ? "Fechar edição" : "Editar cliente"} aria-pressed={editando} className={`${botao} ${editando ? "bg-bronze" : "bg-white/[0.16]"}`}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={editando ? "#1C1B1F" : "#FFFFFF"} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+        </button>
+      </div>
+      <div className="relative flex h-[88px] w-[88px] items-center justify-center rounded-[28px] bg-card font-serif text-[32px] font-semibold text-taupe-texto shadow-[0_12px_30px_rgba(30,23,20,0.25)]">
+        {iniciais(cliente.nome)}
+      </div>
+      <h1 className="relative mt-1 text-center font-serif text-[28px] leading-tight font-semibold text-white">{cliente.nome ?? "Sem nome"}</h1>
+      <span className="relative text-center text-sm text-areia">
+        Cliente desde {MESES_CURTOS[desde.getMonth()]}/{desde.getFullYear()} · {cliente.total_visitas}{" "}
+        {cliente.total_visitas === 1 ? "visita" : "visitas"}
+      </span>
+      <div className="relative flex flex-wrap justify-center gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[13px] font-medium text-perola">
+          <PontoStatus cor={status.ponto} />
+          {status.rotulo}
+        </span>
+        {cliente.ia_pausada && (
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[13px] font-medium text-perola">
+            <PontoStatus cor="bg-bronze" />
+            IA pausada
+          </span>
+        )}
+      </div>
+    </header>
+  );
+}
+
+// WhatsApp e Ligar, sobrepostos ao fim do topo
+function Contato({ cliente }: { cliente: ClienteStatus }) {
+  const estilo =
+    "flex flex-col items-center gap-1.5 rounded-[20px] bg-card px-2 py-3.5 text-[13px] font-bold text-texto shadow-[0_10px_26px_rgba(30,23,20,0.12)] active:bg-campo";
+  return (
+    <div className="relative mx-5 -mt-9 grid grid-cols-2 gap-2.5">
+      <button onClick={() => abrirWhatsApp(cliente.telefone)} className={estilo}>
+        <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-salvia">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3F5135" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+          </svg>
+        </span>
+        WhatsApp
+      </button>
+      <a href={`tel:+${cliente.telefone}`} className={estilo}>
+        <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#E2E6EA]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#36485A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
+          </svg>
+        </span>
+        Ligar
+      </a>
+      <p className="col-span-2 text-center text-sm text-texto-2">{formatarTelefone(cliente.telefone)}</p>
+    </div>
+  );
+}
+
+function ProximoHorario({ horario: h }: { horario: Horario }) {
+  const data = formatarData(h.inicio);
+  return (
+    <section className="flex items-center gap-3.5 rounded-[22px] bg-grafite p-[18px] text-white">
+      <div className="flex h-[60px] w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-bronze text-grafite">
+        <span className="text-[11px] font-bold uppercase">{MESES_CURTOS[Number(data.slice(3, 5)) - 1]}</span>
+        <span className="font-serif text-[28px] leading-none font-semibold">{data.slice(0, 2)}</span>
+      </div>
+      <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <span className="text-xs font-semibold tracking-[0.06em] text-bronze uppercase">Próximo horário</span>
+        <span className="truncate text-base font-bold">{h.servicos?.nome ?? "Serviço não informado"}</span>
+        <span className="text-[13px] text-[#C7BBAC]">
+          {formatarHora(h.inicio)}
+          {h.profissionais && ` · com ${h.profissionais.nome}`}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+function Preferencias({ cliente, aoMudar, aoEditar }: { cliente: ClienteStatus; aoMudar: () => void; aoEditar: () => void }) {
   async function removerEtiqueta(etiqueta: string) {
     await supabase()
       .from("clientes")
@@ -128,36 +238,18 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
     aoMudar();
   }
 
+  const temEtiqueta = etiquetasVisiveis(cliente.etiquetas).length > 0;
   return (
-    <section className="space-y-3 px-4 pt-2">
-      {/* Sem aba de clientes neste app: a ficha abre pela Agenda, Início ou Conversas */}
-      <button
-        onClick={() => router.back()}
-        className="inline-flex h-11 items-center text-lg font-semibold text-[var(--cor-principal)]"
-      >
-        ‹ Voltar
-      </button>
-      <div>
-        <h1 className="text-3xl font-bold">{cliente.nome ?? "Sem nome"}</h1>
-        <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} />
-        <p className="mt-1 text-lg text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <SeloStatus status={cliente.status} />
-          {cliente.ia_pausada && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-0.5 text-sm font-medium text-neutral-700">
-              <PontoStatus cor="bg-yellow-400" />
-              IA pausada
-            </span>
-          )}
-        </div>
-      </div>
-      <button
-        onClick={() => abrirWhatsApp(cliente.telefone)}
-        className="h-12 w-full rounded-xl border border-neutral-300 bg-white text-lg font-semibold text-green-700 active:bg-neutral-100"
-      >
-        WhatsApp
-      </button>
-    </section>
+    <Cartao titulo="Preferências">
+      <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} className="" />
+      {cliente.observacoes ? (
+        <p className="text-sm leading-normal whitespace-pre-line text-rotulo">{cliente.observacoes}</p>
+      ) : (
+        <button onClick={aoEditar} className="self-start text-left text-sm font-semibold text-bronze-escuro">
+          {temEtiqueta ? "Escrever observações" : "Sem preferências anotadas. Toque para escrever."}
+        </button>
+      )}
+    </Cartao>
   );
 }
 
@@ -170,33 +262,55 @@ function Retornos({ retornos }: { retornos: RetornoServico[] }) {
     if (!b.retorno_previsto) return -1;
     return a.retorno_previsto.localeCompare(b.retorno_previsto);
   });
+  if (ordenados.length === 0) return null;
 
   return (
-    <section className="space-y-2 px-4">
-      <h2 className="text-xl font-semibold">Retornos por procedimento</h2>
-      {ordenados.length === 0 && <p className="text-neutral-500">Nenhum procedimento realizado ainda.</p>}
-      <ul className="space-y-2">
+    <Cartao titulo="Retornos">
+      <ul className="flex flex-col gap-3">
         {ordenados.map((r) => {
           const dias = r.retorno_previsto ? diasEntre(hoje, r.retorno_previsto) : null;
-          const ponto =
-            dias === null ? "bg-neutral-300" : dias < 0 ? "bg-orange-500" : dias <= 7 ? "bg-yellow-400" : "bg-green-500";
+          const ponto = dias === null ? "bg-borda" : dias < 0 ? "bg-rose-texto" : dias <= 7 ? "bg-bronze" : "bg-[#5E7A50]";
           return (
-            <li key={r.servico_id} className="rounded-xl border border-neutral-200 bg-white p-3">
-              <p className="flex items-center gap-2 text-lg font-semibold">
-                <PontoStatus cor={ponto} />
-                {r.servico_nome}
-              </p>
-              <p className="text-neutral-600">Última vez: {formatarData(r.ultima_vez)}</p>
-              <p className={`font-medium ${dias !== null && dias < 0 ? "text-orange-700" : ""}`}>
-                {r.retorno_previsto
-                  ? `Voltar: ${formatarData(r.retorno_previsto)} (${prazo(r.retorno_previsto)})`
-                  : "Sem retorno programado"}
-              </p>
+            <li key={r.servico_id} className="flex gap-3">
+              <PontoStatus cor={`${ponto} mt-[7px]`} />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[15px] font-bold">{r.servico_nome}</span>
+                <span className={`text-[13px] ${dias !== null && dias < 0 ? "font-semibold text-rose-texto" : "text-texto-2"}`}>
+                  {r.retorno_previsto ? `Voltar ${formatarData(r.retorno_previsto).slice(0, 5)} (${prazo(r.retorno_previsto)})` : "Sem retorno programado"}
+                  {" · última vez "}
+                  {formatarData(r.ultima_vez).slice(0, 5)}
+                </span>
+              </div>
             </li>
           );
         })}
       </ul>
-    </section>
+    </Cartao>
+  );
+}
+
+function Historico({ historico }: { historico: Horario[] }) {
+  return (
+    <Cartao titulo="Histórico">
+      {historico.length === 0 ? (
+        <p className="text-sm text-texto-2">Nenhum atendimento realizado ainda.</p>
+      ) : (
+        <ul className="flex flex-col gap-3.5">
+          {historico.map((h, i) => (
+            <li key={h.id} className="flex gap-3">
+              <span aria-hidden="true" className={`mt-[5px] h-2.5 w-2.5 shrink-0 rounded-full ${i === 0 ? "bg-grafite" : "bg-bronze"}`} />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="text-[15px] font-bold">{h.servicos?.nome ?? "Serviço não informado"}</span>
+                <span className="text-[13px] text-texto-2">
+                  {formatarData(h.inicio)}
+                  {h.valor !== null && ` · ${dinheiro(h.valor)}`}
+                </span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Cartao>
   );
 }
 
@@ -214,8 +328,8 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
     setEtiquetas((atuais) => (atuais.includes(etiqueta) ? atuais.filter((e) => e !== etiqueta) : [...atuais, etiqueta]));
   }
 
-  // A etiqueta escrita em "Nova etiqueta" entra ao tocar em Salvar e aparece só embaixo do
-  // nome (com × para tirar), não na lista de opções abaixo.
+  // A etiqueta escrita em "Nova etiqueta" entra ao tocar em Salvar e aparece em Preferências
+  // (com × para tirar), não na lista de opções abaixo.
   async function salvar() {
     setSalvando(true);
     setAviso("");
@@ -239,31 +353,28 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
     setAviso("Salvo ✓");
     aoSalvar();
   }
-  const campo =
-    "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
+  const campo = "h-[52px] w-full rounded-2xl bg-campo px-4 text-base outline-none focus:ring-2 focus:ring-bronze";
 
   return (
-    <section className="space-y-4 px-4">
-      <h2 className="text-xl font-semibold">Dados da cliente</h2>
-
-      <label className="block space-y-1">
-        <span className="font-medium">Nome</span>
+    <Cartao titulo="Editar dados">
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-semibold text-rotulo">Nome</span>
         <input value={nome} onChange={(e) => setNome(e.target.value)} className={campo} />
       </label>
 
-      <label className="block space-y-1">
-        <span className="font-medium">Observações</span>
+      <label className="flex flex-col gap-2">
+        <span className="text-sm font-semibold text-rotulo">Observações</span>
         <textarea
           rows={4}
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           placeholder="Alergias, fórmula da cor, método do mega hair, preferências…"
-          className="w-full rounded-xl border border-neutral-300 bg-white p-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+          className="w-full rounded-2xl bg-campo p-4 text-base outline-none placeholder:text-[#9A8C80] focus:ring-2 focus:ring-bronze"
         />
       </label>
 
-      <div className="space-y-2">
-        <span className="font-medium">Etiquetas</span>
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-semibold text-rotulo">Etiquetas</span>
         <div className="flex flex-wrap gap-2">
           {ETIQUETAS_SUGERIDAS.map((e) => (
             <button
@@ -271,8 +382,8 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
               type="button"
               onClick={() => alternarEtiqueta(e)}
               aria-pressed={etiquetas.includes(e)}
-              className={`h-11 rounded-full px-4 font-semibold ${
-                etiquetas.includes(e) ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
+              className={`h-11 rounded-full px-4 text-sm font-semibold ${
+                etiquetas.includes(e) ? "bg-bronze text-grafite" : "border border-borda text-rotulo"
               }`}
             >
               {e}
@@ -283,19 +394,57 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
           value={novaEtiqueta}
           onChange={(e) => setNovaEtiqueta(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && salvar()}
-          placeholder="Nova etiqueta (aparece embaixo do nome ao salvar)"
-          className={campo}
+          placeholder="Nova etiqueta (aparece ao salvar)"
+          className={`${campo} placeholder:text-[#9A8C80]`}
         />
       </div>
 
-      <button
-        onClick={salvar}
-        disabled={salvando}
-        className="h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
-      >
+      <button onClick={salvar} disabled={salvando} className="h-14 w-full rounded-[18px] bg-grafite text-[17px] font-bold text-white disabled:opacity-50">
         {salvando ? "Salvando…" : "Salvar"}
       </button>
-      {aviso && <p className="text-center text-lg font-medium">{aviso}</p>}
+      {aviso && <p className="text-center font-medium">{aviso}</p>}
+    </Cartao>
+  );
+}
+
+// Na edição: excluir a cliente (vai para Clientes excluídas, no Painel CRM) ou,
+// se ela já está lá, restaurar.
+function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
+  const router = useRouter();
+  const [salvando, setSalvando] = useState(false);
+  const { dialogo, perguntar, avisar } = useDialogo();
+  const excluida = estaExcluida(cliente.etiquetas);
+
+  async function alternar() {
+    if (!excluida && !(await perguntar(textoExclusao(cliente.nome), { confirmar: "Excluir", perigo: true }))) return;
+    setSalvando(true);
+    const erro = excluida ? await restaurarCliente(cliente.id) : await excluirCliente(cliente.id);
+    setSalvando(false);
+    if (erro) {
+      await avisar(`Não foi possível salvar: ${erro}`);
+      return;
+    }
+    if (excluida) aoMudar();
+    else router.back();
+  }
+
+  return (
+    <section className="flex flex-col gap-2">
+      {excluida && (
+        <p className="rounded-2xl bg-card p-3 text-sm text-rotulo">
+          Esta cliente está em <strong>Clientes excluídas</strong>: não aparece no Início, na Agenda nem nas Conversas.
+        </p>
+      )}
+      <button
+        onClick={alternar}
+        disabled={salvando}
+        className={`h-12 w-full rounded-2xl border font-semibold disabled:opacity-50 ${
+          excluida ? "border-borda text-texto" : "border-rose-texto/30 text-rose-texto active:bg-rose"
+        }`}
+      >
+        {excluida ? "Restaurar cliente" : "Excluir cliente"}
+      </button>
+      {dialogo}
     </section>
   );
 }

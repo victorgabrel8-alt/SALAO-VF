@@ -35,10 +35,10 @@ import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
 import type { Profissional } from "@/lib/tipos";
 
-// Agenda no estilo do app Structured: faixa da semana em cima e o dia como uma linha do
-// tempo, cada horário numa "cápsula" (altura = duração, cor = profissional), com os
-// intervalos livres entre eles. O círculo à direita confirma o atendimento ("Foi isso" ou
-// "Fez outra coisa", e em seguida "Já combinou a volta?"); tocar no horário abre todos os detalhes.
+// Agenda (design/salao-redesign): topo grafite com os dias da semana e o dia como uma lista de
+// cartões (Concluído / Agora / A atender), com os intervalos livres e o almoço entre eles.
+// O círculo à direita confirma o atendimento ("Foi isso" ou "Fez outra coisa", e em seguida
+// "Já combinou a volta?"); tocar no cartão abre todos os detalhes.
 
 // Cancelados não aparecem na agenda: a dona não precisa ver quem desmarcou.
 // "Reagendados" só aparece no dia em que alguém reagendou.
@@ -52,7 +52,7 @@ const CAMADAS: { chave: Camada; rotulo: string }[] = [
   { chave: "reagendado", rotulo: "Reagendados" },
 ];
 
-const DIAS_SEMANA = ["S", "T", "Q", "Q", "S", "S", "D"];
+const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 type Dia =
@@ -138,7 +138,11 @@ export default function AgendaPage() {
   const ok = dados && !("erro" in dados) ? dados : null;
   const ordem = ok ? ok.profissionais.map((p) => p.id) : [];
   const segunda = inicioDaSemana(dia);
-  const semana = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i));
+  // Seg a Sáb; o domingo só aparece se o salão abre nesse dia, se tem horário nele ou se é o dia escolhido
+  const abreDomingo = Boolean((empresa.config.horario_funcionamento as Record<string, string | null> | undefined)?.dom);
+  const semana = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i)).filter(
+    (d, i) => i < 6 || abreDomingo || d === dia || ok?.comHorario.has(d),
+  );
   const [, mes] = dia.split("-").map(Number);
 
   const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
@@ -205,54 +209,62 @@ export default function AgendaPage() {
 
   return (
     <>
-      {/* Mês e semana */}
-      <header className="px-4 pt-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">
-            {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)}
-            <span className="ml-2 text-lg font-medium text-neutral-400">{dia.slice(0, 4)}</span>
-          </h1>
-          {dia !== hoje && (
-            <button
-              onClick={() => setDia(hoje)}
-              className="h-9 rounded-full border border-neutral-300 bg-white px-4 text-sm font-semibold active:bg-neutral-100"
-            >
-              Hoje
-            </button>
-          )}
+      {/* Topo grafite: mês, resumo do dia e os dias da semana */}
+      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
+        <span aria-hidden="true" className="absolute -top-[90px] -right-[50px] h-[200px] w-[200px] rounded-full bg-white/[0.08]" />
+        <div className="relative flex items-end justify-between gap-3">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm text-claro">
+              {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)} de {dia.slice(0, 4)}
+            </span>
+            <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">Agenda</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {dia !== hoje && (
+              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-bronze/50 px-4 text-[13px] font-bold text-perola">
+                Hoje
+              </button>
+            )}
+            {ok && (
+              <span className="rounded-full bg-[#D8C6AE] px-3 py-[7px] text-[13px] font-bold text-grafite">
+                {contagem.todos === 1 ? "1 horário" : `${contagem.todos} horários`}
+              </span>
+            )}
+          </div>
         </div>
-        <div className="mt-3 flex items-center gap-1">
+        <div className="relative flex items-center gap-1">
           <button
             onClick={() => setDia(somarDias(dia, -7))}
             aria-label="Semana anterior"
-            className="flex h-12 w-7 shrink-0 items-center justify-center text-2xl text-neutral-400"
+            className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
           >
             ‹
           </button>
-          <div className="grid flex-1 grid-cols-7 gap-1">
-            {semana.map((d, i) => {
+          <div className={`grid flex-1 gap-1.5 ${semana.length === 7 ? "grid-cols-7" : "grid-cols-6"}`}>
+            {semana.map((d) => {
               const escolhido = d === dia;
+              const semanaIdx = (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7;
               return (
                 <button
                   key={d}
                   onClick={() => setDia(d)}
                   aria-pressed={escolhido}
                   aria-label={formatarData(d)}
-                  className="flex flex-col items-center gap-1 py-1"
+                  className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] ${
+                    escolhido
+                      ? "bg-bronze text-grafite shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+                      : `bg-white/[0.07] text-perola ${d === hoje ? "ring-[1.5px] ring-bronze" : "ring-1 ring-bronze/25"}`
+                  }`}
                 >
-                  <span className="text-xs font-medium text-neutral-500">{DIAS_SEMANA[i]}</span>
+                  <span className="text-xs font-semibold opacity-85">{DIAS_SEMANA[semanaIdx]}</span>
+                  <span className="font-serif text-[22px] leading-none font-semibold">{Number(d.slice(8))}</span>
+                  {/* Pontinho: dia com horário marcado */}
                   <span
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-base font-semibold ${
-                      escolhido
-                        ? "bg-[var(--cor-principal)] text-white"
-                        : d === hoje
-                          ? "text-[var(--cor-principal)] ring-1 ring-[var(--cor-principal)]"
-                          : "text-neutral-800"
+                    aria-hidden
+                    className={`absolute bottom-1.5 h-1 w-1 rounded-full ${
+                      ok?.comHorario.has(d) ? (escolhido ? "bg-grafite" : "bg-bronze") : "bg-transparent"
                     }`}
-                  >
-                    {Number(d.slice(8))}
-                  </span>
-                  <span className={`h-1 w-1 rounded-full ${ok?.comHorario.has(d) ? "bg-neutral-400" : "bg-transparent"}`} />
+                  />
                 </button>
               );
             })}
@@ -260,7 +272,7 @@ export default function AgendaPage() {
           <button
             onClick={() => setDia(somarDias(dia, 7))}
             aria-label="Próxima semana"
-            className="flex h-12 w-7 shrink-0 items-center justify-center text-2xl text-neutral-400"
+            className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
           >
             ›
           </button>
@@ -268,14 +280,14 @@ export default function AgendaPage() {
       </header>
 
       {/* Camadas por status */}
-      <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+      <div className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
         {camadas.map((c) => (
           <button
             key={c.chave}
             onClick={() => setCamada(c.chave)}
             aria-pressed={camadaAtual === c.chave}
-            className={`h-9 shrink-0 rounded-full px-3 text-sm font-semibold ${
-              camadaAtual === c.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
+            className={`h-11 shrink-0 rounded-full px-4 text-sm font-semibold whitespace-nowrap ${
+              camadaAtual === c.chave ? "bg-bronze text-grafite" : "border border-borda text-rotulo"
             }`}
           >
             {c.rotulo} {ok ? contagem[c.chave] : ""}
@@ -283,9 +295,9 @@ export default function AgendaPage() {
         ))}
       </div>
 
-      <section className="mt-3 px-4">
-        {!dados && <p className="text-neutral-500">Carregando…</p>}
-        {dados && "erro" in dados && <p className="rounded-xl bg-red-100 p-4 text-red-900">Erro: {dados.erro}</p>}
+      <section className="mt-4 px-5">
+        {!dados && <p className="text-texto-2">Carregando…</p>}
+        {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
         {ok && camadaAtual === "reagendado" && (
           <div className="space-y-3">
@@ -301,21 +313,19 @@ export default function AgendaPage() {
             {lista.length === 0 && (
               <Vazio texto={camadaAtual === "todos" ? "Dia livre. Nenhum horário marcado." : "Nenhum horário aqui neste dia."} />
             )}
-            <ol>
+            <ol className="flex flex-col gap-3">
               {entradas.map((e, i) => {
                 const fimAnterior = i > 0 ? Math.max(...entradas.slice(0, i).map((x) => x.fim)) : null;
                 const livre = fimAnterior ? Math.round((e.inicio - fimAnterior) / 60_000) : 0;
-                const ultimo = i === entradas.length - 1;
                 return (
-                  <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id}>
+                  <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id} className="flex flex-col gap-3">
                     {camadaAtual === "todos" && livre >= 30 && <IntervaloLivre minutos={livre} />}
                     {e.tipo === "almoco" ? (
-                      <BlocoAlmoco texto={textoAlmoco(almoco!)} ultimo={ultimo} />
+                      <BlocoAlmoco texto={textoAlmoco(almoco!)} />
                     ) : (
                       <ItemLinhaDoTempo
                         atendimento={e.atendimento}
                         barra={corDaProfissional(e.atendimento.profissional_id, ordem).ponto}
-                        ultimo={ultimo}
                         aoAbrir={() => setAberto(e.atendimento.id)}
                         aoMarcar={() => alternarRealizado(e.atendimento)}
                       />
@@ -351,11 +361,11 @@ export default function AgendaPage() {
             onClick={(e) => e.stopPropagation()}
             className="mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[var(--background)] px-4 pt-3 pb-safe"
           >
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-300" />
+            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-borda" />
             <DetalheHorario atendimento={selecionado} />
             <button
               onClick={() => setAberto(null)}
-              className="my-4 h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+              className="my-4 h-12 w-full rounded-2xl border border-borda bg-card font-semibold active:bg-campo"
             >
               Fechar
             </button>
@@ -407,7 +417,7 @@ function FolhaConfirmar({
   }
 
   const chip = (ativo: boolean) =>
-    `h-11 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-neutral-100 text-neutral-800"}`;
+    `h-11 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-campo text-texto"}`;
 
   return (
     <div className="fixed inset-0 z-20 flex items-end bg-black/40" onClick={aoFechar}>
@@ -418,7 +428,7 @@ function FolhaConfirmar({
         onClick={(e) => e.stopPropagation()}
         className="mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[var(--background)] px-4 pt-3 pb-safe"
       >
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-300" />
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-borda" />
         <p className="text-xl font-bold">
           {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")} · {formatarHora(a.inicio)}
         </p>
@@ -427,7 +437,7 @@ function FolhaConfirmar({
           <MarcarVolta atendimento={a} feitos={volta} servicos={servicos} aoFechar={aoFechar} />
         ) : (
           <>
-            <p className="text-neutral-500">Marcado: {a.servicos?.nome ?? "serviço não informado"}</p>
+            <p className="text-texto-2">Marcado: {a.servicos?.nome ?? "serviço não informado"}</p>
 
             {!mudou ? (
               <div className="my-4 space-y-2">
@@ -440,7 +450,7 @@ function FolhaConfirmar({
                 </button>
                 <button
                   onClick={() => setMudou(true)}
-                  className="h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+                  className="h-12 w-full rounded-2xl border border-borda bg-card font-semibold active:bg-campo"
                 >
                   Fez outra coisa
                 </button>
@@ -465,10 +475,10 @@ function FolhaConfirmar({
               </div>
             )}
 
-            {erro && <p className="mb-3 rounded-xl bg-red-100 p-3 text-red-900">Não salvou: {erro}</p>}
+            {erro && <p className="mb-3 rounded-2xl bg-rose p-3 text-rose-texto">Não salvou: {erro}</p>}
             <button
               onClick={aoFechar}
-              className="mb-4 h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+              className="mb-4 h-12 w-full rounded-2xl border border-borda bg-card font-semibold active:bg-campo"
             >
               Voltar
             </button>
@@ -480,99 +490,107 @@ function FolhaConfirmar({
 }
 
 function Vazio({ texto }: { texto: string }) {
-  return <p className="rounded-2xl border border-neutral-200 bg-white p-6 text-center text-neutral-500">{texto}</p>;
+  return (
+    <div className="flex flex-col items-center gap-1.5 rounded-[22px] bg-card px-5 py-7 text-center">
+      <span className="text-base font-bold">{texto}</span>
+    </div>
+  );
 }
 
-// Círculo de status, discreto: vazio = a atender, ✓ = realizado, ✕ = faltou, – = cancelado
-const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string; rotulo: string }> = {
-  agendado: { simbolo: "", classe: "border-[1.5px] border-neutral-300 bg-white", rotulo: "Marcar como realizado" },
-  realizado: { simbolo: "✓", classe: "bg-emerald-500 text-white", rotulo: "Realizado (tocar desfaz)" },
-  faltou: { simbolo: "✕", classe: "bg-red-400 text-white", rotulo: "Faltou" },
-  cancelado: { simbolo: "–", classe: "bg-neutral-300 text-white", rotulo: "Cancelado" },
+// Situação do cartão (como no desenho): Concluído, Agora (cartão grafite) ou A atender
+type Situacao = "concluido" | "agora" | "atender" | "faltou";
+
+const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string; sub: string }> = {
+  concluido: { rotulo: "Concluído", cartao: "bg-card opacity-70", selo: "bg-salvia text-salvia-texto", sub: "text-texto-2" },
+  agora: {
+    rotulo: "Agora",
+    cartao: "bg-grafite text-white shadow-[0_14px_30px_rgba(30,23,20,0.25)]",
+    selo: "bg-bronze text-grafite",
+    sub: "text-[#C7BBAC]",
+  },
+  atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
+  faltou: { rotulo: "Faltou", cartao: "bg-card opacity-70", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
 };
 
-// Linha do tempo enxuta: hora, uma barrinha fina (altura = duração, cor = profissional),
-// e o texto. Sem ícones nem efeitos.
+function situacaoDe(a: Atendimento): Situacao {
+  if (a.status === "realizado") return "concluido";
+  if (a.status === "faltou") return "faltou";
+  const agora = Date.now();
+  const inicio = Date.parse(a.inicio);
+  return agora >= inicio && agora < inicio + minutos(a) * 60_000 ? "agora" : "atender";
+}
+
+// Círculo de concluído ao lado do cartão: vazio = a atender, ✓ = realizado, ✕ = faltou
+const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string; rotulo: string }> = {
+  agendado: { simbolo: "", classe: "border-[1.5px] border-bronze bg-card", rotulo: "Marcar como realizado" },
+  realizado: { simbolo: "✓", classe: "bg-[#5E7A50] text-white", rotulo: "Realizado (tocar desfaz)" },
+  faltou: { simbolo: "✕", classe: "bg-rose-texto text-white", rotulo: "Faltou" },
+  cancelado: { simbolo: "–", classe: "bg-borda text-white", rotulo: "Cancelado" },
+};
+
+// Um horário: hora à esquerda, cartão (toque abre os detalhes) e o círculo de concluído.
+// A bolinha antes do nome tem a cor da profissional.
 function ItemLinhaDoTempo({
   atendimento: a,
   barra,
-  ultimo,
   aoAbrir,
   aoMarcar,
 }: {
   atendimento: Atendimento;
   barra: string;
-  ultimo: boolean;
   aoAbrir: () => void;
   aoMarcar: () => void;
 }) {
   const min = minutos(a);
-  // Altura da barra acompanha a duração (com limites para caber na tela)
-  const altura = Math.min(110, Math.max(40, Math.round(min * 0.7)));
   const icone = ICONE_STATUS[a.status];
-  const apagado = a.status === "cancelado" || a.status === "faltou";
+  const s = SITUACAO[situacaoDe(a)];
   const reagendado = ultimoReagendamento(a);
 
   return (
-    <div className="flex gap-3">
-      {/* Coluna da hora */}
-      <p className="w-10 shrink-0 pt-0.5 text-right text-xs font-semibold text-neutral-400">{formatarHora(a.inicio)}</p>
+    <div className="flex items-stretch gap-3">
+      <span className="w-12 shrink-0 pt-4 text-sm font-bold text-rotulo">{formatarHora(a.inicio)}</span>
 
-      {/* Barrinha + linha fina até o próximo horário */}
-      <div className="relative flex w-3 shrink-0 justify-center">
-        {!ultimo && <span className="absolute top-1 bottom-0 left-1/2 w-px -translate-x-1/2 bg-neutral-200" />}
-        <span style={{ height: altura }} className={`relative w-1.5 rounded-full ${barra} ${apagado ? "opacity-40" : ""}`} />
-      </div>
-
-      {/* Informações */}
-      <button onClick={aoAbrir} className="min-w-0 flex-1 pb-5 text-left">
-        <p className="text-xs text-neutral-400">
-          {formatarHora(a.inicio)}
-          {a.fim && ` – ${formatarHora(a.fim)}`} · {duracao(min)}
+      <button onClick={aoAbrir} className={`flex min-w-0 flex-1 flex-col gap-1 rounded-[20px] px-4 py-3.5 text-left ${s.cartao}`}>
+        <span className="flex items-center justify-between gap-2">
+          <span className="flex min-w-0 items-center gap-2">
+            <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${barra}`} />
+            <span className="truncate text-base font-bold">
+              {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
+            </span>
+          </span>
+          <span className={`shrink-0 rounded-full px-[9px] py-[5px] text-[11px] font-bold whitespace-nowrap ${s.selo}`}>{s.rotulo}</span>
+        </span>
+        <span className={`text-[13px] ${s.sub}`}>
+          {a.servicos?.nome ?? "Serviço não informado"} · {duracao(min)}
           {a.origem === "ia" && " · IA"}
-        </p>
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <p className={`text-base leading-snug font-semibold ${a.status === "cancelado" ? "text-neutral-400 line-through" : ""}`}>
-            {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
-          </p>
-          {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
-        </div>
+        </span>
+        {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
         <Observacao texto={a.clientes?.observacoes} />
-        <p className="text-sm text-neutral-500">
-          {a.servicos?.nome ?? "Serviço não informado"}
-        </p>
-        {a.status === "faltou" && <p className="text-xs font-semibold text-red-500">Faltou</p>}
-        {a.status === "cancelado" && <p className="text-xs font-semibold text-neutral-400">Cancelado</p>}
-        {reagendado && <p className="text-xs text-neutral-400">{reagendado}</p>}
+        {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
       </button>
 
       {/* Círculo de concluído: um toque marca realizado */}
-      <div className="shrink-0 pt-0.5">
-        <button
-          onClick={aoMarcar}
-          disabled={a.status === "faltou" || a.status === "cancelado"}
-          aria-label={icone.rotulo}
-          className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${icone.classe}`}
-        >
-          {icone.simbolo}
-        </button>
-      </div>
+      <button
+        onClick={aoMarcar}
+        disabled={a.status === "faltou" || a.status === "cancelado"}
+        aria-label={icone.rotulo}
+        className="flex w-8 shrink-0 items-start justify-center pt-3.5"
+      >
+        <span className={`flex h-[26px] w-[26px] items-center justify-center rounded-full text-xs font-bold ${icone.classe}`}>{icone.simbolo}</span>
+      </button>
     </div>
   );
 }
 
-// Almoço na linha do tempo: uma faixa cinza simples, sem ações
-function BlocoAlmoco({ texto, ultimo }: { texto: string; ultimo: boolean }) {
+// Almoço na agenda: uma faixa discreta, sem ações
+function BlocoAlmoco({ texto }: { texto: string }) {
   return (
-    <div className="flex gap-3">
-      <p className="w-10 shrink-0 pt-0.5 text-right text-xs font-semibold text-neutral-300">{texto.slice(0, 5)}</p>
-      <div className="relative flex w-3 shrink-0 justify-center">
-        {!ultimo && <span className="absolute top-1 bottom-0 left-1/2 w-px -translate-x-1/2 bg-neutral-200" />}
-        <span className="relative h-10 w-1.5 rounded-full bg-neutral-200" />
-      </div>
-      <p className="flex-1 pb-5 text-sm text-neutral-400">
-        <span className="font-semibold text-neutral-500">Almoço</span> · {texto}
+    <div className="flex items-center gap-3">
+      <span className="w-12 shrink-0 text-sm font-bold text-inativo">{texto.slice(0, 5)}</span>
+      <p className="flex-1 rounded-[20px] border border-dashed border-borda px-4 py-3 text-sm text-texto-2">
+        <span className="font-semibold text-rotulo">Almoço</span> · {texto}
       </p>
+      <span className="w-8 shrink-0" />
     </div>
   );
 }
@@ -597,16 +615,16 @@ function DetalheHorario({ atendimento: a }: { atendimento: Atendimento }) {
     ...(a.origem === "ia" ? ([["Marcado por", "IA"]] as [string, string][]) : []),
   ];
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+    <div className="rounded-[22px] bg-card p-[18px]">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="text-xl font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
+        <p className="font-serif text-2xl font-semibold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
         {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
       </div>
       <Observacao texto={a.clientes?.observacoes} />
-      <dl className="mt-3 divide-y divide-neutral-100">
+      <dl className="mt-3 divide-y divide-borda">
         {linhas.map(([rotulo, valor]) => (
           <div key={rotulo} className="flex justify-between gap-4 py-2">
-            <dt className="text-neutral-500">{rotulo}</dt>
+            <dt className="text-texto-2">{rotulo}</dt>
             <dd className="text-right font-medium">{valor}</dd>
           </div>
         ))}
@@ -614,7 +632,7 @@ function DetalheHorario({ atendimento: a }: { atendimento: Atendimento }) {
       {a.clientes && (
         <Link
           href={`/clientes/${a.clientes.id}`}
-          className="mt-3 flex h-11 items-center justify-center rounded-xl border border-neutral-300 font-semibold active:bg-neutral-100"
+          className="mt-3 flex h-12 items-center justify-center rounded-[18px] bg-grafite font-semibold text-white"
         >
           Ver ficha da cliente
         </Link>
@@ -626,12 +644,9 @@ function DetalheHorario({ atendimento: a }: { atendimento: Atendimento }) {
 // Só informa o tempo livre entre os horários (quem marca é a IA)
 function IntervaloLivre({ minutos: min }: { minutos: number }) {
   return (
-    <div className="flex gap-3">
-      <span className="w-10 shrink-0" />
-      <div className="relative flex w-3 shrink-0 justify-center">
-        <span className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 border-l border-dashed border-neutral-300" />
-      </div>
-      <p className="-mt-2 flex-1 pb-4 text-xs text-neutral-400">{duracao(min)} livre</p>
+    <div className="flex items-center gap-3">
+      <span className="w-12 shrink-0" />
+      <p className="flex-1 text-xs font-medium text-texto-2">{duracao(min)} livre</p>
     </div>
   );
 }
@@ -640,21 +655,21 @@ function IntervaloLivre({ minutos: min }: { minutos: number }) {
 function CartaoReagendado({ atendimento: a, aoVerDia }: { atendimento: Atendimento; aoVerDia: (dia: string) => void }) {
   const novoDia = dataNoSalao(a.inicio);
   return (
-    <article className="rounded-xl border border-l-4 border-neutral-200 border-l-sky-300 bg-white p-3">
+    <article className="rounded-[20px] bg-card p-4">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="text-lg font-semibold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
+        <p className="text-base font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
         {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
       </div>
-      <p className="text-neutral-600">
+      <p className="text-[13px] text-texto-2">
         {a.servicos?.nome ?? "Serviço não informado"}
       </p>
-      <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-neutral-50 p-2 text-sm">
+      <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl bg-campo p-3 text-sm">
         <div>
-          <p className="text-neutral-500">Era</p>
+          <p className="text-texto-2">Era</p>
           <p className="font-medium">{ultimoReagendamento(a)?.replace("Reagendado de ", "") ?? "—"}</p>
         </div>
         <div>
-          <p className="text-neutral-500">Agora</p>
+          <p className="text-texto-2">Agora</p>
           <p className="font-semibold">
             {formatarData(a.inicio).slice(0, 5)} às {formatarHora(a.inicio)}
           </p>
@@ -662,7 +677,7 @@ function CartaoReagendado({ atendimento: a, aoVerDia }: { atendimento: Atendimen
       </div>
       <button
         onClick={() => aoVerDia(novoDia)}
-        className="mt-2 h-11 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+        className="mt-3 h-11 w-full rounded-2xl border border-borda font-semibold active:bg-campo"
       >
         Ver no dia {formatarData(novoDia).slice(0, 5)}
       </button>

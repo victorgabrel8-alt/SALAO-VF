@@ -1,25 +1,63 @@
 @import "tailwindcss";
 
+/* Identidade da VF Company (design/salao-redesign): grafite, pérola e bronze.
+   Use como bg-grafite, text-bronze-escuro, border-borda, font-serif... */
+@theme {
+  --color-grafite: #1c1b1f;
+  --color-perola: #efe7dc;
+  --color-card: #fbf8f3;
+  --color-campo: #ebe2d6;
+  --color-borda: #ddd1c2;
+  --color-bronze: #a88a68;
+  --color-bronze-escuro: #6e5539;
+  --color-texto: #1c1b1f;
+  --color-texto-2: #6b6158;
+  --color-rotulo: #3a3530;
+  --color-inativo: #9c9184;
+  --color-claro: #cfc3b4;
+  --color-areia: #e6dacb;
+
+  /* Etiquetas suaves: fundo / texto */
+  --color-rose: #f3ddd5;
+  --color-rose-texto: #8a3b2b;
+  --color-salvia: #e3e8dc;
+  --color-salvia-texto: #3f5135;
+  --color-ouro: #f3e7cf;
+  --color-ouro-texto: #7a5a1e;
+  --color-taupe: #e6dacb;
+  --color-taupe-texto: #5e4632;
+
+  /* Variáveis criadas pelo next/font no layout */
+  --font-sans: var(--fonte-jost), system-ui, sans-serif;
+  --font-serif: var(--fonte-cormorant), Georgia, serif;
+}
+
 /* App claro e de alto contraste: a dona usa com pressa, entre um atendimento e outro. */
 :root {
-  /* Fundo levemente cinza para as caixas brancas se destacarem */
-  --background: #f6f6f7;
-  --foreground: #171717;
+  --background: #efe7dc;
+  --foreground: #1c1b1f;
   color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Opção escolhida (filtros, serviço, status...): tom suave da cor do salão */
+/* Rótulos pequenos em MAIÚSCULAS, bem espaçados */
+@utility rotulo {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+}
+
+/* Opção escolhida (filtros, serviço, status...): bronze, como no redesign */
 @utility chip-ativo {
-  background: color-mix(in srgb, var(--cor-principal) 10%, white);
-  color: var(--cor-principal);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cor-principal) 45%, white);
+  background: var(--color-bronze);
+  color: var(--color-grafite);
 }
 
 /* Área segura do iPhone (notch e barra inferior) */
@@ -29,7 +67,7 @@ body {
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
-/* Espaço para o conteúdo não ficar atrás da barra de abas (64px + área segura) */
+/* Espaço para o conteúdo não ficar atrás da barra de abas flutuante (68px + 20px de folga + área segura) */
 @utility pb-abas {
-  padding-bottom: calc(4rem + env(safe-area-inset-bottom) + 1rem);
+  padding-bottom: calc(68px + 20px + env(safe-area-inset-bottom) + 1.5rem);
 }

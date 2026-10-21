@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ReactNode } from "react";
-import { BotaoFlutuante } from "@/components/BotaoFlutuante";
-import { Cabecalho } from "@/components/Cabecalho";
+import { Avatar } from "@/components/Avatar";
 import { FormAtendimento } from "@/components/FormAtendimento";
-import { Observacao } from "@/components/Observacao";
 import { buscarAtendimentosDoDia, type Atendimento } from "@/lib/atendimentos";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
-import { formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, inicioDoDia } from "@/lib/formato";
-import { PontoStatus } from "@/lib/status";
+import { agoraNoSalao, formatarHora, formatarTelefone, hojeNoSalao, inicioDoDia, primeiroNome, somarDias } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
 import { abrirWhatsApp } from "@/lib/whatsapp";
@@ -21,7 +18,10 @@ const MOTIVOS: Record<string, string> = {
   fora_escopo: "Perguntou algo que a IA não sabe",
 };
 
+const DIAS_SEMANA = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
+
 type Precisa = { id: string; nome: string | null; telefone: string; motivo_pausa: string };
+type Aniversariante = { id: string; nome: string | null; telefone: string; dia: string };
 
 type Resumo = {
   precisam: Precisa[];
@@ -29,14 +29,26 @@ type Resumo = {
   hoje: Atendimento[];
   iaConversou: number;
   iaMarcou: number;
+  aniversariantes: Aniversariante[];
 };
+
+// Quem faz aniversário de hoje até daqui a 6 dias (o ano do nascimento não importa)
+function aniversariantesDaSemana(clientes: { id: string; nome: string | null; telefone: string; aniversario: string }[]) {
+  const hoje = hojeNoSalao();
+  const proximos = Array.from({ length: 7 }, (_, i) => somarDias(hoje, i));
+  return clientes
+    .map((c) => ({ ...c, dia: proximos.find((d) => d.slice(5) === c.aniversario.slice(5)) }))
+    .filter((c): c is typeof c & { dia: string } => !!c.dia)
+    .sort((a, b) => a.dia.localeCompare(b.dia))
+    .map(({ id, nome, telefone, dia }) => ({ id, nome, telefone, dia }));
+}
 
 async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string }> {
   const db = supabase();
   const hoje = hojeNoSalao();
   const desde = inicioDoDia(hoje);
   // Leve: não baixa a lista de clientes, só quem precisa da dona agora
-  const [clientes, atendimentos, mensagensIa, marcadosIa] = await Promise.all([
+  const [clientes, atendimentos, mensagensIa, marcadosIa, comAniversario] = await Promise.all([
     db
       .from("clientes_status")
       .select("id, nome, telefone, motivo_pausa, etiquetas")
@@ -51,8 +63,9 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
       .eq("empresa_id", empresaId)
       .eq("origem", "ia")
       .gte("criado_em", desde),
+    db.from("clientes").select("id, nome, telefone, aniversario, etiquetas").eq("empresa_id", empresaId).not("aniversario", "is", null),
   ]);
-  const erro = clientes.error ?? mensagensIa.error ?? marcadosIa.error;
+  const erro = clientes.error ?? mensagensIa.error ?? marcadosIa.error ?? comAniversario.error;
   if (erro) return { erro: erro.message };
   if (atendimentos.erro) return { erro: atendimentos.erro };
 
@@ -61,36 +74,49 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
     hoje: atendimentos.atendimentos.filter((a) => a.status === "agendado"),
     iaConversou: new Set((mensagensIa.data ?? []).map((m) => m.cliente_id)).size,
     iaMarcou: marcadosIa.count ?? 0,
+    aniversariantes: aniversariantesDaSemana((comAniversario.data ?? []).filter((c) => !estaExcluida(c.etiquetas))),
   };
 }
 
-// Caixa branca com título: cada assunto do Início fica separado do outro
-function Caixa({ titulo, extra, children }: { titulo: ReactNode; extra?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="mx-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">{titulo}</h2>
-        {extra}
-      </div>
-      {children}
-    </section>
-  );
+function saudacao(hora: string): string {
+  const h = Number(hora.slice(0, 2));
+  return h < 12 ? "Bom dia" : h < 18 ? "Boa tarde" : "Boa noite";
 }
 
-// Número grande com rótulo pequeno, para o resumo do dia
-function Numero({ valor, rotulo, href }: { valor: number; rotulo: string; href?: string }) {
-  const conteudo = (
-    <>
-      <p className="text-2xl font-bold">{valor}</p>
-      <p className="text-sm leading-tight text-neutral-500">{rotulo}</p>
-    </>
-  );
-  return href ? (
-    <Link href={href} className="block rounded-xl bg-neutral-50 p-3 active:bg-neutral-100">
-      {conteudo}
-    </Link>
-  ) : (
-    <div className="rounded-xl bg-neutral-50 p-3">{conteudo}</div>
+function minutosDe(a: Atendimento): number {
+  return a.fim ? Math.round((Date.parse(a.fim) - Date.parse(a.inicio)) / 60_000) : 60;
+}
+
+function duracao(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h && m ? `${h}h${String(m).padStart(2, "0")}` : h ? `${h}h` : `${m} min`;
+}
+
+// "em 25 min", "em 2h", "agora"
+function quandoComeca(a: Atendimento): string {
+  const falta = Math.round((Date.parse(a.inicio) - Date.now()) / 60_000);
+  if (falta <= 0) return "agora";
+  if (falta < 60) return `em ${falta} min`;
+  return `em ${Math.round(falta / 60)}h`;
+}
+
+// A próxima da fila: o primeiro horário a atender que ainda não terminou
+function proximaCliente(hoje: Atendimento[]): Atendimento | null {
+  const agora = Date.now();
+  return hoje.find((a) => Date.parse(a.inicio) + minutosDe(a) * 60_000 > agora) ?? null;
+}
+
+function nomeDe(c: { nome: string | null; telefone: string } | null | undefined): string {
+  return c?.nome ?? (c ? formatarTelefone(c.telefone) : "Cliente");
+}
+
+function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="rotulo text-texto-2">{titulo}</h2>
+      {children}
+    </section>
   );
 }
 
@@ -114,101 +140,138 @@ export default function InicioPage() {
   // A IA grava sozinha: quando chega mensagem ou horário novo, a tela se atualiza
   useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, recarregar);
 
+  const ok = resumo && !("erro" in resumo) ? resumo : null;
+  const proxima = ok ? proximaCliente(ok.hoje) : null;
+
   return (
     <>
-      <Cabecalho
-        titulo={empresa.nome}
-        acao={
+      {/* Topo grafite: saudação, configurações e a próxima cliente */}
+      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-5 overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-7">
+        <span aria-hidden="true" className="absolute -top-[110px] -right-[70px] h-60 w-60 rounded-full border-[1.5px] border-bronze/45" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex flex-col gap-1">
+            <span className="text-xs tracking-[0.3em] text-claro uppercase">{saudacao(agoraNoSalao().hora)}</span>
+            <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">{empresa.nome}</h1>
+          </div>
           <Link
             href="/configuracoes"
             aria-label="Configurações"
-            className="flex h-12 w-12 items-center justify-center rounded-full active:bg-neutral-100"
+            className="relative flex h-11 w-11 items-center justify-center rounded-full border border-bronze/50"
           >
-            <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EFE7DC" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
             </svg>
+            {/* Ponto bronze quando alguém precisa da dona */}
+            {ok && ok.precisam.length > 0 && <span aria-hidden className="absolute top-2 right-2.5 h-[7px] w-[7px] rounded-full bg-bronze" />}
           </Link>
-        }
-      />
-      <p className="-mt-1 px-4 text-lg text-neutral-600">{formatarDiaLongo(hojeNoSalao())}</p>
+        </div>
 
-      {!resumo && <p className="p-4 text-neutral-500">Carregando…</p>}
-      {resumo && "erro" in resumo && (
-        <p className="m-4 rounded-xl bg-red-100 p-4 text-red-900">Erro ao ler o banco: {resumo.erro}</p>
-      )}
-      {resumo && !("erro" in resumo) && (
-        <div className="mt-4 space-y-4">
-          {/* Resumo do dia em três números */}
-          <section className="mx-4 grid grid-cols-3 gap-2 rounded-2xl border border-neutral-200 bg-white p-2 shadow-sm">
-            <Numero valor={resumo.hoje.length} rotulo="para atender hoje" href="/agenda" />
-            <Numero valor={resumo.iaConversou} rotulo="conversas da IA hoje" href="/conversas" />
-            <Numero valor={resumo.iaMarcou} rotulo="marcados pela IA" />
-          </section>
+        {ok && (
+          <Link
+            href={proxima?.clientes ? `/clientes/${proxima.clientes.id}` : "/agenda"}
+            className="relative flex flex-col gap-3.5 rounded-3xl bg-perola p-[18px] text-texto"
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold tracking-[0.25em] text-bronze-escuro uppercase">Próxima cliente</span>
+              {proxima && <span className="rounded-full bg-grafite px-2.5 py-[5px] text-xs font-semibold text-perola">{quandoComeca(proxima)}</span>}
+            </div>
+            {proxima ? (
+              <div className="flex items-center gap-3.5">
+                <Avatar id={proxima.clientes?.id ?? proxima.id} nome={proxima.clientes?.nome ?? null} tamanho="h-[52px] w-[52px] text-[22px]" />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="truncate font-serif text-[22px] font-semibold">{nomeDe(proxima.clientes)}</span>
+                  <span className="text-[13px] text-texto-2">
+                    {proxima.servicos?.nome ?? "Serviço não informado"} · {formatarHora(proxima.inicio)} · {duracao(minutosDe(proxima))}
+                  </span>
+                </div>
+                <Seta />
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[15px] text-texto-2">Ninguém mais para atender hoje.</span>
+                <Seta />
+              </div>
+            )}
+          </Link>
+        )}
+      </header>
 
-          {resumo.precisam.length > 0 && (
-            <Caixa
-              titulo={
-                <>
-                  <PontoStatus cor="bg-red-500" tamanho="h-3 w-3" />
-                  Precisam de você
-                </>
-              }
-              extra={<span className="text-sm text-neutral-500">{resumo.precisam.length}</span>}
-            >
-              <ul className="space-y-2">
-                {resumo.precisam.map((c) => (
-                  <li key={c.id} className="flex items-center gap-3 rounded-xl bg-neutral-50 p-3">
-                    {/* Toque abre a conversa com a IA, para a dona ver o que ela pediu */}
-                    <Link href={`/conversas/${c.id}`} className="min-w-0 flex-1">
-                      <p className="truncate font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</p>
-                      <p className="text-sm text-red-700">{MOTIVOS[c.motivo_pausa]}</p>
-                      <p className="text-sm text-neutral-500">{formatarTelefone(c.telefone)}</p>
-                    </Link>
-                    {/* Um toque e a dona já está falando com a cliente */}
-                    <button
-                      onClick={() => abrirWhatsApp(c.telefone)}
-                      className="h-11 shrink-0 rounded-xl border border-neutral-300 bg-white px-3 font-semibold text-green-700 active:bg-neutral-100"
-                    >
-                      WhatsApp
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </Caixa>
+      {!resumo && <p className="p-5 text-texto-2">Carregando…</p>}
+      {resumo && "erro" in resumo && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler o banco: {resumo.erro}</p>}
+
+      {ok && (
+        <div className="flex flex-col gap-[22px] px-5 pt-[22px]">
+          {/* Horários de hoje + o que a IA fez */}
+          <Link href="/agenda" className="flex flex-col gap-1 rounded-[20px] bg-card px-[18px] py-3.5">
+            <span className="flex items-center gap-3.5">
+              <span className="font-serif text-4xl leading-none font-semibold">{ok.hoje.length}</span>
+              <span className="text-sm text-texto-2">{ok.hoje.length === 1 ? "horário para atender hoje" : "horários para atender hoje"}</span>
+            </span>
+            {(ok.iaConversou > 0 || ok.iaMarcou > 0) && (
+              <span className="text-[13px] text-texto-2">
+                A IA conversou com {ok.iaConversou} {ok.iaConversou === 1 ? "cliente" : "clientes"} e marcou {ok.iaMarcou} hoje
+              </span>
+            )}
+          </Link>
+
+          {ok.precisam.length > 0 && (
+            <Secao titulo="Precisam de você">
+              {ok.precisam.map((c) => (
+                <div key={c.id} className="flex items-center gap-3 rounded-[20px] bg-card px-3.5 py-3">
+                  {/* Toque abre a conversa com a IA, para a dona ver o que ela pediu */}
+                  <Link href={`/conversas/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                    <Avatar id={c.id} nome={c.nome} tamanho="h-11 w-11 text-lg" />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate text-[15px] font-semibold">{nomeDe(c)}</span>
+                      <span className="text-[13px] text-rose-texto">{MOTIVOS[c.motivo_pausa]}</span>
+                    </span>
+                  </Link>
+                  {/* Um toque e a dona já está falando com a cliente */}
+                  <BotaoWhatsApp rotulo={`Abrir WhatsApp de ${nomeDe(c)}`} aoTocar={() => abrirWhatsApp(c.telefone)} />
+                </div>
+              ))}
+            </Secao>
           )}
 
-          {/* Para atender hoje: só horário e nome. As ações (realizado, faltou...) ficam na Agenda. */}
-          <Caixa titulo="Para atender hoje" extra={<span className="text-sm text-neutral-500">{resumo.hoje.length}</span>}>
-            {resumo.hoje.length === 0 ? (
-              <p className="text-neutral-500">Ninguém esperando atendimento hoje.</p>
-            ) : (
-              <ul className="divide-y divide-neutral-100">
-                {resumo.hoje.map((a) => (
-                  <li key={a.id}>
-                    <Link
-                      href={a.clientes ? `/clientes/${a.clientes.id}` : "/agenda"}
-                      className="flex items-start gap-4 py-3 active:bg-neutral-50"
-                    >
-                      <span className="w-14 shrink-0 text-lg font-bold">{formatarHora(a.inicio)}</span>
-                      <span className="min-w-0">
-                        <span className="block truncate text-lg font-semibold">
-                          {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
+          <Secao titulo="Atalhos">
+            <button onClick={() => setRegistrando(true)} className="flex items-center gap-3.5 rounded-[20px] bg-grafite p-4 text-left text-perola">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A88A68" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" />
+              </svg>
+              <span className="text-[15px] font-semibold">Registrar atendimento</span>
+            </button>
+          </Secao>
+
+          {ok.aniversariantes.length > 0 && (
+            <Secao titulo="Aniversariantes da semana">
+              {ok.aniversariantes.map((c) => {
+                const ehHoje = c.dia === hojeNoSalao();
+                const quando = ehHoje ? "hoje" : DIAS_SEMANA[new Date(`${c.dia}T12:00:00Z`).getUTCDay()];
+                return (
+                  <div key={c.id} className="flex items-center gap-3 rounded-[20px] bg-card px-3.5 py-3">
+                    <Link href={`/clientes/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3">
+                      <Avatar id={c.id} nome={c.nome} tamanho="h-11 w-11 text-lg" />
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="truncate text-[15px] font-semibold">{nomeDe(c)}</span>
+                        <span className="text-[13px] text-texto-2">
+                          {quando.charAt(0).toUpperCase() + quando.slice(1)} · enviar parabéns
                         </span>
-                        <Observacao texto={a.clientes?.observacoes} />
                       </span>
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Caixa>
+                    <BotaoWhatsApp
+                      rotulo={`Mandar parabéns para ${nomeDe(c)}`}
+                      aoTocar={() => abrirWhatsApp(c.telefone, `Feliz aniversário${c.nome ? `, ${primeiroNome(c.nome)}` : ""}! 🎉`)}
+                    />
+                  </div>
+                );
+              })}
+            </Secao>
+          )}
         </div>
       )}
 
-      {/* Espaço para o botão flutuante não cobrir o fim da tela */}
-      <div className="h-20" />
-      <BotaoFlutuante rotulo="+ Registrar atendimento" aoTocar={() => setRegistrando(true)} />
       {registrando && (
         <FormAtendimento
           modo="registrar"
@@ -220,5 +283,27 @@ export default function InicioPage() {
         />
       )}
     </>
+  );
+}
+
+function Seta() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+      <path d="m9 18 6-6-6-6" />
+    </svg>
+  );
+}
+
+function BotaoWhatsApp({ rotulo, aoTocar }: { rotulo: string; aoTocar: () => void }) {
+  return (
+    <button
+      onClick={aoTocar}
+      aria-label={rotulo}
+      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-borda active:bg-campo"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3F5135" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+      </svg>
+    </button>
   );
 }

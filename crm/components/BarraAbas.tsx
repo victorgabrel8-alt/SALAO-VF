@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 
 const ABAS = [
-  { href: "/", rotulo: "Início", icone: "M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z" },
-  { href: "/conversas", rotulo: "Conversas", icone: "M4 5h16v11H8l-4 4z" },
-  { href: "/agenda", rotulo: "Agenda", icone: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4" },
+  { href: "/", rotulo: "Início", icone: "M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5M10 21v-6h4v6" },
+  { href: "/conversas", rotulo: "Conversas", icone: "M7.9 20A9 9 0 1 0 4 16.1L2 22Z" },
+  { href: "/agenda", rotulo: "Agenda", icone: "M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM16 2v4M8 2v4M3 10h18" },
 ];
 // A lista de clientes (CRM) saiu deste app: fica no site separado painel-crm, da agência.
 
-// Barra fixa embaixo, acima da área segura do iPhone. Fica atrás de um <Suspense> porque
-// usePathname() lê a URL; enquanto isso, a mesma barra aparece sem aba marcada.
+// Barra grafite flutuante embaixo, acima da área segura do iPhone. Fica atrás de um <Suspense>
+// porque usePathname() lê a URL; enquanto isso, a mesma barra aparece sem aba marcada.
 export function BarraAbas() {
   return (
     <Suspense fallback={<Abas caminho="" />}>
@@ -27,20 +27,29 @@ function AbasComRota() {
 
 function Abas({ caminho }: { caminho: string }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-neutral-200 bg-white pb-safe">
-      <ul className="mx-auto flex max-w-xl">
+    <nav className="fixed inset-x-4 bottom-[calc(20px+env(safe-area-inset-bottom))] z-10 mx-auto max-w-[calc(36rem-2rem)] rounded-3xl bg-grafite px-2 shadow-[0_12px_30px_rgba(30,23,20,0.25)]">
+      <ul className="grid h-[68px] grid-cols-3 items-center">
         {ABAS.map((aba) => {
           const ativa = aba.href === "/" ? caminho === "/" : caminho.startsWith(aba.href);
           return (
-            <li key={aba.href} className="flex-1">
+            <li key={aba.href}>
               <Link
                 href={aba.href}
                 aria-current={ativa ? "page" : undefined}
-                className={`flex h-16 flex-col items-center justify-center gap-1 text-sm font-semibold ${
-                  ativa ? "text-[var(--cor-principal)]" : "text-neutral-500"
+                className={`flex h-14 flex-col items-center justify-center gap-1 text-xs ${
+                  ativa ? "font-bold text-white" : "font-semibold text-inativo"
                 }`}
               >
-                <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg
+                  viewBox="0 0 24 24"
+                  className={`h-[22px] w-[22px] ${ativa ? "text-bronze" : ""}`}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
                   <path d={aba.icone} />
                 </svg>
                 {aba.rotulo}

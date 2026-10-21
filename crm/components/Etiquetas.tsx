@@ -1,5 +1,14 @@
 import { etiquetasVisiveis } from "@/lib/origem";
 
+// Tons suaves da VF Company; a cor sai do texto, então cada etiqueta tem sempre a mesma
+const CORES = ["bg-taupe text-taupe-texto", "bg-ouro text-ouro-texto", "bg-salvia text-salvia-texto", "bg-rose text-rose-texto"];
+
+function corDa(etiqueta: string): string {
+  let soma = 0;
+  for (const c of etiqueta) soma = (soma + c.charCodeAt(0)) % 997;
+  return CORES[soma % CORES.length];
+}
+
 // Etiquetas da cliente (vip, alergia, mega hair...) logo abaixo do nome.
 // Com `aoRemover`, cada etiqueta ganha um × para tirar (usado na ficha).
 export function Etiquetas({
@@ -16,7 +25,7 @@ export function Etiquetas({
   return (
     <ul className={`flex flex-wrap gap-1.5 ${className}`}>
       {visiveis.map((e) => (
-        <li key={e} className="chip-ativo inline-flex items-center rounded-full text-sm font-medium">
+        <li key={e} className={`inline-flex items-center rounded-full text-[13px] font-semibold ${corDa(e)}`}>
           <span className={aoRemover ? "py-0.5 pl-2.5" : "px-2.5 py-0.5"}>{e}</span>
           {aoRemover && (
             <button

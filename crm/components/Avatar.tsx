@@ -1,12 +1,11 @@
 // Bolinha com as iniciais da cliente (como a foto de perfil do WhatsApp).
 // A cor sai do id, então cada cliente tem sempre a mesma.
 const CORES = [
-  "bg-rose-100 text-rose-800",
-  "bg-sky-100 text-sky-800",
-  "bg-violet-100 text-violet-800",
-  "bg-emerald-100 text-emerald-800",
-  "bg-amber-100 text-amber-800",
-  "bg-teal-100 text-teal-800",
+  "bg-taupe text-taupe-texto",
+  "bg-rose text-rose-texto",
+  "bg-salvia text-salvia-texto",
+  "bg-ouro text-ouro-texto",
+  "bg-[#E2E6EA] text-[#36485A]",
 ];
 
 function iniciais(nome: string | null): string {
@@ -21,7 +20,7 @@ export function Avatar({ id, nome, tamanho = "h-12 w-12 text-lg" }: { id: string
   return (
     <span
       aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-full font-semibold ${tamanho} ${CORES[soma % CORES.length]}`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-serif font-semibold ${tamanho} ${CORES[soma % CORES.length]}`}
     >
       {iniciais(nome)}
     </span>
