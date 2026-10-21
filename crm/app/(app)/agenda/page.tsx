@@ -40,14 +40,15 @@ import type { Profissional } from "@/lib/tipos";
 // intervalos livres entre eles. O círculo à direita confirma o atendimento ("Foi isso" ou
 // "Fez outra coisa", e em seguida "Já combinou a volta?"); tocar no horário abre todos os detalhes.
 
-type Camada = "todos" | StatusAtendimento | "reagendado";
+// Cancelados não aparecem na agenda: a dona não precisa ver quem desmarcou.
+// "Reagendados" só aparece no dia em que alguém reagendou.
+type Camada = "todos" | Exclude<StatusAtendimento, "cancelado"> | "reagendado";
 
 const CAMADAS: { chave: Camada; rotulo: string }[] = [
   { chave: "todos", rotulo: "Todos" },
   { chave: "agendado", rotulo: "A atender" },
   { chave: "realizado", rotulo: "Realizados" },
   { chave: "faltou", rotulo: "Faltaram" },
-  { chave: "cancelado", rotulo: "Cancelados" },
   { chave: "reagendado", rotulo: "Reagendados" },
 ];
 
@@ -140,16 +141,19 @@ export default function AgendaPage() {
   const semana = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i));
   const [, mes] = dia.split("-").map(Number);
 
+  const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
   const contagem: Record<Camada, number> = {
-    todos: ok?.atendimentos.length ?? 0,
-    agendado: ok?.atendimentos.filter((a) => a.status === "agendado").length ?? 0,
-    realizado: ok?.atendimentos.filter((a) => a.status === "realizado").length ?? 0,
-    faltou: ok?.atendimentos.filter((a) => a.status === "faltou").length ?? 0,
-    cancelado: ok?.atendimentos.filter((a) => a.status === "cancelado").length ?? 0,
+    todos: visiveis.length,
+    agendado: visiveis.filter((a) => a.status === "agendado").length,
+    realizado: visiveis.filter((a) => a.status === "realizado").length,
+    faltou: visiveis.filter((a) => a.status === "faltou").length,
     reagendado: ok?.reagendados.length ?? 0,
   };
-  const lista = !ok ? [] : camada === "todos" ? ok.atendimentos : ok.atendimentos.filter((a) => a.status === camada);
-  const selecionado = ok?.atendimentos.find((a) => a.id === aberto) ?? null;
+  const camadas = CAMADAS.filter((c) => c.chave !== "reagendado" || contagem.reagendado > 0);
+  // Ao trocar para um dia sem reagendados, volta para "Todos"
+  const camadaAtual: Camada = camadas.some((c) => c.chave === camada) ? camada : "todos";
+  const lista = camadaAtual === "todos" ? visiveis : visiveis.filter((a) => a.status === camadaAtual);
+  const selecionado = visiveis.find((a) => a.id === aberto) ?? null;
 
   // Linha do tempo: os horários e, em "Todos", o bloco do almoço no lugar certo
   const almoco = lerAlmoco(empresa.config);
@@ -160,7 +164,7 @@ export default function AgendaPage() {
       inicio: Date.parse(a.inicio),
       fim: Date.parse(a.inicio) + minutos(a) * 60_000,
     })),
-    ...(almoco && camada === "todos"
+    ...(almoco && camadaAtual === "todos"
       ? [
           {
             tipo: "almoco" as const,
@@ -265,13 +269,13 @@ export default function AgendaPage() {
 
       {/* Camadas por status */}
       <div className="mt-2 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
-        {CAMADAS.map((c) => (
+        {camadas.map((c) => (
           <button
             key={c.chave}
             onClick={() => setCamada(c.chave)}
-            aria-pressed={camada === c.chave}
+            aria-pressed={camadaAtual === c.chave}
             className={`h-9 shrink-0 rounded-full px-3 text-sm font-semibold ${
-              camada === c.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
+              camadaAtual === c.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
             }`}
           >
             {c.rotulo} {ok ? contagem[c.chave] : ""}
@@ -283,7 +287,7 @@ export default function AgendaPage() {
         {!dados && <p className="text-neutral-500">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-xl bg-red-100 p-4 text-red-900">Erro: {dados.erro}</p>}
 
-        {ok && camada === "reagendado" && (
+        {ok && camadaAtual === "reagendado" && (
           <div className="space-y-3">
             {ok.reagendados.length === 0 && <Vazio texto="Nenhum horário deste dia foi reagendado." />}
             {ok.reagendados.map((a) => (
@@ -292,10 +296,10 @@ export default function AgendaPage() {
           </div>
         )}
 
-        {ok && camada !== "reagendado" && (
+        {ok && camadaAtual !== "reagendado" && (
           <>
             {lista.length === 0 && (
-              <Vazio texto={camada === "todos" ? "Dia livre. Nenhum horário marcado." : "Nenhum horário aqui neste dia."} />
+              <Vazio texto={camadaAtual === "todos" ? "Dia livre. Nenhum horário marcado." : "Nenhum horário aqui neste dia."} />
             )}
             <ol>
               {entradas.map((e, i) => {
@@ -304,7 +308,7 @@ export default function AgendaPage() {
                 const ultimo = i === entradas.length - 1;
                 return (
                   <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id}>
-                    {camada === "todos" && livre >= 30 && <IntervaloLivre minutos={livre} />}
+                    {camadaAtual === "todos" && livre >= 30 && <IntervaloLivre minutos={livre} />}
                     {e.tipo === "almoco" ? (
                       <BlocoAlmoco texto={textoAlmoco(almoco!)} ultimo={ultimo} />
                     ) : (
