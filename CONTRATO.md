@@ -49,7 +49,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 | `contatos` | CRM (botão "Mandar alô") | CRM | registro de cada vez que a cliente foi chamada |
 
 ### Views prontas para o CRM (só leitura)
-- **`clientes_status`** — cada cliente com `ultima_visita`, `dias_sem_visita`, `proximo_agendamento`, `retorno_previsto`, `ultimo_contato`, `ia_pausada` e **`status`**.
+- **`clientes_status`** — cada cliente com `ultima_visita`, `dias_sem_visita`, `proximo_agendamento`, `retorno_previsto`, `ultimo_contato`, `ia_pausada`, **`status`** e `status_e_manual`.
 - **`retornos_por_servico`** — última vez de cada serviço por cliente e o retorno previsto (para a ficha).
 - **`conversas`** — última mensagem de cada cliente (para a aba Conversas).
 
@@ -70,6 +70,8 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 | `retorno_atrasado` | 🟠 | passou da data de retorno e não marcou |
 | `inativa` | 🔴 | mais de 90 dias sem vir (`config.dias_inativa`) e sem horário |
 | `sem_visita` | ⚪ | nunca teve atendimento realizado (só conversou) |
+
+**Status manual** (`supabase/004_status_manual.sql`): no Painel CRM dá para arrastar a cliente para **Inativas** ou **Em dia**. O CRM grava `clientes.status_manual` e `status_manual_em`, e a view usa esse status na frente das regras acima **até a cliente marcar horário ou voltar ao salão** depois da mudança. Aí o cálculo automático volta sozinho. `clientes_status.status_e_manual` diz se o status atual veio daí.
 
 **Retorno previsto:** quando um agendamento vira `realizado`, o banco calcula `data do atendimento + servicos.dias_retorno`. Se o status sair de `realizado`, o retorno é apagado.
 

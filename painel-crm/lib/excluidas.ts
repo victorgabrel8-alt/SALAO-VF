@@ -2,8 +2,8 @@ import { PREFIXO_SISTEMA } from "@/lib/origem";
 import { supabase } from "@/lib/supabase/client";
 
 // Cliente "excluída" não é apagada do banco: ganha a etiqueta interna "sistema:excluida",
-// some do Início, da Agenda e de Clientes, e fica em Configurações → Clientes excluídas,
-// onde dá para restaurar. Assim nada do histórico (atendimentos, conversas) se perde.
+// some do Início, da Agenda, das Conversas e das listas, e fica no Painel CRM, no filtro
+// "Excluídas", onde dá para restaurar. Assim nada do histórico (atendimentos, conversas) se perde.
 // Se um dia o banco ganhar uma coluna própria (ex.: excluida_em), só este arquivo muda.
 const MARCA = `${PREFIXO_SISTEMA}excluida`;
 
@@ -34,7 +34,7 @@ export function restaurarCliente(clienteId: string) {
 
 export type ClienteExcluida = { id: string; nome: string | null; telefone: string; atualizado_em: string };
 
-// Lista de Configurações → Clientes excluídas (a mais recente primeiro)
+// Todas as excluídas do salão (a mais recente primeiro)
 export async function buscarExcluidas(empresaId: string) {
   const { data, error } = await supabase()
     .from("clientes")
@@ -49,6 +49,6 @@ export async function buscarExcluidas(empresaId: string) {
 export function textoExclusao(nome: string | null): string {
   return (
     `Excluir ${nome ?? "esta cliente"}?\n\nEla sai do Início, da Agenda e de Clientes e vai para ` +
-    "Configurações → Clientes excluídas, onde dá para restaurar."
+    "Clientes excluídas, no Painel CRM, onde dá para restaurar."
   );
 }

@@ -17,6 +17,7 @@ export type FiltroClientes =
   | "retornos"
   | "atrasadas_recentes"
   | "atrasadas_antigas"
+  | "excluidas"
   | "todas";
 
 export type ClienteLista = Pick<
@@ -55,6 +56,7 @@ const REGRAS: Record<FiltroClientes, Regra> = {
   inativa: { status: ["inativa"] },
   em_dia: { status: ["em_dia"] },
   sem_visita: { status: ["sem_visita"] },
+  excluidas: { status: null },
   todas: { status: null },
 };
 
@@ -74,8 +76,9 @@ async function buscarPagina(empresaId: string, c: Consulta, de: number, quantida
   let q = supabase()
     .from("clientes_status")
     .select(CAMPOS)
-    .eq("empresa_id", empresaId)
-    .not("etiquetas", "cs", SEM_EXCLUIDAS);
+    .eq("empresa_id", empresaId);
+  // As excluídas só aparecem no filtro delas
+  q = c.filtro === "excluidas" ? q.filter("etiquetas", "cs", SEM_EXCLUIDAS) : q.not("etiquetas", "cs", SEM_EXCLUIDAS);
 
   const regra = REGRAS[c.filtro];
   const status = regra.status;
@@ -161,7 +164,12 @@ export async function contarClientes(empresaId: string, diasLimite: number): Pro
       .select("id", { count: "exact", head: true })
       .eq("empresa_id", empresaId)
       .not("etiquetas", "cs", SEM_EXCLUIDAS);
-  const [recentes, ...respostas] = await Promise.all([
+  const [excluidas, recentes, ...respostas] = await Promise.all([
+    supabase()
+      .from("clientes")
+      .select("id", { count: "exact", head: true })
+      .eq("empresa_id", empresaId)
+      .filter("etiquetas", "cs", SEM_EXCLUIDAS),
     contar().eq("status", "retorno_atrasado").gte("retorno_previsto", dataLimite(diasLimite)),
     ...statuses.map((s) => contar().eq("status", s)),
   ]);
@@ -172,6 +180,7 @@ export async function contarClientes(empresaId: string, diasLimite: number): Pro
   total.retornos = total.retorno_chegando + total.atrasadas_recentes;
   total.para_chamar = total.retorno_chegando + total.retorno_atrasado;
   total.todas = statuses.reduce((soma, s) => soma + total[s], 0);
+  total.excluidas = excluidas.count ?? 0;
   return total;
 }
 

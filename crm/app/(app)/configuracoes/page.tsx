@@ -22,15 +22,6 @@ export default function ConfiguracoesPage() {
       <div className="space-y-4">
         <AlertaWhatsApp />
         <HorarioAlmoco />
-        <Link
-          href="/configuracoes/excluidas"
-          className="mx-4 flex h-14 items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 shadow-sm active:bg-neutral-50"
-        >
-          <span className="text-lg font-semibold">Clientes excluídas</span>
-          <span className="text-2xl text-neutral-400" aria-hidden>
-            ›
-          </span>
-        </Link>
         <EmBreve fase={5} oQue="Serviços, profissionais e mensagens" />
         <div className="px-4">
           <BotaoSair />

@@ -74,7 +74,7 @@ function FichaCliente() {
   );
 }
 
-// No fim da ficha: excluir a cliente (vai para Configurações → Clientes excluídas) ou,
+// No fim da ficha: excluir a cliente (vai para Clientes excluídas, no Painel CRM) ou,
 // se ela já está lá, restaurar.
 function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => void }) {
   const router = useRouter();
