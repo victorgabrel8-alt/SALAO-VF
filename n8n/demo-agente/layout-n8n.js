@@ -39,6 +39,9 @@ module.exports = (principal, agenda, pausa) => {
     'anotar_no_crm': [1220, 1100], 'CRM: registrar contato': [0, 980],
     // 6. Resposta humanizada
     'Quebrar mensagens': [1440, 800], 'Um balão por vez': [1660, 800], 'Trava: liberar': [1880, 720], 'Pausa (lendo/respirando)': [1880, 940], 'Digitando...': [2100, 940], 'Enviar mensagem': [2320, 940],
+    // Supabase (banco do CRM)
+    'Supabase: registrar entrada': [2060, 220], 'Pausa: alinhar com o CRM': [2280, 220], 'Supabase: registrar saída': [2540, 940],
+    'Supabase: dona respondeu': [1160, -280], 'Supabase: reativar IA': [1160, -440],
   }, [
     nota(-60, -140, 680, 320, 7, '## 1. Entrada\nMensagem do WhatsApp chega da Evolution.\nExtrai telefone, nome, tipo e texto.'),
     nota(640, -520, 540, 340, 3, '## Sua resposta pelo celular\nMensagem SUA (fromMe) numa conversa → **pausa a IA 12 h** para esse número.\nMandou `#ia` → tira a pausa.'),
@@ -51,17 +54,20 @@ module.exports = (principal, agenda, pausa) => {
 
   organizar(agenda, {
     'Recebe pedido do agente': [0, 0], 'Preparar': [220, 0], 'Google: horários ocupados': [440, 0],
-    'Google: agendamentos da cliente': [660, 0], 'Calcular': [880, 0],
-    'Criar evento?': [1140, 0], 'Google: criar evento': [1380, -180], 'CRM: agendado': [1600, -180], 'Resposta (agendado)': [1820, -180],
-    'Cancelar evento?': [1380, 120], 'Google: cancelar evento': [1600, 40], 'CRM: cancelado': [1820, 40], 'Resposta (cancelado)': [2040, 40],
-    'Remarcar evento?': [1600, 260], 'Google: remarcar evento': [1820, 200], 'CRM: remarcado': [2040, 200], 'Resposta (remarcado)': [2260, 200],
+    'Google: agendamentos da cliente': [660, 0], 'Supabase: horários ocupados': [770, 160], 'Calcular': [880, 0],
+    'Criar evento?': [1140, 0], 'Google: criar evento': [1380, -180], 'CRM: agendado': [1600, -180],
+    'Supabase: cliente e serviços': [1820, -340], 'Supabase: serviços': [2040, -340], 'Supabase: profissionais': [2260, -340],
+    'Montar agendamento': [2480, -340], 'Supabase: gravar agendamento': [2700, -340], 'Supabase: nome da cliente': [2920, -340],
+    'Resposta (agendado)': [3140, -180],
+    'Cancelar evento?': [1380, 120], 'Google: cancelar evento': [1600, 40], 'CRM: cancelado': [1820, 40], 'Supabase: cancelar agendamento': [2040, 40], 'Resposta (cancelado)': [2260, 40],
+    'Remarcar evento?': [1600, 260], 'Google: remarcar evento': [1820, 200], 'CRM: remarcado': [2040, 200], 'Supabase: remarcar agendamento': [2260, 200], 'Resposta (remarcado)': [2480, 200],
     'Resposta': [1820, 400],
   }, [
     nota(-60, -160, 1120, 360, 5, '## 1. Lê a agenda\nChamado pelas ferramentas do agente.\nGoogle: horários ocupados (freeBusy) + agendamentos da cliente (achados pelo telefone).\n**Calcular** = regras de `agenda-calculo.js` (expediente, almoço, faixas livres).'),
     nota(1080, -340, 1420, 900, 4, '## 2. Executa a ação\n**criar** → novo evento · **cancelar** → apaga · **remarcar** → move o MESMO evento\nConsultar/ver → só devolve o texto (Resposta).\nCRM: agendado / cancelado / remarcado = atualiza a etapa da cliente (só se o Google confirmou).'),
   ]);
 
-  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Resposta': [660, 0] }, [
+  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0], 'Resposta': [880, 0] }, [
     nota(-60, -180, 920, 360, 3, '## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.'),
   ]);
 };

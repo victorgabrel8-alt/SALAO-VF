@@ -505,6 +505,9 @@ const painelIdFile = path.join(dir, '.workflow-crm-painel-id');
 const lerCrmId = () => (fs.existsSync(crmIdFile) ? fs.readFileSync(crmIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_CRM');
 const { crmWorkflow, painelWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
 
+// Supabase (banco do CRM): mensagens, pausa e agenda passam a ser gravadas lá (ver supabase-workflows.js)
+require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow });
+
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
 

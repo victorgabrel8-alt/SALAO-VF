@@ -1,0 +1,152 @@
+// Liga a IA ao Supabase (o banco que o CRM lê). Ver CONTRATO.md §5.
+// Chamado pelo montar-workflow.js: encaixa nós nos workflows existentes (não cria workflow novo).
+//   Principal: cada mensagem da cliente -> n8n_registrar_entrada (cria a cliente, grava a mensagem,
+//              devolve ia_pausada = botão "Pausar IA" do CRM); cada balão da IA -> n8n_registrar_saida;
+//              resposta manual da dona -> n8n_registrar_saida(humano, pausa 12h); "#ia" -> reativa.
+//   Agenda:    criar / cancelar / remarcar no Google -> mesmo agendamento em `agendamentos` (origem 'ia').
+//   Pausa:     transferir_para_humano -> ia_pausada_ate + motivo no Supabase (aparece em "Precisam de você").
+// Tudo com onError = continuar: se o Supabase cair, a IA continua atendendo.
+// Precisa no .env (e no docker-compose): SUPABASE_URL, SUPABASE_SERVICE_KEY, EMPRESA_ID.
+
+// Telefone no formato do banco (55 + DDD + número). O WhatsApp entrega celular antigo sem o 9
+// (556699990000); o CRM grava com 9 (5566999990000). Sem isso a mesma cliente vira duas.
+const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()`;
+const TIPO = (t) => `({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[${t}] || 'outro'`;
+const EMPRESA = '$env.EMPRESA_ID';
+
+module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) => {
+  const headers = { parameters: [
+    { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
+    { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
+    { name: 'Prefer', value: 'return=representation' },
+  ] };
+  const supa = (name, method, rota, body, extra = {}) => node(name, 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
+    method, url: `={{ $env.SUPABASE_URL }}/rest/v1/${rota}`,
+    sendHeaders: true, headerParameters: headers,
+    ...(body ? { sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}` } : {}),
+    options: {},
+  }, { onError: 'continueRegularOutput', alwaysOutputData: true, ...extra });
+  const entre = (wf, de, novo, para, saida = 0) => {
+    wf.nodes.push(novo);
+    wf.connections[de].main[saida] = [{ node: novo.name, type: 'main', index: 0 }];
+    wf.connections[novo.name] = main(para);
+  };
+  const achar = (wf, nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error(`Supabase: não achei "${nome}"`); return n; };
+
+  // ---------- Principal: mensagem da cliente ----------
+  // Ordem nova: Filtro -> mídia -> Texto -> registrar no Supabase -> pausa (Redis OU CRM) -> buffer.
+  // Registrar antes da pausa: o CRM mostra a mensagem mesmo com a IA pausada.
+  workflow.connections['Filtro'] = main('É áudio ou foto?');
+  workflow.nodes.push(supa('Supabase: registrar entrada', 'POST', 'rpc/n8n_registrar_entrada',
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_nome: ${D}.nome || null,
+       p_conteudo: $json.texto, p_tipo: ${TIPO(`${D}.tipo`)}, p_wa_message_id: ${D}.msgId }`));
+  workflow.connections['Texto da mensagem'] = main('Supabase: registrar entrada');
+  workflow.connections['Supabase: registrar entrada'] = main('Pausa: verificar');
+  // Quem manda na pausa é o Supabase (botões Pausar/Reativar do CRM). O Redis só vale se o Supabase
+  // não respondeu. Ativa pelo Supabase -> apaga a pausa antiga do Redis, senão "Reativar IA" no CRM
+  // não destrava uma cliente que pediu humano (a pausa do Redis dura 12 h).
+  workflow.nodes.push(node('Pausa: alinhar com o CRM', 'n8n-nodes-base.redis', 1, [0, 0], {
+    operation: 'delete', key: `=pausa:{{ ${D}.telefone }}`,
+  }, { credentials: achar(workflow, 'Pausa: verificar').credentials }));
+  workflow.connections['IA ativa?'] = main('Pausa: alinhar com o CRM');
+  workflow.connections['Pausa: alinhar com o CRM'] = main('Buffer: guardar msg');
+  const ativa = achar(workflow, 'IA ativa?').parameters.conditions.conditions[0];
+  ativa.leftValue = "={{ (() => { const p = $('Supabase: registrar entrada').item.json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}";
+  achar(workflow, 'Buffer: guardar msg').parameters.messageData = "={{ $('Texto da mensagem').item.json.texto }}";
+
+  // ---------- Principal: cada balão da IA ----------
+  entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,
+       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }`), 'Um balão por vez');
+
+  // ---------- Principal: a dona respondeu pelo celular / "#ia" ----------
+  workflow.nodes.push(supa('Supabase: dona respondeu', 'POST', 'rpc/n8n_registrar_saida',
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: ${D}.texto || '[mídia]',
+       p_autor: 'humano', p_tipo: ${TIPO(`${D}.tipo`)}, p_wa_message_id: ${D}.msgId, p_pausar_horas: 12 }`));
+  workflow.connections['Pausa: humano assumiu (12h)'] = main('Supabase: dona respondeu');
+  workflow.nodes.push(supa('Supabase: reativar IA', 'PATCH',
+    `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${D}.telefone`)} }}`,
+    '{ ia_pausada_ate: null, motivo_pausa: null }'));
+  workflow.connections['Pausa: remover'] = main('Supabase: reativar IA');
+
+  // ---------- Pausa: transferir_para_humano ----------
+  const P = "$('Recebe pedido do agente').item.json";
+  const motivoPausa = `(/reclam/i.test(${P}.motivo || '') ? 'reclamacao' : 'pediu_humano')`;
+  const ultimoPausa = Object.keys(pausaWorkflow.connections).find((k) => pausaWorkflow.connections[k].main[0][0].node === 'Resposta');
+  entre(pausaWorkflow, ultimoPausa, supa('Supabase: pausar IA', 'PATCH',
+    `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${P}.telefone`)} }}`,
+    `{ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: ${motivoPausa} }`), 'Resposta');
+
+  const Pr = "$('Preparar').item.json";
+
+  // ---------- Agenda: o que já está marcado no CRM também ocupa horário (Calcular soma ao Google) ----------
+  // inicio desde 12 h antes da janela, para pegar atendimento longo que começou antes e ainda não acabou
+  agendaWorkflow.nodes.push(supa('Supabase: horários ocupados', 'GET',
+    `agendamentos?select=inicio,fim,google_event_id&empresa_id=eq.{{ ${EMPRESA} }}&status=in.(agendado,realizado)` +
+    `&inicio=gte.{{ DateTime.fromISO(${Pr}.timeMin || $now.toISO()).minus({ hours: 12 }).toUTC().toISO() }}` +
+    `&inicio=lt.{{ ${Pr}.timeMax || $now.plus({ days: 8 }).toUTC().toISO() }}`, null));
+  agendaWorkflow.connections['Google: agendamentos da cliente'] = main('Supabase: horários ocupados');
+  agendaWorkflow.connections['Supabase: horários ocupados'] = main('Calcular');
+
+  // ---------- Agenda: criar ----------
+  const ultimoCriar = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === 'Resposta (agendado)');
+  agendaWorkflow.nodes.push(
+    supa('Supabase: cliente e serviços', 'GET',
+      `clientes?select=id,nome&empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${Pr}.telefone`)} }}`, null),
+    supa('Supabase: serviços', 'GET', `servicos?select=id,nome,duracao_min&ativo=eq.true&empresa_id=eq.{{ ${EMPRESA} }}`, null,
+      { alwaysOutputData: true, executeOnce: true }),
+    supa('Supabase: profissionais', 'GET', `profissionais?select=id,nome&ativo=eq.true&order=criado_em&empresa_id=eq.{{ ${EMPRESA} }}`, null,
+      { executeOnce: true }),
+    node('Montar agendamento', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: String.raw`
+// Serviço: o da lista do Supabase com mais palavras em comum com o que a IA escreveu
+// (ex.: "Mega hair com queratina" -> "Mega hair (aplicação)"). Sem nada parecido: fica sem serviço
+// e o nome vai nas observações (o CRM mostra; a Gleide ajusta).
+const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+const palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));
+const pedido = $('Preparar').first().json;
+const google = $('Google: criar evento').first().json;
+const cliente = $('Supabase: cliente e serviços').first().json;
+const servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);
+const prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);
+const alvo = palavras(pedido.servico);
+let melhor = null, nota = 0;
+for (const s of servicos) {
+  const n = palavras(s.nome).filter((p) => alvo.includes(p)).length;
+  if (n > nota) { melhor = s; nota = n; }
+}
+if (!google.id || !cliente.id) return [{ json: { pular: true, motivo: !google.id ? 'google falhou' : 'cliente não está no Supabase' } }];
+const obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');
+return [{ json: { pular: false, corpo: {
+  empresa_id: $env.EMPRESA_ID, cliente_id: cliente.id, servico_id: melhor ? melhor.id : null,
+  profissional_id: prof[0] ? prof[0].id : null,
+  inicio: google.start.dateTime, fim: google.end.dateTime,
+  status: 'agendado', origem: 'ia', google_event_id: google.id, observacoes: obs || null,
+} } }];
+` }),
+    supa('Supabase: gravar agendamento', 'POST', 'agendamentos', '$json.corpo'),
+  );
+  agendaWorkflow.connections[ultimoCriar] = main('Supabase: cliente e serviços');
+  agendaWorkflow.connections['Supabase: cliente e serviços'] = main('Supabase: serviços');
+  agendaWorkflow.connections['Supabase: serviços'] = main('Supabase: profissionais');
+  agendaWorkflow.connections['Supabase: profissionais'] = main('Montar agendamento');
+  agendaWorkflow.connections['Montar agendamento'] = main('Supabase: gravar agendamento');
+  // nome que a cliente confirmou ao agendar vale mais que o nome do perfil do WhatsApp (apelido, emoji)
+  agendaWorkflow.nodes.push(supa('Supabase: nome da cliente', 'PATCH',
+    "clientes?id=eq.{{ $('Montar agendamento').item.json.corpo?.cliente_id || 'nenhum' }}",
+    `{ nome: ${Pr}.nome || $('Supabase: cliente e serviços').item.json.nome }`));
+  agendaWorkflow.connections['Supabase: gravar agendamento'] = main('Supabase: nome da cliente');
+  agendaWorkflow.connections['Supabase: nome da cliente'] = main('Resposta (agendado)');
+  // não grava se o Google falhou ou a cliente não existe no Supabase
+  achar(agendaWorkflow, 'Supabase: gravar agendamento').parameters.url =
+    "={{ $env.SUPABASE_URL }}/rest/v1/{{ $json.pular ? 'nao_gravar' : 'agendamentos' }}";
+
+  // ---------- Agenda: cancelar / remarcar (pelo google_event_id) ----------
+  const C = "$('Calcular').item.json";
+  const ultimoCancelar = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === 'Resposta (cancelado)');
+  entre(agendaWorkflow, ultimoCancelar, supa('Supabase: cancelar agendamento', 'PATCH',
+    `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&google_event_id=eq.{{ ${C}.eventId }}`, "{ status: 'cancelado' }"), 'Resposta (cancelado)');
+  const ultimoRemarcar = Object.keys(agendaWorkflow.connections).find((k) => agendaWorkflow.connections[k].main[0][0]?.node === 'Resposta (remarcado)');
+  entre(agendaWorkflow, ultimoRemarcar, supa('Supabase: remarcar agendamento', 'PATCH',
+    `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&google_event_id=eq.{{ ${C}.eventId }}`,
+    `{ inicio: ${C}.patch.start.dateTime, fim: ${C}.patch.end.dateTime }`), 'Resposta (remarcado)');
+};

@@ -445,7 +445,7 @@
           "conditions": [
             {
               "id": "p1",
-              "leftValue": "={{ !$json.pausa }}",
+              "leftValue": "={{ (() => { const p = $('Supabase: registrar entrada').item.json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -583,7 +583,7 @@
       "parameters": {
         "operation": "push",
         "list": "=buffer:{{ $('Extrair dados').item.json.telefone }}",
-        "messageData": "={{ $json.texto }}",
+        "messageData": "={{ $('Texto da mensagem').item.json.texto }}",
         "tail": true
       },
       "credentials": {
@@ -1969,6 +1969,174 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000079",
+      "name": "Supabase: registrar entrada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2060,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_entrada",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_nome: $('Extrair dados').item.json.nome || null,\n       p_conteudo: $json.texto, p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').item.json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').item.json.msgId }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000080",
+      "name": "Pausa: alinhar com o CRM",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2280,
+        220
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=pausa:{{ $('Extrair dados').item.json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000081",
+      "name": "Supabase: registrar saída",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2540,
+        940
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').item.json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000082",
+      "name": "Supabase: dona respondeu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        -280
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').item.json.texto || '[mídia]',\n       p_autor: 'humano', p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').item.json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').item.json.msgId, p_pausar_horas: 12 }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000083",
+      "name": "Supabase: reativar IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        -440
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ $env.EMPRESA_ID }}&telefone=eq.{{ (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: null, motivo_pausa: null }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000094",
       "name": "É a Gleide (assistente)?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2002,7 +2170,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000080",
+      "id": "00000000-0000-4000-8000-000000000095",
       "name": "Repassar para a assistente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2084,7 +2252,7 @@
       "main": [
         [
           {
-            "node": "Pausa: verificar",
+            "node": "É áudio ou foto?",
             "type": "main",
             "index": 0
           }
@@ -2106,7 +2274,7 @@
       "main": [
         [
           {
-            "node": "É áudio ou foto?",
+            "node": "Pausa: alinhar com o CRM",
             "type": "main",
             "index": 0
           }
@@ -2157,7 +2325,7 @@
       "main": [
         [
           {
-            "node": "Buffer: guardar msg",
+            "node": "Supabase: registrar entrada",
             "type": "main",
             "index": 0
           }
@@ -2414,7 +2582,7 @@
       "main": [
         [
           {
-            "node": "Um balão por vez",
+            "node": "Supabase: registrar saída",
             "type": "main",
             "index": 0
           }
@@ -2515,6 +2683,61 @@
           {
             "node": "Agente IA",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: registrar entrada": {
+      "main": [
+        [
+          {
+            "node": "Pausa: verificar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: alinhar com o CRM": {
+      "main": [
+        [
+          {
+            "node": "Buffer: guardar msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: registrar saída": {
+      "main": [
+        [
+          {
+            "node": "Um balão por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: humano assumiu (12h)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: dona respondeu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: remover": {
+      "main": [
+        [
+          {
+            "node": "Supabase: reativar IA",
+            "type": "main",
             "index": 0
           }
         ]

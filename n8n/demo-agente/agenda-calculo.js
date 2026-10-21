@@ -88,12 +88,20 @@ if (fb.error || !fb.calendars) return saida({ resposta: FORA });
 const cal = Object.values(fb.calendars)[0] || {};
 if (cal.errors) return saida({ resposta: FORA });
 const ocupados = (cal.busy || []).map(b => [DateTime.fromISO(b.start).setZone(TZ), DateTime.fromISO(b.end).setZone(TZ)]);
+// Horários marcados pelo CRM (Supabase) também ocupam: a Gleide marca/remarca pelo app e isso não vai para o Google.
+// Sem fim gravado, conta 1 h. Se o Supabase não respondeu, segue só com o Google.
+let doCrm = [];
+try { doCrm = $('Supabase: horários ocupados').all().map(i => i.json).filter(a => a.inicio); } catch (e) {}
+for (const a of doCrm) {
+  const ini = DateTime.fromISO(a.inicio).setZone(TZ);
+  ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);
+}
 const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
 // ---- agendamentos já feitos por esta cliente (achados pelo telefone na descrição do evento) ----
 if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
-  const ev = $input.first().json;
+  const ev = $('Google: agendamentos da cliente').first().json;
   if (ev.error) return saida({ resposta: FORA });
   const evs = (ev.items || []).filter(x => x.start && x.start.dateTime && x.status !== 'cancelled')
     .map(x => ({ id: x.id, titulo: x.summary || '', ini: DateTime.fromISO(x.start.dateTime).setZone(TZ), fim: DateTime.fromISO(x.end.dateTime).setZone(TZ) }));

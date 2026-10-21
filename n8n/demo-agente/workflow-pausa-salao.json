@@ -68,7 +68,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        660,
+        880,
         0
       ],
       "parameters": {
@@ -108,6 +108,43 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000084",
+      "name": "Supabase: pausar IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ $env.EMPRESA_ID }}&telefone=eq.{{ (() => { const d = String($('Recebe pedido do agente').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam/i.test($('Recebe pedido do agente').item.json.motivo || '') ? 'reclamacao' : 'pediu_humano') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -134,6 +171,17 @@
       ]
     },
     "CRM: com humano": {
+      "main": [
+        [
+          {
+            "node": "Supabase: pausar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: pausar IA": {
       "main": [
         [
           {

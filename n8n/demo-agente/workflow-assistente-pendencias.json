@@ -2,7 +2,7 @@
   "name": "Assistente - Pendências",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000103",
+      "id": "00000000-0000-4000-8000-000000000118",
       "name": "A cada 15 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000104",
+      "id": "00000000-0000-4000-8000-000000000119",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000105",
+      "id": "00000000-0000-4000-8000-000000000120",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -73,7 +73,7 @@
       "webhookId": "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000106",
+      "id": "00000000-0000-4000-8000-000000000121",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
@@ -96,7 +96,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000107",
+      "id": "00000000-0000-4000-8000-000000000122",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -109,7 +109,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000108",
+      "id": "00000000-0000-4000-8000-000000000123",
       "name": "Mandar para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -139,7 +139,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000109",
+      "id": "00000000-0000-4000-8000-000000000124",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -161,7 +161,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000110",
+      "id": "00000000-0000-4000-8000-000000000125",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,

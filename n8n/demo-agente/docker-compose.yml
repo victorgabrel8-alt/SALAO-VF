@@ -104,6 +104,10 @@ services:
       NUMEROS_PERMITIDOS: ${NUMEROS_PERMITIDOS:-}
       # Números que falam com a assistente da Gleide em vez do atendimento (ver assistente-workflows.js)
       ASSISTENTE_NUMEROS: ${ASSISTENTE_NUMEROS:-}
+      # Supabase (banco do CRM): a IA grava mensagens, pausa e agenda lá (ver supabase-workflows.js)
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      EMPRESA_ID: ${EMPRESA_ID:-}
       GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
     volumes:
       - n8n_data:/home/node/.n8n
