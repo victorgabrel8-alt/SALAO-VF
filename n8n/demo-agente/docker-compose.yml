@@ -102,6 +102,8 @@ services:
       EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE}
       MEU_NUMERO: ${MEU_NUMERO}
       NUMEROS_PERMITIDOS: ${NUMEROS_PERMITIDOS:-}
+      # Números que falam com a assistente da Gleide em vez do atendimento (ver assistente-workflows.js)
+      ASSISTENTE_NUMEROS: ${ASSISTENTE_NUMEROS:-}
       GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
     volumes:
       - n8n_data:/home/node/.n8n

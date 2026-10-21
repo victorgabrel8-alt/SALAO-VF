@@ -505,6 +505,9 @@ const painelIdFile = path.join(dir, '.workflow-crm-painel-id');
 const lerCrmId = () => (fs.existsSync(crmIdFile) ? fs.readFileSync(crmIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_CRM');
 const { crmWorkflow, painelWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
 
+// Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
+const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
+
 // posições dos nós e notas coloridas por etapa (só visual)
 require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
 
@@ -513,6 +516,9 @@ fs.writeFileSync(path.join(dir, 'workflow-agenda-salao.json'), JSON.stringify(ag
 fs.writeFileSync(path.join(dir, 'workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-crm-salao.json'), JSON.stringify(crmWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-crm-painel.json'), JSON.stringify(painelWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-assistente-ferramentas.json'), JSON.stringify(assistente.ferramentasWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 if (process.argv.includes('--enviar')) {
@@ -543,6 +549,15 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(crmId);
     const painelId = await upsert(painelWorkflow, painelIdFile);
     if (process.argv.includes('--ativar')) await ativar(painelId);
+    // assistente: ferramentas primeiro (as tools do agente apontam para ele)
+    const ferramentasId = await upsert(assistente.ferramentasWorkflow, assistente.ferramentasIdFile);
+    if (process.argv.includes('--ativar')) await ativar(ferramentasId);
+    for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = ferramentasId;
+    fs.writeFileSync(path.join(dir, 'workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
+    for (const [wf, arq] of [[assistente.assistenteWorkflow, '.workflow-assistente-id'], [assistente.pendenciasWorkflow, '.workflow-assistente-pendencias-id']]) {
+      const wid = await upsert(wf, path.join(dir, arq));
+      if (process.argv.includes('--ativar')) await ativar(wid);
+    }
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));

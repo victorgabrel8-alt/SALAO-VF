@@ -114,6 +114,7 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 - Responder pelo app (hoje: botão abre o WhatsApp Business)
 - Notificações push no iPhone
 - Envio automático de retorno/reativação pela IA (templates pagos da API oficial). **Combinado:** a dona não manda alô pelo celular; uma IA chama a cliente na data do retorno. Cada envio deve gravar uma linha em `contatos` com `canal='ia'` e `tipo='retorno'` ou `'reativacao'` — assim o CRM mostra "Chamada há X dias" e o banco marca sozinho `respondeu`/`agendou`. O botão "Mandar alô" fica só no CRM do computador, como plano B manual.
+- **IA alimentando o CRM** (IA agenda com a intenção no card, ✓ da Gleide com "Foi isso" / "Mudou algo" / resultado da avaliação, serviços por técnica com retorno próprio; assistente no WhatsApp fica opcional): plano em `docs/PLANO-IA-ALIMENTA-CRM.md`, banco em `supabase/004_avaliacoes_ia_RASCUNHO.sql` e serviços em `supabase/manual/servicos_toda_bonita_RASCUNHO.sql` (aguardando o guardião; dias de retorno provisórios). O que entra antes de segunda está na seção "Ordem" do plano. Quando o 004 rodar, atualizar as seções 3 e 5 deste contrato.
 - Aniversários, campanhas, relatórios
 - Cancelar no CRM apagando também do Google Agenda
 - Comissão, estoque, financeiro

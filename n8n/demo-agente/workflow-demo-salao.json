@@ -1966,6 +1966,59 @@
           "convertFieldsToString": false
         }
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000079",
+      "name": "É a Gleide (assistente)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        -620
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ (($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean).find(n => n === $json.telefone || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === $json.telefone) || '') !== '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000080",
+      "name": "Repassar para a assistente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        700,
+        -700
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/assistente-gleide",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Webhook Evolution').item.json.body) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1984,7 +2037,7 @@
       "main": [
         [
           {
-            "node": "Minha resposta manual?",
+            "node": "É a Gleide (assistente)?",
             "type": "main",
             "index": 0
           }
@@ -2462,6 +2515,24 @@
           {
             "node": "Agente IA",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É a Gleide (assistente)?": {
+      "main": [
+        [
+          {
+            "node": "Repassar para a assistente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Minha resposta manual?",
+            "type": "main",
             "index": 0
           }
         ]

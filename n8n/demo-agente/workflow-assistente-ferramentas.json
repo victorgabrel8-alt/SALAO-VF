@@ -1,0 +1,189 @@
+{
+  "name": "Assistente - Ferramentas",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000081",
+      "name": "Recebe pedido da assistente",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "acao"
+            },
+            {
+              "name": "pedido_por"
+            },
+            {
+              "name": "busca"
+            },
+            {
+              "name": "data"
+            },
+            {
+              "name": "cliente_id"
+            },
+            {
+              "name": "agendamento_id"
+            },
+            {
+              "name": "resultado"
+            },
+            {
+              "name": "tecnica_indicada"
+            },
+            {
+              "name": "tipo_cabelo"
+            },
+            {
+              "name": "comprimento_cm"
+            },
+            {
+              "name": "gramas"
+            },
+            {
+              "name": "valor"
+            },
+            {
+              "name": "motivo_nao_fechou"
+            },
+            {
+              "name": "proximo_passo"
+            },
+            {
+              "name": "data_proximo_passo"
+            },
+            {
+              "name": "observacoes"
+            },
+            {
+              "name": "status"
+            },
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "nome"
+            },
+            {
+              "name": "servico"
+            },
+            {
+              "name": "inicio"
+            },
+            {
+              "name": "texto"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000082",
+      "name": "Montar SQL",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst e = $input.first().json;\nconst empresa = $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001';\nconst v = (k) => (e[k] === undefined || e[k] === null ? '' : String(e[k]).trim());\nconst num = (k) => v(k).replace(/[^0-9,.]/g, '').replace(/\\.(?=\\d{3}(\\D|$))/g, '').replace(',', '.');\nconst tel = (t) => { let d = String(t || '').replace(/\\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return d; };\nlet query, params;\nswitch (v('acao')) {\n  case 'buscar_cliente':\n    query = \"select coalesce(json_agg(x), '[]') as resultado from (\" +\n      \" select c.id as cliente_id, c.nome, c.telefone, c.status, f.etapa, c.ultima_visita, c.proximo_agendamento,\" +\n      \"        f.pre_resumo, f.pre_tecnica_interesse, f.valor_orcado, f.data_proximo_passo, c.observacoes\" +\n      \"   from clientes_status c join funil_clientes f on f.cliente_id = c.id\" +\n      \"  where c.empresa_id = $1 and (c.nome ilike '%' || $2 || '%'\" +\n      \"     or (regexp_replace($2, '\\\\D', '', 'g') <> '' and c.telefone like '%' || regexp_replace($2, '\\\\D', '', 'g') || '%'))\" +\n      \"  order by c.ultima_mensagem desc nulls last limit 8) x\";\n    params = [empresa, v('busca')];\n    break;\n  case 'agenda_do_dia':\n    query = \"select coalesce(json_agg(x order by x.inicio), '[]') as resultado from (\" +\n      \" select a.id as agendamento_id, a.cliente_id, c.nome, to_char(a.inicio at time zone 'America/Cuiaba', 'HH24:MI') as hora,\" +\n      \"        a.inicio, s.nome as servico, a.status, a.valor\" +\n      \"   from agendamentos a join clientes c on c.id = a.cliente_id left join servicos s on s.id = a.servico_id\" +\n      \"  where a.empresa_id = $1 and (a.inicio at time zone 'America/Cuiaba')::date = coalesce(nullif($2, '')::date, hoje_cuiaba())) x\";\n    params = [empresa, v('data')];\n    break;\n  case 'resultado_avaliacao': {\n    const d = { resultado: v('resultado'), tecnica_indicada: v('tecnica_indicada'), tipo_cabelo: v('tipo_cabelo'),\n      comprimento_cm: num('comprimento_cm').split('.')[0], gramas: num('gramas').split('.')[0], valor_orcado: num('valor'),\n      motivo_nao_fechou: v('motivo_nao_fechou'), proximo_passo: v('proximo_passo'), data_proximo_passo: v('data_proximo_passo'),\n      observacoes: v('observacoes') };\n    query = 'select n8n_assistente_resultado_avaliacao($1, $2, $3::uuid, $4::jsonb) as resultado';\n    params = [empresa, v('pedido_por'), v('cliente_id'), JSON.stringify(d)];\n    break;\n  }\n  case 'status_atendimento':\n    query = \"select n8n_assistente_status_agendamento($1, $2, $3::uuid, $4, nullif($5, '')::numeric) as resultado\";\n    params = [empresa, v('pedido_por'), v('agendamento_id'), v('status'), num('valor')];\n    break;\n  case 'registrar_atendimento':\n    query = \"select n8n_assistente_registrar_atendimento($1, $2, $3, $4,\" +\n      \" (select id from servicos where empresa_id = $1 and ativo and nome ilike '%' || $5 || '%' order by length(nome) limit 1),\" +\n      \" coalesce(nullif($6, '')::timestamptz, now()), nullif($7, '')::numeric, nullif($8, '')) as resultado\";\n    params = [empresa, v('pedido_por'), tel(v('telefone')), v('nome'), v('servico'),\n      v('inicio') ? v('inicio') + (/[+-]\\d\\d:?\\d\\d$|Z$/.test(v('inicio')) ? '' : '-04:00') : '', num('valor'), v('observacoes')];\n    break;\n  case 'anotar':\n    query = 'select n8n_assistente_anotar_cliente($1, $2, $3::uuid, $4) as resultado';\n    params = [empresa, v('pedido_por'), v('cliente_id'), v('texto')];\n    break;\n  default:\n    return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];\n}\nreturn [{ json: { query, params } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000083",
+      "name": "Executar no banco",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "={{ $json.query }}",
+        "options": {
+          "queryReplacement": "={{ $json.params }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "vWZfw25p31IboD1j",
+          "name": "Salão teste (004)"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000084",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $('Montar SQL').item.json.erro ? 'ERRO: ' + $('Montar SQL').item.json.erro : ($json.error ? 'ERRO: ' + ($json.error.message || $json.message || JSON.stringify($json.error)) : 'OK: ' + JSON.stringify($json.resultado)) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Recebe pedido da assistente": {
+      "main": [
+        [
+          {
+            "node": "Montar SQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar SQL": {
+      "main": [
+        [
+          {
+            "node": "Executar no banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Executar no banco": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

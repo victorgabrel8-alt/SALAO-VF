@@ -19,6 +19,8 @@ module.exports = (principal, agenda, pausa) => {
   organizar(principal, {
     // 1. Entrada
     'Webhook Evolution': [0, 0], 'Extrair dados': [220, 0], 'Minha resposta manual?': [440, 0],
+    // número da Gleide -> workflow "Assistente da Gleide"
+    'É a Gleide (assistente)?': [440, -620], 'Repassar para a assistente': [700, -700],
     // sua resposta manual / #ia
     'Comando #ia?': [700, -320], 'Pausa: remover': [940, -440], 'Pausa: humano assumiu (12h)': [940, -300],
     // 2. Filtro e pausa

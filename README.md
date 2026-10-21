@@ -23,15 +23,18 @@ salao-ia/
 ├── supabase/
 │   ├── 001_schema.sql         ← cria o banco inteiro (rodar 1 vez)
 │   ├── 002_seed_dev.sql       ← dados falsos ("Salão Demo") para desenvolver
+│   ├── 004_avaliacoes_ia_RASCUNHO.sql ← RASCUNHO (não rodar): avaliações + IA alimentando o CRM
 │   └── manual/
-│       └── criar_salao_producao.sql  ← cadastra o salão real (sexta)
+│       ├── criar_salao_producao.sql  ← cadastra o salão real (sexta)
+│       └── servicos_toda_bonita_RASCUNHO.sql ← serviços por técnica (dias de retorno provisórios)
 ├── prompts/
 │   ├── PROMPT-ATENDIMENTO.md  ← colar no Claude Code do Victor
 │   └── PROMPT-CRM.md          ← colar no Claude Code do amigo
 └── docs/
     ├── CRONOGRAMA.md          ← quem faz o quê, dia a dia
     ├── CHECKLIST-ENTREGA.md   ← o que conferir antes e durante a entrega
-    └── DADOS-DO-SALAO.md      ← lista do que pedir para a dona
+    ├── DADOS-DO-SALAO.md      ← lista do que pedir para a dona
+    └── PLANO-IA-ALIMENTA-CRM.md ← IA preenchendo o CRM (agenda com intenção + ✓ da Gleide)
 ```
 
 ## Primeiro dia (terça, juntos, ~1 hora)

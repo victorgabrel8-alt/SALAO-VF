@@ -268,3 +268,26 @@ Consultar direto no banco:
 ```bash
 docker exec demo-salao-postgres-1 psql -U evolution -d crm -c "SELECT nome, telefone, etapa, interesse, agendamento FROM clientes ORDER BY ultimo_contato DESC"
 ```
+
+---
+
+## Assistente da Gleide (teste local)
+
+Plano: `docs/PLANO-IA-ALIMENTA-CRM.md` (Camada 2). Banco: `supabase/004_avaliacoes_ia_RASCUNHO.sql`.
+
+- **Banco de teste:** `./recriar-banco-teste.sh` recria o banco `salao_teste` no Postgres do docker
+  (001 + 003 + 002 + 004), carrega o cenário (`teste-assistente.sql`: Juliana com avaliação sem resultado,
+  Ana e Joana com atendimento sem status, Carla "pensando") e roda os testes do 004 (`teste-004-funcoes.sql`).
+- **No `.env`:** `ASSISTENTE_NUMEROS` (número que faz o papel da Gleide) e `N8N_ASSISTENTE_PG_CRED_ID`
+  (credencial Postgres "Salão teste (004)" no n8n, apontando para `salao_teste`). Depois: `docker compose up -d n8n`.
+- **Montar:** `node montar-workflow.js --enviar --ativar` cria `Assistente da Gleide`, `Assistente - Ferramentas`
+  e `Assistente - Pendências`, e coloca no principal o desvio "É a Gleide (assistente)?": mensagens desses
+  números vão para a assistente, não para o atendimento.
+- **Disparar as perguntas agora:** `curl localhost:5678/webhook/assistente-pendencias`
+  (sozinho, roda a cada 15 min das 8h às 20h; não repete a mesma pendência por 3h).
+- **Recomeçar a conversa:** `docker exec demo-salao-redis-1 redis-cli DEL assistente:<número>` e
+  `delete from registros_ia where acao = 'perguntou'` no `salao_teste`.
+- **Desligar:** deixe `ASSISTENTE_NUMEROS` vazio e `docker compose up -d n8n`: o número volta para o atendimento.
+
+> No teste a assistente fala pelo **mesmo número da IA de atendimento**. Na produção ela precisa de um número
+> próprio, porque a Gleide usa o WhatsApp Business do salão (ver o plano).
