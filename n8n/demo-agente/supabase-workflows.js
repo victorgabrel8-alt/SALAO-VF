@@ -54,7 +54,67 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) =>
   ativa.leftValue = "={{ (() => { const p = $('Supabase: registrar entrada').item.json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}";
   achar(workflow, 'Buffer: guardar msg').parameters.messageData = "={{ $('Texto da mensagem').item.json.texto }}";
 
-  // ---------- Principal: cada balão da IA ----------
+  // ---------- Principal: a IA lê a ficha e o histórico antes de responder ----------
+  // Não é outra IA: são duas consultas e um texto "Sobre esta cliente" no prompt. O que a Gleide
+  // confirma no ✓ da agenda (inclusive "Fez outra coisa") aparece aqui na próxima mensagem.
+  const M = "$('Montar entrada').item.json";
+  workflow.nodes.push(
+    supa('Supabase: ficha da cliente', 'GET',
+      'clientes_status?select=id,nome,status,ultima_visita,total_visitas,proximo_agendamento,retorno_previsto,observacoes' +
+      `&empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${M}.telefone`)} }}`, null),
+    supa('Supabase: histórico da cliente', 'GET',
+      'agendamentos?select=inicio,status,retorno_previsto,servicos(nome)&status=neq.cancelado&order=inicio.desc&limit=12' +
+      "&cliente_id=eq.{{ $json.id || '00000000-0000-0000-0000-000000000000' }}", null),
+    node('Sobre esta cliente', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: String.raw`
+const TZ = 'America/Cuiaba';
+const ficha = $('Supabase: ficha da cliente').first().json;
+const hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);
+const dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');
+const data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');
+if (!ficha.id) return [{ json: { texto: 'Cliente nova: nunca falou com o salão antes e não tem histórico.' } }];
+
+const SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',
+  inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };
+const linhas = [];
+if (ficha.nome) linhas.push('Nome: ' + ficha.nome);
+linhas.push('Situação: ' + (SITUACAO[ficha.status] || ficha.status));
+if (ficha.total_visitas) linhas.push('Veio ' + ficha.total_visitas + 'x; última visita em ' + data(ficha.ultima_visita) + '.');
+
+const agora = DateTime.now();
+const futuros = hist.filter((a) => a.status === 'agendado' && dia(a.inicio) > agora).reverse();
+for (const a of futuros) linhas.push('Horário marcado: ' + dia(a.inicio).toFormat("cccc, dd/LL 'às' HH:mm") + ' — ' + (a.servicos?.nome || 'serviço não informado'));
+
+// um por serviço (o mais recente), com o retorno previsto de cada um
+const vistos = new Set();
+for (const a of hist.filter((x) => x.status === 'realizado')) {
+  const nome = a.servicos?.nome || 'serviço não informado';
+  if (vistos.has(nome)) continue;
+  vistos.add(nome);
+  linhas.push('Já fez: ' + nome + ' em ' + data(a.inicio) + (a.retorno_previsto ? ' → voltar por volta de ' + data(a.retorno_previsto) : ''));
+}
+const faltas = hist.filter((a) => a.status === 'faltou').length;
+if (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');
+if (ficha.observacoes) linhas.push('Observações da Gleide: ' + ficha.observacoes.replace(/\s*\n\s*/g, ' | '));
+return [{ json: { texto: linhas.join('\n') } }];
+` }),
+  );
+  workflow.connections['Marcar como lida'] = main('Supabase: ficha da cliente');
+  workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
+  workflow.connections['Supabase: histórico da cliente'] = main('Sobre esta cliente');
+  workflow.connections['Sobre esta cliente'] = main('Agente IA');
+  const agente = achar(workflow, 'Agente IA').parameters.options;
+  agente.systemMessage += `
+
+SOBRE ESTA CLIENTE (ficha do salão, atualizada agora)
+{{ $('Sobre esta cliente').first().json.texto }}
+
+Use a ficha como quem já conhece a cliente:
+- Não pergunte o que já está na ficha (nome, se já tem mega hair, qual serviço fez).
+- Se ela tem horário marcado e pergunta "que horas é meu horário?", você sabe.
+- Se o retorno de um serviço está chegando ou passou, pode lembrar com naturalidade UMA vez
+  (ex.: "já tá chegando a hora da manutenção do seu mega hair, quer que eu veja um horário?").
+- Para marcar a volta de um serviço que ela já fez, ofereça a manutenção desse serviço.
+- Nunca leia a ficha para ela nem diga "no sistema consta". Observações da Gleide (alergias, preferências) são para você levar em conta, não para repetir.`;
   entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
     `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,
        p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }`), 'Um balão por vez');
@@ -98,9 +158,10 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) =>
     supa('Supabase: profissionais', 'GET', `profissionais?select=id,nome&ativo=eq.true&order=criado_em&empresa_id=eq.{{ ${EMPRESA} }}`, null,
       { executeOnce: true }),
     node('Montar agendamento', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: String.raw`
-// Serviço: o da lista do Supabase com mais palavras em comum com o que a IA escreveu
-// (ex.: "Mega hair com queratina" -> "Mega hair (aplicação)"). Sem nada parecido: fica sem serviço
-// e o nome vai nas observações (o CRM mostra; a Gleide ajusta).
+// Serviço: o da lista do Supabase mais parecido com o que a IA escreveu, pela proporção de
+// palavras em comum (desempata nomes parecidos: "Manutenção de queratina" -> "Manutenção – queratina",
+// "Mega hair com queratina" -> "Aplicação de mega hair – queratina"). Sem nada parecido: fica sem
+// serviço e o nome vai nas observações (o CRM mostra; a Gleide ajusta no ✓).
 const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));
 const pedido = $('Preparar').first().json;
@@ -110,8 +171,15 @@ const servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) =>
 const prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);
 const alvo = palavras(pedido.servico);
 let melhor = null, nota = 0;
+// Manutenção só se o pedido falar em manutenção ("Tela adesiva" é aplicação). E precisa de pelo menos
+// uma palavra em comum que não seja genérica ("Corte de cabelo" não vira "Visita para escolher cabelo").
+const GENERICAS = ['cabelo', 'mega', 'hair'];
 for (const s of servicos) {
-  const n = palavras(s.nome).filter((p) => alvo.includes(p)).length;
+  const ps = palavras(s.nome);
+  if (ps.includes('manutencao') && !alvo.includes('manutencao')) continue;
+  const comuns = ps.filter((p) => alvo.includes(p));
+  if (!comuns.some((p) => !GENERICAS.includes(p))) continue;
+  const n = comuns.length / new Set([...ps, ...alvo]).size;
   if (n > nota) { melhor = s; nota = n; }
 }
 if (!google.id || !cliente.id) return [{ json: { pular: true, motivo: !google.id ? 'google falhou' : 'cliente não está no Supabase' } }];

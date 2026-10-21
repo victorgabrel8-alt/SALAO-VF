@@ -40,6 +40,7 @@ module.exports = (principal, agenda, pausa) => {
     // 6. Resposta humanizada
     'Quebrar mensagens': [1440, 800], 'Um balão por vez': [1660, 800], 'Trava: liberar': [1880, 720], 'Pausa (lendo/respirando)': [1880, 940], 'Digitando...': [2100, 940], 'Enviar mensagem': [2320, 940],
     // Supabase (banco do CRM)
+    'Supabase: ficha da cliente': [300, 980], 'Supabase: histórico da cliente': [300, 1180], 'Sobre esta cliente': [420, 980],
     'Supabase: registrar entrada': [2060, 220], 'Pausa: alinhar com o CRM': [2280, 220], 'Supabase: registrar saída': [2540, 940],
     'Supabase: dona respondeu': [1160, -280], 'Supabase: reativar IA': [1160, -440],
   }, [

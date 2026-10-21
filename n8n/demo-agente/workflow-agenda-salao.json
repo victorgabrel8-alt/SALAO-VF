@@ -554,7 +554,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000085",
+      "id": "00000000-0000-4000-8000-000000000088",
       "name": "Supabase: horários ocupados",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -588,7 +588,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000086",
+      "id": "00000000-0000-4000-8000-000000000089",
       "name": "Supabase: cliente e serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -622,7 +622,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000087",
+      "id": "00000000-0000-4000-8000-000000000090",
       "name": "Supabase: serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -657,7 +657,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000088",
+      "id": "00000000-0000-4000-8000-000000000091",
       "name": "Supabase: profissionais",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -692,7 +692,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000089",
+      "id": "00000000-0000-4000-8000-000000000092",
       "name": "Montar agendamento",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -701,11 +701,11 @@
         -340
       ],
       "parameters": {
-        "jsCode": "\n// Serviço: o da lista do Supabase com mais palavras em comum com o que a IA escreveu\n// (ex.: \"Mega hair com queratina\" -> \"Mega hair (aplicação)\"). Sem nada parecido: fica sem serviço\n// e o nome vai nas observações (o CRM mostra; a Gleide ajusta).\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));\nconst pedido = $('Preparar').first().json;\nconst google = $('Google: criar evento').first().json;\nconst cliente = $('Supabase: cliente e serviços').first().json;\nconst servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);\nconst prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);\nconst alvo = palavras(pedido.servico);\nlet melhor = null, nota = 0;\nfor (const s of servicos) {\n  const n = palavras(s.nome).filter((p) => alvo.includes(p)).length;\n  if (n > nota) { melhor = s; nota = n; }\n}\nif (!google.id || !cliente.id) return [{ json: { pular: true, motivo: !google.id ? 'google falhou' : 'cliente não está no Supabase' } }];\nconst obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');\nreturn [{ json: { pular: false, corpo: {\n  empresa_id: $env.EMPRESA_ID, cliente_id: cliente.id, servico_id: melhor ? melhor.id : null,\n  profissional_id: prof[0] ? prof[0].id : null,\n  inicio: google.start.dateTime, fim: google.end.dateTime,\n  status: 'agendado', origem: 'ia', google_event_id: google.id, observacoes: obs || null,\n} } }];\n"
+        "jsCode": "\n// Serviço: o da lista do Supabase mais parecido com o que a IA escreveu, pela proporção de\n// palavras em comum (desempata nomes parecidos: \"Manutenção de queratina\" -> \"Manutenção – queratina\",\n// \"Mega hair com queratina\" -> \"Aplicação de mega hair – queratina\"). Sem nada parecido: fica sem\n// serviço e o nome vai nas observações (o CRM mostra; a Gleide ajusta no ✓).\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));\nconst pedido = $('Preparar').first().json;\nconst google = $('Google: criar evento').first().json;\nconst cliente = $('Supabase: cliente e serviços').first().json;\nconst servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);\nconst prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);\nconst alvo = palavras(pedido.servico);\nlet melhor = null, nota = 0;\n// Manutenção só se o pedido falar em manutenção (\"Tela adesiva\" é aplicação). E precisa de pelo menos\n// uma palavra em comum que não seja genérica (\"Corte de cabelo\" não vira \"Visita para escolher cabelo\").\nconst GENERICAS = ['cabelo', 'mega', 'hair'];\nfor (const s of servicos) {\n  const ps = palavras(s.nome);\n  if (ps.includes('manutencao') && !alvo.includes('manutencao')) continue;\n  const comuns = ps.filter((p) => alvo.includes(p));\n  if (!comuns.some((p) => !GENERICAS.includes(p))) continue;\n  const n = comuns.length / new Set([...ps, ...alvo]).size;\n  if (n > nota) { melhor = s; nota = n; }\n}\nif (!google.id || !cliente.id) return [{ json: { pular: true, motivo: !google.id ? 'google falhou' : 'cliente não está no Supabase' } }];\nconst obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');\nreturn [{ json: { pular: false, corpo: {\n  empresa_id: $env.EMPRESA_ID, cliente_id: cliente.id, servico_id: melhor ? melhor.id : null,\n  profissional_id: prof[0] ? prof[0].id : null,\n  inicio: google.start.dateTime, fim: google.end.dateTime,\n  status: 'agendado', origem: 'ia', google_event_id: google.id, observacoes: obs || null,\n} } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000090",
+      "id": "00000000-0000-4000-8000-000000000093",
       "name": "Supabase: gravar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -742,7 +742,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000091",
+      "id": "00000000-0000-4000-8000-000000000094",
       "name": "Supabase: nome da cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -779,7 +779,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000092",
+      "id": "00000000-0000-4000-8000-000000000095",
       "name": "Supabase: cancelar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -816,7 +816,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000093",
+      "id": "00000000-0000-4000-8000-000000000096",
       "name": "Supabase: remarcar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

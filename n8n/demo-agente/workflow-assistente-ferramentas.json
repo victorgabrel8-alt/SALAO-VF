@@ -2,7 +2,7 @@
   "name": "Assistente - Ferramentas",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000096",
+      "id": "00000000-0000-4000-8000-000000000099",
       "name": "Recebe pedido da assistente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -84,7 +84,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000097",
+      "id": "00000000-0000-4000-8000-000000000100",
       "name": "Montar SQL",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000098",
+      "id": "00000000-0000-4000-8000-000000000101",
       "name": "Executar no banco",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
@@ -121,7 +121,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000099",
+      "id": "00000000-0000-4000-8000-000000000102",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
