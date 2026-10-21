@@ -2,14 +2,20 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
+import { MarcarVolta, type ServicoAtivo } from "@/components/MarcarVolta";
 import { Observacao } from "@/components/Observacao";
 import {
   buscarAtendimentosDoDia,
   buscarDiasComHorario,
   buscarReagendadosDoDia,
+  confirmarAtendimento,
   corDaProfissional,
-  mudarStatus,
+  desfazerConfirmacao,
+  ehFeitoJunto,
+  excluirAtendimento,
+  feitosJunto,
   ultimoReagendamento,
   type Atendimento,
   type StatusAtendimento,
@@ -31,8 +37,8 @@ import type { Profissional } from "@/lib/tipos";
 
 // Agenda no estilo do app Structured: faixa da semana em cima e o dia como uma linha do
 // tempo, cada horário numa "cápsula" (altura = duração, cor = profissional), com os
-// intervalos livres entre eles. O círculo à direita marca como realizado com um toque;
-// tocar no horário abre todos os detalhes e ações.
+// intervalos livres entre eles. O círculo à direita confirma o atendimento ("Foi isso" ou
+// "Fez outra coisa", e em seguida "Já combinou a volta?"); tocar no horário abre todos os detalhes.
 
 type Camada = "todos" | StatusAtendimento | "reagendado";
 
@@ -99,7 +105,20 @@ export default function AgendaPage() {
   const [resultado, setResultado] = useState<{ dia: string; dados: Dia } | null>(null);
   const [versao, setVersao] = useState(0);
   const [aberto, setAberto] = useState<string | null>(null);
+  const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
+  const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
+  const { dialogo, perguntar, avisar } = useDialogo();
   const recarregar = () => setVersao((v) => v + 1);
+
+  useEffect(() => {
+    supabase()
+      .from("servicos")
+      .select("id, nome, dias_retorno, duracao_min")
+      .eq("empresa_id", empresa.id)
+      .eq("ativo", true)
+      .order("nome")
+      .then(({ data }) => setServicos((data ?? []) as ServicoAtivo[]));
+  }, [empresa.id]);
 
   useEffect(() => {
     let ativo = true;
@@ -152,9 +171,32 @@ export default function AgendaPage() {
       : []),
   ].sort((x, y) => x.inicio - y.inicio);
 
+  // A atender -> abre a folha "Foi isso / Fez outra coisa". Realizado -> desfaz (um toque; só
+  // pergunta antes quando algo vai sumir da agenda: os serviços feitos junto).
   async function alternarRealizado(a: Atendimento) {
-    await mudarStatus(a.id, a.status === "realizado" ? "agendado" : "realizado");
+    if (a.status !== "realizado") {
+      setConfirmando(a);
+      return;
+    }
+    let erro: string | undefined;
+    if (ehFeitoJunto(a)) {
+      if (!(await perguntar(`Tirar ${a.servicos?.nome ?? "este serviço"} deste atendimento?`, { confirmar: "Tirar", perigo: true }))) return;
+      erro = await excluirAtendimento(a.id);
+    } else {
+      const extras = feitosJunto(a, ok?.atendimentos ?? []);
+      const nomes = extras.map((x) => x.servicos?.nome ?? "serviço").join(", ");
+      if (extras.length && !(await perguntar(`Voltar para "a atender"? O que foi feito junto (${nomes}) sai da agenda.`, { confirmar: "Desfazer" }))) return;
+      erro = await desfazerConfirmacao(empresa.id, a, extras);
+    }
+    if (erro) await avisar(`Não deu certo: ${erro}`);
     recarregar();
+  }
+
+  // A folha continua aberta depois de salvar: em seguida pergunta se já combinou a volta
+  async function confirmar(a: Atendimento, servicoIds: string[]) {
+    const erro = await confirmarAtendimento(empresa.id, a, servicoIds);
+    if (!erro) recarregar();
+    return erro;
   }
 
   return (
@@ -285,6 +327,17 @@ export default function AgendaPage() {
       {/* Sem "+ Novo horário": quem marca os horários é a IA */}
       <div className="h-6" />
 
+      {dialogo}
+
+      {confirmando && (
+        <FolhaConfirmar
+          atendimento={confirmando}
+          servicos={servicos}
+          aoConfirmar={(ids) => confirmar(confirmando, ids)}
+          aoFechar={() => setConfirmando(null)}
+        />
+      )}
+
       {/* Detalhes do horário: tudo do cartão completo, numa folha que sobe de baixo */}
       {selecionado && (
         <div className="fixed inset-0 z-20 flex items-end bg-black/40" onClick={() => setAberto(null)}>
@@ -306,6 +359,119 @@ export default function AgendaPage() {
         </div>
       )}
     </>
+  );
+}
+
+// O ✓ de um horário a atender: quase sempre "Foi isso" (1 toque). Se a cliente fez outra coisa
+// ou mais coisas (marcou hidratação e fez mega hair), a dona marca o que fez de verdade.
+// Salvo, se algum serviço feito tem retorno, já pergunta "Já combinou a volta?" (MarcarVolta).
+function FolhaConfirmar({
+  atendimento: a,
+  servicos,
+  aoConfirmar,
+  aoFechar,
+}: {
+  atendimento: Atendimento;
+  servicos: ServicoAtivo[];
+  aoConfirmar: (servicoIds: string[]) => Promise<string | undefined>;
+  aoFechar: () => void;
+}) {
+  const [mudou, setMudou] = useState(false);
+  const [escolhidos, setEscolhidos] = useState<string[]>(a.servico_id ? [a.servico_id] : []);
+  const [salvando, setSalvando] = useState(false);
+  const [erro, setErro] = useState("");
+  const [volta, setVolta] = useState<ServicoAtivo[] | null>(null);
+
+  function alternar(id: string) {
+    setEscolhidos((atual) => (atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id]));
+  }
+
+  async function salvar(ids: string[]) {
+    setSalvando(true);
+    setErro("");
+    const falhou = await aoConfirmar(ids);
+    setSalvando(false);
+    if (falhou) {
+      setErro(falhou);
+      return;
+    }
+    const feitos = (ids.length ? ids : [a.servico_id])
+      .map((id) => servicos.find((s) => s.id === id))
+      .filter((s): s is ServicoAtivo => !!s?.dias_retorno);
+    if (feitos.length) setVolta(feitos);
+    else aoFechar();
+  }
+
+  const chip = (ativo: boolean) =>
+    `h-11 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-neutral-100 text-neutral-800"}`;
+
+  return (
+    <div className="fixed inset-0 z-20 flex items-end bg-black/40" onClick={aoFechar}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirmar atendimento"
+        onClick={(e) => e.stopPropagation()}
+        className="mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[var(--background)] px-4 pt-3 pb-safe"
+      >
+        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-neutral-300" />
+        <p className="text-xl font-bold">
+          {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")} · {formatarHora(a.inicio)}
+        </p>
+
+        {volta ? (
+          <MarcarVolta atendimento={a} feitos={volta} servicos={servicos} aoFechar={aoFechar} />
+        ) : (
+          <>
+            <p className="text-neutral-500">Marcado: {a.servicos?.nome ?? "serviço não informado"}</p>
+
+            {!mudou ? (
+              <div className="my-4 space-y-2">
+                <button
+                  onClick={() => salvar([])}
+                  disabled={salvando}
+                  className="h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-60"
+                >
+                  ✓ Foi isso
+                </button>
+                <button
+                  onClick={() => setMudou(true)}
+                  className="h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+                >
+                  Fez outra coisa
+                </button>
+              </div>
+            ) : (
+              <div className="my-4">
+                <p className="mb-2 font-semibold">O que ela fez? (pode marcar mais de um)</p>
+                <div className="flex flex-wrap gap-2">
+                  {servicos.map((s) => (
+                    <button key={s.id} onClick={() => alternar(s.id)} aria-pressed={escolhidos.includes(s.id)} className={chip(escolhidos.includes(s.id))}>
+                      {s.nome}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => salvar(escolhidos)}
+                  disabled={salvando || escolhidos.length === 0}
+                  className="mt-4 h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-60"
+                >
+                  Salvar como realizado
+                </button>
+              </div>
+            )}
+
+            {erro && <p className="mb-3 rounded-xl bg-red-100 p-3 text-red-900">Não salvou: {erro}</p>}
+            <button
+              onClick={aoFechar}
+              className="mb-4 h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+            >
+              Voltar
+            </button>
+          </>
+        )}
+      </div>
+    </div>
   );
 }
 

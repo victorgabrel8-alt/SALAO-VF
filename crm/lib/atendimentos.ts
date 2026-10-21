@@ -12,6 +12,7 @@ export type Atendimento = {
   origem: "ia" | "manual";
   google_event_id: string | null;
   profissional_id: string | null;
+  servico_id: string | null;
   observacoes: string | null;
   clientes: { id: string; nome: string | null; telefone: string; etiquetas: string[]; observacoes: string | null } | null;
   servicos: { nome: string } | null;
@@ -20,7 +21,7 @@ export type Atendimento = {
 // Sem valores: o painel do salão controla atendimentos, não dinheiro (a tabela de preços
 // fica com a profissional e a IA)
 const CAMPOS =
-  "id, inicio, fim, status, origem, google_event_id, profissional_id, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
+  "id, inicio, fim, status, origem, google_event_id, profissional_id, servico_id, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
 
 // Atendimentos de um dia (no fuso do salão), em ordem de horário
 export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {
@@ -53,6 +54,90 @@ export async function buscarReagendadosDoDia(empresaId: string, dia: string) {
 
 export async function mudarStatus(id: string, status: StatusAtendimento) {
   const { error } = await supabase().from("agendamentos").update({ status }).eq("id", id);
+  return error?.message;
+}
+
+// Confirmar o atendimento (o ✓ da agenda).
+//   "Foi isso" (sem serviços): só marca realizado, com o serviço que estava marcado.
+//   "Fez outra coisa": o 1º serviço escolhido fica neste horário e cada um dos outros vira um
+//   atendimento realizado no mesmo horário. Assim cada serviço ganha o próprio retorno (o banco
+//   calcula pelo dias_retorno) e a IA enxerga o que foi feito de verdade.
+// Trocou o serviço? O que estava marcado fica anotado ("Marcado era: Hidratação") para o desfazer
+// conseguir voltar.
+export async function confirmarAtendimento(empresaId: string, a: Atendimento, servicoIds: string[] = []) {
+  const db = supabase();
+  const [primeiro, ...extras] = servicoIds;
+  const trocou = primeiro && primeiro !== a.servico_id;
+  const { error } = await db
+    .from("agendamentos")
+    .update({
+      status: "realizado",
+      ...(trocou
+        ? {
+            servico_id: primeiro,
+            observacoes: [a.observacoes, MARCADO_ERA + (a.servicos?.nome ?? SEM_SERVICO)].filter(Boolean).join("\n"),
+          }
+        : {}),
+    })
+    .eq("id", a.id);
+  if (error || !extras.length || !a.clientes) return error?.message;
+
+  const { error: erroExtras } = await db.from("agendamentos").insert(
+    extras.map((servico_id) => ({
+      empresa_id: empresaId,
+      cliente_id: a.clientes!.id,
+      servico_id,
+      profissional_id: a.profissional_id,
+      inicio: a.inicio,
+      status: "realizado",
+      origem: "manual",
+      observacoes: FEITO_JUNTO + formatarHora(a.inicio),
+    })),
+  );
+  return erroExtras?.message;
+}
+
+const FEITO_JUNTO = "Feito junto no atendimento das ";
+const MARCADO_ERA = "Marcado era: ";
+const SEM_SERVICO = "serviço não informado";
+
+// Atendimento criado pelo "Fez outra coisa" (serviço a mais no mesmo horário)
+export function ehFeitoJunto(a: Atendimento) {
+  return (a.observacoes ?? "").startsWith(FEITO_JUNTO);
+}
+
+// Os serviços feitos junto com este atendimento (mesma cliente, mesmo horário)
+export function feitosJunto(a: Atendimento, doDia: Atendimento[]) {
+  return doDia.filter((x) => x.id !== a.id && ehFeitoJunto(x) && x.clientes?.id === a.clientes?.id && x.inicio === a.inicio);
+}
+
+// Desfaz o ✓: volta para "a atender", apaga os serviços feitos junto e, se o serviço foi trocado
+// no "Fez outra coisa", volta o que estava marcado.
+export async function desfazerConfirmacao(empresaId: string, a: Atendimento, extras: Atendimento[]) {
+  const db = supabase();
+  if (extras.length) {
+    const { error } = await db.from("agendamentos").delete().in("id", extras.map((x) => x.id));
+    if (error) return error.message;
+  }
+  const linhas = (a.observacoes ?? "").split("\n");
+  const era = linhas.findLast((l) => l.startsWith(MARCADO_ERA))?.slice(MARCADO_ERA.length);
+  let servicoAntigo: string | null | undefined;
+  if (era !== undefined) {
+    if (era === SEM_SERVICO) servicoAntigo = null;
+    else {
+      const { data } = await db.from("servicos").select("id").eq("empresa_id", empresaId).eq("nome", era).limit(1);
+      servicoAntigo = data?.[0]?.id;
+    }
+  }
+  const { error } = await db
+    .from("agendamentos")
+    .update({
+      status: "agendado",
+      ...(servicoAntigo !== undefined
+        ? { servico_id: servicoAntigo, observacoes: linhas.filter((l) => !l.startsWith(MARCADO_ERA)).join("\n") || null }
+        : {}),
+    })
+    .eq("id", a.id);
   return error?.message;
 }
 
