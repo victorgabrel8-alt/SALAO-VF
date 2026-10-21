@@ -1,7 +1,7 @@
 // Identidade visual do salão. Por enquanto são constantes; depois podem vir de empresas.config.
 export const SALAO = {
   nomeApp: "Salão",
-  corPrincipal: "#be185d",
+  corPrincipal: "#8b5cf6",
   icone: "/icone-192.png",
 };
 
