@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "crm",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["--prefix", "crm", "run", "dev", "--", "-p", "3000"],
+      "port": 3000
+    },
+    {
+      "name": "painel-crm",
+      "runtimeExecutable": "npm.cmd",
+      "runtimeArgs": ["--prefix", "painel-crm", "run", "dev", "--", "-p", "3001"],
+      "port": 3001
+    }
+  ]
+}

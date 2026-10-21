@@ -3,19 +3,23 @@
 import { useEffect, useState } from "react";
 import { buscarServicoDoAlo, tipoDoAlo } from "@/lib/alo";
 import { hojeNoSalao, inicioDoDia, somarDias } from "@/lib/formato";
+import type { StatusCliente } from "@/lib/status";
+import { mudarStatus, statusEfetivo, type StatusManual } from "@/lib/statusManual";
 import { supabase } from "@/lib/supabase/client";
 import type { ClienteStatus } from "@/lib/tipos";
 
-// Quadro de retorno do CRM: cada cliente que precisa ser chamada anda por 4 colunas.
-// A coluna sai do último registro em `contatos` (o banco já marca sozinho "respondeu" e
-// "agendou", ver CONTRATO.md); arrastar um card só muda esse registro.
-export type Etapa = "para_chamar" | "enviada" | "respondeu" | "agendado";
+// Quadro do CRM: todas as clientes do salão (menos as excluídas), em 5 colunas. Quem precisa ser
+// chamada anda de "Para chamar" até "Agendado"; as outras ficam em "Em dia".
+// A etapa sai do último registro em `contatos` (o banco já marca sozinho "respondeu" e
+// "agendou", ver CONTRATO.md) e do status da cliente.
+export type Etapa = "para_chamar" | "enviada" | "respondeu" | "agendado" | "em_dia";
 
 export const ETAPAS: { chave: Etapa; titulo: string; ponto: string }[] = [
   { chave: "para_chamar", titulo: "Para chamar", ponto: "bg-orange-500" },
   { chave: "enviada", titulo: "Mensagem enviada", ponto: "bg-indigo-500" },
   { chave: "respondeu", titulo: "Respondeu", ponto: "bg-teal-500" },
   { chave: "agendado", titulo: "Agendado", ponto: "bg-green-500" },
+  { chave: "em_dia", titulo: "Em dia", ponto: "bg-neutral-400" },
 ];
 
 // O que cada coluna grava em contatos.resultado
@@ -24,10 +28,14 @@ export const RESULTADO: Record<Etapa, Contato["resultado"]> = {
   enviada: "pendente",
   respondeu: "respondeu",
   agendado: "agendou",
+  em_dia: "sem_resposta",
 };
 
 // Contato mais velho que isso não conta mais: a cliente volta para "Para chamar"
 const DIAS_CONTATO = 30;
+
+// Status de quem precisa ser chamada
+const NO_QUADRO: StatusCliente[] = ["retorno_chegando", "retorno_atrasado", "inativa"];
 
 export type Contato = { id: string; resultado: "pendente" | "sem_resposta" | "respondeu" | "agendou"; criado_em: string };
 
@@ -48,20 +56,52 @@ export type CardCliente = Pick<
 const CAMPOS =
   "id, nome, telefone, etiquetas, status, ultima_visita, dias_sem_visita, proximo_agendamento, retorno_previsto, ultimo_contato";
 
-export function etapaDe(c: CardCliente): Etapa {
-  if (c.contato?.resultado === "agendou" || (c.contato && c.proximo_agendamento)) return "agendado";
-  if (c.contato?.resultado === "respondeu") return "respondeu";
-  if (c.contato?.resultado === "pendente") return "enviada";
-  return "para_chamar";
+// A conversa do quadro acabou quando a cliente veio ao salão depois de ser chamada
+// (a dona confirmou o atendimento na Agenda): aí ela sai de "Agendado"
+function conversaEmAndamento(c: CardCliente): boolean {
+  if (!c.contato || c.contato.resultado === "sem_resposta") return false;
+  if (!c.contato.criado_em || !c.ultima_visita) return true;
+  return Date.parse(c.ultima_visita) < Date.parse(c.contato.criado_em);
 }
 
+export function etapaDe(c: CardCliente): Etapa {
+  if (conversaEmAndamento(c)) {
+    if (c.proximo_agendamento || c.contato?.resultado === "agendou") return "agendado";
+    if (c.contato?.resultado === "respondeu") return "respondeu";
+    return "enviada";
+  }
+  // Fora de conversa: quem tem horário marcado (ou já foi atendida) está em dia
+  return NO_QUADRO.includes(c.status) ? "para_chamar" : "em_dia";
+}
+
+// A seta do card anda de "Para chamar" até "Agendado" ("Em dia" fica fora da sequência)
 export function proximaEtapa(etapa: Etapa): Etapa | null {
+  if (etapa === "agendado" || etapa === "em_dia") return null;
   const i = ETAPAS.findIndex((e) => e.chave === etapa);
   return ETAPAS[i + 1]?.chave ?? null;
 }
 
-// Quem entra no quadro: retorno chegando, atrasadas e inativas, mais quem foi chamada há pouco
-// (para continuar aparecendo em "Respondeu" e "Agendado" depois que marcou)
+// Status que a cliente passa a ter ao ir para a coluna (null = não muda):
+// tirar de "Em dia" para "Para chamar" marca retorno chegando; o contrário marca em dia
+function statusAoMover(card: CardCliente, destino: Etapa): StatusManual | null {
+  if (destino === "para_chamar" && !NO_QUADRO.includes(card.status)) return "retorno_chegando";
+  if (destino === "em_dia" && NO_QUADRO.includes(card.status)) return "em_dia";
+  return null;
+}
+
+// Como o card fica depois de ir para a coluna (para a tela mudar antes do banco responder)
+export function previa(card: CardCliente, destino: Etapa): CardCliente {
+  const status = statusAoMover(card, destino) ?? card.status;
+  const fora = destino === "para_chamar" || destino === "em_dia";
+  if (!card.contato && fora) return { ...card, status };
+  return {
+    ...card,
+    status,
+    contato: { id: card.contato?.id ?? "novo", criado_em: card.contato?.criado_em ?? "", resultado: RESULTADO[destino] },
+  };
+}
+
+// Todas as clientes do salão, menos as excluídas (as mesmas do app do salão)
 async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; erro?: string }> {
   const desde = inicioDoDia(somarDias(hojeNoSalao(), -DIAS_CONTATO));
   const db = supabase();
@@ -70,11 +110,14 @@ async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; 
     .select(CAMPOS)
     .eq("empresa_id", empresaId)
     .not("etiquetas", "cs", '{"sistema:excluida"}')
-    .or(`status.in.(retorno_chegando,retorno_atrasado,inativa),ultimo_contato.gte.${desde}`)
     .order("retorno_previsto", { ascending: true, nullsFirst: false })
-    .limit(300);
+    .limit(1000);
   if (error) return { cards: [], erro: error.message };
-  const clientes = (data ?? []) as Omit<CardCliente, "contato" | "servico">[];
+  // Com o status escolhido à mão aplicado
+  const clientes = ((data ?? []) as Omit<CardCliente, "contato" | "servico">[]).map((c) => ({
+    ...c,
+    status: statusEfetivo(c),
+  }));
   const ids = clientes.map((c) => c.id);
   if (ids.length === 0) return { cards: [] };
 
@@ -109,7 +152,8 @@ export function useQuadro(empresaId: string, versao: number) {
     };
   }, [chave, empresaId]);
 
-  const atual = estado?.chave === chave ? estado : null;
+  // Ao recarregar (tempo real, depois de mover) mantém o quadro anterior na tela até chegar o novo
+  const atual = estado?.chave.startsWith(`${empresaId}:`) ? estado : null;
   // Troca um card na tela antes do banco responder (o arrastar fica instantâneo)
   function trocarCard(card: CardCliente) {
     setEstado((e) => e && { ...e, cards: e.cards.map((c) => (c.id === card.id ? card : c)) });
@@ -117,7 +161,19 @@ export function useQuadro(empresaId: string, versao: number) {
   return { quadro: atual, trocarCard };
 }
 
-// Move o card: atualiza o contato atual ou, se ela ainda não foi chamada, cria um.
+// Põe uma etiqueta (ex.: "vip") sem perder as que ela já tem
+export async function adicionarEtiqueta(clienteId: string, etiqueta: string) {
+  const db = supabase();
+  const atual = await db.from("clientes").select("etiquetas").eq("id", clienteId).single();
+  if (atual.error) return atual.error.message;
+  const etiquetas = atual.data.etiquetas as string[];
+  if (etiquetas.includes(etiqueta)) return undefined;
+  const { error } = await db.from("clientes").update({ etiquetas: [...etiquetas, etiqueta] }).eq("id", clienteId);
+  return error?.message;
+}
+
+// Move o card: muda o status se precisar (ver statusAoMover) e atualiza o contato atual
+// ou, se ela ainda não foi chamada, cria um.
 // Devolve o card como ficou (ou o erro do banco).
 export async function moverCard(
   empresaId: string,
@@ -127,13 +183,19 @@ export async function moverCard(
 ): Promise<{ card?: CardCliente; erro?: string }> {
   const db = supabase();
   const resultado = RESULTADO[destino];
+  const status = statusAoMover(card, destino);
+  if (status) {
+    const erro = await mudarStatus(card.id, status);
+    if (erro) return { erro };
+    card = { ...card, status };
+  }
   if (card.contato) {
     const mudanca = mensagem ? { resultado, mensagem } : { resultado };
     const { error } = await db.from("contatos").update(mudanca).eq("id", card.contato.id);
     if (error) return { erro: error.message };
     return { card: { ...card, contato: { ...card.contato, resultado } } };
   }
-  if (destino === "para_chamar") return { card };
+  if (destino === "para_chamar" || destino === "em_dia") return { card };
   const { data: usuario } = await db.auth.getUser();
   const { data, error } = await db
     .from("contatos")

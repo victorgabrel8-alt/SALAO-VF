@@ -17,7 +17,10 @@ import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@
 import { ORIGENS, etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem, type Origem } from "@/lib/origem";
 import { Etiquetas } from "@/components/Etiquetas";
 import { PontoStatus, SeloStatus } from "@/lib/status";
+import { useEmpresa } from "@/lib/empresa";
+import { statusEfetivo } from "@/lib/statusManual";
 import { supabase } from "@/lib/supabase/client";
+import { useTempoReal } from "@/lib/tempoReal";
 import type { ClienteStatus, RetornoServico } from "@/lib/tipos";
 
 type Atendimento = {
@@ -80,6 +83,9 @@ function FichaCliente() {
   // Muda a cada salvamento para buscar a ficha de novo
   const [versao, setVersao] = useState(0);
   const recarregar = () => setVersao((v) => v + 1);
+  // Atendimento marcado ou desmarcado na Agenda do salão aparece aqui na hora
+  const empresa = useEmpresa();
+  useTempoReal(["agendamentos", "clientes"], empresa.id, recarregar);
 
   useEffect(() => {
     let ativo = true;
@@ -183,7 +189,7 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
         <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} />
         <p className="mt-1 text-lg text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <SeloStatus status={cliente.status} />
+          <SeloStatus status={statusEfetivo(cliente)} />
           {cliente.ia_pausada && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-0.5 text-sm font-medium text-neutral-700">
               <PontoStatus cor="bg-yellow-400" />
