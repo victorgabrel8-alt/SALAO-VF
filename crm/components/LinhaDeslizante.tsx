@@ -30,7 +30,9 @@ export function LinhaDeslizante({
 
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-y-0 right-0 flex" aria-hidden={!aberta}>
+      {/* Atalhos só aparecem quando a linha sai do lugar: parados atrás dela, a cor deles
+          vazava pelos cantos arredondados do cartão */}
+      <div className={`absolute inset-y-0 right-0 flex ${deslocamento === 0 ? "invisible" : ""}`} aria-hidden={!aberta}>
         {acoes.map((a) => (
           <button
             key={a.rotulo}

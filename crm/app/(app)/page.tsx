@@ -208,7 +208,7 @@ export default function InicioPage() {
               <div className="flex flex-col gap-2.5">
                 <Link
                   href="/agenda"
-                  className="flex items-center gap-3.5 rounded-[22px] bg-card p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
+                  className="flex items-center gap-3.5 rounded-[22px] bg-card borda-suave p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ouro">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7A5A1E" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
@@ -228,7 +228,7 @@ export default function InicioPage() {
               {/* Num dia parado, o que importa é o dia seguinte: a lista de amanhã já aberta */}
               <Secao titulo={`Amanhã · ${diaDaSemana(somarDias(hojeNoSalao(), 1))}`} extra={<LinkAgenda />}>
                 {ok.amanha.length === 0 ? (
-                  <p className="rounded-[22px] bg-card p-4 text-[15px] text-texto-2">Nenhum horário marcado amanhã ainda.</p>
+                  <p className="rounded-[22px] bg-card borda-suave p-4 text-[15px] text-texto-2">Nenhum horário marcado amanhã ainda.</p>
                 ) : (
                   <ListaHorarios atendimentos={ok.amanha} linhaAberta={linhaAberta} aoAbrirLinha={setLinhaAberta} />
                 )}
@@ -240,7 +240,7 @@ export default function InicioPage() {
               <div className="flex flex-col gap-2.5">
                 <Link
                   href={proxima?.clientes ? `/clientes/${proxima.clientes.id}` : "/agenda"}
-                  className="flex flex-col gap-3 rounded-[22px] bg-card p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
+                  className="flex flex-col gap-3 rounded-[22px] bg-card borda-suave p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-semibold tracking-[0.25em] text-bronze-escuro uppercase">Próxima cliente</span>
@@ -355,7 +355,7 @@ function ListaHorarios({
 }) {
   const router = useRouter();
   return (
-    <ul className="overflow-hidden rounded-[22px] bg-card">
+    <ul className="overflow-hidden rounded-[22px] bg-card borda-suave">
       {atendimentos.map((a, i) => {
         const s = selo(a);
         return (
@@ -624,7 +624,7 @@ function PilhaPrecisam({ precisam }: { precisam: Precisa[] }) {
           {/* Cartões "atrás", mais estreitos, como na pilha do iPhone */}
           <span aria-hidden className="absolute inset-x-4 bottom-0 h-6 rounded-b-[20px] bg-card/50" />
           {precisam.length > 2 && <span aria-hidden className="absolute inset-x-2 bottom-1.5 h-6 rounded-b-[20px] bg-card/75" />}
-          <span className="relative flex items-center gap-3 rounded-[20px] bg-card px-3.5 py-3 shadow-[0_6px_18px_rgba(30,23,20,0.08)]">
+          <span className="relative flex items-center gap-3 rounded-[20px] bg-card borda-suave px-3.5 py-3 shadow-[0_6px_18px_rgba(30,23,20,0.08)]">
             <Avatar id={primeira.id} nome={primeira.nome} tamanho="h-11 w-11 text-lg" />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="truncate text-[15px] font-semibold">{nomeDe(primeira)}</span>
@@ -635,7 +635,7 @@ function PilhaPrecisam({ precisam }: { precisam: Precisa[] }) {
         </button>
       ) : (
         precisam.map((c) => (
-          <div key={c.id} className="flex items-center gap-3 rounded-[20px] bg-card px-3.5 py-3 shadow-[0_6px_18px_rgba(30,23,20,0.08)]">
+          <div key={c.id} className="flex items-center gap-3 rounded-[20px] bg-card borda-suave px-3.5 py-3 shadow-[0_6px_18px_rgba(30,23,20,0.08)]">
             {/* Toque abre a conversa com a IA, para a dona ver o que ela pediu */}
             <Link href={`/conversas/${c.id}`} className="flex min-w-0 flex-1 items-center gap-3">
               <Avatar id={c.id} nome={c.nome} tamanho="h-11 w-11 text-lg" />
@@ -661,7 +661,7 @@ function Capsula({ valor, rotulo, href }: { valor: number; rotulo: string; href?
       <span>{rotulo}</span>
     </>
   );
-  const estilo = "flex shrink-0 items-baseline gap-1 rounded-full bg-card px-2.5 py-1.5 text-[12px] whitespace-nowrap text-texto-2";
+  const estilo = "flex shrink-0 items-baseline gap-1 rounded-full bg-card borda-suave px-2.5 py-1.5 text-[12px] whitespace-nowrap text-texto-2";
   return href ? (
     <Link href={href} className={`${estilo} active:bg-campo`}>
       {conteudo}
@@ -684,7 +684,7 @@ function Aniversarios({ lista }: { lista: Aniversariante[] }) {
       <button
         onClick={() => setAberta((a) => !a)}
         aria-expanded={aberta}
-        className={`flex items-center gap-3 rounded-[20px] px-3.5 py-3 text-left ${deHoje.length ? "bg-ouro" : "bg-card"}`}
+        className={`flex items-center gap-3 rounded-[20px] borda-suave px-3.5 py-3 text-left ${deHoje.length ? "bg-ouro" : "bg-card"}`}
       >
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={deHoje.length ? "#7A5A1E" : "#6E5539"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
           <rect x="3" y="8" width="18" height="4" rx="1" />
@@ -696,7 +696,7 @@ function Aniversarios({ lista }: { lista: Aniversariante[] }) {
         </svg>
       </button>
       {aberta && (
-        <ul className="rounded-[20px] bg-card">
+        <ul className="rounded-[20px] bg-card borda-suave">
           {lista.map((c, i) => {
             const ehHoje = c.dia === hojeNoSalao();
             const quando = ehHoje ? "hoje" : DIAS_SEMANA[new Date(`${c.dia}T12:00:00Z`).getUTCDay()];
