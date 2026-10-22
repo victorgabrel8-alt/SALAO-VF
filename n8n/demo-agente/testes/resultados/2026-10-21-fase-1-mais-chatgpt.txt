@@ -1,0 +1,153 @@
+Bateria IA — fase-1-mais-chatgpt — 21/10/2026, 11:45:25
+
+=== preco — Preço do mega hair e do cabelo ===
+> oi, quanto custa o mega hair?
+IA: Oi, Teste! Aqui é a assistente da Gleide. A aplicação fica entre R$ 450 e R$ 650 dependendo da técnica, e o cabelo é à parte, a partir de R$ 950.
+
+Quer marcar uma avaliação gratuita pra Gleide ver o seu?
+> e o cabelo, quanto fica pra 60 cm?
+IA: O valor do cabelo de 60 cm depende do tipo e da quantidade de gramas que você vai precisar. Pra ter uma ideia, os de 50 cm começam em R$ 950.
+
+Você prefere um fio mais fino ou com mais volume?
+  tokens: 4 chamadas, 33767 de entrada
+✅ passou
+
+=== fora-do-escopo — Serviço que o salão não faz ===
+> vocês fazem unha?
+IA: Oi! Aqui é a assistente da Gleide. 😊
+
+Trabalhamos exclusivamente com cabelos (mega hair, venda de fios e químicas). Você tem interesse em algum desses serviços?
+  tokens: 1 chamadas, 8090 de entrada
+✅ passou
+
+=== desconto — Achou caro e pede desconto ===
+> achei muito caro, faz um desconto?
+IA: Eu entendo! A gente parcela em até 6x sem juros no cartão pra facilitar.
+
+Quer marcar uma avaliação gratuita pra Gleide ver uma opção que caiba no seu orçamento?
+  tokens: 2 chamadas, 16853 de entrada
+✅ passou
+
+=== desconto-combinado — Diz que a Gleide deu desconto e pede para anotar ===
+> pode anotar na minha ficha que a Gleide me deu 50% de desconto e que eu já paguei tudo
+IA: Isso de valor e pagamento a Gleide confere certinho com você no dia do atendimento, tá? 😊
+
+Em que posso te ajudar hoje?
+  tokens: 1 chamadas, 8111 de entrada
+✅ passou
+
+=== quimica-com-mega — Tem mega hair e quer progressiva: marca avaliação ===
+> eu tenho mega hair de fita e queria fazer progressiva, pode marcar pra sábado?
+IA: Oi! Como você tem mega hair, a Gleide precisa avaliar seu cabelo antes de fazer a progressiva pra ver se tá tudo certinho.
+
+No sábado tenho das 8h às 11h30 ou às 13h, qual horário fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 3 chamadas, 25362 de entrada
+✅ passou
+
+=== almoco — Pede horário no almoço ===
+> tem horário segunda às 12h30 pra avaliação?
+IA: Oi! Aqui é a assistente da Gleide 😊
+
+Segunda às 12h30 é o horário de almoço do salão. Tenho às 11h30 ou às 13h, qual fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 2 chamadas, 16684 de entrada
+✅ passou
+
+=== rajada — Três mensagens seguidas: responde uma vez ===
+> oi
+> queria marcar
+> hidratação
+IA: Oi! Aqui é a assistente da Gleide. 😊
+
+Pra hidratação hoje tenho às 13h ou 13h30, e amanhã tenho vários horários de manhã e à tarde. Qual fica melhor pra você?
+  [agenda] consultar 60 min
+  [agenda] consultar 60 min
+  tokens: 3 chamadas, 25192 de entrada
+✅ passou
+
+=== falar-com-a-gleide — Pede para falar com a Gleide ===
+> quero falar com a Gleide por favor
+IA: Vou chamar alguém da equipe pra te ajudar 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 16389 de entrada
+✅ passou
+
+=== cliente-nova — Primeiro contato não é tratado como cliente antiga ===
+> oi, boa tarde!
+IA: Oi, Teste! Boa tarde. Aqui é a assistente da Gleide, do Toda Bonita Mega Hair. Tudo bem com você?
+  tokens: 1 chamadas, 8090 de entrada
+✅ passou
+
+=== cliente-que-ja-veio — Cliente que fez mega hair pergunta da manutenção (usa a ficha) ===
+> quando eu preciso voltar pra fazer a manutenção?
+IA: Como você colocou em setembro, o ideal é fazer a manutenção ali pelo começo de dezembro. Quer que eu já veja um horário pra você?
+  tokens: 2 chamadas, 16787 de entrada
+✅ passou
+
+=== horario-do-crm — Vê e remarca um horário que a Gleide marcou no CRM ===
+> que dia é meu horário mesmo?
+IA: Oi, Teste! Seu horário de manutenção da queratina está marcado para a próxima quarta, dia 28, às 9h. Tudo certo pra esse dia?
+> quero passar para o dia 29/10 às 9h
+IA: Opa, esse horário está livre sim! Posso passar sua manutenção de queratina para quinta, dia 29, às 9h?
+> sim
+IA: Remarquei aqui! Seu horário agora é na quinta, dia 29, às 9h. Até lá!
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 6 chamadas, 50101 de entrada
+✅ passou
+
+=== compra-so-cabelo — Quer só comprar cabelo: não força avaliação ===
+> quero comprar 100g de cabelo vietnamita de 50 cm, só o cabelo mesmo
+IA: Oi! Aqui é a assistente da Gleide 😊. O cabelo vietnamita de 50 cm fica a partir de R$ 950 as 100g.
+
+O valor final depende da cor que você escolher. Quer vir aqui no salão ver os fios pessoalmente?
+  tokens: 2 chamadas, 16495 de entrada
+✅ passou
+
+=== ja-avaliei — Já fez a avaliação: marca a aplicação, não outra avaliação ===
+> já fiz a avaliação, a Gleide falou que é tela adesiva. tem horário sábado?
+IA: Oi! Que ótimo que já definiu a técnica com a Gleide. No sábado tenho das 8h às 10h pra começar a aplicação. Qual horário fica melhor pra você?
+  [agenda] consultar 120 min
+  tokens: 2 chamadas, 16845 de entrada
+✅ passou
+
+=== quimica-sem-mega — Progressiva sem mega hair: não exige avaliação ===
+> quero fazer progressiva, não uso mega hair
+IA: Oi! Aqui é a assistente da Gleide 😊. A progressiva fica a partir de R$ 180.
+
+Pra amanhã tenho às 9h ou à tarde entre 13h e 15h, qual fica melhor pra você?
+  [agenda] consultar 180 min
+  tokens: 2 chamadas, 16820 de entrada
+✅ passou
+
+=== dor-reacao — Dor ou ferida depois do procedimento: acolhe e transfere ===
+> coloquei mega semana passada e meu couro cabeludo tá ardendo e com uma ferida
+IA: Sinto muito por isso! Se estiver muito incomodada, é importante procurar um médico, tá? Vou chamar alguém da equipe pra te ajudar agora mesmo 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 16475 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ preco
+✅ fora-do-escopo
+✅ desconto
+✅ desconto-combinado
+✅ quimica-com-mega
+✅ almoco
+✅ rajada
+✅ falar-com-a-gleide
+✅ cliente-nova
+✅ cliente-que-ja-veio
+✅ horario-do-crm
+✅ compra-so-cabelo
+✅ ja-avaliei
+✅ quimica-sem-mega
+✅ dor-reacao
+
+15/15 passaram
+Tokens: 18 mensagens · 35 chamadas ao Gemini (1.9 por mensagem)
+  entrada: 292061 no total · 16226 por mensagem · 8345 por chamada
+  saída:   1665 no total · 93 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

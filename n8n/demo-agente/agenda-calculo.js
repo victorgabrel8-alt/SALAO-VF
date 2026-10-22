@@ -25,7 +25,12 @@ const lerData = (s) => {
   if (!d.isValid) d = DateTime.fromFormat(s.slice(0, 10), 'dd/LL/yyyy', { zone: TZ });
   return d;
 };
-const intervalos = (dia) => (EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [
+// Dias sem atender (viagem, folga...) que a Gleide bloqueia no app: empresas.config.bloqueios =
+// [{ de: 'AAAA-MM-DD', ate: 'AAAA-MM-DD', motivo }]. Dia bloqueado não tem expediente: não oferece,
+// não marca e não remarca para ele. O CALCULAR preenche a partir do config.
+let BLOQUEIOS = [];
+const bloqueado = (dia) => { const d = dia.toISODate(); return BLOQUEIOS.some((b) => d >= b.de && d <= (b.ate || b.de)); };
+const intervalos = (dia) => (bloqueado(dia) ? [] : EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [
   dia.set({ hour: +a.slice(0, 2), minute: +a.slice(3), second: 0, millisecond: 0 }),
   dia.set({ hour: +b.slice(0, 2), minute: +b.slice(3), second: 0, millisecond: 0 }),
 ]);
@@ -87,6 +92,7 @@ const FORA = 'A agenda está fora do ar agora. Peça desculpas à cliente e use 
 // "seg": null, ...} e config.almoco, padrão 11:00-13:00 como no app; almoco = null desliga).
 try {
   const cfg = $('Supabase: config do salão').first().json.config;
+  if (cfg && Array.isArray(cfg.bloqueios)) BLOQUEIOS = cfg.bloqueios.filter((b) => b && b.de);
   if (cfg && cfg.horario_funcionamento) {
     const DIAS = { 1: 'seg', 2: 'ter', 3: 'qua', 4: 'qui', 5: 'sex', 6: 'sab', 7: 'dom' };
     const alm = cfg.almoco === null ? null : (cfg.almoco && cfg.almoco.inicio ? cfg.almoco : { inicio: '11:00', fim: '13:00' });

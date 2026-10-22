@@ -86,7 +86,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000068",
+      "id": "00000000-0000-4000-8000-000000000070",
       "name": "CRM: com humano",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
@@ -110,7 +110,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000087",
+      "id": "00000000-0000-4000-8000-000000000086",
       "name": "Supabase: pausar IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

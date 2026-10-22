@@ -194,8 +194,8 @@ docker exec demo-salao-redis-1 redis-cli --scan --pattern 'pausa:*'
 | `workflow-demo-salao.json` | Workflow principal (importável) |
 | `workflow-agenda-salao.json` | Subworkflow das tools de agenda |
 | `workflow-pausa-salao.json` | Subworkflow da transferência para humano |
-| `crm-schema.sql`, `crm-workflows.js` | CRM: tabela e workflows (tool anotar_no_crm + painel) |
-| `workflow-crm-salao.json`, `workflow-crm-painel.json` | Subworkflow do CRM e painel web |
+| `crm-schema.sql`, `crm-workflows.js` | CRM local: tabela e workflow da tool anotar_no_crm |
+| `workflow-crm-salao.json` | Subworkflow do CRM |
 | `layout-n8n.js` | Posições dos nós e notas coloridas no n8n |
 | `vigia.sh` | Vigia: reabre Docker/containers/WhatsApp se caírem |
 
@@ -242,25 +242,18 @@ Roteiro sugerido para mostrar à Gleide: perguntar preço → pedir horário par
 
 ## CRM
 
-Ficha automática por cliente no Postgres (banco `crm`, tabela `clientes` – ver `crm-schema.sql`)
-e um painel web em colunas.
+> O CRM de verdade é o app em `crm/` (Next.js + Supabase): http://localhost:3000.
+> O painel web antigo do n8n (`/webhook/crm`) foi **removido** para não confundir.
+>
+> **Alô de retorno (CRM do José Paulo, tabela `contatos`):** quando a Gleide envia o alô pelo WhatsApp do salão,
+> o n8n reconhece o texto (alô gravado nas últimas 2 h) e **não pausa a IA**. Quando a cliente responde, a ficha
+> "Sobre esta cliente" traz o alô (últimos 14 dias) e a IA já oferece horários da manutenção. Teste: cenário `resposta-ao-alo`.
 
-**Painel:** http://localhost:5678/webhook/crm
-(no celular, na mesma rede Wi-Fi do PC: `http://IP-DO-PC:5678/webhook/crm`, ex. `http://192.168.0.111:5678/webhook/crm`
-– se não abrir, o Firewall do Windows está bloqueando a porta 5678.)
-
-| Etapa | Quem muda |
-|---|---|
-| **Novo** | 1ª mensagem da cliente (automático) |
-| **Em conversa** | 2ª mensagem em diante; também ao cancelar um horário |
-| **Agendado** | IA criou/remarcou na agenda e o Google confirmou |
-| **Com humano** | IA transferiu (motivo vai pro resumo) |
-| **Atendido / Perdido** | Gleide, no painel |
+Ficha automática por cliente no Postgres local (banco `crm`, tabela `clientes` – ver `crm-schema.sql`),
+que ainda recebe as anotações da IA:
 
 - A IA preenche **interesse** e **resumo** com a tool `anotar_no_crm` (em silêncio).
-- No painel a Gleide muda a etapa e escreve **anotações** (botão Salvar).
-- Workflows: `CRM (anotações do agente)` (subworkflow da tool) e `CRM - Painel` (GET `/webhook/crm`,
-  POST `/webhook/crm-salvar`). Nós `CRM: …` foram adicionados no principal, na agenda e na pausa.
+- Workflow: `CRM (anotações do agente)` (subworkflow da tool). Nós `CRM: …` no principal, na agenda e na pausa.
 - Código em `crm-workflows.js`; publicado junto pelo `node montar-workflow.js --enviar --ativar`.
 - Credencial no n8n: **CRM Postgres** (host `postgres`, banco `crm`) → ID em `N8N_CRM_CRED_ID`.
 
@@ -291,3 +284,52 @@ Plano: `docs/PLANO-IA-ALIMENTA-CRM.md` (Camada 2). Banco: `supabase/004_avaliaco
 
 > No teste a assistente fala pelo **mesmo número da IA de atendimento**. Na produção ela precisa de um número
 > próprio, porque a Gleide usa o WhatsApp Business do salão (ver o plano).
+
+---
+
+## Bateria de testes da IA (`testes/`)
+
+Plano: `docs/PLANO-PROMPT-E-AUDIOS.md` (Fase 0). **Rodar sempre que mexer no prompt ou nos workflows.**
+
+```bash
+node testes/bateria-ia.js linha-de-base          # todos os cenários
+node testes/bateria-ia.js rapido preco,rajada    # só alguns (ids de cenarios.json)
+```
+
+- `cenarios.json`: cada cenário tem as mensagens da "cliente" e o que conta como **passou**:
+  - `deve` / `nao_deve`: expressão que a resposta precisa ter (ou não pode ter). `"em": "ultima"` olha só a última resposta.
+  - `ferramenta` / `sem_ferramenta`: ação da agenda que tem (ou não pode) ser usada (`consultar`, `criar`, `listar`, `remarcar`, `cancelar`).
+  - `duracao_max`: a consulta de horário não pode ser para um serviço mais longo que isso (ex.: avaliação = 30).
+  - `transferiu`: `true`/`false` (se pausou a IA e chamou a equipe).
+  - `respostas`: quantas respostas (rajada = 1).
+  - `banco_horario` / `banco_obs`: horário que tem de existir no CRM depois da conversa (ex.: `"+8d 09:00"`).
+  - `preparar`: cliente e horários que já existem no CRM antes da conversa (ex.: um horário marcado pela Gleide).
+  - Datas relativas: `"+7d 09:00"`; nas mensagens e nos textos esperados, `{data:+8d 09:00}` vira `dd/mm`.
+- **Segurança:** só roda com números que **não existem no WhatsApp** (confere antes e para se algum existir). No fim apaga as clientes de teste do CRM e limpa a memória da IA delas.
+- **Resultado:** `testes/resultados/AAAA-MM-DD-<rótulo>.txt`, com ✅/❌ por cenário e os tokens do Gemini
+  (chamadas por mensagem e tokens de entrada/saída). O n8n não mostra quanto veio do cache.
+- Ao criar um cenário novo: use um número `55669000013x` novo e confira que ele não existe.
+
+---
+
+## Áudios prontos da Gleide
+
+Plano: `docs/PLANO-PROMPT-E-AUDIOS.md` (Fase 4).
+
+- **Cadastrar ou trocar um áudio** (MP3 ou OGG, 10–60 s, sem nome de cliente nem data):
+  ```bash
+  node cadastrar-audio.js manutencao.mp3 "de quanto em quanto tempo fazer a manutenção" "quando perguntar de quanto em quanto tempo faz a manutenção"
+  ```
+  O script sobe o arquivo no Supabase Storage (bucket **privado** `audios`), mede a duração, transcreve pelo
+  n8n (workflow "Áudios prontos - Transcrever") e grava em `empresas.config.audios_prontos`.
+  Mesmo tema de novo = troca o áudio.
+- **Na conversa:** a IA vê a lista de temas no fim do prompt ("ÁUDIOS PRONTOS") e usa a ferramenta
+  `enviar_audio`. O workflow "Áudios prontos - Enviar" mostra "gravando…", manda como **mensagem de voz**
+  e grava no CRM como `🎤 Áudio da Gleide [áudio pronto: tema]: transcrição`. Por essa marca a IA
+  sabe que a cliente já recebeu o áudio e não manda de novo.
+- **Se o envio falhar,** a IA responde em texto com base na transcrição.
+- **Regras** (no prompt, seção "ÁUDIOS DA GLEIDE"):
+  - só quando a pergunta é sobre o tema;
+  - nunca repete um áudio para a mesma cliente;
+  - não manda se a cliente pediu texto;
+  - no máximo 1 áudio por resposta.

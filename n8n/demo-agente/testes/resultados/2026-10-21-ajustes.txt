@@ -1,0 +1,54 @@
+Bateria IA — ajustes — 21/10/2026, 15:21:39
+
+=== cliente-nova — Primeiro contato não é tratado como cliente antiga ===
+> oi, boa tarde!
+IA: Oi, boa tarde! Aqui é a assistente da Gleide, do Toda Bonita 😊 Tudo bem com você?
+  tokens: 1 chamadas, 10308 de entrada
+✅ passou
+
+=== quimica-sem-mega — Progressiva sem mega hair: não exige avaliação ===
+> quero fazer progressiva, não uso mega hair
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A progressiva fica a partir de R$ 180, o valor final depende do comprimento e volume do seu cabelo, e leva umas 3 horas. Pra amanhã, quinta, tenho horário às 9h ou à tarde entre 13h e 15h, qual fica melhor pra você?
+  [agenda] consultar 180 min
+  [áudio] "de quanto em quanto tempo fazer a manutenção" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Então, normalmente 
+  tokens: 3 chamadas, 32171 de entrada
+❌ FALHOU: não devia mandar áudio
+
+=== audio-estraga — Pergunta se mega estraga: usa o áudio da Gleide ===
+> mega hair estraga o cabelo?
+IA: Oi, Teste! Essa é uma dúvida super comum, mas se for bem aplicado e você fizer a manutenção no prazo, o mega hair não estraga o seu cabelo natural não. O segredo é escolher a técnica certa pro seu tipo de fio, e a Gleide vê isso certinho na avaliação gratuita. Quer marcar um horário pra ela dar uma olhada no seu cabelo?
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, Flor, essa é 
+  tokens: 2 chamadas, 21136 de entrada
+✅ passou
+
+=== audio-por-escrito — Pede por escrito: não manda áudio ===
+> mega hair estraga o cabelo? manda por escrito que tô no trabalho e não posso ouvir
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Olha, o mega hair não estraga o cabelo se for bem aplicado e se você fizer a manutenção no prazo certinho, que costuma ser a cada 2 ou 3 meses. A Gleide sempre avalia a saúde do seu fio antes pra garantir que ele aguenta a técnica escolhida, então é bem seguro. Você já usa mega ou está pensando em colocar pela primeira vez?
+  tokens: 2 chamadas, 21007 de entrada
+✅ passou
+
+=== indecisa-pede-foto — Não sabe o que escolher: pré-avaliação, pede foto em vez de mandar direto pra avaliação ===
+> oi, queria colocar mega mas não sei qual fica melhor em mim
+IA: Oi! Aqui é a assistente da Gleide 😊 Pra gente entender qual mega ficaria melhor, me conta o que você mais busca: seria pra dar comprimento, mais volume ou talvez pra mudar a cor?
+  tokens: 1 chamadas, 10316 de entrada
+✅ passou
+
+=== diferenca-tecnicas — Dúvida técnica: explica a diferença antes de falar em avaliação ===
+> qual a diferença entre queratina e tela adesiva? qual dura mais?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A queratina é feita com mechas presas fio a fio, o que deixa o movimento bem natural e dá mais liberdade pra fazer penteados. Já a tela adesiva são faixas finas coladas rente à raiz, é uma técnica bem leve e a aplicação é a mais rápida de todas. Sobre a duração, as duas são bem parecidas e a gente recomenda fazer a manutenção a cada 2 ou 3 meses pra cuidar bem do seu cabelo natural. Quer marcar uma avaliação gratuita pra Gleide ver qual dessas técnicas combina mais com o seu fio?
+  tokens: 2 chamadas, 21299 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ cliente-nova
+❌ quimica-sem-mega
+✅ audio-estraga
+✅ audio-por-escrito
+✅ indecisa-pede-foto
+✅ diferenca-tecnicas
+
+5/6 passaram
+Tokens: 6 mensagens · 11 chamadas ao Gemini (1.8 por mensagem)
+  entrada: 116237 no total · 19373 por mensagem · 10567 por chamada
+  saída:   771 no total · 129 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

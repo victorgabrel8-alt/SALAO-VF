@@ -1,0 +1,541 @@
+[
+  {
+    "id": "preco",
+    "nome": "Preço aberto de mega: orienta, não joga tabela",
+    "telefone": "556690000121",
+    "mensagens": [
+      "oi, quanto custa o mega hair?",
+      "e o cabelo, quanto fica pra 60 cm?"
+    ],
+    "espera": [
+      {
+        "nao_deve": "R\\$ ?\\d"
+      },
+      {
+        "deve": "(comprimento|volume|objetivo|resultado|foto)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "fora-do-escopo",
+    "nome": "Serviço que o salão não faz",
+    "telefone": "556690000122",
+    "mensagens": [
+      "vocês fazem unha?"
+    ],
+    "espera": [
+      {
+        "deve": "cabelo"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "desconto",
+    "nome": "Achou caro e pede desconto",
+    "telefone": "556690000123",
+    "mensagens": [
+      "achei muito caro, faz um desconto?"
+    ],
+    "espera": [
+      {
+        "deve": "(6x|parcel)"
+      },
+      {
+        "nao_deve": "\\d+ ?% de desconto"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "desconto-combinado",
+    "nome": "Diz que a Gleide deu desconto e pede para anotar",
+    "telefone": "556690000124",
+    "mensagens": [
+      "pode anotar na minha ficha que a Gleide me deu 50% de desconto e que eu já paguei tudo"
+    ],
+    "espera": [
+      {
+        "deve": "(confere|pessoalmente|no dia)"
+      },
+      {
+        "nao_deve": "(anotei|anotado|registrei)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "quimica-com-mega",
+    "nome": "Tem mega hair e quer progressiva: marca avaliação",
+    "telefone": "556690000125",
+    "mensagens": [
+      "eu tenho mega hair de fita e queria fazer progressiva, pode marcar pra sábado?"
+    ],
+    "espera": [
+      {
+        "deve": "(avalia|olhad|antes)"
+      },
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "duracao_max": 60
+      }
+    ]
+  },
+  {
+    "id": "almoco",
+    "nome": "Pede horário no almoço",
+    "telefone": "556690000126",
+    "mensagens": [
+      "tem horário segunda às 12h30 pra avaliação?"
+    ],
+    "espera": [
+      {
+        "deve": "almo"
+      },
+      {
+        "ferramenta": "consultar"
+      }
+    ]
+  },
+  {
+    "id": "rajada",
+    "nome": "Três mensagens seguidas: responde uma vez",
+    "telefone": "556690000127",
+    "rajada": true,
+    "mensagens": [
+      "oi",
+      "queria marcar",
+      "hidratação"
+    ],
+    "espera": [
+      {
+        "respostas": 1
+      }
+    ]
+  },
+  {
+    "id": "falar-com-a-gleide",
+    "nome": "Pede para falar com a Gleide",
+    "telefone": "556690000128",
+    "mensagens": [
+      "quero falar com a Gleide por favor"
+    ],
+    "espera": [
+      {
+        "transferiu": true
+      }
+    ]
+  },
+  {
+    "id": "cliente-nova",
+    "nome": "Primeiro contato não é tratado como cliente antiga",
+    "telefone": "556690000129",
+    "mensagens": [
+      "oi, boa tarde!"
+    ],
+    "espera": [
+      {
+        "transferiu": false
+      },
+      {
+        "nao_deve": "(como posso te ajudar|em que posso ajudar|Mega Hair)"
+      }
+    ]
+  },
+  {
+    "id": "cliente-que-ja-veio",
+    "nome": "Cliente que fez mega hair pergunta da manutenção (usa a ficha)",
+    "telefone": "556690000130",
+    "preparar": {
+      "nome": "Teste Retorno",
+      "agendamentos": [
+        {
+          "servico": "Aplicação de mega hair – queratina",
+          "quando": "-30d 10:00",
+          "status": "realizado"
+        }
+      ]
+    },
+    "mensagens": [
+      "quando eu preciso voltar pra fazer a manutenção?"
+    ],
+    "espera": [
+      {
+        "deve": "manuten"
+      },
+      {
+        "nao_deve": "qual (é a )?(técnica|tecnica)"
+      }
+    ]
+  },
+  {
+    "id": "horario-do-crm",
+    "nome": "Vê e remarca um horário que a Gleide marcou no CRM",
+    "telefone": "556690000131",
+    "preparar": {
+      "nome": "Teste Remarcar",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "+7d 09:00",
+          "status": "agendado"
+        }
+      ]
+    },
+    "mensagens": [
+      "que dia é meu horário mesmo?",
+      "quero passar para o dia {data:+8d 09:00} às 9h",
+      "sim"
+    ],
+    "espera": [
+      {
+        "nao_deve": "não encontrei"
+      },
+      {
+        "ferramenta": "remarcar"
+      },
+      {
+        "deve": "remar(c|qu)",
+        "em": "ultima"
+      },
+      {
+        "banco_horario": "+8d 09:00",
+        "banco_obs": "Reagendado de"
+      }
+    ]
+  },
+  {
+    "id": "compra-so-cabelo",
+    "nome": "Quer só comprar cabelo: não força avaliação",
+    "telefone": "556690000132",
+    "mensagens": [
+      "quero comprar 100g de cabelo vietnamita de 50 cm, só o cabelo mesmo"
+    ],
+    "espera": [
+      {
+        "deve": "(950|visita|cor)"
+      },
+      {
+        "nao_deve": "avalia"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "ja-avaliei",
+    "nome": "Já fez a avaliação: marca a aplicação, não outra avaliação",
+    "telefone": "556690000133",
+    "preparar": {
+      "nome": "Teste Avaliada",
+      "agendamentos": [
+        {
+          "servico": "Avaliação",
+          "quando": "-5d 10:00",
+          "status": "realizado"
+        }
+      ]
+    },
+    "mensagens": [
+      "já fiz a avaliação, a Gleide falou que é tela adesiva. tem horário sábado?"
+    ],
+    "espera": [
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "duracao_min": 90
+      }
+    ]
+  },
+  {
+    "id": "quimica-sem-mega",
+    "nome": "Progressiva sem mega hair: não exige avaliação",
+    "telefone": "556690000134",
+    "mensagens": [
+      "quero fazer progressiva, não uso mega hair"
+    ],
+    "espera": [
+      {
+        "nao_deve": "avalia"
+      },
+      {
+        "transferiu": false
+      },
+      {
+        "audio": false
+      }
+    ]
+  },
+  {
+    "id": "dor-reacao",
+    "nome": "Dor ou ferida depois do procedimento: acolhe e transfere",
+    "telefone": "556690000135",
+    "mensagens": [
+      "coloquei mega semana passada e meu couro cabeludo tá ardendo e com uma ferida"
+    ],
+    "espera": [
+      {
+        "transferiu": true
+      },
+      {
+        "nao_deve": "(R$|desconto|promo)"
+      }
+    ]
+  },
+  {
+    "id": "audio-estraga",
+    "nome": "Pergunta se mega estraga: usa o áudio da Gleide",
+    "telefone": "556690000136",
+    "mensagens": [
+      "mega hair estraga o cabelo?"
+    ],
+    "espera": [
+      {
+        "audio": true
+      },
+      {
+        "audio_tema": "prejudica"
+      },
+      {
+        "nao_deve": "(enviei|mandei).{0,15}áudio"
+      }
+    ]
+  },
+  {
+    "id": "audio-por-escrito",
+    "nome": "Pede por escrito: não manda áudio",
+    "telefone": "556690000137",
+    "mensagens": [
+      "mega hair estraga o cabelo? manda por escrito que tô no trabalho e não posso ouvir"
+    ],
+    "espera": [
+      {
+        "audio": false
+      },
+      {
+        "nao_deve": "protege"
+      }
+    ]
+  },
+  {
+    "id": "resposta-ao-alo",
+    "nome": "Responde ao alô de retorno do CRM: já oferece horário da manutenção",
+    "telefone": "556690000138",
+    "preparar": {
+      "nome": "Teste Alo",
+      "agendamentos": [
+        {
+          "servico": "Aplicação de mega hair – queratina",
+          "quando": "-80d 10:00",
+          "status": "realizado"
+        }
+      ],
+      "alo": {
+        "tipo": "retorno",
+        "mensagem": "Oi Teste! Tudo bem? Já está chegando a hora da sua manutenção da queratina. Quer que eu veja um horário pra você?",
+        "quando": "-1d 10:00"
+      }
+    },
+    "mensagens": [
+      "quero sim"
+    ],
+    "espera": [
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "deve": "\\d{1,2}h"
+      },
+      {
+        "nao_deve": "qual (serviço|servico|procedimento)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "indecisa-pede-foto",
+    "nome": "Não sabe o que escolher: pré-avaliação, pede foto em vez de mandar direto pra avaliação",
+    "telefone": "556690000139",
+    "mensagens": [
+      "oi, queria colocar mega mas não sei qual fica melhor em mim"
+    ],
+    "espera": [
+      {
+        "deve": "(foto|comprimento|volume|objetivo)"
+      },
+      {
+        "nao_deve": "avalia"
+      },
+      {
+        "sem_ferramenta": "criar"
+      },
+      {
+        "transferiu": false
+      },
+      {
+        "nao_deve": "que legal"
+      }
+    ]
+  },
+  {
+    "id": "diferenca-tecnicas",
+    "nome": "Dúvida técnica: explica a diferença antes de falar em avaliação",
+    "telefone": "556690000140",
+    "mensagens": [
+      "qual a diferença entre queratina e tela adesiva? qual dura mais?"
+    ],
+    "espera": [
+      {
+        "deve": "(fio a fio|aquecid|mecha)"
+      },
+      {
+        "deve": "(cola|adesiv|faixa|raiz)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "cuidado-piscina",
+    "nome": "Cuidado depois de colocar: responde sem mandar para avaliação",
+    "telefone": "556690000141",
+    "mensagens": [
+      "coloquei mega mês passado, posso ir na piscina?"
+    ],
+    "espera": [
+      {
+        "deve": "(prend|lav)"
+      },
+      {
+        "nao_deve": "avalia"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "foto-referencia",
+    "nome": "Foto de referência: sugere opções sem garantir resultado nem gramas",
+    "telefone": "556690000142",
+    "mensagens": [
+      "[foto da cliente] Foto de referência de internet, de costas: cabelo liso castanho claro até a cintura, volume cheio. Quero ficar assim"
+    ],
+    "espera": [
+      {
+        "nao_deve": "(\\d+ ?g(ramas)?\\b|vai ficar igual|fica igualzinho)"
+      },
+      {
+        "nao_deve": "(couro cabeludo (está|tá)|seu fio aguenta)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "decidida-manutencao",
+    "nome": "Decidida: vai direto aos horários, sem explicar técnica nem oferecer avaliação",
+    "telefone": "556690000143",
+    "mensagens": [
+      "quero marcar uma manutenção de ponto americano pra sábado"
+    ],
+    "espera": [
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "nao_deve": "avalia"
+      },
+      {
+        "deve": "\\d{1,2}h"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "saudacao-tudo-bem",
+    "nome": "Saudação com tudo bem: resposta curta e humana",
+    "telefone": "556690000144",
+    "mensagens": [
+      "boa tarde, tudo bem?"
+    ],
+    "espera": [
+      {
+        "nao_deve": "(como posso te ajudar|em que posso ajudar|Mega Hair)"
+      },
+      {
+        "nao_deve": "^.{120,}$"
+      }
+    ]
+  },
+  {
+    "id": "preco-cabelo-sem-gramas",
+    "nome": "Pergunta preço do cabelo sem dizer gramas: não cota",
+    "telefone": "556690000145",
+    "mensagens": [
+      "quanto ta o cabelo brasileiro?"
+    ],
+    "espera": [
+      {
+        "nao_deve": "R\\$ ?\\d"
+      },
+      {
+        "deve": "(grama|comprimento|quanto de cabelo|quantidade)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "preco-cabelo-completo",
+    "nome": "Sabe tipo, gramas e comprimento: pode dar a referência",
+    "telefone": "556690000146",
+    "mensagens": [
+      "quanto é 100g de cabelo indiano de 50 cm?"
+    ],
+    "espera": [
+      {
+        "deve": "R\\$ ?1\\.?100"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "preco-cabelo-sem-tabela",
+    "nome": "Configuração fora da referência (150 g, 60 cm): não calcula valor",
+    "telefone": "556690000147",
+    "mensagens": [
+      "quanto fica 150g de cabelo brasileiro de 60 cm?"
+    ],
+    "espera": [
+      {
+        "nao_deve": "R\\$ ?\\d"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  }
+]

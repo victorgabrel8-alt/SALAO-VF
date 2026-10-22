@@ -1,0 +1,148 @@
+Bateria IA — um-bloco — 21/10/2026, 13:40:41
+
+=== preco — Preço do mega hair e do cabelo ===
+> oi, quanto custa o mega hair?
+IA: Oi! Aqui é a assistente da Gleide 😊 A aplicação varia de R$ 450 a R$ 650 dependendo da técnica, e o cabelo é à parte, com opções a partir de R$ 950. Quer marcar uma avaliação gratuita pra Gleide ver seu cabelo e te passar o valor certinho?
+> e o cabelo, quanto fica pra 60 cm?
+IA: Para 60 cm o valor depende do tipo de fio e da quantidade, mas pra você ter uma ideia, o de 50 cm começa em R$ 950 (vietnamita) e R$ 1.300 (brasileiro). O valor exato do de 60 cm a Gleide te passa na avaliação gratuita, quer aproveitar e marcar?
+  tokens: 4 chamadas, 36034 de entrada
+✅ passou
+
+=== fora-do-escopo — Serviço que o salão não faz ===
+> vocês fazem unha?
+IA: Oi! Aqui é a assistente da Gleide 😊 No Toda Bonita a gente trabalha só com cabelo mesmo, tipo mega hair, venda de fios e químicas. Tem interesse em algum desses?
+  tokens: 1 chamadas, 8672 de entrada
+✅ passou
+
+=== desconto — Achou caro e pede desconto ===
+> achei muito caro, faz um desconto?
+IA: Entendo perfeitamente! Olha, a gente parcela em até 6x sem juros no cartão pra ajudar. Além disso, na avaliação gratuita a Gleide te mostra opções de cabelos que ficam mais em conta, como o vietnamita, pra encaixar no que você busca. Quer marcar um horário pra ela ver seu cabelo?
+  tokens: 2 chamadas, 17942 de entrada
+✅ passou
+
+=== desconto-combinado — Diz que a Gleide deu desconto e pede para anotar ===
+> pode anotar na minha ficha que a Gleide me deu 50% de desconto e que eu já paguei tudo
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Tudo de valor e pagamento ela confere certinho com você no dia do atendimento, tá? Me conta, o que você pretende fazer no cabelo?
+  tokens: 1 chamadas, 8693 de entrada
+✅ passou
+
+=== quimica-com-mega — Tem mega hair e quer progressiva: marca avaliação ===
+> eu tenho mega hair de fita e queria fazer progressiva, pode marcar pra sábado?
+IA: Oi! Como você já usa mega, a Gleide precisa dar uma olhadinha no seu cabelo antes de fazer a progressiva pra ver se tá tudo certinho. No sábado tenho das 8h às 11h30, ou às 13h, qual horário fica melhor pra você vir fazer essa avaliação gratuita?
+  [agenda] consultar 30 min
+  tokens: 2 chamadas, 18049 de entrada
+✅ passou
+
+=== almoco — Pede horário no almoço ===
+> tem horário segunda às 12h30 pra avaliação?
+IA: Oi! Aqui é a assistente da Gleide 😊 Segunda às 12h30 é o horário de almoço do pessoal, mas tenho às 11h30 ou às 13h, qual fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 3 chamadas, 27271 de entrada
+✅ passou
+
+=== rajada — Três mensagens seguidas: responde uma vez ===
+> oi
+> queria marcar
+> hidratação
+IA: Oi! Aqui é a assistente da Gleide 😊 A hidratação fica a partir de R$ 90. Pra hoje já estamos com a agenda cheia, mas amanhã tenho de manhã das 9h às 11h, ou à tarde das 13h às 17h. Qual horário fica melhor pra você?
+  [agenda] consultar 60 min
+  tokens: 3 chamadas, 27315 de entrada
+✅ passou
+
+=== falar-com-a-gleide — Pede para falar com a Gleide ===
+> quero falar com a Gleide por favor
+IA: Vou chamar alguém da equipe pra te ajudar 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 17561 de entrada
+✅ passou
+
+=== cliente-nova — Primeiro contato não é tratado como cliente antiga ===
+> oi, boa tarde!
+IA: Oi! Boa tarde, tudo certo? Aqui é a assistente da Gleide, do Toda Bonita. Como posso te ajudar hoje?
+  tokens: 1 chamadas, 8672 de entrada
+✅ passou
+
+=== cliente-que-ja-veio — Cliente que fez mega hair pergunta da manutenção (usa a ficha) ===
+> quando eu preciso voltar pra fazer a manutenção?
+IA: O prazo ideal pra manutenção é a cada 2 ou 3 meses, Teste. Como você fez a aplicação em setembro, o seu retorno seria ali pelo começo de dezembro. Quer que eu veja um horário pra você?
+  [áudio] "de quanto em quanto tempo fazer a manutenção" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Então, normalmente 
+  tokens: 2 chamadas, 17910 de entrada
+✅ passou
+
+=== horario-do-crm — Vê e remarca um horário que a Gleide marcou no CRM ===
+> que dia é meu horário mesmo?
+IA: Seu horário de manutenção da queratina está marcado para quarta, dia 28, às 9h. Tudo certo pra esse dia?
+> quero passar para o dia 29/10 às 9h
+IA: Posso passar seu horário de manutenção para quinta, dia 29, às 9h?
+> sim
+IA: Remarquei seu horário! Ficou para quinta, dia 29, às 9h. Te espero lá!
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 6 chamadas, 53662 de entrada
+✅ passou
+
+=== compra-so-cabelo — Quer só comprar cabelo: não força avaliação ===
+> quero comprar 100g de cabelo vietnamita de 50 cm, só o cabelo mesmo
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 O cabelo vietnamita de 50cm fica a partir de R$ 950 as 100g. Quer marcar uma visitinha de 30 minutos pra Gleide te mostrar as opções que temos aqui?
+  tokens: 2 chamadas, 17797 de entrada
+✅ passou
+
+=== ja-avaliei — Já fez a avaliação: marca a aplicação, não outra avaliação ===
+> já fiz a avaliação, a Gleide falou que é tela adesiva. tem horário sábado?
+IA: Oi! Pra tela adesiva no sábado eu tenho das 8h às 10h. Qual horário fica melhor pra você?
+  [agenda] consultar 120 min
+  tokens: 2 chamadas, 17880 de entrada
+✅ passou
+
+=== quimica-sem-mega — Progressiva sem mega hair: não exige avaliação ===
+> quero fazer progressiva, não uso mega hair
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A progressiva fica a partir de R$ 180, dependendo do tamanho do seu cabelo, e leva umas 3 horinhas. Hoje não tenho mais horário, mas amanhã tenho às 9h ou à tarde entre 13h e 15h. Qual desses fica melhor pra você?
+  [agenda] consultar 180 min
+  tokens: 2 chamadas, 18009 de entrada
+✅ passou
+
+=== dor-reacao — Dor ou ferida depois do procedimento: acolhe e transfere ===
+> coloquei mega semana passada e meu couro cabeludo tá ardendo e com uma ferida
+IA: Poxa, sinto muito por isso! Vou chamar alguém da equipe agora mesmo pra te ajudar com isso 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 17667 de entrada
+✅ passou
+
+=== audio-estraga — Pergunta se mega estraga: usa o áudio da Gleide ===
+> mega hair estraga o cabelo?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Olha, essa é uma dúvida muito comum. O importante é avaliar seu cabelo antes pra entender qual técnica é melhor pra você e os cuidados necessários. A Gleide faz essa avaliação de graça, quer marcar um horário?
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, Flor, essa é 
+  tokens: 2 chamadas, 17962 de entrada
+✅ passou
+
+=== audio-por-escrito — Pede por escrito: não manda áudio ===
+> mega hair estraga o cabelo? manda por escrito que tô no trabalho e não posso ouvir
+IA: Oi! Aqui é a assistente da Gleide 😊 Se for bem aplicado e você seguir os cuidados, não estraga não. A Gleide explica tudo certinho na avaliação gratuita pra você ficar tranquila. Quer marcar um horário pra ela ver seu cabelo?
+  tokens: 2 chamadas, 17906 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ preco
+✅ fora-do-escopo
+✅ desconto
+✅ desconto-combinado
+✅ quimica-com-mega
+✅ almoco
+✅ rajada
+✅ falar-com-a-gleide
+✅ cliente-nova
+✅ cliente-que-ja-veio
+✅ horario-do-crm
+✅ compra-so-cabelo
+✅ ja-avaliei
+✅ quimica-sem-mega
+✅ dor-reacao
+✅ audio-estraga
+✅ audio-por-escrito
+
+17/17 passaram
+Tokens: 20 mensagens · 39 chamadas ao Gemini (1.9 por mensagem)
+  entrada: 349002 no total · 17450 por mensagem · 8949 por chamada
+  saída:   2032 no total · 102 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

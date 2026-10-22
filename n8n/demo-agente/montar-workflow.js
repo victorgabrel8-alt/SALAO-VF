@@ -248,7 +248,7 @@ const nodes = [
   node('Entender mídia (Gemini)', 'n8n-nodes-base.httpRequest', 4.2, [1760, -120], {
     method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent', ...GEMINI_HTTP,
     sendBody: true, specifyBody: 'json',
-    jsonBody: "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').item.json.tipo === 'imageMessage' ? 'Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 2 frases objetivas, o que importa para o salão: se aparece cabelo, a cor, o comprimento, o tipo de fio (liso, ondulado, cacheado), o volume e o estilo (ex.: mega hair, mechas, luzes, corte). Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
+    jsonBody: "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').item.json.tipo === 'imageMessage' ? 'Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 3 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor; textura (liso, ondulado, cacheado); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo. Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
     options: {},
   }, { credentials: GEMINI || {}, onError: 'continueRegularOutput' }),
   node('Texto da mensagem', 'n8n-nodes-base.set', 3.4, [1980, 0], {
@@ -332,7 +332,8 @@ const nodes = [
   node('Agente IA', '@n8n/n8n-nodes-langchain.agent', 3.1, [2640, -20], {
     promptType: 'define',
     text: "={{ $('Montar entrada').item.json.texto_cliente }}",
-    options: { systemMessage: '=' + prompt },
+    // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
+    options: { systemMessage: '=' + prompt, returnIntermediateSteps: true },
   }),
 
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
@@ -350,26 +351,56 @@ const nodes = [
     jsCode: [
       "const jid = $('Montar entrada').first().json.jid;",
       "let t = ($input.first().json.output || '').trim();",
+      "// Prompt: se o áudio respondeu tudo, a IA não escreve nada. Áudio enviado + resposta vazia = não manda balão",
+      "// (sem isso cairia na mensagem de erro lá embaixo). [SEM TEXTO] também vale, se a IA usar.",
+      "const passos = $input.first().json.intermediateSteps || [];",
+      "const audioEnviado = passos.some(p => p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || '')));",
+      "const semTexto = /\\[SEM TEXTO\\]/i.test(t);",
+      "t = t.replace(/\\[SEM TEXTO\\]/gi, '').trim();",
+      "if ((audioEnviado || semTexto) && !t.replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];",
       "// sem negrito/markdown: mensagem de gente não tem *asterisco*",
       "t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');",
+      "// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)",
+      "const semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Toda Bonita Mega Hair/gi, '').trim();",
+      "if (semRobo) t = semRobo;",
+      "// regra da Gleide: valor só quando a cliente pergunta preço. Se ela não perguntou, tira as frases com R$",
+      "// ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô",
+      "const pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test($('Montar entrada').first().json.texto_cliente || '');",
+      "const FRASES = /(?<=[.!?😊😉🥰])\\s+/u;",
+      "const limpar = (p) => {",
+      "  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));",
+      "  if (!pediuPreco) fs = fs.filter(f => !/R\\$\\s?\\d|\\bvalor\\b[^.?!]*\\bdepende/i.test(f));",
+      "  return fs.join(' ').trim();",
+      "};",
+      "let paragrafos = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);",
+      "const limpos = paragrafos.map(limpar).filter(Boolean);",
+      "if (limpos.length) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
-      "if (!t) t = 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊';",
-      "let partes = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);",
-      "// junta balões curtos (até ~200 caracteres) para não parecer robô; respostas longas viram 2-3 balões",
-      "const juntos = [];",
-      "for (const p of partes) {",
-      "  const ult = juntos[juntos.length - 1];",
-      "  if (ult !== undefined && (ult.length + p.length) <= 200) juntos[juntos.length - 1] = ult + '\\n\\n' + p; else juntos.push(p);",
+      "if (!paragrafos.length) paragrafos = ['Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊'];",
+      "// Pica como gente faz no WhatsApp: cada parágrafo vira um balão, e um bloco grande (mais de ~200",
+      "// letras) é cortado entre frases em pedaços de até ~170. Balão curtinho junta com o anterior; no máximo 3",
+      "const pedacos = [];",
+      "for (const p of paragrafos) {",
+      "  if (p.length <= 200) { pedacos.push(p); continue; }",
+      "  let atual = '';",
+      "  for (const f of p.split(FRASES)) {",
+      "    if (atual && (atual + ' ' + f).length > 170) { pedacos.push(atual); atual = f; } else atual = atual ? atual + ' ' + f : f;",
+      "  }",
+      "  if (atual) pedacos.push(atual);",
       "}",
-      "partes = juntos;",
-      "if (partes.length > 2) partes = [partes[0], partes.slice(1).join('\\n\\n')];",
-      "// \"digitando...\" em ritmo humano: ~70ms por caractere, entre 2,5s e 9s; o 1º balão ganha +1,5s (tempo de ler)",
-      "// Ritmo de gente: pausa antes de começar (1º balão = 'terminando de ler'; demais = respiro entre frases)",
-      "// e digitação com velocidade que varia (55-85 ms por letra), entre 2 s e 9 s por balão",
+      "let baloes = [];",
+      "for (const p of pedacos) {",
+      "  const ult = baloes[baloes.length - 1];",
+      "  if (ult !== undefined && (p.length < 40 || ult.length < 40) && (ult + ' ' + p).length <= 220) baloes[baloes.length - 1] = ult + ' ' + p; else baloes.push(p);",
+      "}",
+      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], baloes.slice(2).join(' ')];",
+      "// Ritmo de gente: antes do 1º balão 'lê' a mensagem dela (quanto maior, mais tempo); entre balões, um",
+      "// respiro. Cada balão 'digita' no ritmo do celular (170-210 ms por letra, ~5 letras/s), entre 4 s e 35 s",
       "const ale = (a, b) => a + Math.random() * (b - a);",
-      "return partes.map((texto, i) => ({ json: { jid, texto,",
-      "  pausa: Math.round((i === 0 ? ale(0.8, 2.5) : ale(1.2, 3)) * 10) / 10,",
-      "  delay: Math.round(Math.min(9000, Math.max(2000, texto.length * ale(55, 85)))) } }));",
+      "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
+      "return baloes.map((texto, i) => ({ json: { jid, texto,",
+      "  pausa: Math.round((i === 0 ? Math.min(5, ale(0.8, 2) + lida * 0.02) : ale(1.5, 3)) * 10) / 10,",
+      "  delay: Math.round(Math.min(35000, Math.max(4000, texto.length * ale(170, 210)))) } }));",
     ].join('\n'),
   }),
 
@@ -422,11 +453,24 @@ const nodes = [
     { telefone: "={{ $('Montar entrada').item.json.telefone }}" },
     [['motivo', 'Motivo curto da transferência (ex.: pediu para falar com a dona, reclamação)', 'string']]),
 
+  // Só áudio nesta resposta ([SEM TEXTO]): não manda balão, só libera a trava
+  ifNode('Tem texto pra enviar?', [0, 0], [
+    cond('t1', '={{ !$json.semTexto }}', { type: 'boolean', operation: 'true', singleValue: true }),
+  ]),
+
   // Um balão por vez, em ordem: "digitando..." (a Evolution segura a resposta pelo delay) -> envia -> próximo
   node('Um balão por vez', 'n8n-nodes-base.splitInBatches', 3, [3180, -20], { options: {} }),
 
   node('Pausa (lendo/respirando)', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: '={{ $json.pausa }}', unit: 'seconds' },
     { webhookId: '3d4e5f60-7182-493a-9b2c-e3f405162738' }),
+
+  // O WhatsApp apaga o "digitando…" em ~10 s se ninguém renova: divide o tempo em blocos de até 8 s
+  // e manda um "digitando" a cada 7,5 s (batching com intervalo)
+  node('Digitando (blocos de 8s)', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
+    "const b = $input.first().json;",
+    "const n = Math.max(1, Math.round(b.delay / 7500));",
+    "return Array.from({ length: n }, () => ({ json: { jid: b.jid, delay: 7500 }, pairedItem: 0 }));",
+  ].join('\n') }),
 
   node('Digitando...', 'n8n-nodes-base.httpRequest', 4.2, [3400, 80], {
     method: 'POST',
@@ -434,7 +478,8 @@ const nodes = [
     sendHeaders: true, headerParameters: apikeyHeader,
     sendBody: true, specifyBody: 'json',
     jsonBody: "={{ JSON.stringify({ number: $json.jid, presence: 'composing', delay: $json.delay }) }}",
-    options: {},
+    // um bloco a cada 7,5 s (o n8n não espera a resposta entre lotes: sem o intervalo saíam todos juntos)
+    options: { batching: { batch: { batchSize: 1, batchInterval: 7500 } } },
   }, { onError: 'continueRegularOutput' }),
 
   node('Enviar mensagem', 'n8n-nodes-base.httpRequest', 4.2, [3620, 80], {
@@ -444,8 +489,9 @@ const nodes = [
     sendBody: true, specifyBody: 'json',
     jsonBody: "={{ JSON.stringify({ number: $('Um balão por vez').item.json.jid, text: $('Um balão por vez').item.json.texto }) }}",
     options: {},
-  // a conexão do WhatsApp às vezes cai por alguns segundos: tenta de novo antes de desistir
-  }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
+  // a conexão do WhatsApp às vezes cai por alguns segundos: tenta de novo antes de desistir.
+  // executeOnce: chegam vários itens (um por bloco de "digitando"), mas a mensagem sai uma vez só
+  }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput', executeOnce: true }),
 ];
 
 const connections = {
@@ -477,10 +523,12 @@ const connections = {
   'Montar entrada': main('Marcar como lida'),
   'Marcar como lida': main('Agente IA'),
   'Agente IA': main('Quebrar mensagens'),
-  'Quebrar mensagens': main('Um balão por vez'),
+  'Quebrar mensagens': main('Tem texto pra enviar?'),
+  'Tem texto pra enviar?': { main: [[{ node: 'Um balão por vez', type: 'main', index: 0 }], [{ node: 'Trava: liberar', type: 'main', index: 0 }]] },
   // saída 0 = "done" (fim), saída 1 = "loop" (próximo balão)
   'Um balão por vez': { main: [[{ node: 'Trava: liberar', type: 'main', index: 0 }], [{ node: 'Pausa (lendo/respirando)', type: 'main', index: 0 }]] },
-  'Pausa (lendo/respirando)': main('Digitando...'),
+  'Pausa (lendo/respirando)': main('Digitando (blocos de 8s)'),
+  'Digitando (blocos de 8s)': main('Digitando...'),
   'Digitando...': main('Enviar mensagem'),
   'Enviar mensagem': main('Um balão por vez'),
   'Gemini Flash': { ai_languageModel: [[{ node: 'Agente IA', type: 'ai_languageModel', index: 0 }]] },
@@ -499,14 +547,16 @@ const workflow = {
   settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', saveManualExecutions: true },
 };
 
-// CRM: ficha por cliente no Postgres + tool anotar_no_crm + painel web (ver crm-workflows.js)
+// CRM: ficha por cliente no Postgres + tool anotar_no_crm (ver crm-workflows.js)
 const crmIdFile = path.join(dir, '.workflow-crm-id');
-const painelIdFile = path.join(dir, '.workflow-crm-painel-id');
 const lerCrmId = () => (fs.existsSync(crmIdFile) ? fs.readFileSync(crmIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_CRM');
-const { crmWorkflow, painelWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
+const { crmWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
 
 // Supabase (banco do CRM): mensagens, pausa e agenda passam a ser gravadas lá (ver supabase-workflows.js)
 require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow });
+
+// Áudios prontos da Gleide: tool enviar_audio + catálogo no fim do prompt (ver audios-workflows.js)
+const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });
 
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
@@ -518,10 +568,11 @@ fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(work
 fs.writeFileSync(path.join(dir, 'workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-crm-salao.json'), JSON.stringify(crmWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-crm-painel.json'), JSON.stringify(painelWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-assistente-ferramentas.json'), JSON.stringify(assistente.ferramentasWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 if (process.argv.includes('--enviar')) {
@@ -550,8 +601,6 @@ if (process.argv.includes('--enviar')) {
     // aponta as tools para os subworkflows e regrava o JSON exportado
     const crmId = await upsert(crmWorkflow, crmIdFile);
     if (process.argv.includes('--ativar')) await ativar(crmId);
-    const painelId = await upsert(painelWorkflow, painelIdFile);
-    if (process.argv.includes('--ativar')) await ativar(painelId);
     // assistente: ferramentas primeiro (as tools do agente apontam para ele)
     const ferramentasId = await upsert(assistente.ferramentasWorkflow, assistente.ferramentasIdFile);
     if (process.argv.includes('--ativar')) await ativar(ferramentasId);
@@ -561,7 +610,12 @@ if (process.argv.includes('--enviar')) {
       const wid = await upsert(wf, path.join(dir, arq));
       if (process.argv.includes('--ativar')) await ativar(wid);
     }
-    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId };
+    // áudios prontos: o subworkflow da tool enviar_audio e o webhook de transcrever
+    const audiosId = await upsert(audios.enviarWorkflow, audios.idFile);
+    if (process.argv.includes('--ativar')) await ativar(audiosId);
+    const transcreverId = await upsert(audios.transcreverWorkflow, path.join(dir, '.workflow-audios-transcrever-id'));
+    if (process.argv.includes('--ativar')) await ativar(transcreverId);
+    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
     const id = await upsert(workflow, path.join(dir, '.workflow-id'));

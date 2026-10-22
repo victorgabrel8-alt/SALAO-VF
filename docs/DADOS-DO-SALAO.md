@@ -1,6 +1,7 @@
 # Dados para pedir à dona do salão (terça)
 
 Mande esta lista para ela e preencha aqui. Isso alimenta a IA e o banco.
+Para preços, técnicas, cuidados e regras que a IA usa no atendimento, veja `docs/PERGUNTAS-PARA-A-GLEIDE.md`.
 
 ## Salão
 - Nome do salão:

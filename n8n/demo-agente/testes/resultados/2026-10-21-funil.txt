@@ -1,0 +1,49 @@
+Bateria IA — funil — 21/10/2026, 18:10:38
+
+=== funil-saudacao — Só cumprimenta ===
+> oi boa tarde
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 O que você está pensando em fazer no cabelo?
+> queria colocar mega
+IA: Depende bastante do cabelo e da técnica que você escolher, viu? Você já usa mega hair hoje ou seria a primeira vez?
+> nunca coloquei
+IA: Ah, que legal! Pra quem vai colocar pela primeira vez, o ideal é a Gleide dar uma olhadinha no seu cabelo pra ver qual técnica combina mais com o seu fio. Você quer colocar pra dar comprimento ou mais pra dar volume?
+> quero mais comprimento, meu cabelo ta no ombro
+IA: Entendi, do ombro já dá pra fazer uma transformação bem bonita! Pra Gleide conseguir te orientar melhor sobre qual cabelo e técnica seriam ideais, você consegue me mandar uma fotinho do seu cabelo de costas, com uma luz boa?
+  tokens: 5 chamadas, 59363 de entrada
+✅ passou
+
+=== funil-preco — Já chega perguntando preço ===
+> quanto sai pra colocar mega hair?
+IA: Oi! Aqui é a assistente da Gleide 😊 O valor total depende muito do tipo de cabelo, da técnica e de quantas gramas você vai precisar. Você já usa mega hair hoje ou seria a primeira vez?
+> já uso, de tela adesiva
+IA: Ah, entendi! Para a tela adesiva, a manutenção fica R$ 300 e se for só a aplicação é R$ 450. Você está precisando fazer a manutenção do seu ou quer colocar um cabelo novo?
+  tokens: 4 chamadas, 47690 de entrada
+✅ passou
+
+=== funil-quimica — Quer química ===
+> quero fazer uma progressiva
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A progressiva fica a partir de R$ 180, e o valor certinho depende do comprimento e do volume do seu cabelo. Você já usa mega hair ou está só com o seu cabelo natural hoje?
+> tenho sim, de queratina
+IA: Como você usa mega hair, a Gleide precisa dar uma olhadinha no seu cabelo antes de fazer a progressiva, só para garantir que a química não vai interferir na queratina e que seu fio está saudável, tá? Essa avaliação é rapidinha e gratuita. Para amanhã, quinta-feira, eu tenho horários de manhã entre 9h e 11h30, ou à tarde das 13h às 17h30. Qual horário fica melhor para você passar aqui?
+  [agenda] consultar 30 min
+  tokens: 3 chamadas, 35549 de entrada
+✅ passou
+
+=== funil-direto — Já diz que usa mega ===
+> quero fazer a manutenção da minha tela adesiva, tem sábado?
+IA: Oi! Aqui é a assistente da Gleide 😊 Pra sábado agora, dia 24, eu tenho horários de manhã, das 8h até as 10h30. Qual desses fica melhor pra você?
+  [agenda] consultar 90 min
+  tokens: 2 chamadas, 23584 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ funil-saudacao
+✅ funil-preco
+✅ funil-quimica
+✅ funil-direto
+
+4/4 passaram
+Tokens: 9 mensagens · 14 chamadas ao Gemini (1.6 por mensagem)
+  entrada: 166186 no total · 18465 por mensagem · 11870 por chamada
+  saída:   792 no total · 88 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

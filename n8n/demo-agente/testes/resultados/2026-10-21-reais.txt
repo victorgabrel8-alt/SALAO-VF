@@ -1,0 +1,36 @@
+Bateria IA — reais — 21/10/2026, 18:38:38
+
+=== jose — Conversa do José ===
+> Boa noite, já tenho mega hair, oque posso melhorar?
+IA: Boa noite! Aqui é a assistente da Gleide 😊 Que legal que você já usa mega! O que exatamente você sente que poderia melhorar no seu cabelo hoje?
+> [áudio] Ei, deixa eu perguntar, eh, eu tenho uma manutenção, eh, se eu pintar o cabelo ou coisa do tipo? Como é que fica essa parte? Você consegue explicar pra mim? Porque eu tô com receio de ir aí e aí depois eu não ter esse retorno, não ter essa manutenção, entendeu? E aí essa manutenção é cobrada também? Como é que funciona?
+IA: Dá pra fazer química sim, mas a Gleide precisa avaliar seu cabelo e a fixação antes pra ver se tá tudo certinho, tá? Sobre a manutenção, ela é cobrada à parte sim. Qual técnica você usa hoje?
+> [áudio] Então, eh, eu briguei com o meu amigo, sabe? E aí eu acabei, cara, eu tô todo machucado. O que que você me sugere? Porque assim, eu tô muito machucado.
+IA: Poxa, sinto muito que isso tenha acontecido! Como você está machucado, o ideal é procurar um médico ou um postinho de saúde pra se cuidar primeiro, viu? Aqui no salão a gente cuida só da parte do cabelo mesmo. Melhoras pra você!
+> [áudio] Então, o meu cabelo, meu cabelo é curtinho, sabe? Eu não sei, ele deve ter uns dois, três dedos. O que que será que dá pra me mexer nele?
+IA: Dá pra colocar mega em cabelo curtinho sim, mas como ele está bem curto, a Gleide precisa dar uma olhada pessoalmente pra ver qual técnica vai esconder melhor e ficar bem natural. Você quer marcar uma avaliação gratuita pra ela ver seu cabelo?
+  tokens: 5 chamadas, 61899 de entrada
+✅ passou
+
+=== victor — Conversa do Victor ===
+> Quero fazer mega hair
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Que legal! Você já usa mega hair hoje ou seria a primeira vez?
+> Já tenho mega hair
+IA: Ah, entendi! E qual técnica você está usando no momento? Você quer fazer a manutenção dele ou está pensando em trocar o cabelo?
+> [áudio] Eu tô pensando em fazer manutenção dele, só que eu não sei se essa manutenção aí, de fato, não sei se vocês fazem manutenção aí, não sei como é que funciona.
+IA: Fazemos sim! A Gleide faz a manutenção de todas as técnicas, e o ideal é fazer a cada 2 ou 3 meses pra proteger seu cabelo. Qual técnica você está usando hoje?
+> [foto da cliente] Foto caseira de frente/lado, porém o desfoque e o enquadramento muito próximo impedem uma visão clara de todo o cabelo. O que é visível mostra um cabelo curto, de cor escura, textura ondulada e volume aparentemente médio. Tô te mandando a foto do meu cabelo aí, e eu não sei qual que é o tamanho. Você consegue analisar pra mim?
+IA: Vi sua foto, Teste! Como está bem de pertinho, não consigo ver o comprimento todo, mas parece ser um ondulado bem bonito. Sobre o tamanho e a técnica que você está usando, a Gleide consegue confirmar certinho pra você aqui no salão. Você sabe me dizer se o seu mega é de fita, de amarrar ou de queratina?
+  [áudio] "de quanto em quanto tempo fazer a manutenção" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Então, normalmente 
+  tokens: 5 chamadas, 61663 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ jose
+✅ victor
+
+2/2 passaram
+Tokens: 8 mensagens · 10 chamadas ao Gemini (1.3 por mensagem)
+  entrada: 123562 no total · 15445 por mensagem · 12356 por chamada
+  saída:   494 no total · 62 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

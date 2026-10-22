@@ -100,25 +100,41 @@ for (const a of hist.filter((x) => x.status === 'realizado')) {
 const faltas = hist.filter((a) => a.status === 'faltou').length;
 if (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');
 if (ficha.observacoes) linhas.push('Observações da Gleide: ' + ficha.observacoes.replace(/\s*\n\s*/g, ' | '));
+// a Gleide chamou pelo CRM e esta mensagem é a resposta dela
+const alo = $('Supabase: último alô').first().json;
+if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+  ' a Gleide mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');
 return [{ json: { texto: linhas.join('\n') } }];
 ` }),
   );
   workflow.connections['Marcar como lida'] = main('Supabase: ficha da cliente');
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
-  workflow.connections['Supabase: histórico da cliente'] = main('Sobre esta cliente');
+  // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
+  workflow.nodes.push(supa('Supabase: último alô', 'GET',
+    'contatos?select=tipo,mensagem,criado_em,resultado&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
+    "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
+    "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
+  workflow.connections['Supabase: histórico da cliente'] = main('Supabase: último alô');
+  workflow.connections['Supabase: último alô'] = main('Sobre esta cliente');
   workflow.connections['Sobre esta cliente'] = main('Agente IA');
   const agente = achar(workflow, 'Agente IA').parameters.options;
-  agente.systemMessage += `
+  // o prompt do Victor já traz a ficha na seção 22: só acrescenta se ele não tiver
+  if (!agente.systemMessage.includes("$('Sobre esta cliente')")) agente.systemMessage += `
 
 SOBRE ESTA CLIENTE (ficha do salão, atualizada agora)
 {{ $('Sobre esta cliente').first().json.texto }}
 
 Use a ficha como quem já conhece a cliente:
 - Não pergunte o que já está na ficha (nome, se já tem mega hair, qual serviço fez).
-- Se ela tem horário marcado e pergunta "que horas é meu horário?", você sabe.
+- Se ela perguntar "que horas é meu horário?", use ver_agendamentos para confirmar o horário atual,
+  mesmo se a ficha já mostrar um horário.
 - Se o retorno de um serviço está chegando ou passou, pode lembrar com naturalidade UMA vez
   (ex.: "já tá chegando a hora da manutenção do seu mega hair, quer que eu veja um horário?").
 - Para marcar a volta de um serviço que ela já fez, ofereça a manutenção desse serviço.
+- Se a ficha tiver "ALÔ DE RETORNO" ou "ALÔ DE REATIVAÇÃO", ela está respondendo à Gleide. Se ela
+  topar ("quero", "sim", "pode ver"), NÃO pergunte qual serviço: use consultar_horarios_livres para a
+  manutenção/serviço citado no alô (ou o último que ela fez) e já ofereça 2 horários. Se ela disser que
+  não pode agora, responda com carinho, sem insistir. Não repita o texto do alô.
 - Nunca leia a ficha para ela nem diga "no sistema consta". Observações da Gleide (alergias, preferências) são para você levar em conta, não para repetir.`;
   entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
     `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,
@@ -133,6 +149,31 @@ Use a ficha como quem já conhece a cliente:
     `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${D}.telefone`)} }}`,
     '{ ia_pausada_ate: null, motivo_pausa: null }'));
   workflow.connections['Pausa: remover'] = main('Supabase: reativar IA');
+
+  // ---------- Principal: o "alô" de retorno que a Gleide manda pelo CRM não é "a dona assumiu" ----------
+  // O CRM grava o alô em contatos e abre o WhatsApp do salão com o texto pronto; quando ela envia, chega
+  // aqui como fromMe. Se o texto bate com um alô gravado nas últimas 2 h, só registra a saída (sem pausa):
+  // a resposta da cliente tem de cair na IA, que já oferece o horário (ver "Sobre esta cliente").
+  workflow.nodes.push(supa('Supabase: alô recente', 'GET',
+    'contatos?select=mensagem,clientes!inner(telefone)&order=criado_em.desc&limit=1' +
+    '&empresa_id=eq.{{ ' + EMPRESA + ' }}&clientes.telefone=eq.{{ ' + TEL_BR(D + '.telefone') + ' }}' +
+    "&criado_em=gte.{{ $now.minus(2, 'hours').toUTC().toISO() }}", null));
+  const SO_LETRAS = "(s) => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 60)";
+  workflow.nodes.push(node('É o alô do CRM?', 'n8n-nodes-base.if', 2.2, [0, 0], {
+    conditions: {
+      options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+      conditions: [{ id: 'alo1', operator: { type: 'boolean', operation: 'true', singleValue: true }, rightValue: '',
+        leftValue: '={{ (() => { const n = ' + SO_LETRAS + '; const a = n($json.mensagem); return a.length > 10 && a === n(' + D + '.texto); })() }}' }],
+      combinator: 'and',
+    },
+    options: {},
+  }));
+  workflow.nodes.push(supa('Supabase: registrar alô', 'POST', 'rpc/n8n_registrar_saida',
+    '{ p_empresa_id: ' + EMPRESA + ', p_telefone: ' + TEL_BR(D + '.telefone') + ', p_conteudo: ' + D + ".texto, p_autor: 'humano', p_tipo: 'texto', p_wa_message_id: " + D + '.msgId }'));
+  const naoEhAlo = workflow.connections['Comando #ia?'].main[1];
+  workflow.connections['Comando #ia?'].main[1] = [{ node: 'Supabase: alô recente', type: 'main', index: 0 }];
+  workflow.connections['Supabase: alô recente'] = main('É o alô do CRM?');
+  workflow.connections['É o alô do CRM?'] = { main: [[{ node: 'Supabase: registrar alô', type: 'main', index: 0 }], naoEhAlo] };
 
   // ---------- Pausa: transferir_para_humano ----------
   const P = "$('Recebe pedido do agente').item.json";

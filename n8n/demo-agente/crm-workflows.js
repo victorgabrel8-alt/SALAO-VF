@@ -1,15 +1,10 @@
 // CRM da demo: ficha por cliente no Postgres (banco "crm", tabela "clientes" — ver crm-schema.sql).
 // Chamado pelo montar-workflow.js: encaixa os nós de CRM nos workflows existentes e devolve 2 workflows novos
-// (subworkflow da tool "anotar_no_crm" e o painel web em /webhook/crm).
+// (subworkflow da tool "anotar_no_crm"). O painel web antigo (/webhook/crm) foi removido: o CRM é o app em crm/.
 //
 // Etapas: novo → conversa → agendado → humano → atendido / perdido
 //   novo/conversa  = automático a cada mensagem      agendado = criar/remarcar na agenda deu certo
-//   humano         = IA transferiu                    atendido/perdido = a Gleide marca no painel
-
-const ETAPAS = [
-  ['novo', 'Novo', '#64748b'], ['conversa', 'Em conversa', '#2563eb'], ['agendado', 'Agendado', '#16a34a'],
-  ['humano', 'Com humano', '#dc2626'], ['atendido', 'Atendido', '#7c3aed'], ['perdido', 'Perdido', '#9ca3af'],
-];
+//   humano         = IA transferiu                    atendido/perdido = (era no painel antigo, removido)
 
 module.exports = ({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId }) => {
   const PG = { postgres: { id: env.N8N_CRM_CRED_ID || '', name: 'CRM Postgres' } };
@@ -107,87 +102,9 @@ ON CONFLICT (telefone) DO UPDATE SET
   ligar(crmWorkflow, 'Recebe pedido do agente', 'Anotar na ficha');
   ligar(crmWorkflow, 'Anotar na ficha', 'Resposta');
 
-  // ---------- 5. Painel web (GET /webhook/crm  ·  POST /webhook/crm-salvar) ----------
-  const HTML = `
-const ETAPAS = ${JSON.stringify(ETAPAS)};
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = (d, f) => d ? DateTime.fromISO(new Date(d).toISOString()).setZone('America/Cuiaba').setLocale('pt-BR').toFormat(f) : '';
-const tel = (t) => String(t).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3');
-const rows = $input.all().map((i) => i.json).filter((r) => r.telefone);
-const col = (k) => rows.filter((r) => r.etapa === k);
-const card = (r) => \`<div class="card">
-  <div class="top"><b>\${esc(r.nome || 'Sem nome')}</b><a href="https://wa.me/\${esc(r.telefone)}" target="_blank">\${esc(tel(r.telefone))}</a></div>
-  \${r.interesse ? \`<div class="int">\${esc(r.interesse)}</div>\` : ''}
-  \${r.agendamento ? \`<div class="ag">📅 \${fmt(r.agendamento, "ccc dd/LL 'às' HH'h'mm")}\${r.servico_agendado ? ' · ' + esc(r.servico_agendado) : ''}</div>\` : ''}
-  \${r.resumo ? \`<div class="res">\${esc(r.resumo)}</div>\` : ''}
-  <div class="meta">Último contato \${fmt(r.ultimo_contato, "dd/LL HH'h'mm")} · \${r.total_mensagens} msg</div>
-  <form method="post" action="/webhook/crm-salvar">
-    <input type="hidden" name="telefone" value="\${esc(r.telefone)}">
-    <select name="etapa">\${ETAPAS.map(([k, n]) => \`<option value="\${k}"\${k === r.etapa ? ' selected' : ''}>\${n}</option>\`).join('')}</select>
-    <textarea name="observacoes" placeholder="Anotações da Gleide…">\${esc(r.observacoes)}</textarea>
-    <button>Salvar</button>
-  </form>
-</div>\`;
-const html = \`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CRM Toda Bonita</title><style>
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,Segoe UI,Arial;background:#f4f1ee;color:#1f2937}
-header{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:14px 18px;background:#3b2a25;color:#fff;flex-wrap:wrap}
-header h1{font-size:18px;margin:0}header .n{font-size:13px;opacity:.85}header a{color:#fff;background:#ffffff22;padding:6px 12px;border-radius:8px;text-decoration:none;font-size:13px}
-.board{display:flex;gap:12px;padding:14px;overflow-x:auto;align-items:flex-start}
-.col{min-width:270px;max-width:300px;flex:1;background:#ebe5df;border-radius:12px;padding:10px}
-.col h2{font-size:14px;margin:2px 4px 10px;display:flex;justify-content:space-between}.col h2 span{border-radius:10px;padding:0 8px;color:#fff;font-size:12px;line-height:20px}
-.card{background:#fff;border-radius:10px;padding:10px;margin-bottom:10px;box-shadow:0 1px 2px #0001;font-size:13px}
-.top{display:flex;justify-content:space-between;gap:8px;margin-bottom:6px}.top a{color:#16a34a;text-decoration:none;white-space:nowrap}
-.int{background:#fdf2e9;border-radius:6px;padding:4px 6px;margin-bottom:6px}.ag{font-weight:600;margin-bottom:6px}
-.res{color:#4b5563;margin-bottom:6px}.meta{color:#9ca3af;font-size:11px;margin-bottom:6px}
-form{display:grid;gap:6px}select,textarea,button{font:inherit;font-size:12px;border:1px solid #ddd;border-radius:6px;padding:5px}
-textarea{min-height:34px;resize:vertical}button{background:#3b2a25;color:#fff;border:0;cursor:pointer}
-.vazio{color:#9ca3af;font-size:12px;text-align:center;padding:12px}
-</style></head><body>
-<header><div><h1>CRM · Toda Bonita Mega Hair</h1><div class="n">\${rows.length} \${rows.length === 1 ? 'cliente' : 'clientes'} · atualizado \${fmt(new Date(), "dd/LL HH'h'mm")}</div></div><a href="/webhook/crm">↻ Atualizar</a></header>
-<div class="board">\${ETAPAS.map(([k, n, c]) => \`<section class="col"><h2>\${n}<span style="background:\${c}">\${col(k).length}</span></h2>\${col(k).map(card).join('') || '<div class="vazio">—</div>'}</section>\`).join('')}</div>
-</body></html>\`;
-return [{ json: { html } }];`;
-
-  const painelWorkflow = {
-    name: 'CRM - Painel',
-    nodes: [
-      node('Abrir painel', 'n8n-nodes-base.webhook', 2, [0, 0], { httpMethod: 'GET', path: 'crm', responseMode: 'responseNode', options: {} },
-        { webhookId: '4e5f6071-8293-4a4b-8c3d-f40516273849' }),
-      sql('Ler clientes', `SELECT * FROM clientes WHERE telefone NOT LIKE 'teste-%' ORDER BY COALESCE(agendamento, ultimo_contato) DESC`, '[]', { alwaysOutputData: true }),
-      node('Montar painel', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: HTML.trim() }),
-      node('Responder painel', 'n8n-nodes-base.respondToWebhook', 1.1, [0, 0], {
-        respondWith: 'text', responseBody: '={{ $json.html }}',
-        options: { responseHeaders: { entries: [{ name: 'Content-Type', value: 'text/html; charset=utf-8' }] } },
-      }),
-      node('Salvar ficha (form)', 'n8n-nodes-base.webhook', 2, [0, 300], { httpMethod: 'POST', path: 'crm-salvar', responseMode: 'responseNode', options: {} },
-        { webhookId: '5f607182-93a4-4b5c-9d4e-051627384950' }),
-      sql('Salvar etapa e anotações',
-        `UPDATE clientes SET etapa = $2, observacoes = NULLIF($3, ''), atualizado_em = now() WHERE telefone = $1`,
-        "[ $json.body.telefone, $json.body.etapa, $json.body.observacoes || '' ]"),
-      // volta ao painel com GET (o "redirect" do n8n usa 307 e repetiria o POST)
-      node('Voltar ao painel', 'n8n-nodes-base.respondToWebhook', 1.1, [0, 300], {
-        respondWith: 'text',
-        responseBody: '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=/webhook/crm"><p style="font-family:sans-serif">Salvo! Voltando ao painel…</p>',
-        options: { responseHeaders: { entries: [{ name: 'Content-Type', value: 'text/html; charset=utf-8' }] } },
-      }),
-    ],
-    connections: {},
-    settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all' },
-  };
-  ligar(painelWorkflow, 'Abrir painel', 'Ler clientes');
-  ligar(painelWorkflow, 'Ler clientes', 'Montar painel');
-  ligar(painelWorkflow, 'Montar painel', 'Responder painel');
-  ligar(painelWorkflow, 'Salvar ficha (form)', 'Salvar etapa e anotações');
-  ligar(painelWorkflow, 'Salvar etapa e anotações', 'Voltar ao painel');
-
   // posições (visual)
   const pos = (wf, p) => wf.nodes.forEach((n) => { if (p[n.name]) n.position = p[n.name]; });
   pos(crmWorkflow, { 'Recebe pedido do agente': [0, 0], 'Anotar na ficha': [220, 0], 'Resposta': [440, 0] });
-  pos(painelWorkflow, {
-    'Abrir painel': [0, 0], 'Ler clientes': [220, 0], 'Montar painel': [440, 0], 'Responder painel': [660, 0],
-    'Salvar ficha (form)': [0, 300], 'Salvar etapa e anotações': [220, 300], 'Voltar ao painel': [440, 300],
-  });
 
-  return { crmWorkflow, painelWorkflow };
+  return { crmWorkflow };
 };

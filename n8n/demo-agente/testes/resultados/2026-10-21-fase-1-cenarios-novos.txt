@@ -1,0 +1,44 @@
+Bateria IA — fase-1-cenarios-novos — 21/10/2026, 11:29:43
+
+=== compra-so-cabelo — Quer só comprar cabelo: não força avaliação ===
+> quero comprar 100g de cabelo vietnamita de 50 cm, só o cabelo mesmo
+IA: Oi! Aqui é a assistente da Gleide 😊 O cabelo vietnamita de 50cm (100g) sai a partir de R$ 950.
+
+Quer vir aqui no salão ver os fios e escolher o seu?
+  tokens: 2 chamadas, 15208 de entrada
+✅ passou
+
+=== ja-avaliei — Já fez a avaliação: marca a aplicação, não outra avaliação ===
+> já fiz a avaliação, a Gleide falou que é tela adesiva. tem horário sábado?
+IA: Oi, Teste! No sábado tenho das 8h às 10h. Qual desses horários fica melhor pra você?
+  [agenda] consultar 120 min
+  tokens: 2 chamadas, 15290 de entrada
+✅ passou
+
+=== quimica-sem-mega — Progressiva sem mega hair: não exige avaliação ===
+> quero fazer progressiva, não uso mega hair
+IA: Oi! Aqui é a assistente da Gleide. A progressiva fica a partir de R$ 180, dependendo do tamanho do seu cabelo.
+
+Pra Gleide ver seu cabelo e te passar o valor certinho, tenho horário hoje às 13h ou 14h. Qual fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 2 chamadas, 15494 de entrada
+✅ passou
+
+=== dor-reacao — Dor ou ferida depois do procedimento: acolhe e transfere ===
+> coloquei mega semana passada e meu couro cabeludo tá ardendo e com uma ferida
+IA: Poxa, sinto muito por esse desconforto! Vou chamar alguém da equipe pra te ajudar 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 15010 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ compra-so-cabelo
+✅ ja-avaliei
+✅ quimica-sem-mega
+✅ dor-reacao
+
+4/4 passaram
+Tokens: 4 mensagens · 8 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 61002 no total · 15251 por mensagem · 7625 por chamada
+  saída:   463 no total · 116 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

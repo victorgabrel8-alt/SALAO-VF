@@ -38,11 +38,14 @@ module.exports = (principal, agenda, pausa) => {
     'criar_agendamento': [660, 1100], 'remarcar_agendamento': [800, 1100], 'cancelar_agendamento': [940, 1100], 'transferir_para_humano': [1080, 1100],
     'anotar_no_crm': [1220, 1100], 'CRM: registrar contato': [0, 980],
     // 6. Resposta humanizada
-    'Quebrar mensagens': [1440, 800], 'Um balão por vez': [1660, 800], 'Trava: liberar': [1880, 720], 'Pausa (lendo/respirando)': [1880, 940], 'Digitando...': [2100, 940], 'Enviar mensagem': [2320, 940],
+    'Quebrar mensagens': [1440, 800], 'Tem texto pra enviar?': [1550, 680], 'Um balão por vez': [1660, 800], 'Trava: liberar': [1880, 720], 'Pausa (lendo/respirando)': [1880, 940], 'Digitando (blocos de 8s)': [2100, 1060], 'Digitando...': [2100, 940], 'Enviar mensagem': [2320, 940],
     // Supabase (banco do CRM)
     'Supabase: ficha da cliente': [300, 980], 'Supabase: histórico da cliente': [300, 1180], 'Sobre esta cliente': [420, 980],
+    'Supabase: áudios do salão': [420, 1180], 'Supabase: áudios já enviados': [540, 1180], 'Áudios disponíveis': [540, 980], 'enviar_audio': [1360, 1100],
     'Supabase: registrar entrada': [2060, 220], 'Pausa: alinhar com o CRM': [2280, 220], 'Supabase: registrar saída': [2540, 940],
     'Supabase: dona respondeu': [1160, -280], 'Supabase: reativar IA': [1160, -440],
+    'Supabase: alô recente': [940, -160], 'É o alô do CRM?': [1160, -160], 'Supabase: registrar alô': [1380, -160],
+    'Supabase: último alô': [300, 1380],
   }, [
     nota(-60, -140, 680, 320, 7, '## 1. Entrada\nMensagem do WhatsApp chega da Evolution.\nExtrai telefone, nome, tipo e texto.'),
     nota(640, -520, 540, 340, 3, '## Sua resposta pelo celular\nMensagem SUA (fromMe) numa conversa → **pausa a IA 12 h** para esse número.\nMandou `#ia` → tira a pausa.'),

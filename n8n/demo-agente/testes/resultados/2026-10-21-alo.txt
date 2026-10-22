@@ -1,0 +1,24 @@
+Bateria IA — alo — 21/10/2026, 13:56:39
+
+=== cliente-nova — Primeiro contato não é tratado como cliente antiga ===
+> oi, boa tarde!
+IA: Oi, Teste! Boa tarde. Aqui é a assistente da Gleide, do Toda Bonita 😊 Tudo certo com você?
+  tokens: 1 chamadas, 8835 de entrada
+✅ passou
+
+=== resposta-ao-alo — Responde ao alô de retorno do CRM: já oferece horário da manutenção ===
+> quero sim
+IA: Show! Pra amanhã, quinta-feira, eu tenho às 9h ou às 13h. Qual desses fica melhor pra você, Teste?
+  [agenda] consultar 180 min
+  tokens: 3 chamadas, 27763 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ cliente-nova
+✅ resposta-ao-alo
+
+2/2 passaram
+Tokens: 2 mensagens · 4 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 36598 no total · 18299 por mensagem · 9150 por chamada
+  saída:   161 no total · 81 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

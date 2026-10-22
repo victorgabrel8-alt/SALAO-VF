@@ -1,0 +1,57 @@
+Bateria IA — conversas-chatgpt — 21/10/2026, 17:45:21
+
+=== indecisa-preco — Quer colocar mega, pergunta preço e vai descobrindo ===
+> oi boa tarde
+IA: Olá, boa tarde! Tudo bem? Sou a secretária virtual da Gleide, aqui do salão Toda Bonita Mega Hair. 😊
+> quanto fica pra colocar mega hair?
+IA: O valor do mega hair depende de alguns detalhes, como o tipo de cabelo que você escolher, a quantidade de gramas, o comprimento e também a técnica de aplicação que a Gleide indicar pra você. Pra eu conseguir te orientar melhor, você busca mais comprimento ou gostaria de dar mais volume ao seu cabelo?
+> quero mais comprimento, meu cabelo ta no ombro
+IA: Entendi! Como seu cabelo está no ombro, para alongar com um acabamento bem natural, a gente precisa avaliar a quantidade de fios e o comprimento que você deseja. Você já tem uma ideia de até onde gostaria que o cabelo chegasse? Se quiser me mandar uma foto do seu cabelo de costas, com uma boa luz, ajuda bastante a Gleide a ter uma noção melhor.
+> e quanto é o cabelo brasileiro?
+IA: O cabelo brasileiro é maravilhoso, é o nosso fio mais fino e leve, o que dá um movimento bem natural. Para você ter uma ideia de valores, a nossa referência para 100 gramas de cabelo brasileiro com 50 cm começa em R$ 1.300. Esse valor pode variar dependendo do comprimento que você escolher e também da cor. Você já pensou em qual comprimento gostaria? Temos opções mais curtas ou bem longas também.
+> acho que uns 100g de 50 cm
+IA: Para 100g de cabelo brasileiro com 50 cm, o valor do cabelo fica a partir de R$ 1.300,00. Além do valor do cabelo, tem também o valor da mão de obra, que depende da técnica que a Gleide indicar como a melhor para o seu fio. Qual é a cor do seu cabelo hoje? Se você quiser, podemos marcar uma avaliação gratuita aqui no salão. Assim a Gleide olha seu cabelo, define a técnica certinha e já te passa o orçamento final com tudo incluso. O que acha?
+  [áudio] "de quanto em quanto tempo fazer a manutenção" -> ÁUDIO ENVIADO ("de quanto em quanto tempo fazer a manutenção"). A cliente acabou de receber este áudio da Glei
+  tokens: 6 chamadas, 65325 de entrada
+✅ passou
+
+=== duvidas — Dúvidas técnicas e de cuidado ===
+> qual a diferença da queratina pra tela adesiva? qual dura mais?
+IA: A principal diferença é a forma de aplicação: na queratina, a Gleide fixa mecha por mecha com uma cola aquecida, o que dá muito movimento, mas leva umas 4 horas pra colocar. Já a tela adesiva são faixas presas por um adesivo bem fininho e discreto, e a aplicação é super rápida, cerca de 2 horas. Sobre a duração, as duas técnicas costumam precisar de manutenção a cada 2 ou 3 meses, dependendo do crescimento do seu cabelo. Você busca um resultado com mais volume ou quer alongar o comprimento?
+> e mega hair estraga o cabelo?
+IA: Essa é uma dúvida muito comum! O mega hair não estraga o cabelo, desde que seja usada a técnica certa para o seu fio e que você faça as manutenções no tempo certinho. O segredo é justamente essa avaliação inicial que a Gleide faz para ver a saúde do seu cabelo. Você já usa algum tipo de química ou o seu cabelo é natural?
+> posso ir na piscina depois de colocar?
+IA: Pode sim, mas cada técnica exige um cuidado diferente com o cloro e o sal para manter os fios bonitos e a fixação em dia. A Gleide passa um guia completo de cuidados logo após a aplicação para você não ter erro. Você costuma frequentar piscina com muita frequência?
+  [áudio] "de quanto em quanto tempo fazer a manutenção" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Então, normalmente 
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, Flor, essa é 
+  tokens: 5 chamadas, 56357 de entrada
+✅ passou
+
+=== nao-sabe — Não sabe qual fica melhor ===
+> queria colocar mega mas nao sei qual fica melhor em mim
+IA: Oi! Tudo bem? Que legal que você está pensando em colocar mega, ele transforma a autoestima, né? Pra eu te ajudar a entender o que ficaria melhor, você busca mais comprimento ou quer dar aquele volume no seu cabelo? Se você quiser me mandar uma fotinha dele de costas, com uma luz boa, eu consigo te orientar melhor sobre as opções, tá bom?
+> quero volume, meu cabelo é bem fininho
+IA: Entendi! Para cabelos mais fininhos, a gente costuma indicar técnicas bem discretas, como a tela adesiva ou a queratina, que não pesam e dão um acabamento bem natural. Como o seu foco é volume, você sente que ele é ralo mais nas pontas ou no comprimento todo? E qual é a cor do seu cabelo hoje?
+> [foto da cliente] Foto caseira de costas: cabelo liso castanho escuro, um pouco abaixo do ombro, volume ralo.
+IA: Vi sua foto! Seu cabelo tem um tom de castanho bem bonito e o comprimento facilita muito pra dar o volume que você procura. Como ele é fininho, o ideal é usar uma técnica que não pese, e o cabelo brasileiro costuma ser uma ótima opção por ser mais leve e natural. A Gleide define a quantidade exata de gramas e a melhor técnica na avaliação, mas pra você ter uma ideia de referência, o nosso cabelo brasileiro de 50 cm começa em R$ 1.300 (para 100g), e como você quer apenas volume, pode ser que use menos que isso. Quer agendar uma avaliação gratuita pra ela ver seu cabelo de pertinho e te passar o orçamento exato?
+  tokens: 5 chamadas, 55023 de entrada
+✅ passou
+
+=== decidida — Decidida: manutenção ===
+> quero marcar manutenção da tela adesiva pra sábado, quanto fica?
+IA: A manutenção da tela adesiva fica R$ 300 na nossa tabela de referência. Para este sábado, dia 24, a Gleide tem horários disponíveis na parte da manhã, entre 08h e 10h30. Qual desses horários fica melhor para você? Ah, e posso deixar agendado no nome de Teste mesmo?
+  [agenda] consultar 90 min
+  tokens: 2 chamadas, 22032 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ indecisa-preco
+✅ duvidas
+✅ nao-sabe
+✅ decidida
+
+4/4 passaram
+Tokens: 12 mensagens · 18 chamadas ao Gemini (1.5 por mensagem)
+  entrada: 198737 no total · 16561 por mensagem · 11041 por chamada
+  saída:   1524 no total · 127 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

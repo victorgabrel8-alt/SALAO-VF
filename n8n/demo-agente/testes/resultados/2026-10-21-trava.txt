@@ -1,0 +1,33 @@
+Bateria IA — trava — 21/10/2026, 15:25:41
+
+=== cliente-que-ja-veio — Cliente que fez mega hair pergunta da manutenção (usa a ficha) ===
+> quando eu preciso voltar pra fazer a manutenção?
+IA: Oi, Teste! A manutenção do mega de queratina costuma ser feita a cada 2 ou 3 meses pra manter o seu cabelo natural bem protegido, então a sua seria lá pro comecinho de dezembro, por volta do dia 5. Quer que eu já veja um horário pra você?
+  [áudio] "de quanto em quanto tempo fazer a manutenção" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Então, normalmente 
+  tokens: 2 chamadas, 21149 de entrada
+✅ passou
+
+=== quimica-sem-mega — Progressiva sem mega hair: não exige avaliação ===
+> quero fazer progressiva, não uso mega hair
+IA: Oi! Aqui é a assistente da Gleide 😊 A progressiva fica a partir de R$ 180, o valor certinho depende do tamanho e volume do seu cabelo. Pra amanhã, quinta-feira, tenho horário às 9h ou à tarde entre 13h e 15h. Qual desses fica melhor pra você?
+  [agenda] consultar 180 min
+  tokens: 2 chamadas, 21266 de entrada
+✅ passou
+
+=== audio-estraga — Pergunta se mega estraga: usa o áudio da Gleide ===
+> mega hair estraga o cabelo?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Olha, essa é uma dúvida muito comum, mas se for bem aplicado e você fizer a manutenção no prazo, o mega hair não estraga o cabelo não, ele até ajuda a proteger o fio enquanto cresce. O segredo é escolher a técnica certa pro seu tipo de cabelo, e isso a Gleide vê certinho numa avaliação gratuita aqui no salão, quer marcar um horário pra ela olhar o seu?
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, Flor, essa é 
+  tokens: 2 chamadas, 21085 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ cliente-que-ja-veio
+✅ quimica-sem-mega
+✅ audio-estraga
+
+3/3 passaram
+Tokens: 3 mensagens · 6 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 63500 no total · 21167 por mensagem · 10583 por chamada
+  saída:   430 no total · 143 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

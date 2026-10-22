@@ -1,0 +1,19 @@
+Bateria IA — audios — 21/10/2026, 12:00:54
+
+=== audio-estraga — Pergunta se mega estraga: usa o áudio da Gleide ===
+> mega hair estraga o cabelo?
+IA: Essa é uma dúvida bem comum! O ideal é fazer uma avaliação pra Gleide ver seu fio e indicar a melhor técnica pra não prejudicar seu cabelo. 
+
+Quer marcar uma avaliação gratuita?
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, Flor, essa é 
+  tokens: 2 chamadas, 17618 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ audio-estraga
+
+1/1 passaram
+Tokens: 1 mensagens · 2 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 17618 no total · 17618 por mensagem · 8809 por chamada
+  saída:   105 no total · 105 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

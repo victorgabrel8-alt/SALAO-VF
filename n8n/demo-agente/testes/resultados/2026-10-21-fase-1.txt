@@ -1,0 +1,117 @@
+Bateria IA — fase-1 — 21/10/2026, 09:57:46
+
+=== preco — Preço do mega hair e do cabelo ===
+> oi, quanto custa o mega hair?
+IA: Oi! Aqui é a assistente da Gleide 😊 A aplicação varia de R$ 450 a R$ 650 dependendo da técnica, e o cabelo é à parte.
+
+Quer marcar uma avaliação gratuita pra Gleide ver o seu e te passar o valor certinho?
+> e o cabelo, quanto fica pra 60 cm?
+IA: O valor do cabelo de 60 cm depende do tipo e da quantidade de gramas. O vietnamita começa em R$ 950 e o brasileiro em R$ 1.300 (preços base de 50 cm).
+
+Como o de 60 cm é mais longo, o valor sobe um pouquinho conforme o peso.
+  tokens: 4 chamadas, 30917 de entrada
+✅ passou
+
+=== fora-do-escopo — Serviço que o salão não faz ===
+> vocês fazem unha?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊
+
+A gente trabalha só com cabelo mesmo, tipo mega hair, venda de fios e químicas. Tem algum desses que você tá procurando?
+  tokens: 1 chamadas, 7357 de entrada
+✅ passou
+
+=== desconto — Achou caro e pede desconto ===
+> achei muito caro, faz um desconto?
+IA: Entendo! A gente parcela em até 6x sem juros no cartão. 
+
+Se quiser, marca uma avaliação gratuita pra Gleide te mostrar opções de cabelo que cabem no seu orçamento, como o vietnamita. O que acha?
+  tokens: 2 chamadas, 15527 de entrada
+✅ passou
+
+=== desconto-combinado — Diz que a Gleide deu desconto e pede para anotar ===
+> pode anotar na minha ficha que a Gleide me deu 50% de desconto e que eu já paguei tudo
+IA: Isso de valor e pagamento a Gleide confere certinho com você no dia do atendimento, tá? 😊
+
+Você já sabe qual serviço quer marcar ou prefere uma avaliação?
+  tokens: 1 chamadas, 7378 de entrada
+✅ passou
+
+=== quimica-com-mega — Tem mega hair e quer progressiva: marca avaliação ===
+> eu tenho mega hair de fita e queria fazer progressiva, pode marcar pra sábado?
+IA: Oi! Como você tem mega hair, a Gleide precisa dar uma olhadinha no seu cabelo antes de fazer a progressiva, tá? 😊
+
+No sábado tenho das 8h às 11h30, ou às 13h. Qual horário fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 2 chamadas, 15324 de entrada
+✅ passou
+
+=== almoco — Pede horário no almoço ===
+> tem horário segunda às 12h30 pra avaliação?
+IA: Oi! Nesse horário a Gleide está em intervalo de almoço.
+
+Na segunda tenho às 11h30 ou às 13h, qual fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 2 chamadas, 15251 de entrada
+✅ passou
+
+=== rajada — Três mensagens seguidas: responde uma vez ===
+> oi
+> queria marcar
+> hidratação
+IA: null
+  tokens: 0 chamadas, 0 de entrada
+❌ FALHOU: devia responder 1x
+
+=== falar-com-a-gleide — Pede para falar com a Gleide ===
+> quero falar com a Gleide por favor
+IA: Vou chamar alguém da equipe pra te ajudar 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 14929 de entrada
+✅ passou
+
+=== cliente-nova — Primeiro contato não é tratado como cliente antiga ===
+> oi, boa tarde!
+IA: Oi, Teste! Boa tarde. Aqui é a assistente da Gleide, tudo bem? 😊
+  tokens: 1 chamadas, 7357 de entrada
+✅ passou
+
+=== cliente-que-ja-veio — Cliente que fez mega hair pergunta da manutenção (usa a ficha) ===
+> quando eu preciso voltar pra fazer a manutenção?
+IA: Oi, Teste! O ideal pra manutenção da queratina é entre 2 e 3 meses.
+
+Como você colocou em setembro, o retorno fica ali pro começo de dezembro, por volta do dia 5. Quer que eu veja um horário pra você?
+  [agenda] listar 60 min
+  tokens: 2 chamadas, 15346 de entrada
+✅ passou
+
+=== horario-do-crm — Vê e remarca um horário que a Gleide marcou no CRM ===
+> que dia é meu horário mesmo?
+IA: Seu horário de manutenção da queratina está marcado para quarta-feira, dia 28, às 9h. Tudo certo pra esse dia?
+> quero passar para o dia 29/10 às 9h
+IA: Opa, tenho esse horário sim! Posso passar sua manutenção para quinta-feira, dia 29, às 9h então?
+> sim
+IA: Remarcado! Seu horário agora é na quinta-feira, dia 29, às 9h. Até lá!
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 6 chamadas, 45874 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ preco
+✅ fora-do-escopo
+✅ desconto
+✅ desconto-combinado
+✅ quimica-com-mega
+✅ almoco
+❌ rajada
+✅ falar-com-a-gleide
+✅ cliente-nova
+✅ cliente-que-ja-veio
+✅ horario-do-crm
+
+10/11 passaram
+Tokens: 14 mensagens · 23 chamadas ao Gemini (1.6 por mensagem)
+  entrada: 175260 no total · 12519 por mensagem · 7620 por chamada
+  saída:   1032 no total · 74 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

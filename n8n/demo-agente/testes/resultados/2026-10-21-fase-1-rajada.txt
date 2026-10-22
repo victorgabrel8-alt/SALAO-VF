@@ -1,0 +1,21 @@
+Bateria IA — fase-1-rajada — 21/10/2026, 10:06:58
+
+=== rajada — Três mensagens seguidas: responde uma vez ===
+> oi
+> queria marcar
+> hidratação
+IA: Oi! Aqui é a assistente da Gleide 😊
+
+Pra hoje eu tenho horário às 13h ou 13h30 pra hidratação. Esse horário fica bom pra você ou prefere outro dia?
+  [agenda] consultar 60 min
+  tokens: 3 chamadas, 22760 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ rajada
+
+1/1 passaram
+Tokens: 1 mensagens · 3 chamadas ao Gemini (3.0 por mensagem)
+  entrada: 22760 no total · 22760 por mensagem · 7587 por chamada
+  saída:   135 no total · 135 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

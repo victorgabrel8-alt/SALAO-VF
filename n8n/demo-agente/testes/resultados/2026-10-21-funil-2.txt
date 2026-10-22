@@ -1,0 +1,42 @@
+Bateria IA — funil-2 — 21/10/2026, 18:15:53
+
+=== funil-saudacao — Só cumprimenta ===
+> oi boa tarde
+IA: Boa tarde, Teste! Aqui é a assistente da Gleide 😊 O que você está pensando em fazer no cabelo?
+> queria colocar mega
+IA: Ah, que legal! O valor total depende bastante do tipo de cabelo que você escolher e da técnica de aplicação. Você já usa mega hair hoje ou seria a sua primeira vez?
+> nunca coloquei
+IA: Entendi! Pra gente começar a entender o que ficaria melhor pra você, você busca mais comprimento ou só dar um volume no seu cabelo?
+> quero mais comprimento, meu cabelo ta no ombro
+IA: Ah, entendi! Sair do ombro pra um cabelão dá uma diferença linda. Pra eu conseguir te orientar melhor, consegue me mandar uma fotinho do seu cabelo de costas, com uma luz boa? Isso ajuda muito a ver o volume e a cor dele.
+  tokens: 5 chamadas, 59403 de entrada
+✅ passou
+
+=== funil-preco — Já chega perguntando preço ===
+> quanto sai pra colocar mega hair?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 O valor total depende bastante do tipo de cabelo, da quantidade de gramas e da técnica que a gente usar, viu? Você já usa mega hair hoje ou seria a primeira vez?
+> já uso, de tela adesiva
+IA: Ah, entendi! A manutenção da tela adesiva aqui no salão fica R$ 300. Você está precisando fazer a manutenção do seu ou estava pensando em colocar um cabelo novo?
+  tokens: 4 chamadas, 48177 de entrada
+✅ passou
+
+=== funil-quimica — Quer química ===
+> quero fazer uma progressiva
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A progressiva fica a partir de R$ 180, mas o valor certinho depende do comprimento e do volume do seu cabelo. Você usa mega hair hoje?
+> tenho sim, de queratina
+IA: Ah, entendi! Como você usa mega de queratina, a Gleide precisa dar uma olhadinha no seu cabelo antes de fazer a progressiva, só pra garantir que tá tudo certinho com a fibra e com a fixação. Amanhã eu tenho horários de manhã das 9h às 11h30, ou à tarde das 13h às 17h30. Qual horário fica melhor pra você passar aqui pra essa avaliação gratuita?
+  [agenda] consultar 30 min
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO: a cliente não perguntou sobre "mega hair prejudica o cabelo" nesta mensagem. Responda em te
+  tokens: 4 chamadas, 48850 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ funil-saudacao
+✅ funil-preco
+✅ funil-quimica
+
+3/3 passaram
+Tokens: 8 mensagens · 13 chamadas ao Gemini (1.6 por mensagem)
+  entrada: 156430 no total · 19554 por mensagem · 12033 por chamada
+  saída:   682 no total · 85 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

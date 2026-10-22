@@ -1,0 +1,34 @@
+Bateria IA — linha-de-base-ajuste — 21/10/2026, 09:55:21
+
+=== quimica-com-mega — Tem mega hair e quer progressiva: marca avaliação ===
+> eu tenho mega hair de fita e queria fazer progressiva, pode marcar pra sábado?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊
+
+Como você tem mega hair, a Gleide precisa avaliar seu cabelo antes de fazer a progressiva pra ver se tá tudo certinho.
+
+No sábado tenho das 8h às 11h30, ou às 13h. Qual horário fica melhor pra sua avaliação?
+  [agenda] consultar 30 min
+  tokens: 2 chamadas, 15047 de entrada
+✅ passou
+
+=== horario-do-crm — Vê e remarca um horário que a Gleide marcou no CRM ===
+> que dia é meu horário mesmo?
+IA: Seu horário tá marcado pra quarta que vem, dia 28, às 9h, pra manutenção da queratina. Quer que eu confirme mais alguma coisa?
+> quero passar para o dia 29/10 às 9h
+IA: Opa, tenho esse horário sim! Posso passar sua manutenção de quarta para quinta, dia 29, às 9h?
+> sim
+IA: Remarcado! Passei seu horário para quinta, dia 29, às 9h. Até lá!
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 5 chamadas, 37588 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ quimica-com-mega
+✅ horario-do-crm
+
+2/2 passaram
+Tokens: 4 mensagens · 7 chamadas ao Gemini (1.8 por mensagem)
+  entrada: 52635 no total · 13159 por mensagem · 7519 por chamada
+  saída:   379 no total · 95 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

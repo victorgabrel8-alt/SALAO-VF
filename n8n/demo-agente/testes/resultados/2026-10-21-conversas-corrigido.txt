@@ -1,0 +1,64 @@
+Bateria IA — conversas-corrigido — 21/10/2026, 17:53:17
+
+=== indecisa-preco — Quer colocar mega, pergunta preço e vai descobrindo ===
+> oi boa tarde
+IA: Boa tarde! Tudo bem? Aqui é a assistente da Gleide 😊
+> quanto fica pra colocar mega hair?
+IA: Depende bastante do tipo de cabelo que você escolher e do resultado que você quer, viu? O valor total é definido pela técnica, pelas gramas e pelo comprimento dos fios. Você busca mais comprimento ou quer dar mais volume ao seu cabelo?
+> quero mais comprimento, meu cabelo ta no ombro
+IA: Ah, entendi! Como seu cabelo está no ombro, dá para deixar ele bem longo e com um movimento lindo. Me manda uma fotinho do seu cabelo de costas, com boa luz, pra eu dar uma olhadinha?
+> e quanto é o cabelo brasileiro?
+IA: O valor do cabelo brasileiro depende de quantas gramas você vai precisar para o resultado que quer. Você já tem uma ideia de quanto pretende colocar?
+> acho que uns 100g de 50 cm
+IA: O brasileiro de 50 cm sai a partir de R$ 1.300 os 100 g, e a cor também pode mudar um pouco o valor, tá? Qual cor de cabelo você está procurando?
+  tokens: 6 chamadas, 67663 de entrada
+✅ passou
+
+=== duvidas — Dúvidas técnicas e de cuidado ===
+> qual a diferença da queratina pra tela adesiva? qual dura mais?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A queratina é feita com mechinhas presas fio a fio, o que deixa o movimento bem natural e você consegue prender o cabelo com total liberdade, mas a aplicação demora um pouco mais. Já a tela adesiva são faixas finas coladas perto da raiz, é uma técnica bem leve e a mais rápida de colocar, só que pede mais cuidado com óleos e cremes na fixação. Sobre a duração, as duas pedem manutenção a cada 2 ou 3 meses pra manter o seu cabelo natural saudável, viu? Você já usa algum tipo de mega ou seria a primeira vez?
+> e mega hair estraga o cabelo?
+IA: Olha, Teste, essa é uma dúvida muito comum! O mega hair não estraga o cabelo se for bem aplicado e se você fizer a manutenção no prazo certinho, porque isso é o que mais protege os seus fios naturais. A Gleide sempre avalia a saúde do seu cabelo antes pra indicar a melhor técnica pra você. Quer que eu veja um horário pra você fazer essa avaliação gratuita?
+> posso ir na piscina depois de colocar?
+IA: Pode sim, Teste! O ideal é você prender o cabelo antes de entrar pra não embaraçar muito e lavar bem logo depois que sair, pra tirar o cloro. Só precisa evitar dormir com ele molhado, tá? Fora isso, dá pra aproveitar a piscina tranquila. Ficou com mais alguma dúvida sobre os cuidados?
+  [áudio] "mega hair prejudica o cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, Flor, essa é 
+  tokens: 5 chamadas, 57448 de entrada
+✅ passou
+
+=== nao-sabe — Não sabe qual fica melhor ===
+> queria colocar mega mas nao sei qual fica melhor em mim
+IA: Oi, Teste! Sou a assistente da Gleide 😊 Isso depende muito do resultado que você quer. Você tá buscando mais comprimento ou queria dar mais volume no seu cabelo?
+> quero volume, meu cabelo é bem fininho
+IA: Para cabelo fininho, o ideal é usar um fio que não pese muito, como o brasileiro, que é bem leve e dá um movimento super natural. Me manda uma fotinho do seu cabelo de costas, com boa luz, pra eu dar uma olhada?
+> [foto da cliente] Foto caseira de costas: cabelo liso castanho escuro, um pouco abaixo do ombro, volume ralo.
+IA: Dá pra ver que ele é bem lisinho e a cor é linda! Como ele é fininho, o cabelo brasileiro ou o indiano seriam ótimas opções pra dar esse volume sem pesar. Pra Gleide ver certinho qual técnica vai ficar mais confortável pra você e quantas gramas seriam ideais, o melhor é marcar uma avaliação gratuita de 30 minutinhos aqui no salão. Quer que eu veja um horário pra você?
+  tokens: 5 chamadas, 57157 de entrada
+✅ passou
+
+=== decidida — Decidida: manutenção ===
+> quero marcar manutenção da tela adesiva pra sábado, quanto fica?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 A manutenção da tela adesiva fica R$ 300. Pra esse sábado, dia 24, tenho horários de manhã das 8h às 10h30. Qual desses fica melhor pra você?
+  [agenda] consultar 90 min
+  tokens: 2 chamadas, 23003 de entrada
+✅ passou
+
+=== funciona — Pergunta se a técnica funciona ===
+> estava pensando em fazer mega hair, quanto que sai
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 O valor do mega hair depende bastante do tipo de cabelo que você escolher e do resultado que você está imaginando, viu? Você quer colocar pra dar mais comprimento ou seria mais pra ganhar volume mesmo?
+> mas essa técnica de fato funciona?
+IA: De qual técnica você está falando? A Gleide trabalha com queratina, tela adesiva, tela costurada e ponto americano, e cada uma funciona de um jeitinho diferente dependendo do seu cabelo.
+  tokens: 3 chamadas, 33886 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ indecisa-preco
+✅ duvidas
+✅ nao-sabe
+✅ decidida
+✅ funciona
+
+5/5 passaram
+Tokens: 14 mensagens · 21 chamadas ao Gemini (1.5 por mensagem)
+  entrada: 239157 no total · 17083 por mensagem · 11388 por chamada
+  saída:   1236 no total · 88 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

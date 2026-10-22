@@ -34,7 +34,8 @@ salao-ia/
     ├── CRONOGRAMA.md          ← quem faz o quê, dia a dia
     ├── CHECKLIST-ENTREGA.md   ← o que conferir antes e durante a entrega
     ├── DADOS-DO-SALAO.md      ← lista do que pedir para a dona
-    └── PLANO-IA-ALIMENTA-CRM.md ← IA preenchendo o CRM (agenda com intenção + ✓ da Gleide)
+    ├── PLANO-IA-ALIMENTA-CRM.md ← IA preenchendo o CRM (agenda com intenção + ✓ da Gleide)
+    └── PLANO-PROMPT-E-AUDIOS.md ← system prompt robusto e enxuto + áudios prontos da Gleide
 ```
 
 ## Primeiro dia (terça, juntos, ~1 hora)

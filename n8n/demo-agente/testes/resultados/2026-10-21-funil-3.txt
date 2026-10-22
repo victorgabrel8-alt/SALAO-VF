@@ -1,0 +1,28 @@
+Bateria IA — funil-3 — 21/10/2026, 18:20:27
+
+=== funil-preco — Já chega perguntando preço ===
+> quanto sai pra colocar mega hair?
+IA: Oi! Aqui é a assistente da Gleide 😊 O valor total depende muito do tipo de cabelo que você escolher, da quantidade de gramas, do comprimento e também da técnica de aplicação. Você já usa mega hair hoje ou seria a primeira vez?
+> já uso, de tela adesiva
+IA: Ah, entendi! Como você já usa a tela adesiva, você está precisando fazer a manutenção dela ou está querendo colocar um cabelo novo?
+  tokens: 3 chamadas, 36182 de entrada
+✅ passou
+
+=== funil-quimica — Quer química ===
+> quero fazer uma progressiva
+IA: Oi, Teste! Sou a assistente da Gleide 😊 Você já usa mega hair hoje ou seria a progressiva só no seu cabelo natural?
+> tenho sim, de queratina
+IA: Como você usa mega de queratina, a Gleide precisa dar uma olhadinha no seu cabelo antes de fazer a progressiva, só pra garantir que vai ficar tudo certinho com a fixação, sabe? Essa avaliação é rapidinha, uns 30 minutos, e não tem custo nenhum. Pra amanhã, quinta, eu tenho horário de manhã das 9h às 11h30, ou à tarde a partir das 13h até as 17h30. Qual horário fica melhor pra você?
+  [agenda] consultar 30 min
+  tokens: 3 chamadas, 36267 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ funil-preco
+✅ funil-quimica
+
+2/2 passaram
+Tokens: 4 mensagens · 6 chamadas ao Gemini (1.5 por mensagem)
+  entrada: 72449 no total · 18112 por mensagem · 12075 por chamada
+  saída:   390 no total · 98 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)
