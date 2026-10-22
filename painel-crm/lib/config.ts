@@ -1,7 +1,8 @@
-// Painel CRM da agência (computador). Cor própria (azul anil), diferente do rosa do app da dona.
+// Painel CRM da agência (computador). Segue a identidade da VF, como o app da dona: cobre.
+// Cobre não aguenta texto branco por cima (3.5:1): botões primários são grafite.
 export const SALAO = {
   nomeApp: "Painel CRM",
-  corPrincipal: "#4f46e5",
+  corPrincipal: "#b8764a",
   icone: "/icone-192.png",
 };
 

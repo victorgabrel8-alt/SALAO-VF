@@ -63,11 +63,11 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
       });
   }, []);
 
-  if (estado.carregando) return <p className="p-8 text-lg text-neutral-500">Carregando…</p>;
+  if (estado.carregando) return <p className="p-8 text-lg text-texto-2">Carregando…</p>;
   if ("erro" in estado) {
     return (
       <div className="mx-auto max-w-md space-y-4 p-8">
-        <p className="text-lg font-semibold text-red-700">{estado.erro}</p>
+        <p className="text-lg font-semibold text-rose-texto">{estado.erro}</p>
         <BotaoSair />
       </div>
     );
@@ -101,7 +101,7 @@ export function SeletorSalao() {
       value={empresa.id}
       onChange={(e) => trocar(e.target.value)}
       aria-label="Salão"
-      className="h-10 rounded-xl border border-neutral-300 bg-white px-3 font-semibold"
+      className="h-10 rounded-xl border border-borda bg-card px-3 font-semibold"
     >
       {empresas.map((e) => (
         <option key={e.id} value={e.id}>
@@ -123,7 +123,7 @@ export function BotaoSair() {
   return (
     <button
       onClick={sair}
-      className="h-10 rounded-xl border border-neutral-300 bg-white px-4 font-semibold hover:bg-neutral-50"
+      className="h-10 rounded-xl border border-borda bg-card px-4 font-semibold hover:bg-campo/60"
     >
       Sair
     </button>

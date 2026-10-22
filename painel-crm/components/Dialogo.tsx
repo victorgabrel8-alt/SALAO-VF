@@ -39,14 +39,14 @@ export function useDialogo() {
         role="alertdialog"
         aria-modal="true"
         onClick={(e) => e.stopPropagation()}
-        className="mx-auto w-full max-w-md space-y-4 rounded-t-3xl bg-white px-4 pt-5 pb-safe sm:rounded-3xl sm:pb-5"
+        className="mx-auto w-full max-w-md space-y-4 rounded-t-3xl bg-card px-4 pt-5 pb-safe sm:rounded-3xl sm:pb-5"
       >
-        <div className="text-lg whitespace-pre-line text-neutral-800">{estado.texto}</div>
+        <div className="text-lg whitespace-pre-line text-grafite">{estado.texto}</div>
         <div className={`mb-4 grid gap-2 sm:mb-0 ${estado.cancelar ? "grid-cols-2" : "grid-cols-1"}`}>
           {estado.cancelar && (
             <button
               onClick={() => responder(false)}
-              className="h-12 rounded-xl border border-neutral-300 bg-white font-semibold active:bg-neutral-100"
+              className="h-12 rounded-xl border border-borda bg-card font-semibold active:bg-campo"
             >
               {estado.cancelar}
             </button>
@@ -54,7 +54,7 @@ export function useDialogo() {
           <button
             onClick={() => responder(true)}
             autoFocus
-            className={`h-12 rounded-xl font-bold text-white ${estado.perigo ? "bg-red-600 active:bg-red-700" : "bg-[var(--cor-principal)]"}`}
+            className={`h-12 rounded-xl font-bold ${estado.perigo ? "bg-rose-texto text-white hover:bg-[#7a301f]" : "bg-grafite text-perola"}`}
           >
             {estado.confirmar}
           </button>

@@ -1,25 +1,66 @@
 @import "tailwindcss";
 
-/* App claro e de alto contraste: a dona usa com pressa, entre um atendimento e outro. */
+/* "Neutros vivos": a mesma família do app da dona. 90% neutro quente, 10% cor (cobre). */
+@theme {
+  /* Neutros quentes */
+  --color-perola: #f3eadf;      /* fundo da página */
+  --color-card: #fffaf4;        /* cartões, tabela, topo, campos, botões secundários */
+  --color-campo: #ece0d0;       /* colunas do quadro, cabeçalho da tabela, hover, controle segmentado */
+  --color-borda: #dfcfbb;       /* contorno de campos, botões e divisórias fortes */
+  --color-grafite: #211c1a;     /* texto principal, logo */
+  --color-texto-2: #685a4f;     /* texto secundário (5.6:1 no pérola) */
+  --color-inativo: #9a8a7c;     /* só ícones decorativos e o separador "|" dos filtros, nunca texto */
+
+  /* Marca */
+  --color-cobre: #b8764a;       /* cor principal: chip ativo (texto grafite), anéis de foco, borda de arraste */
+  --color-cobre-escuro: #8a4f2a;/* cobre como TEXTO: links, seta dos cards, "Ver ficha" */
+  --color-cobre-claro: #f1dcc6; /* realce: linha selecionada, coluna sob arraste, etiquetas */
+
+  /* Acentos (pouco) */
+  --color-terracota: #c4613f;
+  --color-salvia-viva: #6c8a58;
+  --color-mel-vivo: #d9a03a;
+  --color-nevoa-viva: #5d7f8a;
+
+  /* Pares fundo / texto */
+  --color-rose: #f6ddd3;   --color-rose-texto: #8e3a26;
+  --color-salvia: #e1e8d6; --color-salvia-texto: #3a5230;
+  --color-mel: #f7e5bf;    --color-mel-texto: #6f4d12;
+  --color-taupe: #eadccb;  --color-taupe-texto: #5c4330;
+
+  /* Status (pontinhos) */
+  --color-status-em-dia: #6c8a58;
+  --color-status-chegando: #d9a03a;
+  --color-status-atrasada: #d97a3c;
+  --color-status-inativa: #a63b2e;
+  --color-status-sem-visita: #cdbfae;
+
+  --font-sans: var(--fonte-jost), system-ui, sans-serif;
+  --font-serif: var(--fonte-cormorant), Georgia, serif;
+}
+
 :root {
-  /* Fundo levemente cinza para as caixas brancas se destacarem */
-  --background: #f6f6f7;
-  --foreground: #171717;
+  --background: #f3eadf;
+  --foreground: #211c1a;
   color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Opção escolhida (filtros, serviço, status...): tom suave da cor do salão */
+/* A Cormorant desenha o "1" como um "I": números alinhados nos títulos */
+.font-serif {
+  font-variant-numeric: lining-nums;
+}
+
+/* Opção escolhida (filtros, serviço, status...): cobre cheio com texto grafite */
 @utility chip-ativo {
-  background: color-mix(in srgb, var(--cor-principal) 10%, white);
-  color: var(--cor-principal);
-  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--cor-principal) 45%, white);
+  background: var(--color-cobre);
+  color: var(--color-grafite);
 }
 
 /* Área segura do iPhone (notch e barra inferior) */

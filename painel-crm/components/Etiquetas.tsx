@@ -16,7 +16,7 @@ export function Etiquetas({
   return (
     <ul className={`flex flex-wrap gap-1.5 ${className}`}>
       {visiveis.map((e) => (
-        <li key={e} className="chip-ativo inline-flex items-center rounded-full text-sm font-medium">
+        <li key={e} className="inline-flex bg-cobre-claro text-cobre-escuro items-center rounded-full text-sm font-medium">
           <span className={aoRemover ? "py-0.5 pl-2.5" : "px-2.5 py-0.5"}>{e}</span>
           {aoRemover && (
             <button

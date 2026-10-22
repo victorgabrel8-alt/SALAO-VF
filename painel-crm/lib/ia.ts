@@ -16,9 +16,9 @@ export function situacaoIa(iaPausada: boolean, motivo: string | null): SituacaoI
 }
 
 export const SELO_IA: Record<SituacaoIa, { rotulo: string; ponto: string }> = {
-  atendendo: { rotulo: "IA atendendo", ponto: "bg-green-500" },
-  pausada: { rotulo: "Pausada", ponto: "bg-yellow-400" },
-  precisa: { rotulo: "Precisa de você", ponto: "bg-red-500" },
+  atendendo: { rotulo: "IA atendendo", ponto: "bg-status-em-dia" },
+  pausada: { rotulo: "Pausada", ponto: "bg-status-chegando" },
+  precisa: { rotulo: "Precisa de você", ponto: "bg-status-inativa" },
 };
 
 // Pausar: a IA para de responder esta cliente por 12 horas (o n8n lê ia_pausada_ate).

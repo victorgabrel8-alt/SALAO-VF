@@ -32,12 +32,12 @@ export default function LoginPage() {
         <div className="text-center space-y-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={SALAO.icone} alt="" className="mx-auto h-20 w-20 rounded-2xl" />
-          <h1 className="text-3xl font-bold">{SALAO.nomeApp}</h1>
-          <p className="text-lg text-neutral-600">Entre para ver suas clientes</p>
+          <h1 className="font-serif text-[40px] leading-tight font-semibold">{SALAO.nomeApp}</h1>
+          <p className="text-lg text-texto-2">Entre para ver suas clientes</p>
         </div>
 
         {!supabaseConfigurado && (
-          <p className="rounded-xl bg-amber-100 p-4 text-amber-900">
+          <p className="rounded-xl bg-mel p-4 text-mel-texto">
             Falta configurar o Supabase: crie o arquivo <code>.env.local</code> a partir do{" "}
             <code>.env.local.example</code>.
           </p>
@@ -53,7 +53,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+              className="h-14 w-full rounded-xl border border-borda bg-card px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
             />
           </label>
           <label className="block space-y-1">
@@ -64,16 +64,16 @@ export default function LoginPage() {
               required
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
-              className="h-14 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+              className="h-14 w-full rounded-xl border border-borda bg-card px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
             />
           </label>
 
-          {erro && <p className="text-lg font-medium text-red-700">{erro}</p>}
+          {erro && <p className="text-lg font-medium text-rose-texto">{erro}</p>}
 
           <button
             type="submit"
             disabled={entrando || !supabaseConfigurado}
-            className="h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
+            className="h-14 w-full rounded-xl bg-grafite text-lg font-bold text-perola disabled:opacity-50"
           >
             {entrando ? "Entrando…" : "Entrar"}
           </button>

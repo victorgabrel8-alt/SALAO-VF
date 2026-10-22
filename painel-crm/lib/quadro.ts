@@ -15,11 +15,11 @@ import type { ClienteStatus } from "@/lib/tipos";
 export type Etapa = "para_chamar" | "enviada" | "respondeu" | "agendado" | "em_dia";
 
 export const ETAPAS: { chave: Etapa; titulo: string; ponto: string }[] = [
-  { chave: "para_chamar", titulo: "Para chamar", ponto: "bg-orange-500" },
-  { chave: "enviada", titulo: "Mensagem enviada", ponto: "bg-indigo-500" },
-  { chave: "respondeu", titulo: "Respondeu", ponto: "bg-teal-500" },
-  { chave: "agendado", titulo: "Agendado", ponto: "bg-green-500" },
-  { chave: "em_dia", titulo: "Em dia", ponto: "bg-neutral-400" },
+  { chave: "para_chamar", titulo: "Para chamar", ponto: "bg-terracota" },
+  { chave: "enviada", titulo: "Mensagem enviada", ponto: "bg-cobre" },
+  { chave: "respondeu", titulo: "Respondeu", ponto: "bg-nevoa-viva" },
+  { chave: "agendado", titulo: "Agendado", ponto: "bg-salvia-viva" },
+  { chave: "em_dia", titulo: "Em dia", ponto: "bg-status-sem-visita" },
 ];
 
 // O que cada coluna grava em contatos.resultado

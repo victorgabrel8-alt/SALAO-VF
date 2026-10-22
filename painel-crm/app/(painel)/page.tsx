@@ -35,10 +35,10 @@ const FILTROS: { chave: FiltroClientes; rotulo: string }[] = [
   { chave: "excluidas", rotulo: "Excluídas" },
 ];
 
-// Linhas em destaque: atrasadas (laranja forte) e retorno chegando (amarelo forte)
+// Linhas em destaque: atrasadas (rosé/argila) e retorno chegando (mel)
 const DESTAQUE: Partial<Record<StatusCliente, { linha: string; borda: string; texto: string }>> = {
-  retorno_atrasado: { linha: "bg-orange-50 hover:bg-orange-100/70", borda: "border-orange-500", texto: "font-semibold text-orange-700" },
-  retorno_chegando: { linha: "bg-amber-50 hover:bg-amber-100/70", borda: "border-amber-400", texto: "font-semibold text-amber-700" },
+  retorno_atrasado: { linha: "bg-rose/40 hover:bg-rose/60", borda: "border-status-atrasada", texto: "font-semibold text-rose-texto" },
+  retorno_chegando: { linha: "bg-mel/40 hover:bg-mel/60", borda: "border-status-chegando", texto: "font-semibold text-mel-texto" },
 };
 
 function textoChamada(dias: number): string {
@@ -49,7 +49,7 @@ function textoChamada(dias: number): string {
 // Quem chama as clientes é a IA de retorno; aqui a agência só acompanha.
 export default function CrmPage() {
   return (
-    <Suspense fallback={<p className="py-8 text-neutral-500">Carregando…</p>}>
+    <Suspense fallback={<p className="py-8 text-texto-2">Carregando…</p>}>
       <Crm />
     </Suspense>
   );
@@ -151,19 +151,19 @@ function Crm() {
     <>
       <div className="flex items-end justify-between gap-4 pt-8 pb-4">
         <div>
-          <h1 className="text-3xl font-bold">Clientes</h1>
-          <p className="text-neutral-600">
+          <h1 className="font-serif text-[40px] leading-tight font-semibold">Clientes</h1>
+          <p className="text-texto-2">
             {contagem ? `${contagem.todas} clientes` : "…"} · {empresa.nome}
           </p>
         </div>
         <div className="flex gap-2">
-          <div className="flex h-11 rounded-xl bg-neutral-200/70 p-1" role="group" aria-label="Como ver as clientes">
+          <div className="flex h-11 rounded-xl bg-campo p-1" role="group" aria-label="Como ver as clientes">
             {(["quadro", "lista"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => router.replace(v === "quadro" ? "/" : "/?vista=lista", { scroll: false })}
                 aria-pressed={vista === v}
-                className={`rounded-lg px-4 font-semibold ${vista === v ? "bg-white shadow-sm" : "text-neutral-600 hover:text-neutral-900"}`}
+                className={`rounded-lg px-4 font-semibold ${vista === v ? "bg-card shadow-[0_1px_2px_rgba(33,22,16,0.08)]" : "text-texto-2 hover:text-grafite"}`}
               >
                 {v === "quadro" ? "Quadro" : "Lista"}
               </button>
@@ -177,7 +177,7 @@ function Crm() {
                 setSelecionadas([]);
               }}
               aria-label="Filtrar por origem"
-              className="h-11 rounded-xl border border-neutral-300 bg-white px-3"
+              className="h-11 rounded-xl border border-borda bg-card px-3"
             >
               <option value="">Todas as origens</option>
               {ORIGENS.map((o) => (
@@ -195,7 +195,7 @@ function Crm() {
               setBusca(e.target.value);
               setSelecionadas([]);
             }}
-            className="h-11 w-72 rounded-xl border border-neutral-300 bg-white px-4 outline-none focus:border-[var(--cor-principal)]"
+            className="h-11 w-72 rounded-xl border border-borda bg-card px-4 outline-none focus:border-[var(--cor-principal)]"
           />
         </div>
       </div>
@@ -211,19 +211,19 @@ function Crm() {
                 onClick={() => escolherFiltro(f.chave)}
                 aria-pressed={filtro === f.chave}
                 className={`h-10 rounded-full px-4 font-semibold ${
-                  filtro === f.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-50"
+                  filtro === f.chave ? "chip-ativo" : "border border-grafite/10 bg-card text-grafite hover:bg-campo/60"
                 }`}
               >
                 {f.rotulo} ({contagem?.[f.chave] ?? "…"})
               </button>
             ))}
           </div>
-          <p className="-mt-2 mb-4 text-sm text-neutral-500">
+          <p className="-mt-2 mb-4 text-sm text-texto-2">
             Para mudar a cliente de etapa ou de status, use o Quadro: lá dá para arrastar.
           </p>
 
           {selecionadas.length > 0 && (
-            <div className="sticky top-16 z-10 mb-4 flex items-center justify-between gap-4 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-md">
+            <div className="sticky top-16 z-10 mb-4 flex items-center justify-between gap-4 rounded-2xl border border-grafite/10 bg-card px-4 py-3 shadow-md">
               <span className="font-semibold">
                 {selecionadas.length} {selecionadas.length === 1 ? "cliente selecionada" : "clientes selecionadas"}
               </span>
@@ -231,15 +231,15 @@ function Crm() {
                 <button
                   onClick={() => setSelecionadas([])}
                   disabled={processando !== null}
-                  className="h-10 rounded-xl border border-neutral-300 px-4 font-semibold hover:bg-neutral-50 disabled:opacity-50"
+                  className="h-10 rounded-xl border border-borda px-4 font-semibold hover:bg-campo/60 disabled:opacity-50"
                 >
                   Limpar seleção
                 </button>
                 <button
                   onClick={acaoEmMassa}
                   disabled={processando !== null}
-                  className={`h-10 rounded-xl px-4 font-bold text-white disabled:opacity-60 ${
-                    filtro === "excluidas" ? "bg-[var(--cor-principal)]" : "bg-red-600 hover:bg-red-700"
+                  className={`h-10 rounded-xl px-4 font-bold disabled:opacity-60 ${
+                    filtro === "excluidas" ? "bg-grafite text-perola" : "bg-rose-texto text-white hover:bg-[#7a301f]"
                   }`}
                 >
                   {processando
@@ -251,12 +251,12 @@ function Crm() {
               </div>
             </div>
           )}
-          {erroAcao && <p className="mb-4 rounded-xl bg-red-100 p-4 text-red-900">{erroAcao}</p>}
-          {lista?.erro && <p className="rounded-xl bg-red-100 p-4 text-red-900">Erro ao ler as clientes: {lista.erro}</p>}
+          {erroAcao && <p className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">{erroAcao}</p>}
+          {lista?.erro && <p className="rounded-xl bg-rose p-4 text-rose-texto">Erro ao ler as clientes: {lista.erro}</p>}
 
-          <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-grafite/10 bg-card shadow-[0_1px_2px_rgba(33,22,16,0.05),0_4px_14px_rgba(33,22,16,0.05)]">
             <table className="w-full text-left">
-              <thead className="bg-neutral-50 text-sm text-neutral-500">
+              <thead className="bg-campo/60 text-sm text-texto-2">
                 <tr>
                   <th className="w-10 py-3 pr-1 pl-4">
                     <input
@@ -279,17 +279,17 @@ function Crm() {
                   <th className="px-4 py-3 font-medium">Último contato</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100">
+              <tbody className="divide-y divide-borda/60">
                 {!lista && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-neutral-500">
+                    <td colSpan={9} className="px-4 py-6 text-texto-2">
                       Carregando…
                     </td>
                   </tr>
                 )}
                 {lista && !lista.erro && lista.itens.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-neutral-500">
+                    <td colSpan={9} className="px-4 py-8 text-center text-texto-2">
                       Nenhuma cliente aqui.
                     </td>
                   </tr>
@@ -302,7 +302,7 @@ function Crm() {
                   return (
                     <tr
                       key={c.id}
-                      className={`align-top ${selecionadas.includes(c.id) ? "bg-[color-mix(in_srgb,var(--cor-principal)_8%,white)]" : (destaque?.linha ?? "hover:bg-neutral-50")}`}
+                      className={`align-top ${selecionadas.includes(c.id) ? "bg-cobre-claro/60" : (destaque?.linha ?? "hover:bg-campo/60")}`}
                     >
                       <td className={`py-3 pr-1 pl-3 ${destaque ? `border-l-4 ${destaque.borda}` : "border-l-4 border-transparent"}`}>
                         <input
@@ -319,13 +319,13 @@ function Crm() {
                         </Link>
                         <Etiquetas etiquetas={c.etiquetas} />
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-neutral-700">{formatarTelefone(c.telefone)}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-texto-2">{formatarTelefone(c.telefone)}</td>
                       <td className="px-4 py-3">
                         {filtro === "excluidas" ? (
                           <button
                             onClick={() => restaurar(c)}
                             disabled={restaurando === c.id}
-                            className="h-9 rounded-lg border border-neutral-300 bg-white px-3 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-50"
+                            className="h-9 rounded-lg border border-borda bg-card px-3 text-sm font-semibold hover:bg-campo/60 disabled:opacity-50"
                           >
                             {restaurando === c.id ? "…" : "Restaurar"}
                           </button>
@@ -337,10 +337,10 @@ function Crm() {
                         {c.ultima_visita ? (
                           <>
                             {formatarData(c.ultima_visita)}
-                            <span className="block text-sm text-neutral-500">{haQuantoTempo(c.ultima_visita)}</span>
+                            <span className="block text-sm text-texto-2">{haQuantoTempo(c.ultima_visita)}</span>
                           </>
                         ) : (
-                          <span className="text-neutral-500">Nunca veio</span>
+                          <span className="text-texto-2">Nunca veio</span>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -348,17 +348,17 @@ function Crm() {
                           <>
                             {proximo.rotulo === "Marcado" ? "Marcado " : ""}
                             {proximo.valor}
-                            <span className={`block text-sm ${destaque && proximo.rotulo !== "Marcado" ? destaque.texto : "text-neutral-500"}`}>
+                            <span className={`block text-sm ${destaque && proximo.rotulo !== "Marcado" ? destaque.texto : "text-texto-2"}`}>
                               {proximo.detalhe}
                             </span>
                           </>
                         ) : (
-                          <span className="text-neutral-400">—</span>
+                          <span className="text-inativo">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3 text-center">{c.total_visitas}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-neutral-700">{o ? rotuloOrigem(o) : "—"}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-neutral-700">
+                      <td className="px-4 py-3 whitespace-nowrap text-texto-2">{o ? rotuloOrigem(o) : "—"}</td>
+                      <td className="px-4 py-3 whitespace-nowrap text-texto-2">
                         {dias === null ? "—" : textoChamada(dias)}
                       </td>
                     </tr>
@@ -372,7 +372,7 @@ function Crm() {
             <button
               onClick={verMais}
               disabled={lista.carregandoMais}
-              className="mt-4 h-11 w-full rounded-xl border border-neutral-300 bg-white font-semibold hover:bg-neutral-50 disabled:opacity-50"
+              className="mt-4 h-11 w-full rounded-xl border border-borda bg-card font-semibold hover:bg-campo/60 disabled:opacity-50"
             >
               {lista.carregandoMais ? "Carregando…" : "Ver mais"}
             </button>

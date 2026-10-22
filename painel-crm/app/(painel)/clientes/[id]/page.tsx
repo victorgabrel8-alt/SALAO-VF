@@ -71,7 +71,7 @@ async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
 
 export default function FichaClientePage() {
   return (
-    <Suspense fallback={<p className="p-4 text-neutral-500">Carregando…</p>}>
+    <Suspense fallback={<p className="p-4 text-texto-2">Carregando…</p>}>
       <FichaCliente />
     </Suspense>
   );
@@ -97,8 +97,8 @@ function FichaCliente() {
     };
   }, [id, versao]);
 
-  if (!resultado) return <p className="p-4 text-neutral-500">Carregando…</p>;
-  if ("erro" in resultado) return <p className="m-4 rounded-xl bg-red-100 p-4 text-red-900">{resultado.erro}</p>;
+  if (!resultado) return <p className="p-4 text-texto-2">Carregando…</p>;
+  if ("erro" in resultado) return <p className="m-4 rounded-xl bg-rose p-4 text-rose-texto">{resultado.erro}</p>;
   const ficha = resultado;
   const carregar = recarregar;
 
@@ -139,15 +139,15 @@ function Exclusao({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () =>
   return (
     <section className="px-4 pt-2">
       {excluida && (
-        <p className="mb-2 rounded-xl border border-neutral-200 bg-white p-3 text-neutral-700">
+        <p className="mb-2 rounded-xl border border-grafite/10 bg-card p-3 text-texto-2">
           Esta cliente está em <strong>Clientes excluídas</strong>: não aparece na lista do CRM nem no app da dona.
         </p>
       )}
       <button
         onClick={alternar}
         disabled={salvando}
-        className={`h-12 w-full rounded-xl border bg-white font-semibold disabled:opacity-50 ${
-          excluida ? "border-neutral-300 text-neutral-800" : "border-red-200 text-red-700 active:bg-red-50"
+        className={`h-12 w-full rounded-xl border bg-card font-semibold disabled:opacity-50 ${
+          excluida ? "border-borda text-grafite" : "border-rose-texto/20 text-rose-texto active:bg-rose"
         }`}
       >
         {excluida ? "Restaurar cliente" : "Excluir cliente"}
@@ -180,19 +180,19 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
     <section className="space-y-3 px-4 pt-2">
       <button
         onClick={() => router.push("/")}
-        className="inline-flex h-11 items-center text-lg font-semibold text-[var(--cor-principal)]"
+        className="inline-flex h-11 items-center text-lg font-semibold text-cobre-escuro"
       >
         ‹ Clientes
       </button>
       <div>
-        <h1 className="text-3xl font-bold">{cliente.nome ?? "Sem nome"}</h1>
+        <h1 className="font-serif text-3xl leading-tight font-semibold">{cliente.nome ?? "Sem nome"}</h1>
         <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} />
-        <p className="mt-1 text-lg text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
+        <p className="mt-1 text-lg text-texto-2">{formatarTelefone(cliente.telefone)}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <SeloStatus status={statusEfetivo(cliente)} />
           {cliente.ia_pausada && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 px-2.5 py-0.5 text-sm font-medium text-neutral-700">
-              <PontoStatus cor="bg-yellow-400" />
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-grafite/10 px-2.5 py-0.5 text-sm font-medium text-texto-2">
+              <PontoStatus cor="bg-status-chegando" />
               IA pausada
             </span>
           )}
@@ -203,7 +203,7 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
         <button
           onClick={alternarIa}
           disabled={salvando}
-          className="h-12 w-full rounded-xl border border-neutral-300 bg-white text-lg font-semibold active:bg-neutral-100 disabled:opacity-50"
+          className="h-12 w-full rounded-xl border border-borda bg-card text-lg font-semibold active:bg-campo disabled:opacity-50"
         >
           {cliente.ia_pausada ? "Reativar IA" : "Pausar IA"}
         </button>
@@ -225,20 +225,26 @@ function Retornos({ retornos }: { retornos: RetornoServico[] }) {
   return (
     <section className="space-y-2 px-4">
       <h2 className="text-xl font-semibold">Retornos por procedimento</h2>
-      {ordenados.length === 0 && <p className="text-neutral-500">Nenhum procedimento realizado ainda.</p>}
+      {ordenados.length === 0 && <p className="text-texto-2">Nenhum procedimento realizado ainda.</p>}
       <ul className="space-y-2">
         {ordenados.map((r) => {
           const dias = r.retorno_previsto ? diasEntre(hoje, r.retorno_previsto) : null;
           const ponto =
-            dias === null ? "bg-neutral-300" : dias < 0 ? "bg-orange-500" : dias <= 7 ? "bg-yellow-400" : "bg-green-500";
+            dias === null
+              ? "bg-status-sem-visita"
+              : dias < 0
+                ? "bg-status-atrasada"
+                : dias <= 7
+                  ? "bg-status-chegando"
+                  : "bg-status-em-dia";
           return (
-            <li key={r.servico_id} className="rounded-xl border border-neutral-200 bg-white p-3">
+            <li key={r.servico_id} className="rounded-xl border border-grafite/10 bg-card p-3">
               <p className="flex items-center gap-2 text-lg font-semibold">
                 <PontoStatus cor={ponto} />
                 {r.servico_nome}
               </p>
-              <p className="text-neutral-600">Última vez: {formatarData(r.ultima_vez)}</p>
-              <p className={`font-medium ${dias !== null && dias < 0 ? "text-orange-700" : ""}`}>
+              <p className="text-texto-2">Última vez: {formatarData(r.ultima_vez)}</p>
+              <p className={`font-medium ${dias !== null && dias < 0 ? "text-rose-texto" : ""}`}>
                 {r.retorno_previsto
                   ? `Voltar: ${formatarData(r.retorno_previsto)} (${prazo(r.retorno_previsto)})`
                   : "Sem retorno programado"}
@@ -290,7 +296,7 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
     aoSalvar();
   }
   const campo =
-    "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
+    "h-12 w-full rounded-xl border border-borda bg-card px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
 
   return (
     <section className="space-y-4 px-4">
@@ -311,7 +317,7 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
               onClick={() => setOrigem(origem === o.chave ? null : o.chave)}
               aria-pressed={origem === o.chave}
               className={`h-11 rounded-full px-4 font-semibold ${
-                origem === o.chave ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-800"
+                origem === o.chave ? "chip-ativo" : "border border-grafite/10 bg-card text-grafite"
               }`}
             >
               {o.rotulo}
@@ -327,7 +333,7 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           placeholder="Alergias, fórmula da cor, método do mega hair, preferências…"
-          className="w-full rounded-xl border border-neutral-300 bg-white p-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+          className="w-full rounded-xl border border-borda bg-card p-4 text-lg outline-none focus:border-[var(--cor-principal)]"
         />
       </label>
 
@@ -341,7 +347,7 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
               onClick={() => alternarEtiqueta(e)}
               aria-pressed={etiquetas.includes(e)}
               className={`h-11 rounded-full px-4 font-semibold ${
-                etiquetas.includes(e) ? "chip-ativo" : "border border-neutral-200 bg-white text-neutral-700"
+                etiquetas.includes(e) ? "chip-ativo" : "border border-grafite/10 bg-card text-texto-2"
               }`}
             >
               {e}
@@ -360,7 +366,7 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
       <button
         onClick={salvar}
         disabled={salvando}
-        className="h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
+        className="h-14 w-full rounded-xl bg-grafite text-lg font-bold text-perola disabled:opacity-50"
       >
         {salvando ? "Salvando…" : "Salvar"}
       </button>
@@ -416,13 +422,13 @@ function LinhaDoTempo({ ficha }: { ficha: Ficha }) {
   return (
     <section className="space-y-2 px-4">
       <h2 className="text-xl font-semibold">Linha do tempo</h2>
-      {eventos.length === 0 && <p className="text-neutral-500">Nada registrado ainda.</p>}
-      <ol className="space-y-3 border-l-2 border-neutral-200 pl-4">
+      {eventos.length === 0 && <p className="text-texto-2">Nada registrado ainda.</p>}
+      <ol className="space-y-3 border-l-2 border-grafite/10 pl-4">
         {eventos.map((e, i) => (
           <li key={i}>
-            <p className="text-sm font-semibold text-neutral-500">{formatarData(e.quando)}</p>
+            <p className="text-sm font-semibold text-texto-2">{formatarData(e.quando)}</p>
             <p className="text-lg font-medium">{e.titulo}</p>
-            <p className="text-neutral-600">{e.detalhe}</p>
+            <p className="text-texto-2">{e.detalhe}</p>
           </li>
         ))}
       </ol>
