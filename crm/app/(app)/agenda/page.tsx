@@ -16,6 +16,7 @@ import {
   desfazerConfirmacao,
   ehFeitoJunto,
   excluirAtendimento,
+  mudarStatus,
   feitosJunto,
   ultimoReagendamento,
   type Atendimento,
@@ -432,6 +433,11 @@ export default function AgendaPage() {
           atendimento={confirmando}
           servicos={servicos}
           aoConfirmar={(ids) => confirmar(confirmando, ids)}
+          aoFaltou={async () => {
+            const erro = await mudarStatus(confirmando.id, "faltou");
+            if (!erro) recarregar();
+            return erro;
+          }}
           aoFechar={fecharConfirmar}
         />
       )}

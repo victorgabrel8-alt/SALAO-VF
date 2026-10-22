@@ -8,7 +8,7 @@ import { FolhaConfirmar } from "@/components/FolhaConfirmar";
 import { FormAtendimento } from "@/components/FormAtendimento";
 import { LinhaDeslizante, type AcaoDeslizante } from "@/components/LinhaDeslizante";
 import type { ServicoAtivo } from "@/components/MarcarVolta";
-import { buscarAtendimentosDoDia, confirmarAtendimento, type Atendimento } from "@/lib/atendimentos";
+import { buscarAtendimentosDoDia, confirmarAtendimento, mudarStatus, type Atendimento } from "@/lib/atendimentos";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
 import { agoraNoSalao, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, inicioDoDia, primeiroNome, somarDias } from "@/lib/formato";
@@ -315,6 +315,11 @@ export default function InicioPage() {
           servicos={servicos}
           aoConfirmar={async (ids) => {
             const erro = await confirmarAtendimento(empresa.id, confirmando, ids);
+            if (!erro) recarregar();
+            return erro;
+          }}
+          aoFaltou={async () => {
+            const erro = await mudarStatus(confirmando.id, "faltou");
             if (!erro) recarregar();
             return erro;
           }}
