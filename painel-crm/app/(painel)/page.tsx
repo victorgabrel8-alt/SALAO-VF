@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
+import { PainelManutencao } from "@/components/PainelManutencao";
 import { QuadroRetorno } from "@/components/QuadroRetorno";
 import type { StatusCliente } from "@/lib/status";
 import { diasDesdeContato } from "@/lib/alo";
@@ -23,6 +24,12 @@ import { ORIGENS, lerOrigem, rotuloOrigem } from "@/lib/origem";
 import { SeloStatus } from "@/lib/status";
 import { useTempoReal } from "@/lib/tempoReal";
 
+const VISTAS = [
+  { chave: "quadro", rotulo: "Quadro" },
+  { chave: "lista", rotulo: "Lista" },
+  { chave: "manutencao", rotulo: "Manutenção" },
+] as const;
+
 const FILTROS: { chave: FiltroClientes; rotulo: string }[] = [
   { chave: "todas", rotulo: "Todas" },
   { chave: "para_chamar", rotulo: "Para chamar" },
@@ -30,6 +37,7 @@ const FILTROS: { chave: FiltroClientes; rotulo: string }[] = [
   { chave: "atrasadas_recentes", rotulo: "Atrasadas até 30 dias" },
   { chave: "atrasadas_antigas", rotulo: "Atrasadas há +30 dias" },
   { chave: "inativa", rotulo: "Inativas" },
+  { chave: "agendadas", rotulo: "Agendadas" },
   { chave: "em_dia", rotulo: "Em dia" },
   { chave: "sem_visita", rotulo: "Sem visita" },
   { chave: "excluidas", rotulo: "Excluídas" },
@@ -78,7 +86,8 @@ function Crm() {
   const router = useRouter();
   const params = useSearchParams();
   // Quadro (colunas de retorno) é o padrão; a lista completa fica em ?vista=lista
-  const vista = params.get("vista") === "lista" ? "lista" : "quadro";
+  // e o controle da manutenção (quem está perto do retorno) em ?vista=manutencao
+  const vista = VISTAS.find((v) => v.chave === params.get("vista"))?.chave ?? "quadro";
   const filtro = FILTROS.find((f) => f.chave === params.get("filtro"))?.chave ?? "todas";
   const [busca, setBusca] = useState("");
   const [origem, setOrigem] = useState<string | null>(null);
@@ -158,14 +167,14 @@ function Crm() {
         </div>
         <div className="flex gap-2">
           <div className="flex h-11 rounded-xl bg-campo p-1" role="group" aria-label="Como ver as clientes">
-            {(["quadro", "lista"] as const).map((v) => (
+            {VISTAS.map((v) => (
               <button
-                key={v}
-                onClick={() => router.replace(v === "quadro" ? "/" : "/?vista=lista", { scroll: false })}
-                aria-pressed={vista === v}
-                className={`rounded-lg px-4 font-semibold ${vista === v ? "bg-card shadow-[0_1px_2px_rgba(33,22,16,0.08)]" : "text-texto-2 hover:text-grafite"}`}
+                key={v.chave}
+                onClick={() => router.replace(v.chave === "quadro" ? "/" : `/?vista=${v.chave}`, { scroll: false })}
+                aria-pressed={vista === v.chave}
+                className={`rounded-lg px-4 font-semibold ${vista === v.chave ? "bg-card shadow-[0_1px_2px_rgba(33,22,16,0.08)]" : "text-texto-2 hover:text-grafite"}`}
               >
-                {v === "quadro" ? "Quadro" : "Lista"}
+                {v.rotulo}
               </button>
             ))}
           </div>
@@ -202,6 +211,8 @@ function Crm() {
 
       {vista === "quadro" ? (
         <QuadroRetorno busca={buscaAtrasada} />
+      ) : vista === "manutencao" ? (
+        <PainelManutencao busca={buscaAtrasada} />
       ) : (
         <>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -330,7 +341,15 @@ function Crm() {
                             {restaurando === c.id ? "…" : "Restaurar"}
                           </button>
                         ) : (
-                          <SeloStatus status={c.status} />
+                          // Marcou ou remarcou: aparece como Agendada (o banco diz "em dia")
+                          c.proximo_agendamento ? (
+                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-salvia px-2.5 py-0.5 text-sm font-semibold text-salvia-texto">
+                              <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-salvia-viva" />
+                              Agendada
+                            </span>
+                          ) : (
+                            <SeloStatus status={c.status} />
+                          )
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">

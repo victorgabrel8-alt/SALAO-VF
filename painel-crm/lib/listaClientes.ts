@@ -17,6 +17,7 @@ export type FiltroClientes =
   | "retornos"
   | "atrasadas_recentes"
   | "atrasadas_antigas"
+  | "agendadas"
   | "excluidas"
   | "todas";
 
@@ -44,7 +45,9 @@ const SEM_EXCLUIDAS = '{"sistema:excluida"}';
 // No celular a dona só vê as recentes; as "antigas" (sumiram faz tempo) ficam no CRM do
 // computador, para a agência trabalhar a reativação. Conta a partir da DATA DE RETORNO, não
 // da última visita: quem fez progressiva (volta em 90 dias) não some antes da hora.
-type Regra = { status: StatusCliente[] | null; retorno?: "recente" | "antigo" };
+// agendado: true = só quem tem horário marcado daqui para frente; false = só quem não tem.
+// No banco, quem tem horário marcado fica "em_dia"; na tela ela aparece como "Agendada".
+type Regra = { status: StatusCliente[] | null; retorno?: "recente" | "antigo"; agendado?: boolean };
 
 const REGRAS: Record<FiltroClientes, Regra> = {
   retornos: { status: ["retorno_chegando", "retorno_atrasado"], retorno: "recente" },
@@ -54,7 +57,8 @@ const REGRAS: Record<FiltroClientes, Regra> = {
   atrasadas_recentes: { status: ["retorno_atrasado"], retorno: "recente" },
   atrasadas_antigas: { status: ["retorno_atrasado"], retorno: "antigo" },
   inativa: { status: ["inativa"] },
-  em_dia: { status: ["em_dia"] },
+  agendadas: { status: null, agendado: true },
+  em_dia: { status: ["em_dia"], agendado: false },
   sem_visita: { status: ["sem_visita"] },
   excluidas: { status: null },
   todas: { status: null },
@@ -85,6 +89,8 @@ async function buscarPagina(empresaId: string, c: Consulta, de: number, quantida
   if (status) q = q.in("status", status);
   if (regra.retorno === "recente") q = q.gte("retorno_previsto", dataLimite(c.diasLimite));
   if (regra.retorno === "antigo") q = q.lt("retorno_previsto", dataLimite(c.diasLimite));
+  if (regra.agendado === true) q = q.not("proximo_agendamento", "is", null);
+  if (regra.agendado === false) q = q.is("proximo_agendamento", null);
   if (c.origem) q = q.contains("etiquetas", [`origem:${c.origem}`]);
 
   const termo = c.busca.replace(/[,()%*]/g, " ").trim();
@@ -94,9 +100,12 @@ async function buscarPagina(empresaId: string, c: Consulta, de: number, quantida
   }
 
   // Quem tem retorno mais urgente primeiro; nas outras listas, por nome
-  q = status && c.filtro !== "em_dia" && c.filtro !== "sem_visita"
-    ? q.order("retorno_previsto", { ascending: true, nullsFirst: false }).order("nome")
-    : q.order("nome", { nullsFirst: false });
+  // Agendadas: o horário mais próximo primeiro
+  q = c.filtro === "agendadas"
+    ? q.order("proximo_agendamento", { ascending: true }).order("nome")
+    : status && c.filtro !== "em_dia" && c.filtro !== "sem_visita"
+      ? q.order("retorno_previsto", { ascending: true, nullsFirst: false }).order("nome")
+      : q.order("nome", { nullsFirst: false });
 
   // Pede uma a mais só para saber se existe próxima página
   const { data, error } = await q.range(de, de + quantidade);
@@ -164,13 +173,14 @@ export async function contarClientes(empresaId: string, diasLimite: number): Pro
       .select("id", { count: "exact", head: true })
       .eq("empresa_id", empresaId)
       .not("etiquetas", "cs", SEM_EXCLUIDAS);
-  const [excluidas, recentes, ...respostas] = await Promise.all([
+  const [excluidas, recentes, agendadas, ...respostas] = await Promise.all([
     supabase()
       .from("clientes")
       .select("id", { count: "exact", head: true })
       .eq("empresa_id", empresaId)
       .filter("etiquetas", "cs", SEM_EXCLUIDAS),
     contar().eq("status", "retorno_atrasado").gte("retorno_previsto", dataLimite(diasLimite)),
+    contar().not("proximo_agendamento", "is", null),
     ...statuses.map((s) => contar().eq("status", s)),
   ]);
   const total: Record<string, number> = {};
@@ -180,6 +190,9 @@ export async function contarClientes(empresaId: string, diasLimite: number): Pro
   total.retornos = total.retorno_chegando + total.atrasadas_recentes;
   total.para_chamar = total.retorno_chegando + total.retorno_atrasado;
   total.todas = statuses.reduce((soma, s) => soma + total[s], 0);
+  // Quem tem horário marcado vem "em_dia" do banco, mas na tela é "Agendada"
+  total.agendadas = agendadas.count ?? 0;
+  total.em_dia = total.em_dia - total.agendadas;
   total.excluidas = excluidas.count ?? 0;
   return total;
 }

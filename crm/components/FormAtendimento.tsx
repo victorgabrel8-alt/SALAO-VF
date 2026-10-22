@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { Folha } from "@/components/Folha";
 import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
+import { buscarParecidas, horariosMarcadosDaCliente, type ClienteParecida, type HorarioMarcado } from "@/lib/duplicidade";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida, restaurarCliente } from "@/lib/excluidas";
 import {
   agoraNoSalao,
   formatarData,
+  formatarHora,
   formatarTelefone,
   instanteNoSalao,
   normalizarTelefone,
@@ -15,14 +17,29 @@ import {
   somarDias,
   telefoneValido,
 } from "@/lib/formato";
+import { useAgora } from "@/lib/relogio";
 import { supabase } from "@/lib/supabase/client";
 
 type Servico = { id: string; nome: string; dias_retorno: number | null; duracao_min: number };
 type ClienteBusca = { id: string; nome: string | null; telefone: string; etiquetas: string[] };
 
 // "registrar": cliente que já foi atendida (chegou sem agendar) -> grava como realizado, padrão agora.
+//   Se a hora escolhida ainda não chegou, grava como agendado: ela vira a próxima cliente.
 // "agendar": horário futuro marcado pela dona -> grava como agendado.
+// A volta (retorno) não é marcada aqui: quem chama a cliente na data certa é a IA.
 export type ModoAtendimento = "registrar" | "agendar";
+
+// Conferências antes de gravar (ver lib/duplicidade.ts):
+//   parecida -> já existe cliente parecida: usar ela ou dizer que é outra pessoa. Se for o MESMO
+//               telefone, não há "outra pessoa": só dá para usar a ficha que existe
+//   nova     -> 2ª etapa: confirmar que é mesmo uma cliente nova
+//   horario  -> pop-up: a cliente já tem horário marcado; substituir pelo novo ou criar um novo
+type Aviso =
+  | { tipo: "parecida"; lista: ClienteParecida[] }
+  | { tipo: "nova" }
+  | { tipo: "horario"; lista: HorarioMarcado[] };
+
+type Confirmado = { clienteFixa?: ClienteBusca; novaConfirmada?: boolean; diaConfirmado?: boolean };
 
 export function FormAtendimento({
   modo,
@@ -40,6 +57,7 @@ export function FormAtendimento({
 }) {
   const empresa = useEmpresa();
   const agora = agoraNoSalao();
+  const agoraMs = useAgora();
 
   const [servicos, setServicos] = useState<Servico[]>([]);
 
@@ -54,18 +72,15 @@ export function FormAtendimento({
   const [data, setData] = useState(dia ?? agora.data);
   const [hora, setHora] = useState(horaInicial ?? (modo === "registrar" ? agora.hora : "09:00"));
 
-  // Retorno: o banco calcula a data sozinho (dia do atendimento + dias de retorno do serviço).
-  // A dona vê a data na hora e pode já deixar o horário do retorno marcado.
-  const [marcarRetorno, setMarcarRetorno] = useState(false);
-  const [retornoData, setRetornoData] = useState<string | null>(null);
-  const [retornoHora, setRetornoHora] = useState<string | null>(null);
-
   const [erro, setErro] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [aviso, setAviso] = useState<Aviso | null>(null);
 
   const servico = servicos.find((s) => s.id === servicoId);
   const almocoDoSalao = lerAlmoco(empresa.config);
   const retornoPrevisto = servico?.dias_retorno ? somarDias(data, servico.dias_retorno) : null;
+  // Registrar com hora que ainda não chegou = horário marcado (a próxima cliente), não atendimento feito
+  const noFuturo = Date.parse(instanteNoSalao(data, hora)) > agoraMs;
 
   useEffect(() => {
     const db = supabase();
@@ -100,7 +115,12 @@ export function FormAtendimento({
     };
   }, [busca, empresa.id]);
 
-  async function clienteEscolhida(): Promise<string | null> {
+  async function clienteEscolhida(fixa?: ClienteBusca): Promise<string | null> {
+    if (fixa) {
+      // Escolhida no aviso de mesmo telefone, mas estava em "Clientes excluídas": volta para a lista
+      if (estaExcluida(fixa.etiquetas)) await restaurarCliente(fixa.id);
+      return fixa.id;
+    }
     if (cliente) return cliente.id;
     const telefone = normalizarTelefone(telefoneNova);
     if (!nomeNova.trim()) {
@@ -136,9 +156,12 @@ export function FormAtendimento({
     return null;
   }
 
-  async function salvar() {
+  async function salvar(conf: Confirmado = {}) {
     setErro("");
-    if (!cliente && !novaCliente) {
+    setAviso(null);
+    const escolhida = conf.clienteFixa ?? cliente;
+    const nova = !escolhida && novaCliente;
+    if (!escolhida && !novaCliente) {
       setErro("Escolha a cliente.");
       return;
     }
@@ -153,17 +176,34 @@ export function FormAtendimento({
       setErro(avisoAlmoco(almoco));
       return;
     }
-    if (almoco && modo === "registrar" && marcarRetorno && conflitaComAlmoco(almoco, retornoHora ?? hora, duracao)) {
-      setErro(`O horário do retorno cai no almoço (${almoco.inicio} às ${almoco.fim}). Escolha outro.`);
-      return;
-    }
     setSalvando(true);
-    const clienteId = await clienteEscolhida();
+    // 1) Cliente nova parecida com uma que já existe? Pergunta antes de criar outra ficha
+    if (nova && !conf.novaConfirmada) {
+      const telefone = normalizarTelefone(telefoneNova);
+      if (nomeNova.trim() && telefoneValido(telefone)) {
+        const lista = await buscarParecidas(empresa.id, nomeNova, telefone);
+        if (lista.length) {
+          setSalvando(false);
+          setAviso({ tipo: "parecida", lista });
+          return;
+        }
+      }
+    }
+    // 2) A cliente já tem horário marcado (de hoje em diante)? Pop-up: substituir ou criar um novo
+    if (escolhida && !conf.diaConfirmado) {
+      const lista = await horariosMarcadosDaCliente(escolhida.id, agora.data);
+      if (lista.length) {
+        setSalvando(false);
+        setAviso({ tipo: "horario", lista });
+        return;
+      }
+    }
+    const clienteId = await clienteEscolhida(conf.clienteFixa);
     if (!clienteId) {
       setSalvando(false);
       return;
     }
-    const realizado = modo === "registrar";
+    const realizado = modo === "registrar" && !noFuturo;
     const base = {
       empresa_id: empresa.id,
       cliente_id: clienteId,
@@ -181,10 +221,6 @@ export function FormAtendimento({
         valor: null,
       },
     ];
-    const diaRetorno = retornoData ?? retornoPrevisto;
-    if (realizado && marcarRetorno && diaRetorno) {
-      novos.push({ ...base, inicio: instanteNoSalao(diaRetorno, retornoHora ?? hora), status: "agendado", valor: null });
-    }
     const { error } = await supabase().from("agendamentos").insert(novos);
     setSalvando(false);
     if (error) {
@@ -193,6 +229,34 @@ export function FormAtendimento({
     }
     aoSalvar();
   }
+
+  // "Mudar esse horário": o horário que já existia passa para a hora (e o serviço) escolhidos,
+  // em vez de nascer um segundo horário da mesma cliente no mesmo dia
+  async function mudarHorario(h: HorarioMarcado) {
+    setSalvando(true);
+    setErro("");
+    const novoInicio = instanteNoSalao(data, hora);
+    const mudou = Date.parse(h.inicio) !== Date.parse(novoInicio);
+    const anotacao = `Reagendado de ${formatarData(h.inicio).slice(0, 5)} às ${formatarHora(h.inicio)}`;
+    const { error } = await supabase()
+      .from("agendamentos")
+      .update({
+        inicio: novoInicio,
+        fim: null,
+        servico_id: servicoId,
+        status: modo === "registrar" && !noFuturo ? "realizado" : "agendado",
+        ...(mudou ? { observacoes: [h.observacoes, anotacao].filter(Boolean).join("\n") } : {}),
+      })
+      .eq("id", h.id);
+    setSalvando(false);
+    if (error) {
+      setErro(`Não foi possível mudar o horário: ${error.message}`);
+      return;
+    }
+    aoSalvar();
+  }
+
+  const nomeDaCliente = cliente?.nome ?? (nomeNova.trim() || "a cliente");
 
   const campo =
     "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
@@ -303,9 +367,16 @@ export function FormAtendimento({
           </p>
         )}
 
-      {/* Retorno: aparece assim que a dona escolhe o serviço */}
-      {modo === "registrar" && servico && (
-        <section className="space-y-3 rounded-xl border border-neutral-200 p-3">
+      {/* Horário que ainda não chegou: avisa que entra como a próxima cliente */}
+      {modo === "registrar" && noFuturo && (
+        <p className="rounded-xl bg-amber-50 p-3 text-amber-900">
+          Esse horário ainda não chegou: ela entra na agenda como <strong>próxima cliente</strong>, para você confirmar depois.
+        </p>
+      )}
+
+      {/* Retorno: só informa a data; quem chama a cliente quando chegar a hora é a IA */}
+      {modo === "registrar" && !noFuturo && servico && (
+        <section className="space-y-1 rounded-xl border border-neutral-200 p-3">
           <h3 className="text-lg font-semibold">Retorno</h3>
           {retornoPrevisto ? (
             <>
@@ -313,41 +384,8 @@ export function FormAtendimento({
                 Ela deve voltar em <strong>{formatarData(retornoPrevisto)}</strong> ({prazo(retornoPrevisto)})
               </p>
               <p className="text-sm text-neutral-500">
-                {servico.nome} tem retorno de {servico.dias_retorno} dias. A cliente entra na lista &quot;Para chamar&quot;
-                quando a data chegar.
+                {servico.nome} tem retorno de {servico.dias_retorno} dias. A IA chama a cliente quando a data chegar.
               </p>
-              <button
-                type="button"
-                onClick={() => setMarcarRetorno(!marcarRetorno)}
-                aria-pressed={marcarRetorno}
-                className={`h-12 w-full rounded-xl font-semibold ${
-                  marcarRetorno ? "chip-ativo" : "border border-neutral-300 active:bg-neutral-100"
-                }`}
-              >
-                {marcarRetorno ? "✓ Retorno será marcado na agenda" : "Já marcar o horário do retorno"}
-              </button>
-              {marcarRetorno && (
-                <div className="grid grid-cols-2 gap-3">
-                  <label className="block space-y-1">
-                    <span className="font-medium">Dia do retorno</span>
-                    <input
-                      type="date"
-                      value={retornoData ?? retornoPrevisto}
-                      onChange={(e) => setRetornoData(e.target.value)}
-                      className={campo}
-                    />
-                  </label>
-                  <label className="block space-y-1">
-                    <span className="font-medium">Hora</span>
-                    <input
-                      type="time"
-                      value={retornoHora ?? hora}
-                      onChange={(e) => setRetornoHora(e.target.value)}
-                      className={campo}
-                    />
-                  </label>
-                </div>
-              )}
             </>
           ) : (
             <p className="text-neutral-600">{servico.nome} não tem retorno programado.</p>
@@ -355,15 +393,123 @@ export function FormAtendimento({
         </section>
       )}
 
+      {aviso?.tipo === "parecida" && (
+        <section className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
+          {aviso.lista.some((c) => c.mesmoTelefone) ? (
+            <>
+              <h3 className="text-lg font-semibold text-amber-900">Esse telefone já está cadastrado</h3>
+              <p className="text-amber-900">Um telefone só pode ter uma ficha. Use a cliente que já existe:</p>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-amber-900">Essa cliente já não está cadastrada?</h3>
+              <p className="text-amber-900">
+                {aviso.lista.length === 1 ? "Achamos uma cliente parecida." : "Achamos clientes parecidas."} Se for ela, use a ficha que já existe:
+              </p>
+            </>
+          )}
+          {aviso.lista.filter((c) => c.mesmoTelefone || !aviso.lista.some((x) => x.mesmoTelefone)).map((c) => (
+            <button
+              key={c.id}
+              onClick={() => {
+                setCliente(c);
+                setNovaCliente(false);
+                salvar({ clienteFixa: c });
+              }}
+              disabled={salvando}
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-amber-300 bg-white px-4 py-3 text-left active:bg-amber-100"
+            >
+              <span>
+                <span className="block font-semibold">{c.nome ?? "Sem nome"}</span>
+                <span className="block text-sm text-neutral-600">
+                  {formatarTelefone(c.telefone)} · {c.motivo}
+                </span>
+              </span>
+              <span className="shrink-0 font-semibold text-[var(--cor-principal)]">{c.mesmoTelefone ? "Usar esta" : "É ela"}</span>
+            </button>
+          ))}
+          {/* Mesmo telefone: não existe "outra pessoa" (o número não pode ter duas fichas) */}
+          {aviso.lista.some((c) => c.mesmoTelefone) ? (
+            <button onClick={() => setAviso(null)} disabled={salvando} className="h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold">
+              Voltar e corrigir o telefone
+            </button>
+          ) : (
+            <button onClick={() => setAviso({ tipo: "nova" })} disabled={salvando} className="h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold">
+              Não, é outra pessoa
+            </button>
+          )}
+        </section>
+      )}
+
+      {aviso?.tipo === "nova" && (
+        <section className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
+          <h3 className="text-lg font-semibold text-amber-900">Criar uma ficha nova para {nomeDaCliente}?</h3>
+          <p className="text-amber-900">Ela vai ficar separada da cliente parecida. Só confirme se tiver certeza de que é outra pessoa.</p>
+          <div className="grid grid-cols-2 gap-2">
+            <button onClick={() => setAviso(null)} disabled={salvando} className="h-12 rounded-xl border border-neutral-300 bg-white font-semibold">
+              Voltar
+            </button>
+            <button onClick={() => salvar({ novaConfirmada: true })} disabled={salvando} className="h-12 rounded-xl bg-amber-700 font-bold text-white">
+              {salvando ? "Salvando…" : "Sim, criar nova"}
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Pop-up: a cliente já tem horário marcado. Substituir pelo novo (o mesmo horário muda de
+          dia/hora/serviço) ou, se ela vai vir mais de uma vez, criar um novo */}
+      {aviso?.tipo === "horario" && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setAviso(null)}>
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="titulo-horario-marcado"
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-sm space-y-3 rounded-3xl bg-white p-5 shadow-2xl"
+          >
+            <h3 id="titulo-horario-marcado" className="text-xl font-bold">
+              {nomeDaCliente} já tem horário marcado
+            </h3>
+            {aviso.lista.map((h) => (
+              <div key={h.id} className="space-y-2 rounded-2xl border border-neutral-200 p-3">
+                <p className="font-semibold">
+                  {formatarData(h.inicio).slice(0, 5)} às {formatarHora(h.inicio)} · {h.servicos?.nome ?? "Serviço não informado"}
+                </p>
+                <button
+                  onClick={() => mudarHorario(h)}
+                  disabled={salvando}
+                  className="h-12 w-full rounded-xl bg-[var(--cor-principal)] font-bold text-white disabled:opacity-50"
+                >
+                  {salvando ? "Salvando…" : `Substituir pelo novo (${formatarData(data).slice(0, 5)} às ${hora})`}
+                </button>
+              </div>
+            ))}
+            <button
+              onClick={() => salvar({ diaConfirmado: true })}
+              disabled={salvando}
+              className="h-12 w-full rounded-xl border border-neutral-300 font-semibold disabled:opacity-50"
+            >
+              Criar um novo horário
+            </button>
+            <button onClick={() => setAviso(null)} disabled={salvando} className="h-11 w-full font-semibold text-neutral-600">
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {erro && <p className="rounded-xl bg-red-100 p-3 font-medium text-red-900">{erro}</p>}
 
-      <button
-        onClick={salvar}
-        disabled={salvando}
-        className="mb-4 h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
-      >
-        {salvando ? "Salvando…" : modo === "registrar" ? "Registrar atendimento" : "Marcar horário"}
-      </button>
+      {/* Com um aviso aberto, quem decide é ele: o botão de salvar sai de cena */}
+      {!aviso && (
+        <button
+          onClick={() => salvar()}
+          disabled={salvando}
+          className="mb-4 h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
+        >
+          {salvando ? "Salvando…" : modo === "registrar" && !noFuturo ? "Registrar atendimento" : "Marcar horário"}
+        </button>
+      )}
     </Folha>
   );
 }

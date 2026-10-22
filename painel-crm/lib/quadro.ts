@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { buscarServicoDoAlo, tipoDoAlo } from "@/lib/alo";
 import { hojeNoSalao, inicioDoDia, somarDias } from "@/lib/formato";
+import { PREFIXO_SISTEMA } from "@/lib/origem";
 import type { StatusCliente } from "@/lib/status";
 import { mudarStatus, statusEfetivo, type StatusManual } from "@/lib/statusManual";
 import { supabase } from "@/lib/supabase/client";
@@ -37,7 +38,24 @@ const DIAS_CONTATO = 30;
 // Status de quem precisa ser chamada
 const NO_QUADRO: StatusCliente[] = ["retorno_chegando", "retorno_atrasado", "inativa"];
 
-export type Contato = { id: string; resultado: "pendente" | "sem_resposta" | "respondeu" | "agendou"; criado_em: string };
+// enviado: a mensagem saiu de verdade. Abrir o WhatsApp pelo card grava o contato com o texto
+// (o n8n precisa dele para reconhecer o alô), mas só conta como enviado quando sai mensagem do
+// salão para a cliente depois disso (o n8n grava em `mensagens` como 'humano'), ou quando a
+// agência arrasta o card para "Mensagem enviada" (confirmação guardada na etiqueta interna).
+export type Contato = {
+  id: string;
+  resultado: "pendente" | "sem_resposta" | "respondeu" | "agendou";
+  criado_em: string;
+  mensagem: string | null;
+  enviado: boolean;
+};
+
+const CONFIRMADO = `${PREFIXO_SISTEMA}alo_enviado:`;
+
+// Abriu o WhatsApp pelo card e a mensagem ainda não saiu: fica em "Para chamar", com aviso
+export function faltaEnviar(c: CardCliente): boolean {
+  return conversaEmAndamento(c) && c.contato?.resultado === "pendente" && !!c.contato.mensagem && !c.contato.enviado;
+}
 
 export type CardCliente = Pick<
   ClienteStatus,
@@ -65,12 +83,15 @@ function conversaEmAndamento(c: CardCliente): boolean {
 }
 
 export function etapaDe(c: CardCliente): Etapa {
+  // Tem horário marcado daqui para frente (marcou ou remarcou, pela IA ou pela Gleide): Agendado
+  if (c.proximo_agendamento) return "agendado";
   if (conversaEmAndamento(c)) {
     if (c.proximo_agendamento || c.contato?.resultado === "agendou") return "agendado";
     if (c.contato?.resultado === "respondeu") return "respondeu";
+    if (faltaEnviar(c)) return "para_chamar";
     return "enviada";
   }
-  // Fora de conversa: quem tem horário marcado (ou já foi atendida) está em dia
+  // Fora de conversa e sem horário marcado: precisa ser chamada ou está em dia
   return NO_QUADRO.includes(c.status) ? "para_chamar" : "em_dia";
 }
 
@@ -89,15 +110,22 @@ function statusAoMover(card: CardCliente, destino: Etapa): StatusManual | null {
   return null;
 }
 
-// Como o card fica depois de ir para a coluna (para a tela mudar antes do banco responder)
-export function previa(card: CardCliente, destino: Etapa): CardCliente {
+// Como o card fica depois de ir para a coluna (para a tela mudar antes do banco responder).
+// Com mensagem = abriu o WhatsApp pelo card: ainda não enviada.
+export function previa(card: CardCliente, destino: Etapa, mensagem?: string): CardCliente {
   const status = statusAoMover(card, destino) ?? card.status;
   const fora = destino === "para_chamar" || destino === "em_dia";
   if (!card.contato && fora) return { ...card, status };
   return {
     ...card,
     status,
-    contato: { id: card.contato?.id ?? "novo", criado_em: card.contato?.criado_em ?? "", resultado: RESULTADO[destino] },
+    contato: {
+      id: card.contato?.id ?? "novo",
+      criado_em: card.contato?.criado_em ?? "",
+      resultado: RESULTADO[destino],
+      mensagem: mensagem ?? card.contato?.mensagem ?? null,
+      enviado: !mensagem,
+    },
   };
 }
 
@@ -124,7 +152,7 @@ async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; 
   const [contatos, servicos] = await Promise.all([
     db
       .from("contatos")
-      .select("id, cliente_id, resultado, criado_em")
+      .select("id, cliente_id, resultado, criado_em, mensagem")
       // Pedido de remarcação (app da dona) não é chamar para voltar: não mexe na coluna do quadro
       .neq("tipo", "remarcacao")
       .in("cliente_id", ids)
@@ -134,8 +162,29 @@ async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; 
   ]);
   if (contatos.error) return { cards: [], erro: contatos.error.message };
   const ultimo: Record<string, Contato> = {};
-  for (const ct of contatos.data as (Contato & { cliente_id: string })[])
-    ultimo[ct.cliente_id] ??= { id: ct.id, resultado: ct.resultado, criado_em: ct.criado_em };
+  for (const ct of contatos.data as (Omit<Contato, "enviado"> & { cliente_id: string })[])
+    ultimo[ct.cliente_id] ??= { id: ct.id, resultado: ct.resultado, criado_em: ct.criado_em, mensagem: ct.mensagem, enviado: true };
+
+  // Alô aberto pelo card ainda pendente: confere se saiu mensagem do salão depois dele
+  const abertos = Object.entries(ultimo).filter(([, ct]) => ct.resultado === "pendente" && ct.mensagem);
+  if (abertos.length) {
+    const desde = abertos.reduce((m, [, ct]) => (ct.criado_em < m ? ct.criado_em : m), abertos[0][1].criado_em);
+    const { data: saidas } = await db
+      .from("mensagens")
+      .select("cliente_id, criado_em")
+      .eq("empresa_id", empresaId)
+      .eq("autor", "humano")
+      .in("cliente_id", abertos.map(([id]) => id))
+      .gte("criado_em", desde);
+    const etiquetasDe = new Map(clientes.map((c) => [c.id, c.etiquetas]));
+    for (const [clienteId, ct] of abertos) {
+      ct.enviado =
+        (etiquetasDe.get(clienteId) ?? []).includes(CONFIRMADO + ct.id) ||
+        ((saidas ?? []) as { cliente_id: string; criado_em: string }[]).some(
+          (m) => m.cliente_id === clienteId && Date.parse(m.criado_em) >= Date.parse(ct.criado_em),
+        );
+    }
+  }
 
   return { cards: clientes.map((c) => ({ ...c, contato: ultimo[c.id] ?? null, servico: servicos[c.id] ?? null })) };
 }
@@ -191,11 +240,19 @@ export async function moverCard(
     if (erro) return { erro };
     card = { ...card, status };
   }
-  if (card.contato) {
+  const contato = card.contato;
+  if (contato) {
     const mudanca = mensagem ? { resultado, mensagem } : { resultado };
-    const { error } = await db.from("contatos").update(mudanca).eq("id", card.contato.id);
+    const { error } = await db.from("contatos").update(mudanca).eq("id", contato.id);
     if (error) return { erro: error.message };
-    return { card: { ...card, contato: { ...card.contato, resultado } } };
+    // Arrastou para "Mensagem enviada" um alô que ainda não tinha saído: a agência confirmou o envio
+    if (!mensagem && destino === "enviada" && contato.mensagem && !contato.enviado) {
+      const erro = await adicionarEtiqueta(card.id, CONFIRMADO + contato.id);
+      if (erro) return { erro };
+      card = { ...card, etiquetas: [...card.etiquetas, CONFIRMADO + contato.id] };
+    }
+    const enviado = mensagem ? false : contato.enviado || destino === "enviada";
+    return { card: { ...card, contato: { ...contato, resultado, mensagem: mensagem ?? contato.mensagem, enviado } } };
   }
   if (destino === "para_chamar" || destino === "em_dia") return { card };
   const { data: usuario } = await db.auth.getUser();
@@ -210,8 +267,9 @@ export async function moverCard(
       mensagem: mensagem ?? null,
       criado_por: usuario.user?.id ?? null,
     })
-    .select("id, resultado, criado_em")
+    .select("id, resultado, criado_em, mensagem")
     .single();
   if (error) return { erro: error.message };
-  return { card: { ...card, contato: data as Contato, ultimo_contato: (data as Contato).criado_em } };
+  const novo = { ...(data as Omit<Contato, "enviado">), enviado: !mensagem };
+  return { card: { ...card, contato: novo, ultimo_contato: novo.criado_em } };
 }

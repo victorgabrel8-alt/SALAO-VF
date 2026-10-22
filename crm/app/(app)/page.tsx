@@ -6,14 +6,25 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
 import { FolhaConfirmar } from "@/components/FolhaConfirmar";
 import { FormAtendimento } from "@/components/FormAtendimento";
+import { Intencao } from "@/components/Intencao";
 import { LinhaDeslizante, type AcaoDeslizante } from "@/components/LinhaDeslizante";
-import type { ServicoAtivo } from "@/components/MarcarVolta";
-import { buscarAtendimentosDoDia, confirmarAtendimento, type Atendimento } from "@/lib/atendimentos";
+import {
+  buscarAtendimentosDoDia,
+  confirmarAtendimento,
+  mudarStatus,
+  naoAtendida,
+  reagendar,
+  resumoDosServicos,
+  type Atendimento,
+} from "@/lib/atendimentos";
+import { confirmarAvaliacao, useIntencoes } from "@/lib/avaliacoes";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
 import { agoraNoSalao, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, inicioDoDia, primeiroNome, somarDias } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
+import { useAgora } from "@/lib/relogio";
 import { useTempoReal } from "@/lib/tempoReal";
+import type { ServicoAtivo } from "@/lib/tipos";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
 const MOTIVOS: Record<string, string> = {
@@ -124,6 +135,7 @@ function proximaCliente(hoje: Atendimento[]): Atendimento | null {
 function selo(a: Atendimento): { rotulo: string; classe: string } {
   if (a.status === "realizado") return { rotulo: "Concluído", classe: "bg-salvia text-salvia-texto" };
   if (a.status === "faltou") return { rotulo: "Faltou", classe: "bg-rose text-rose-texto" };
+  if (naoAtendida(a)) return { rotulo: "Não atendida", classe: "bg-rose text-rose-texto" };
   if (emAndamento(a)) return { rotulo: "Agora", classe: "bg-grafite text-perola" };
   return { rotulo: "A atender", classe: "bg-taupe text-taupe-texto" };
 }
@@ -182,7 +194,14 @@ export default function InicioPage() {
 
   const ok = resumo && !("erro" in resumo) ? resumo : null;
   const proxima = ok ? proximaCliente(ok.hoje) : null;
-  const paraAtender = ok ? ok.hoje.filter((a) => a.status === "agendado").length : 0;
+  // Passou 1 h do horário e ninguém confirmou: sai da lista de hoje e vai para "Não atendidas"
+  const agora = useAgora();
+  const [verNaoAtendidas, setVerNaoAtendidas] = useState(false);
+  const naoAtendidas = ok ? ok.hoje.filter((a) => naoAtendida(a, agora)) : [];
+  const hojeNaLista = ok ? ok.hoje.filter((a) => !naoAtendida(a, agora)) : [];
+  const paraAtender = hojeNaLista.filter((a) => a.status === "agendado").length;
+  // O que a IA anotou das clientes de hoje (pré-avaliação)
+  const intencoes = useIntencoes(ok ? ok.hoje.flatMap((a) => (a.clientes ? [a.clientes.id] : [])) : [], versao);
 
   return (
     <>
@@ -252,8 +271,9 @@ export default function InicioPage() {
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                         <span className="truncate font-serif text-[21px] font-semibold">{nomeDe(proxima.clientes)}</span>
                         <span className="text-[13px] text-texto-2">
-                          {proxima.servicos?.nome ?? "Serviço não informado"} · {formatarHora(proxima.inicio)} · {duracao(minutosDe(proxima))}
+                          {resumoDosServicos(proxima)} · {formatarHora(proxima.inicio)} · {duracao(minutosDe(proxima))}
                         </span>
+                        <Intencao avaliacao={proxima.clientes ? intencoes[proxima.clientes.id] : undefined} />
                       </div>
                       <Seta />
                     </div>
@@ -269,27 +289,40 @@ export default function InicioPage() {
 
               {/* A lista do dia, com a situação de cada horário e amanhã no rodapé */}
               <Secao titulo="Hoje" extra={<LinkAgenda />}>
-                <ListaHorarios
-                  atendimentos={ok.hoje}
-                  linhaAberta={linhaAberta}
-                  aoAbrirLinha={setLinhaAberta}
-                  aoConcluir={setConfirmando}
-                  comSelo
-                />
-                {/* Rodapé da lista, como nos Ajustes do iPhone */}
-                <Link href="/agenda" className="flex items-center justify-between gap-2 px-3.5 text-[13px] text-texto-2">
-                  <span className="min-w-0">
-                    <b className="font-semibold text-texto">Amanhã:</b>{" "}
-                    {ok.amanha.length === 0 ? (
-                      "nenhum horário marcado ainda"
-                    ) : (
-                      <>
-                        {ok.amanha.length} {ok.amanha.length === 1 ? "horário" : "horários"} · primeiro às {formatarHora(ok.amanha[0].inicio)} ({nomeDe(ok.amanha[0].clientes)})
-                      </>
+                {hojeNaLista.length > 0 && (
+                  <ListaHorarios
+                    atendimentos={hojeNaLista}
+                    linhaAberta={linhaAberta}
+                    aoAbrirLinha={setLinhaAberta}
+                    aoConcluir={setConfirmando}
+                    comSelo
+                  />
+                )}
+                {/* Não atendidas: recolhidas numa linha rosé; tocar mostra quem é, e o ✓ de cada uma resolve */}
+                {naoAtendidas.length > 0 && (
+                  <>
+                    <button
+                      onClick={() => setVerNaoAtendidas((v) => !v)}
+                      aria-expanded={verNaoAtendidas}
+                      className="flex items-center gap-2.5 rounded-[18px] border border-rose-texto/30 bg-rose/60 px-3.5 py-2.5 text-left active:scale-[0.99]"
+                    >
+                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
+                        {verNaoAtendidas ? "Esconder" : naoAtendidas.length === 1 ? "1 não atendida" : `${naoAtendidas.length} não atendidas`}
+                      </span>
+                      <Seta pequena />
+                    </button>
+                    {verNaoAtendidas && (
+                      <ListaHorarios
+                        atendimentos={naoAtendidas}
+                        linhaAberta={linhaAberta}
+                        aoAbrirLinha={setLinhaAberta}
+                        aoConcluir={setConfirmando}
+                        comSelo
+                      />
                     )}
-                  </span>
-                  <Seta pequena />
-                </Link>
+                  </>
+                )}
               </Secao>
             </>
           )}
@@ -313,8 +346,24 @@ export default function InicioPage() {
         <FolhaConfirmar
           atendimento={confirmando}
           servicos={servicos}
+          intencao={confirmando.clientes ? intencoes[confirmando.clientes.id] : undefined}
           aoConfirmar={async (ids) => {
             const erro = await confirmarAtendimento(empresa.id, confirmando, ids);
+            if (!erro) recarregar();
+            return erro;
+          }}
+          aoResultado={async (resultado) => {
+            const erro = await confirmarAvaliacao(confirmando.id, confirmando.observacoes, resultado);
+            if (!erro) recarregar();
+            return erro;
+          }}
+          aoFaltou={async () => {
+            const erro = await mudarStatus(confirmando.id, "faltou");
+            if (!erro) recarregar();
+            return erro;
+          }}
+          aoRemarcar={async (inicio) => {
+            const erro = await reagendar(confirmando, inicio);
             if (!erro) recarregar();
             return erro;
           }}
@@ -370,7 +419,7 @@ function ListaHorarios({
               <span className="w-11 shrink-0 text-sm font-bold text-rotulo">{formatarHora(a.inicio)}</span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-semibold">{nomeDe(a.clientes)}</span>
-                <span className="truncate text-[13px] text-texto-2">{a.servicos?.nome ?? "Serviço não informado"}</span>
+                <span className="truncate text-[13px] text-texto-2">{resumoDosServicos(a)}</span>
               </span>
               {comSelo && <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold whitespace-nowrap ${s.classe}`}>{s.rotulo}</span>}
             </LinhaDeslizante>

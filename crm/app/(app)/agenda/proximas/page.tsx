@@ -7,7 +7,7 @@ import { Avatar } from "@/components/Avatar";
 import { useDialogo } from "@/components/Dialogo";
 import { LinhaDeslizante, type AcaoDeslizante } from "@/components/LinhaDeslizante";
 import { SeloPedido, usePedidos } from "@/components/PedidoRemarcacao";
-import { buscarProximos, type Atendimento } from "@/lib/atendimentos";
+import { buscarProximos, resumoDosServicos, type Atendimento } from "@/lib/atendimentos";
 import { useEmpresa } from "@/lib/empresa";
 import { dataNoSalao, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, primeiroNome, somarDias } from "@/lib/formato";
 import { useTempoReal } from "@/lib/tempoReal";
@@ -229,7 +229,7 @@ export default function ProximasPage() {
                         <Avatar id={a.clientes?.id ?? a.id} nome={a.clientes?.nome ?? null} tamanho="h-10 w-10 text-base" />
                         <span className="flex min-w-0 flex-1 flex-col">
                           <span className="truncate font-semibold">{nomeDe(a)}</span>
-                          <span className="truncate text-[13px] text-texto-2">{a.servicos?.nome ?? "Serviço não informado"}</span>
+                          <span className="truncate text-[13px] text-texto-2">{resumoDosServicos(a)}</span>
                           {/* Mesma cliente com mais de um horário pela frente: vale conferir se não é volta em dobro */}
                           {(porCliente.get(a.clientes?.id ?? a.id) ?? 0) > 1 && (
                             <span className="mt-0.5 w-fit rounded-full bg-rose px-2 py-0.5 text-[11px] font-bold text-rose-texto">

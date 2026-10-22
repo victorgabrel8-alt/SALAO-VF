@@ -44,22 +44,26 @@ export function proximoDiaAberto(config: Record<string, unknown>, dia: string): 
   return dia;
 }
 
-// Horários de início livres no dia, de 30 em 30 minutos, para um serviço com essa duração
+// Horários de início livres no dia, de 30 em 30 minutos, para um serviço com essa duração.
+// ignorarId: o horário que está sendo remarcado não ocupa a própria vaga.
 export async function horariosLivres(
   empresaId: string,
   config: Record<string, unknown>,
   dia: string,
   duracaoMin: number,
+  ignorarId?: string,
 ): Promise<string[]> {
   const faixa = expediente(config, dia);
   if (!faixa) return [];
-  const { data } = await supabase()
+  let consulta = supabase()
     .from("agendamentos")
     .select("inicio, fim")
     .eq("empresa_id", empresaId)
     .in("status", ["agendado", "realizado"])
     .gte("inicio", inicioDoDia(dia))
     .lt("inicio", inicioDoDia(somarDias(dia, 1)));
+  if (ignorarId) consulta = consulta.neq("id", ignorarId);
+  const { data } = await consulta;
   // Sem fim gravado, conta 1 h; atendimento que passa da meia-noite ocupa até o fim do dia
   const ocupados = ((data ?? []) as { inicio: string; fim: string | null }[]).map((a) => {
     const ini = emMinutos(formatarHora(a.inicio));

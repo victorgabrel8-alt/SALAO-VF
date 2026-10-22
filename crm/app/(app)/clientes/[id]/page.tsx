@@ -8,6 +8,7 @@ import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@
 import { etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem } from "@/lib/origem";
 import { Etiquetas } from "@/components/Etiquetas";
 import { STATUS, PontoStatus } from "@/lib/status";
+import { RESULTADOS, buscarUltimaAvaliacao, type Avaliacao } from "@/lib/avaliacoes";
 import { supabase } from "@/lib/supabase/client";
 import type { ClienteStatus, RetornoServico } from "@/lib/tipos";
 import { abrirWhatsApp } from "@/lib/whatsapp";
@@ -27,6 +28,7 @@ type Ficha = {
   retornos: RetornoServico[];
   proximo: Horario | null;
   historico: Horario[];
+  avaliacao: Avaliacao | null;
 };
 
 const ETIQUETAS_SUGERIDAS = ["vip", "alergia", "mega hair", "coloração", "química", "gestante"];
@@ -35,7 +37,7 @@ const MESES_CURTOS = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "s
 async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
   const db = supabase();
   const campos = "id, inicio, valor, servicos (nome), profissionais (nome)";
-  const [cliente, retornos, proximo, historico] = await Promise.all([
+  const [cliente, retornos, proximo, historico, avaliacao] = await Promise.all([
     db.from("clientes_status").select("*").eq("id", id).maybeSingle(),
     db.from("retornos_por_servico").select("servico_id, servico_nome, ultima_vez, retorno_previsto").eq("cliente_id", id),
     db
@@ -48,6 +50,7 @@ async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
       .limit(1)
       .maybeSingle(),
     db.from("agendamentos").select(campos).eq("cliente_id", id).eq("status", "realizado").order("inicio", { ascending: false }).limit(10),
+    buscarUltimaAvaliacao(id),
   ]);
   const falha = [cliente, retornos, proximo, historico].find((r) => r.error);
   if (falha?.error) return { erro: falha.error.message };
@@ -57,6 +60,7 @@ async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
     retornos: retornos.data as RetornoServico[],
     proximo: proximo.data as unknown as Horario | null,
     historico: historico.data as unknown as Horario[],
+    avaliacao,
   };
 }
 
@@ -115,11 +119,50 @@ function FichaCliente() {
           </>
         )}
         {ficha.proximo && <ProximoHorario horario={ficha.proximo} />}
+        {ficha.avaliacao && <OQueEla avaliacao={ficha.avaliacao} />}
         <Preferencias cliente={ficha.cliente} aoMudar={recarregar} aoEditar={() => setEditando(true)} />
         <Retornos retornos={ficha.retornos} />
         <Historico historico={ficha.historico} />
       </div>
     </div>
+  );
+}
+
+// O que a IA anotou na conversa (pré-avaliação) e, se já teve, o resultado da avaliação
+function OQueEla({ avaliacao: a }: { avaliacao: Avaliacao }) {
+  const sim = (v: boolean | null) => (v === null ? null : v ? "sim" : "não");
+  const linhas: [string, string | null][] = [
+    ["Cabelo hoje", a.pre_comprimento_atual],
+    ["Quer chegar em", a.pre_comprimento_desejado],
+    ["Cor", a.pre_cor],
+    ["Já usa mega hair", sim(a.pre_usa_mega)],
+    ["Técnica atual", a.pre_tecnica_atual],
+    ["Química recente", a.pre_quimica_recente],
+    ["Técnica de interesse", a.pre_tecnica_interesse],
+    ["Orçamento", a.pre_orcamento],
+    ["Ocasião", [a.pre_ocasiao, a.pre_data_ocasiao && formatarData(a.pre_data_ocasiao)].filter(Boolean).join(" · ") || null],
+  ];
+  const preenchidas = linhas.filter((l): l is [string, string] => !!l[1]);
+  const resultado = RESULTADOS.find((r) => r.chave === a.resultado)?.rotulo;
+  if (!a.pre_resumo && preenchidas.length === 0 && !resultado) return null;
+  return (
+    <Cartao titulo="O que ela quer">
+      {resultado && (
+        <span className="w-fit rounded-full bg-areia px-2.5 py-1 text-xs font-bold text-bronze-escuro">Avaliação: {resultado}</span>
+      )}
+      {a.pre_resumo && <p className="text-[15px] leading-normal">{a.pre_resumo}</p>}
+      {preenchidas.length > 0 && (
+        <dl className="divide-y divide-borda">
+          {preenchidas.map(([rotulo, valor]) => (
+            <div key={rotulo} className="flex justify-between gap-4 py-2 text-sm">
+              <dt className="text-texto-2">{rotulo}</dt>
+              <dd className="text-right font-medium">{valor}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <p className="text-xs text-texto-2">Anotado pela IA na conversa{a.proximo_passo ? ` · próximo passo: ${a.proximo_passo}` : ""}</p>
+    </Cartao>
   );
 }
 

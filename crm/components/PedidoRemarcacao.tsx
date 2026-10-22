@@ -3,7 +3,15 @@
 import { useEffect, useState } from "react";
 import type { Atendimento } from "@/lib/atendimentos";
 import { useEmpresa } from "@/lib/empresa";
-import { buscarPedidos, mensagemDeRemarcacao, registrarPedido, SITUACAO, situacaoDoPedido, type Pedido } from "@/lib/remarcacao";
+import {
+  buscarPedidos,
+  mensagemDeRemarcacao,
+  podeReaproveitar,
+  registrarPedido,
+  SITUACAO,
+  situacaoDoPedido,
+  type Pedido,
+} from "@/lib/remarcacao";
 import { useTempoReal } from "@/lib/tempoReal";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
@@ -29,8 +37,15 @@ export function usePedidos(atendimentos: Atendimento[]) {
 
   // Grava o pedido e abre o WhatsApp no mesmo toque (no iPhone, abrir depois de esperar o banco
   // é bloqueado). O registro termina bem antes de a Gleide apertar enviar.
+  // Já tem pedido que não foi enviado (abriu o WhatsApp e não mandou): só reabre, com o mesmo
+  // texto, sem gravar outro.
   function pedir(a: Atendimento, aoFalhar: (erro: string) => void) {
     if (!a.clientes) return;
+    const anterior = pedidos.get(a.id);
+    if (podeReaproveitar(anterior)) {
+      abrirWhatsApp(a.clientes.telefone, anterior.mensagem ?? mensagemDeRemarcacao(a));
+      return;
+    }
     const mensagem = mensagemDeRemarcacao(a);
     registrarPedido(empresa.id, a, mensagem).then((erro) => {
       if (erro) aoFalhar(erro);
@@ -49,18 +64,20 @@ export function SeloPedido({ pedido, atendimento }: { pedido: Pedido | undefined
   return <span className={`mt-1 w-fit rounded-full px-2 py-0.5 text-[11px] font-bold ${s.classe}`}>{s.rotulo(pedido)}</span>;
 }
 
-// Botão em pílula: "Pedir para remarcar" ou, já pedido e sem resposta, "Pedir de novo"
+// Botão em pílula: "Pedir para remarcar"; aberto e não enviado, "Enviar"; já enviado e sem
+// resposta, "Pedir de novo"
 export function BotaoPedir({ pedido, atendimento, aoTocar }: { pedido: Pedido | undefined; atendimento: Atendimento; aoTocar: () => void }) {
   const situacao = pedido ? situacaoDoPedido(pedido, atendimento) : null;
   if (situacao === "remarcado" || situacao === "respondeu") return null;
+  const destaque = !pedido || situacao === "nao_enviado";
   return (
     <button
       onClick={aoTocar}
       className={`h-9 shrink-0 rounded-full px-3.5 text-[13px] font-semibold active:scale-95 ${
-        pedido ? "bg-campo text-texto" : "bg-grafite text-perola"
+        destaque ? "bg-grafite text-perola" : "bg-campo text-texto"
       }`}
     >
-      {pedido ? "Pedir de novo" : "Pedir para remarcar"}
+      {!pedido ? "Pedir para remarcar" : situacao === "nao_enviado" ? "Enviar" : "Pedir de novo"}
     </button>
   );
 }
