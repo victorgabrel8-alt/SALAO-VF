@@ -34,6 +34,10 @@ module.exports = (principal, agenda, pausa) => {
     'Buffer: ler mensagens': [4540, 0], 'Buffer: limpar': [4760, 0], 'Buffer: descartar (pausada)': [3880, 200],
     // 5. Agente IA (linha de baixo)
     'Montar entrada': [0, 800], 'Marcar como lida': [220, 800], 'Agente IA': [560, 800],
+    // memória sem começo quebrado (memoria-janela.js), logo antes do agente
+    'Memória: ler (Agente IA)': [560, 520], 'Memória: conferir (Agente IA)': [700, 520], 'Memória: cortar? (Agente IA)': [840, 520],
+    'Memória: apagar (Agente IA)': [980, 440], 'Memória: regravar itens (Agente IA)': [1120, 440], 'Memória: regravar (Agente IA)': [1260, 440],
+    'Memória: pronta (Agente IA)': [1260, 600],
     'Gemini Flash': [100, 1100], 'Memória (Redis)': [240, 1100], 'consultar_horarios_livres': [380, 1100], 'ver_agendamentos': [520, 1100],
     'criar_agendamento': [660, 1100], 'remarcar_agendamento': [800, 1100], 'cancelar_agendamento': [940, 1100], 'transferir_para_humano': [1080, 1100],
     'anotar_no_crm': [1220, 1100], 'CRM: registrar contato': [0, 980],
