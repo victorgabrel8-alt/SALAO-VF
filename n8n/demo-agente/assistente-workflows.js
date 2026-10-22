@@ -6,8 +6,8 @@
 //   - "Assistente - Pendências"      a cada 15 min (8h–20h) pergunta à Gleide o que falta no CRM
 //                                    (GET /webhook/assistente-pendencias dispara na hora, para testar)
 //
-// Teste: o banco é o "salao_teste" local (recriar-banco-teste.sh), credencial "Salão teste (004)".
-// Na produção troca só a credencial para o Supabase.
+// Banco: o Supabase de verdade (o mesmo do app e do CRM), pela API com a chave de serviço, chamando as funções
+// n8n_assistente_* de supabase/004 e 006. (Antes era o "salao_teste" local, credencial "Salão teste (004)".)
 
 const EMPRESA = "$env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001'";
 const NUMEROS = "($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean)";
@@ -20,61 +20,50 @@ const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendament
   'tipo_cabelo', 'comprimento_cm', 'gramas', 'valor', 'motivo_nao_fechou', 'proximo_passo', 'data_proximo_passo',
   'observacoes', 'status', 'telefone', 'nome', 'servico', 'inicio', 'texto'];
 
-// O que cada ferramenta executa. $1 = empresa, $2 = pedido_por; o resto vem da IA (sempre texto).
-const MONTAR_SQL = String.raw`
+// O que cada ferramenta chama no Supabase: uma função n8n_assistente_* (supabase/004 e 006), pela API
+// com a chave de serviço, como o agente de atendimento. Vazio vira null; o resto vem da IA (texto).
+const MONTAR_CHAMADA = String.raw`
 const e = $input.first().json;
 const empresa = ${EMPRESA};
 const v = (k) => (e[k] === undefined || e[k] === null ? '' : String(e[k]).trim());
-const num = (k) => v(k).replace(/[^0-9,.]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+const ou = (s) => (s === '' ? null : s);
+const num = (k) => { const n = v(k).replace(/[^0-9,.]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'); return n === '' ? null : Number(n); };
 const tel = (t) => { let d = String(t || '').replace(/\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return d; };
-let query, params;
+const base = { p_empresa_id: empresa, p_pedido_por: v('pedido_por') };
+let funcao, args;
 switch (v('acao')) {
   case 'buscar_cliente':
-    query = "select coalesce(json_agg(x), '[]') as resultado from (" +
-      " select c.id as cliente_id, c.nome, c.telefone, c.status, f.etapa, c.ultima_visita, c.proximo_agendamento," +
-      "        f.pre_resumo, f.pre_tecnica_interesse, f.valor_orcado, f.data_proximo_passo, c.observacoes" +
-      "   from clientes_status c join funil_clientes f on f.cliente_id = c.id" +
-      "  where c.empresa_id = $1 and (c.nome ilike '%' || $2 || '%'" +
-      "     or (regexp_replace($2, '\\D', '', 'g') <> '' and c.telefone like '%' || regexp_replace($2, '\\D', '', 'g') || '%'))" +
-      "  order by c.ultima_mensagem desc nulls last limit 8) x";
-    params = [empresa, v('busca')];
+    funcao = 'n8n_assistente_buscar_cliente'; args = { ...base, p_busca: v('busca') };
     break;
   case 'agenda_do_dia':
-    query = "select coalesce(json_agg(x order by x.inicio), '[]') as resultado from (" +
-      " select a.id as agendamento_id, a.cliente_id, c.nome, to_char(a.inicio at time zone 'America/Cuiaba', 'HH24:MI') as hora," +
-      "        a.inicio, s.nome as servico, a.status, a.valor" +
-      "   from agendamentos a join clientes c on c.id = a.cliente_id left join servicos s on s.id = a.servico_id" +
-      "  where a.empresa_id = $1 and (a.inicio at time zone 'America/Cuiaba')::date = coalesce(nullif($2, '')::date, hoje_cuiaba())) x";
-    params = [empresa, v('data')];
+    funcao = 'n8n_assistente_agenda_do_dia'; args = { ...base, p_data: ou(v('data')) };
     break;
   case 'resultado_avaliacao': {
+    const inteiro = (k) => { const n = num(k); return n === null ? '' : String(Math.trunc(n)); };
     const d = { resultado: v('resultado'), tecnica_indicada: v('tecnica_indicada'), tipo_cabelo: v('tipo_cabelo'),
-      comprimento_cm: num('comprimento_cm').split('.')[0], gramas: num('gramas').split('.')[0], valor_orcado: num('valor'),
+      comprimento_cm: inteiro('comprimento_cm'), gramas: inteiro('gramas'), valor_orcado: num('valor') === null ? '' : String(num('valor')),
       motivo_nao_fechou: v('motivo_nao_fechou'), proximo_passo: v('proximo_passo'), data_proximo_passo: v('data_proximo_passo'),
       observacoes: v('observacoes') };
-    query = 'select n8n_assistente_resultado_avaliacao($1, $2, $3::uuid, $4::jsonb) as resultado';
-    params = [empresa, v('pedido_por'), v('cliente_id'), JSON.stringify(d)];
+    funcao = 'n8n_assistente_resultado_avaliacao'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_dados: d };
     break;
   }
   case 'status_atendimento':
-    query = "select n8n_assistente_status_agendamento($1, $2, $3::uuid, $4, nullif($5, '')::numeric) as resultado";
-    params = [empresa, v('pedido_por'), v('agendamento_id'), v('status'), num('valor')];
+    funcao = 'n8n_assistente_status_agendamento';
+    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_status: v('status'), p_valor: num('valor') };
     break;
   case 'registrar_atendimento':
-    query = "select n8n_assistente_registrar_atendimento($1, $2, $3, $4," +
-      " (select id from servicos where empresa_id = $1 and ativo and nome ilike '%' || $5 || '%' order by length(nome) limit 1)," +
-      " coalesce(nullif($6, '')::timestamptz, now()), nullif($7, '')::numeric, nullif($8, '')) as resultado";
-    params = [empresa, v('pedido_por'), tel(v('telefone')), v('nome'), v('servico'),
-      v('inicio') ? v('inicio') + (/[+-]\d\d:?\d\d$|Z$/.test(v('inicio')) ? '' : '-04:00') : '', num('valor'), v('observacoes')];
+    funcao = 'n8n_assistente_registrar_atendimento_nome';
+    args = { ...base, p_telefone: tel(v('telefone')), p_nome: v('nome'), p_servico: v('servico'),
+      p_inicio: v('inicio') ? v('inicio') + (/[+-]\d\d:?\d\d$|Z$/.test(v('inicio')) ? '' : '-04:00') : null,
+      p_valor: num('valor'), p_observacoes: ou(v('observacoes')) };
     break;
   case 'anotar':
-    query = 'select n8n_assistente_anotar_cliente($1, $2, $3::uuid, $4) as resultado';
-    params = [empresa, v('pedido_por'), v('cliente_id'), v('texto')];
+    funcao = 'n8n_assistente_anotar_cliente'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
     break;
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
 }
-return [{ json: { query, params } }];
+return [{ json: { funcao, args } }];
 `;
 
 const PROMPT = `Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).
@@ -83,7 +72,7 @@ Ela é ocupada: mensagens curtíssimas, sem formalidade, no máximo 1 emoji. Pod
 Data e hora atual: {{ $now.setZone('America/Cuiaba').toFormat("cccc, dd/MM/yyyy HH:mm", { locale: 'pt-BR' }) }} (America/Cuiaba).
 
 O QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):
-{{ $('Ler pendências').first().json.pendencias }}
+{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}
 
 O QUE VOCÊ FAZ
 - Registra como foram as avaliações e os atendimentos que ela contar.
@@ -116,18 +105,29 @@ REGRAS
 - Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar ("Chamar em DD/MM: motivo"). Diga que ficou anotado
   na ficha (o envio automático ainda não existe — não prometa que você vai mandar).
 - Uma pergunta por mensagem. Se ela não responder algo, não insista.
-- Você não fala com clientes. Se ela pedir "chama a Carla", diga que por enquanto você só anota, e grave isso como próximo passo.
+- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até
+  5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.
+  Diga isso numa frase curta ("Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍").
+- Fora isso, você não fala com clientes. Se ela pedir "chama a Carla", diga que por enquanto você só anota, e grave isso como próximo passo.
+- Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
 
 module.exports = ({ env, node, str, main, toolSub, workflow }) => {
-  const PG = { postgres: { id: env.N8N_ASSISTENTE_PG_CRED_ID || '', name: 'Salão teste (004)' } };
   const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };
   const GEMINI = env.N8N_GEMINI_CRED_ID ? { googlePalmApi: { id: env.N8N_GEMINI_CRED_ID, name: 'Google Gemini(PaLM) Api account' } } : {};
   const EVO = '={{ $env.EVOLUTION_URL }}';
   const apikey = { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] };
-  const sql = (name, position, query, params, extra = {}) => node(name, 'n8n-nodes-base.postgres', 2.5, position, {
-    operation: 'executeQuery', query, options: { queryReplacement: `={{ ${params} }}` },
-  }, { credentials: PG, ...extra });
+  // Chama uma função do Supabase (POST /rest/v1/rpc/<funcao>). texto=true devolve a resposta crua em $json.data
+  // (sem isso o n8n quebra uma lista em vários itens e uma lista vazia some)
+  const supaHeaders = { parameters: [
+    { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
+    { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
+  ] };
+  const rpc = (name, position, funcao, args, { texto = false, ...extra } = {}) => node(name, 'n8n-nodes-base.httpRequest', 4.2, position, {
+    method: 'POST', url: `={{ $env.SUPABASE_URL }}/rest/v1/rpc/${funcao}`,
+    sendHeaders: true, headerParameters: supaHeaders, sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${args}) }}`,
+    options: texto ? { response: { response: { responseFormat: 'text', outputPropertyName: 'data' } } } : {},
+  }, extra);
   const ifNode = (name, position, conditions) => node(name, 'n8n-nodes-base.if', 2.2, position, {
     conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 }, conditions, combinator: 'and' },
     options: {},
@@ -160,17 +160,17 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('Recebe pedido da assistente', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
         workflowInputs: { values: CAMPOS.map((name) => ({ name })) },
       }),
-      node('Montar SQL', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: MONTAR_SQL }),
-      sql('Executar no banco', [440, 0], '={{ $json.query }}', '$json.params', { onError: 'continueRegularOutput' }),
+      node('Montar chamada', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: MONTAR_CHAMADA }),
+      rpc('Executar no banco', [440, 0], '{{ $json.funcao }}', '$json.args', { texto: true, onError: 'continueRegularOutput' }),
       node('Resposta', 'n8n-nodes-base.set', 3.4, [660, 0], {
         assignments: { assignments: [str('resposta',
-          "={{ $('Montar SQL').item.json.erro ? 'ERRO: ' + $('Montar SQL').item.json.erro : ($json.error ? 'ERRO: ' + ($json.error.message || $json.message || JSON.stringify($json.error)) : 'OK: ' + JSON.stringify($json.resultado)) }}")] },
+          "={{ $('Montar chamada').item.json.erro ? 'ERRO: ' + $('Montar chamada').item.json.erro : ($json.error ? 'ERRO: ' + ($json.error.message || $json.message || JSON.stringify($json.error)) : 'OK: ' + ($json.data || 'feito')) }}")] },
         options: {},
       }),
     ],
     connections: {
-      'Recebe pedido da assistente': main('Montar SQL'),
-      'Montar SQL': main('Executar no banco'),
+      'Recebe pedido da assistente': main('Montar chamada'),
+      'Montar chamada': main('Executar no banco'),
       'Executar no banco': main('Resposta'),
     },
     settings: { ...settings, callerPolicy: 'workflowsFromSameOwner' },
@@ -222,17 +222,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           `={{ (() => { if (${A}.tipo !== 'audioMessage') return ${A}.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; })() }}`)] },
         options: {},
       }),
-      sql('Ler pendências', [1540, 0],
-        `select coalesce(string_agg(format('- [%s] %s (…%s)%s%s — cliente_id=%s%s',
-           tipo, nome, right(telefone, 4),
-           case when inicio is not null then ' ' || to_char(inicio at time zone 'America/Cuiaba', 'DD/MM HH24:MI') else '' end,
-           case when servico is not null then ', ' || servico else '' end ||
-           case when valor_orcado is not null then ', orçado R$ ' || valor_orcado else '' end ||
-           case when proximo_passo is not null then ', próximo passo: ' || proximo_passo else '' end,
-           cliente_id, case when agendamento_id is not null then ', agendamento_id=' || agendamento_id else '' end),
-           E'\\n' order by inicio nulls last), '(nenhuma)') as pendencias
-   from pendencias_gleide where empresa_id = $1`,
-        `[ ${EMPRESA} ]`, { alwaysOutputData: true }),
+      rpc('Ler pendências', [1540, 0], 'n8n_assistente_pendencias_texto', `{ p_empresa_id: ${EMPRESA} }`,
+        { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       node('Agente assistente', '@n8n/n8n-nodes-langchain.agent', 3.1, [1760, 0], {
         promptType: 'define', text: "={{ $('Texto da mensagem').item.json.texto }}",
         options: { systemMessage: '=' + PROMPT },
@@ -305,20 +296,26 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('Disparar agora (teste)', 'n8n-nodes-base.webhook', 2, [0, 200],
         { httpMethod: 'GET', path: 'assistente-pendencias', responseMode: 'lastNode', options: {} }, { webhookId: '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91' }),
       // não pergunta de novo sobre a mesma pendência por 3h
-      sql('Pendências novas', [440, 100],
-        `select * from pendencias_gleide where empresa_id = $1
-    and (perguntado_em is null or perguntado_em < now() - interval '3 hours') order by inicio nulls last`,
-        `[ ${EMPRESA} ]`),
+      // não pergunta de novo sobre a mesma pendência por 3h (a função já filtra)
+      rpc('Pendências novas', [440, 100], 'n8n_assistente_pendencias_novas', `{ p_empresa_id: ${EMPRESA} }`, { onError: 'continueRegularOutput' }),
       node('Montar mensagem', 'n8n-nodes-base.code', 2, [660, 100], { jsCode: String.raw`
 const ps = $input.all().map((i) => i.json).filter((p) => p.tipo);
 if (!ps.length) return [];
 const nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');
-const hora = (p) => (p.inicio ? new Date(p.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' }) : '');
+// "hoje às 18:27", "ontem às 18:27" ou "20/10 às 18:27": sem o dia, um horário de ontem confunde
+const diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });
+const hora = (p) => {
+  if (!p.inicio) return '';
+  const d = new Date(p.inicio);
+  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });
+  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);
+  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;
+};
 const brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 const linha = (p) => {
-  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação da *' + nome(p) + '* (' + hora(p) + ')? Fechou?';
-  if (p.tipo === 'atendimento_sem_status') return '• A *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';
-  return '• A *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';
+  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';
+  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';
+  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';
 };
 const texto = 'Oi, Gleide! Pra deixar o CRM em dia:\n' + ps.map(linha).join('\n') + '\n\nPode responder em áudio, do seu jeito 🙂';
 const ids = ps.map((p) => p.pendencia_id);
@@ -333,8 +330,8 @@ return numeros.map((tel) => ({ json: { tel, texto, ids,
         operation: 'push', list: "=assistente:{{ $('Montar mensagem').item.json.tel }}",
         messageData: "={{ $('Montar mensagem').item.json.memoria }}", tail: false,
       }, { credentials: REDIS }),
-      sql('Marcar como perguntado', [1320, 100], 'select n8n_assistente_marcar_perguntado($1, $2, $3::uuid[])',
-        `[ ${EMPRESA}, $('Montar mensagem').item.json.tel, '{' + $('Montar mensagem').item.json.ids.join(',') + '}' ]`),
+      rpc('Marcar como perguntado', [1320, 100], 'n8n_assistente_marcar_perguntado',
+        `{ p_empresa_id: ${EMPRESA}, p_pedido_a: $('Montar mensagem').item.json.tel, p_ids: $('Montar mensagem').item.json.ids }`),
     ],
     connections: {
       'A cada 15 min': main('Horário do salão?'),

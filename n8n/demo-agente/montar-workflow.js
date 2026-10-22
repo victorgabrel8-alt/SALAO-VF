@@ -561,6 +561,9 @@ const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub,
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
 
+// Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
+const faltas = require('./faltas-workflows.js')({ env, node, main });
+
 // posições dos nós e notas coloridas por etapa (só visual)
 require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
 
@@ -573,6 +576,7 @@ fs.writeFileSync(path.join(dir, 'workflow-assistente-ferramentas.json'), JSON.st
 fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 if (process.argv.includes('--enviar')) {
@@ -615,6 +619,8 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(audiosId);
     const transcreverId = await upsert(audios.transcreverWorkflow, path.join(dir, '.workflow-audios-transcrever-id'));
     if (process.argv.includes('--ativar')) await ativar(transcreverId);
+    const faltasId = await upsert(faltas.faltasWorkflow, faltas.idFile);
+    if (process.argv.includes('--ativar')) await ativar(faltasId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));

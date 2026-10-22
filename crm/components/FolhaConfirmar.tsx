@@ -10,17 +10,35 @@ import { formatarHora, formatarTelefone, primeiroNome } from "@/lib/formato";
 // Quase sempre é "Sim" (1 toque). Se a cliente fez outra coisa ou mais coisas (marcou hidratação
 // e fez mega hair), a dona marca o que ela fez de verdade.
 // Salvo, se algum serviço feito tem retorno, já pergunta "Já combinou a volta?" (MarcarVolta).
+// "Ela não veio" (aoFaltou) grava a falta; a IA chama a cliente sozinha para remarcar (supabase/007).
 export function FolhaConfirmar({
   atendimento: a,
   servicos,
   aoConfirmar,
+  aoFaltou,
   aoFechar,
 }: {
   atendimento: Atendimento;
   servicos: ServicoAtivo[];
   aoConfirmar: (servicoIds: string[]) => Promise<string | undefined>;
+  aoFaltou?: () => Promise<string | undefined>;
   aoFechar: () => void;
 }) {
+  const [faltou, setFaltou] = useState(false);
+
+  async function marcarFalta() {
+    if (!aoFaltou) return;
+    setSalvando(true);
+    setErro("");
+    const falhou = await aoFaltou();
+    setSalvando(false);
+    if (falhou) {
+      setErro(falhou);
+      return;
+    }
+    setFaltou(true);
+    setTimeout(aoFechar, 2200);
+  }
   const [mudou, setMudou] = useState(false);
   const [escolhidos, setEscolhidos] = useState<string[]>(a.servico_id ? [a.servico_id] : []);
   const [salvando, setSalvando] = useState(false);
@@ -61,6 +79,18 @@ export function FolhaConfirmar({
       <div className="flex flex-col gap-4 pt-1 pb-5">
         {volta ? (
           <MarcarVolta atendimento={a} feitos={volta} servicos={servicos} aoFechar={aoFechar} />
+        ) : faltou ? (
+          <div role="status" className="flex flex-col items-center gap-3 py-8 text-center">
+            <span className="selo-pop flex h-[72px] w-[72px] items-center justify-center rounded-full bg-rose">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#8A3B2B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" />
+              </svg>
+            </span>
+            <div className="subir-suave flex flex-col gap-1">
+              <h2 className="font-serif text-[26px] leading-tight font-semibold">Falta anotada</h2>
+              <p className="text-[15px] text-texto-2">A IA vai chamar {nome} para remarcar e te avisa quando ela marcar.</p>
+            </div>
+          </div>
         ) : concluido ? (
           <div role="status" className="flex flex-col items-center gap-4 py-8 text-center">
             <span className="relative flex h-[84px] w-[84px] items-center justify-center">
@@ -117,6 +147,15 @@ export function FolhaConfirmar({
               >
                 Não, fez outro serviço
               </button>
+              {aoFaltou && (
+                <button
+                  onClick={marcarFalta}
+                  disabled={salvando}
+                  className="h-13 min-h-[52px] rounded-full bg-rose text-[16px] font-semibold text-rose-texto active:scale-[0.98]"
+                >
+                  Ela não veio
+                </button>
+              )}
             </div>
           </>
         ) : (
@@ -168,7 +207,7 @@ export function FolhaConfirmar({
         )}
 
         {erro && <p className="rounded-2xl bg-rose p-3 text-rose-texto">Não deu para salvar: {erro}</p>}
-        {!volta && !concluido && (
+        {!volta && !concluido && !faltou && (
           <button onClick={aoFechar} className="h-11 text-[16px] font-semibold text-texto-2">
             Cancelar
           </button>
