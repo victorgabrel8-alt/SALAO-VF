@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Folha } from "@/components/Folha";
 import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida, restaurarCliente } from "@/lib/excluidas";
@@ -199,177 +200,170 @@ export function FormAtendimento({
     `h-11 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-neutral-100 text-neutral-800"}`;
 
   return (
-    <div className="fixed inset-0 z-20 flex items-end bg-black/40" onClick={aoFechar}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="mx-auto max-h-[92dvh] w-full max-w-xl space-y-5 overflow-y-auto rounded-t-3xl bg-white px-4 pt-5 pb-safe"
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold">{modo === "registrar" ? "Registrar atendimento" : "Novo horário"}</h2>
-          <button onClick={aoFechar} className="h-11 px-3 text-lg font-semibold text-neutral-600">
-            Fechar
-          </button>
-        </div>
-
-        {/* Cliente */}
-        <section className="space-y-2">
-          <h3 className="text-lg font-semibold">Cliente</h3>
-          {cliente ? (
-            <div className="flex items-center justify-between rounded-xl bg-neutral-100 p-3">
-              <div>
-                <p className="text-lg font-semibold">{cliente.nome ?? "Sem nome"}</p>
-                <p className="text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
-              </div>
-              <button onClick={() => setCliente(null)} className="h-11 px-3 font-semibold text-[var(--cor-principal)]">
-                Trocar
-              </button>
-            </div>
-          ) : novaCliente ? (
-            <div className="space-y-2">
-              <input placeholder="Nome" value={nomeNova} onChange={(e) => setNomeNova(e.target.value)} className={campo} />
-              <input
-                placeholder="Telefone com DDD"
-                inputMode="tel"
-                value={telefoneNova}
-                onChange={(e) => setTelefoneNova(e.target.value)}
-                className={campo}
-              />
-              <button onClick={() => setNovaCliente(false)} className="h-11 font-semibold text-[var(--cor-principal)]">
-                Buscar cliente já cadastrada
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <input
-                type="search"
-                placeholder="Buscar por nome ou telefone"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                className={campo}
-              />
-              {busca.trim().length >= 2 && (
-                <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200">
-                  {resultados.map((c) => (
-                    <li key={c.id}>
-                      <button onClick={() => setCliente(c)} className="w-full px-4 py-3 text-left active:bg-neutral-50">
-                        <span className="block text-lg font-semibold">{c.nome ?? "Sem nome"}</span>
-                        <span className="text-neutral-600">{formatarTelefone(c.telefone)}</span>
-                      </button>
-                    </li>
-                  ))}
-                  {resultados.length === 0 && <li className="px-4 py-3 text-neutral-500">Nenhuma cliente encontrada.</li>}
-                </ul>
-              )}
-              <button
-                onClick={() => {
-                  setNovaCliente(true);
-                  setNomeNova(/\d/.test(busca) ? "" : busca);
-                  setTelefoneNova(/\d/.test(busca) ? busca : "");
-                }}
-                className="h-12 w-full rounded-xl border-2 border-dashed border-neutral-300 font-semibold"
-              >
-                + Cliente nova
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* Serviço */}
-        <section className="space-y-2">
-          <h3 className="text-lg font-semibold">Serviço</h3>
-          <div className="flex flex-wrap gap-2">
-            {servicos.map((s) => (
-              <button key={s.id} onClick={() => setServicoId(s.id)} aria-pressed={servicoId === s.id} className={chip(servicoId === s.id)}>
-                {s.nome}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Quando */}
-        <section className="grid grid-cols-2 gap-3">
-          <label className="block space-y-1">
-            <span className="text-lg font-semibold">Dia</span>
-            <input type="date" value={data} onChange={(e) => setData(e.target.value)} className={campo} />
-          </label>
-          <label className="block space-y-1">
-            <span className="text-lg font-semibold">Hora</span>
-            <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={campo} />
-          </label>
-        </section>
-        {/* Aviso na hora, antes de salvar */}
-        {modo === "agendar" &&
-          almocoDoSalao &&
-          conflitaComAlmoco(almocoDoSalao, hora, servico?.duracao_min ?? 60) && (
-            <p className="-mt-3 text-sm font-medium text-amber-700">
-              Cai no almoço ({almocoDoSalao.inicio} às {almocoDoSalao.fim}).
-            </p>
-          )}
-
-        {/* Retorno: aparece assim que a dona escolhe o serviço */}
-        {modo === "registrar" && servico && (
-          <section className="space-y-3 rounded-xl border border-neutral-200 p-3">
-            <h3 className="text-lg font-semibold">Retorno</h3>
-            {retornoPrevisto ? (
-              <>
-                <p className="text-lg">
-                  Ela deve voltar em <strong>{formatarData(retornoPrevisto)}</strong> ({prazo(retornoPrevisto)})
-                </p>
-                <p className="text-sm text-neutral-500">
-                  {servico.nome} tem retorno de {servico.dias_retorno} dias. A cliente entra na lista &quot;Para chamar&quot;
-                  quando a data chegar.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setMarcarRetorno(!marcarRetorno)}
-                  aria-pressed={marcarRetorno}
-                  className={`h-12 w-full rounded-xl font-semibold ${
-                    marcarRetorno ? "chip-ativo" : "border border-neutral-300 active:bg-neutral-100"
-                  }`}
-                >
-                  {marcarRetorno ? "✓ Retorno será marcado na agenda" : "Já marcar o horário do retorno"}
-                </button>
-                {marcarRetorno && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <label className="block space-y-1">
-                      <span className="font-medium">Dia do retorno</span>
-                      <input
-                        type="date"
-                        value={retornoData ?? retornoPrevisto}
-                        onChange={(e) => setRetornoData(e.target.value)}
-                        className={campo}
-                      />
-                    </label>
-                    <label className="block space-y-1">
-                      <span className="font-medium">Hora</span>
-                      <input
-                        type="time"
-                        value={retornoHora ?? hora}
-                        onChange={(e) => setRetornoHora(e.target.value)}
-                        className={campo}
-                      />
-                    </label>
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-neutral-600">{servico.nome} não tem retorno programado.</p>
-            )}
-          </section>
-        )}
-
-        {erro && <p className="rounded-xl bg-red-100 p-3 font-medium text-red-900">{erro}</p>}
-
-        <button
-          onClick={salvar}
-          disabled={salvando}
-          className="mb-4 h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
-        >
-          {salvando ? "Salvando…" : modo === "registrar" ? "Registrar atendimento" : "Marcar horário"}
+    <Folha rotulo={modo === "registrar" ? "Registrar atendimento" : "Novo horário"} aoFechar={aoFechar} className="space-y-5 bg-white px-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">{modo === "registrar" ? "Registrar atendimento" : "Novo horário"}</h2>
+        <button onClick={aoFechar} className="h-11 px-3 text-lg font-semibold text-neutral-600">
+          Fechar
         </button>
       </div>
-    </div>
+
+      {/* Cliente */}
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold">Cliente</h3>
+        {cliente ? (
+          <div className="flex items-center justify-between rounded-xl bg-neutral-100 p-3">
+            <div>
+              <p className="text-lg font-semibold">{cliente.nome ?? "Sem nome"}</p>
+              <p className="text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
+            </div>
+            <button onClick={() => setCliente(null)} className="h-11 px-3 font-semibold text-[var(--cor-principal)]">
+              Trocar
+            </button>
+          </div>
+        ) : novaCliente ? (
+          <div className="space-y-2">
+            <input placeholder="Nome" value={nomeNova} onChange={(e) => setNomeNova(e.target.value)} className={campo} />
+            <input
+              placeholder="Telefone com DDD"
+              inputMode="tel"
+              value={telefoneNova}
+              onChange={(e) => setTelefoneNova(e.target.value)}
+              className={campo}
+            />
+            <button onClick={() => setNovaCliente(false)} className="h-11 font-semibold text-[var(--cor-principal)]">
+              Buscar cliente já cadastrada
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <input
+              type="search"
+              placeholder="Buscar por nome ou telefone"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className={campo}
+            />
+            {busca.trim().length >= 2 && (
+              <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200">
+                {resultados.map((c) => (
+                  <li key={c.id}>
+                    <button onClick={() => setCliente(c)} className="w-full px-4 py-3 text-left active:bg-neutral-50">
+                      <span className="block text-lg font-semibold">{c.nome ?? "Sem nome"}</span>
+                      <span className="text-neutral-600">{formatarTelefone(c.telefone)}</span>
+                    </button>
+                  </li>
+                ))}
+                {resultados.length === 0 && <li className="px-4 py-3 text-neutral-500">Nenhuma cliente encontrada.</li>}
+              </ul>
+            )}
+            <button
+              onClick={() => {
+                setNovaCliente(true);
+                setNomeNova(/\d/.test(busca) ? "" : busca);
+                setTelefoneNova(/\d/.test(busca) ? busca : "");
+              }}
+              className="h-12 w-full rounded-xl border-2 border-dashed border-neutral-300 font-semibold"
+            >
+              + Cliente nova
+            </button>
+          </div>
+        )}
+      </section>
+
+      {/* Serviço */}
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold">Serviço</h3>
+        <div className="flex flex-wrap gap-2">
+          {servicos.map((s) => (
+            <button key={s.id} onClick={() => setServicoId(s.id)} aria-pressed={servicoId === s.id} className={chip(servicoId === s.id)}>
+              {s.nome}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Quando */}
+      <section className="grid grid-cols-2 gap-3">
+        <label className="block space-y-1">
+          <span className="text-lg font-semibold">Dia</span>
+          <input type="date" value={data} onChange={(e) => setData(e.target.value)} className={campo} />
+        </label>
+        <label className="block space-y-1">
+          <span className="text-lg font-semibold">Hora</span>
+          <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={campo} />
+        </label>
+      </section>
+      {/* Aviso na hora, antes de salvar */}
+      {modo === "agendar" &&
+        almocoDoSalao &&
+        conflitaComAlmoco(almocoDoSalao, hora, servico?.duracao_min ?? 60) && (
+          <p className="-mt-3 text-sm font-medium text-amber-700">
+            Cai no almoço ({almocoDoSalao.inicio} às {almocoDoSalao.fim}).
+          </p>
+        )}
+
+      {/* Retorno: aparece assim que a dona escolhe o serviço */}
+      {modo === "registrar" && servico && (
+        <section className="space-y-3 rounded-xl border border-neutral-200 p-3">
+          <h3 className="text-lg font-semibold">Retorno</h3>
+          {retornoPrevisto ? (
+            <>
+              <p className="text-lg">
+                Ela deve voltar em <strong>{formatarData(retornoPrevisto)}</strong> ({prazo(retornoPrevisto)})
+              </p>
+              <p className="text-sm text-neutral-500">
+                {servico.nome} tem retorno de {servico.dias_retorno} dias. A cliente entra na lista &quot;Para chamar&quot;
+                quando a data chegar.
+              </p>
+              <button
+                type="button"
+                onClick={() => setMarcarRetorno(!marcarRetorno)}
+                aria-pressed={marcarRetorno}
+                className={`h-12 w-full rounded-xl font-semibold ${
+                  marcarRetorno ? "chip-ativo" : "border border-neutral-300 active:bg-neutral-100"
+                }`}
+              >
+                {marcarRetorno ? "✓ Retorno será marcado na agenda" : "Já marcar o horário do retorno"}
+              </button>
+              {marcarRetorno && (
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block space-y-1">
+                    <span className="font-medium">Dia do retorno</span>
+                    <input
+                      type="date"
+                      value={retornoData ?? retornoPrevisto}
+                      onChange={(e) => setRetornoData(e.target.value)}
+                      className={campo}
+                    />
+                  </label>
+                  <label className="block space-y-1">
+                    <span className="font-medium">Hora</span>
+                    <input
+                      type="time"
+                      value={retornoHora ?? hora}
+                      onChange={(e) => setRetornoHora(e.target.value)}
+                      className={campo}
+                    />
+                  </label>
+                </div>
+              )}
+            </>
+          ) : (
+            <p className="text-neutral-600">{servico.nome} não tem retorno programado.</p>
+          )}
+        </section>
+      )}
+
+      {erro && <p className="rounded-xl bg-red-100 p-3 font-medium text-red-900">{erro}</p>}
+
+      <button
+        onClick={salvar}
+        disabled={salvando}
+        className="mb-4 h-14 w-full rounded-xl bg-[var(--cor-principal)] text-lg font-bold text-white disabled:opacity-50"
+      >
+        {salvando ? "Salvando…" : modo === "registrar" ? "Registrar atendimento" : "Marcar horário"}
+      </button>
+    </Folha>
   );
 }
