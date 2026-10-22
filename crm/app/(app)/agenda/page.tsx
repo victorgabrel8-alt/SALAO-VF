@@ -110,6 +110,11 @@ export default function AgendaPage() {
   const [aberto, setAberto] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
   const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
+  // Concluído agora há pouco: quando a folha fecha, o cartão dele acende em verde por um instante
+  const confirmadoAgora = useRef<string | null>(null);
+  const [celebrando, setCelebrando] = useState<string | null>(null);
+  // Em "Todos", os concluídos ficam recolhidos numa linha "✓ 4 concluídos" que abre ao tocar
+  const [verConcluidos, setVerConcluidos] = useState(false);
   const { dialogo, perguntar, avisar } = useDialogo();
   const recarregar = () => setVersao((v) => v + 1);
 
@@ -175,11 +180,15 @@ export default function AgendaPage() {
   const camadaAtual: Camada = camadas.some((c) => c.chave === camada) ? camada : "todos";
   const lista = camadaAtual === "todos" ? visiveis : visiveis.filter((a) => a.status === camadaAtual);
   const selecionado = visiveis.find((a) => a.id === aberto) ?? null;
+  // O que acabou de ser concluído fica à vista até terminar de acender, depois entra no recolhido
+  const concluidos = camadaAtual === "todos" ? lista.filter((a) => a.status === "realizado" && a.id !== celebrando) : [];
+  const recolher = concluidos.length > 0 && !verConcluidos;
+  const naLinha = recolher ? lista.filter((a) => !concluidos.includes(a)) : lista;
 
   // Linha do tempo: os horários e, em "Todos", o bloco do almoço no lugar certo
   const almoco = lerAlmoco(empresa.config);
   const entradas: Entrada[] = [
-    ...lista.map((a) => ({
+    ...naLinha.map((a) => ({
       tipo: "atendimento" as const,
       atendimento: a,
       inicio: Date.parse(a.inicio),
@@ -220,8 +229,20 @@ export default function AgendaPage() {
   // A folha continua aberta depois de salvar: em seguida pergunta se já combinou a volta
   async function confirmar(a: Atendimento, servicoIds: string[]) {
     const erro = await confirmarAtendimento(empresa.id, a, servicoIds);
-    if (!erro) recarregar();
+    if (!erro) {
+      confirmadoAgora.current = a.id;
+      recarregar();
+    }
     return erro;
+  }
+
+  function fecharConfirmar() {
+    setConfirmando(null);
+    const id = confirmadoAgora.current;
+    if (!id) return;
+    confirmadoAgora.current = null;
+    setCelebrando(id);
+    setTimeout(() => setCelebrando((atual) => (atual === id ? null : atual)), 2000);
   }
 
   return (
@@ -361,8 +382,23 @@ export default function AgendaPage() {
               <Vazio texto={camadaAtual === "todos" ? "Dia livre. Nenhum horário marcado." : "Nenhum horário aqui neste dia."} />
             )}
             <ol className="flex flex-col gap-3">
+              {concluidos.length > 0 && (
+                <li>
+                  <LinhaConcluidos
+                    quantidade={concluidos.length}
+                    aberto={verConcluidos}
+                    tudoFeito={!lista.some((a) => a.status === "agendado")}
+                    aoAlternar={() => setVerConcluidos((v) => !v)}
+                  />
+                </li>
+              )}
               {entradas.map((e, i) => {
-                const fimAnterior = i > 0 ? Math.max(...entradas.slice(0, i).map((x) => x.fim)) : null;
+                // Os concluídos recolhidos também ocupavam a agenda: contam para o intervalo livre
+                const antes = [
+                  ...entradas.slice(0, i).map((x) => x.fim),
+                  ...(recolher ? concluidos.filter((a) => Date.parse(a.inicio) < e.inicio).map((a) => Date.parse(a.inicio) + minutos(a) * 60_000) : []),
+                ];
+                const fimAnterior = antes.length ? Math.max(...antes) : null;
                 const livre = fimAnterior ? Math.round((e.inicio - fimAnterior) / 60_000) : 0;
                 return (
                   <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id} className="flex flex-col gap-3">
@@ -373,6 +409,7 @@ export default function AgendaPage() {
                       <ItemLinhaDoTempo
                         atendimento={e.atendimento}
                         barra={corDaProfissional(e.atendimento.profissional_id, ordem).ponto}
+                        celebrar={celebrando === e.atendimento.id && e.atendimento.status === "realizado"}
                         aoAbrir={() => setAberto(e.atendimento.id)}
                         aoMarcar={() => alternarRealizado(e.atendimento)}
                       />
@@ -395,7 +432,7 @@ export default function AgendaPage() {
           atendimento={confirmando}
           servicos={servicos}
           aoConfirmar={(ids) => confirmar(confirmando, ids)}
-          aoFechar={() => setConfirmando(null)}
+          aoFechar={fecharConfirmar}
         />
       )}
 
@@ -489,7 +526,9 @@ function Vazio({ texto }: { texto: string }) {
 type Situacao = "concluido" | "agora" | "atender" | "faltou";
 
 const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string; sub: string }> = {
-  concluido: { rotulo: "Concluído", cartao: "bg-card opacity-70", selo: "bg-salvia text-salvia-texto", sub: "text-texto-2" },
+  // Concluído e Faltou saem da frente: sem fundo cheio nem sombra, só um contorno e bem mais claros,
+  // para os pendentes (cartão creme com sombra) saltarem aos olhos
+  concluido: { rotulo: "Concluído", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-salvia text-salvia-texto", sub: "text-texto-2" },
   agora: {
     rotulo: "Agora",
     cartao: "bg-grafite text-white shadow-[0_14px_30px_rgba(30,23,20,0.25)]",
@@ -497,7 +536,7 @@ const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string;
     sub: "text-[#C7BBAC]",
   },
   atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
-  faltou: { rotulo: "Faltou", cartao: "bg-card opacity-70", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
+  faltou: { rotulo: "Faltou", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
 };
 
 function situacaoDe(a: Atendimento): Situacao {
@@ -521,24 +560,32 @@ const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string;
 function ItemLinhaDoTempo({
   atendimento: a,
   barra,
+  celebrar,
   aoAbrir,
   aoMarcar,
 }: {
   atendimento: Atendimento;
   barra: string;
+  celebrar: boolean;
   aoAbrir: () => void;
   aoMarcar: () => void;
 }) {
   const min = minutos(a);
   const icone = ICONE_STATUS[a.status];
-  const s = SITUACAO[situacaoDe(a)];
+  const situacao = situacaoDe(a);
+  const s = SITUACAO[situacao];
+  // Já resolvido (concluído ou faltou): cartão compacto, só nome e serviço
+  const resolvido = situacao === "concluido" || situacao === "faltou";
   const reagendado = ultimoReagendamento(a);
 
   return (
     <div className="flex items-stretch gap-3">
-      <span className="w-12 shrink-0 pt-4 text-sm font-bold text-rotulo">{formatarHora(a.inicio)}</span>
+      <span className={`w-12 shrink-0 text-sm font-bold ${resolvido ? "pt-3 text-inativo" : "pt-4 text-rotulo"}`}>{formatarHora(a.inicio)}</span>
 
-      <button onClick={aoAbrir} className={`flex min-w-0 flex-1 flex-col gap-1 rounded-[20px] px-4 py-3.5 text-left ${s.cartao}`}>
+      <button
+        onClick={aoAbrir}
+        className={`flex min-w-0 flex-1 flex-col gap-1 rounded-[20px] px-4 text-left ${resolvido ? "py-2.5" : "py-3.5"} ${s.cartao} ${celebrar ? "cartao-confirmado" : ""}`}
+      >
         <span className="flex items-center justify-between gap-2">
           <span className="flex min-w-0 items-center gap-2">
             <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${barra}`} />
@@ -546,15 +593,21 @@ function ItemLinhaDoTempo({
               {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
             </span>
           </span>
-          <span className={`shrink-0 rounded-full px-[9px] py-[5px] text-[11px] font-bold whitespace-nowrap ${s.selo}`}>{s.rotulo}</span>
+          <span className={`shrink-0 rounded-full px-[9px] py-[5px] text-[11px] font-bold whitespace-nowrap ${s.selo} ${celebrar ? "selo-pop" : ""}`}>
+            {s.rotulo}
+          </span>
         </span>
         <span className={`text-[13px] ${s.sub}`}>
           {a.servicos?.nome ?? "Serviço não informado"} · {duracao(min)}
           {a.origem === "ia" && " · IA"}
         </span>
-        {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
-        <Observacao texto={a.clientes?.observacoes} />
-        {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
+        {!resolvido && (
+          <>
+            {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
+            <Observacao texto={a.clientes?.observacoes} />
+            {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
+          </>
+        )}
       </button>
 
       {/* Círculo de concluído: um toque marca realizado */}
@@ -562,10 +615,72 @@ function ItemLinhaDoTempo({
         onClick={aoMarcar}
         disabled={a.status === "faltou" || a.status === "cancelado"}
         aria-label={icone.rotulo}
-        className="flex w-8 shrink-0 items-start justify-center pt-3.5"
+        className={`flex w-8 shrink-0 items-start justify-center ${resolvido ? "pt-2.5" : "pt-3.5"}`}
       >
-        <span className={`flex h-[26px] w-[26px] items-center justify-center rounded-full text-xs font-bold ${icone.classe}`}>{icone.simbolo}</span>
+        <span className="relative flex h-[26px] w-[26px]">
+          {celebrar && <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#5E7A50]" />}
+          <span className={`relative flex h-full w-full items-center justify-center rounded-full text-xs font-bold ${icone.classe} ${celebrar ? "selo-pop" : ""}`}>
+            {a.status === "realizado" ? (
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path className={celebrar ? "check-desenhar" : ""} d="m5 12 5 5L20 7" />
+              </svg>
+            ) : (
+              icone.simbolo
+            )}
+          </span>
+        </span>
       </button>
+    </div>
+  );
+}
+
+// Os concluídos do dia recolhidos numa linha só; tocar abre (ou esconde) os cartões deles.
+// O número "pula" quando mais um entra, para a dona ver que contou.
+function LinhaConcluidos({
+  quantidade,
+  aberto,
+  tudoFeito,
+  aoAlternar,
+}: {
+  quantidade: number;
+  aberto: boolean;
+  tudoFeito: boolean;
+  aoAlternar: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-12 shrink-0" />
+      <button
+        onClick={aoAlternar}
+        aria-expanded={aberto}
+        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[20px] border border-borda px-4 py-2.5 text-left active:scale-[0.99]"
+      >
+        <span key={quantidade} className="selo-pop flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#5E7A50] text-white">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m5 12 5 5L20 7" />
+          </svg>
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-salvia-texto">
+          {aberto
+            ? "Esconder concluídos"
+            : `${tudoFeito ? "Tudo atendido · " : ""}${quantidade === 1 ? "1 concluído" : `${quantidade} concluídos`}`}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          className={`shrink-0 text-texto-2 transition-transform duration-300 ${aberto ? "rotate-180" : ""}`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      <span className="w-8 shrink-0" />
     </div>
   );
 }

@@ -26,6 +26,8 @@ export function FolhaConfirmar({
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   const [volta, setVolta] = useState<ServicoAtivo[] | null>(null);
+  // Salvou: mostra o ✓ verde por um instante antes de seguir (volta ou fechar)
+  const [concluido, setConcluido] = useState(false);
 
   function alternar(id: string) {
     setEscolhidos((atual) => (atual.includes(id) ? atual.filter((x) => x !== id) : [...atual, id]));
@@ -43,8 +45,12 @@ export function FolhaConfirmar({
     const feitos = (ids.length ? ids : [a.servico_id])
       .map((id) => servicos.find((s) => s.id === id))
       .filter((s): s is ServicoAtivo => !!s?.dias_retorno);
-    if (feitos.length) setVolta(feitos);
-    else aoFechar();
+    setConcluido(true);
+    navigator.vibrate?.(35);
+    setTimeout(() => {
+      if (feitos.length) setVolta(feitos);
+      else aoFechar();
+    }, 1400);
   }
 
   const nome = a.clientes?.nome ? primeiroNome(a.clientes.nome) : a.clientes ? formatarTelefone(a.clientes.telefone) : "A cliente";
@@ -55,6 +61,23 @@ export function FolhaConfirmar({
       <div className="flex flex-col gap-4 pt-1 pb-5">
         {volta ? (
           <MarcarVolta atendimento={a} feitos={volta} servicos={servicos} aoFechar={aoFechar} />
+        ) : concluido ? (
+          <div role="status" className="flex flex-col items-center gap-4 py-8 text-center">
+            <span className="relative flex h-[84px] w-[84px] items-center justify-center">
+              <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#5E7A50]" />
+              <span className="selo-pop relative flex h-full w-full items-center justify-center rounded-full bg-[#5E7A50] shadow-[0_12px_28px_rgba(94,122,80,0.35)]">
+                <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path className="check-desenhar" d="m5 12 5 5L20 7" />
+                </svg>
+              </span>
+            </span>
+            <div className="subir-suave flex flex-col gap-1">
+              <h2 className="font-serif text-[26px] leading-tight font-semibold">Atendimento concluído</h2>
+              <p className="text-[15px] text-texto-2">
+                {nome} · {formatarHora(a.inicio)} foi para os realizados
+              </p>
+            </div>
+          </div>
         ) : !mudou ? (
           <>
             {/* A pergunta, com o que estava marcado logo abaixo */}
@@ -145,7 +168,7 @@ export function FolhaConfirmar({
         )}
 
         {erro && <p className="rounded-2xl bg-rose p-3 text-rose-texto">Não deu para salvar: {erro}</p>}
-        {!volta && (
+        {!volta && !concluido && (
           <button onClick={aoFechar} className="h-11 text-[16px] font-semibold text-texto-2">
             Cancelar
           </button>

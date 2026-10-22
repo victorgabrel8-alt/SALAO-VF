@@ -195,6 +195,88 @@ body {
   }
 }
 
+/* Atendimento concluído (components/FolhaConfirmar.tsx e a agenda): o ✓ se desenha, o círculo
+   verde "estoura" de leve com uma onda saindo dele e o cartão acende em sálvia antes de assentar */
+@keyframes check-desenhar {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes selo-pop {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  55% {
+    transform: scale(1.18);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes onda-confirmar {
+  from {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes cartao-confirmado {
+  0% {
+    background-color: var(--color-salvia);
+    opacity: 1;
+    transform: scale(1.025);
+    box-shadow: 0 0 0 2px #5e7a50, 0 10px 24px rgb(94 122 80 / 0.25);
+  }
+  35% {
+    background-color: var(--color-salvia);
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 0 2px #5e7a50, 0 10px 24px rgb(94 122 80 / 0.2);
+  }
+}
+@keyframes subir-suave {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+}
+@utility check-desenhar {
+  stroke-dasharray: 24;
+  animation: check-desenhar 0.45s 0.2s cubic-bezier(0.65, 0, 0.35, 1) both;
+}
+@utility selo-pop {
+  animation: selo-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@utility onda-confirmar {
+  animation: onda-confirmar 0.9s 0.15s ease-out both;
+}
+@utility cartao-confirmado {
+  animation: cartao-confirmado 1.8s ease-out;
+}
+@utility subir-suave {
+  animation: subir-suave 0.4s 0.25s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .check-desenhar,
+  .selo-pop,
+  .onda-confirmar,
+  .cartao-confirmado,
+  .subir-suave {
+    animation: none;
+  }
+  .check-desenhar {
+    stroke-dasharray: none;
+  }
+}
+
 /* Contorno fino dos cartões: o creme do cartão e o pérola do fundo são quase iguais, então sem
    isso as bordas somem (como as listas agrupadas do iPhone, que têm uma linha bem leve) */
 @utility borda-suave {
