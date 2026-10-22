@@ -25,8 +25,9 @@ type Aniversariante = { id: string; nome: string | null; telefone: string; dia: 
 
 type Resumo = {
   precisam: Precisa[];
-  // Só os horários que ainda esperam a dona (status "agendado")
+  // Todos os horários de hoje e de amanhã, sem os cancelados
   hoje: Atendimento[];
+  amanha: Atendimento[];
   iaConversou: number;
   iaMarcou: number;
   aniversariantes: Aniversariante[];
@@ -48,7 +49,7 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   const hoje = hojeNoSalao();
   const desde = inicioDoDia(hoje);
   // Leve: não baixa a lista de clientes, só quem precisa da dona agora
-  const [clientes, atendimentos, mensagensIa, marcadosIa, comAniversario] = await Promise.all([
+  const [clientes, atendimentos, deAmanha, mensagensIa, marcadosIa, comAniversario] = await Promise.all([
     db
       .from("clientes_status")
       .select("id, nome, telefone, motivo_pausa, etiquetas")
@@ -56,6 +57,7 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
       .eq("ia_pausada", true)
       .in("motivo_pausa", Object.keys(MOTIVOS)),
     buscarAtendimentosDoDia(empresaId, hoje),
+    buscarAtendimentosDoDia(empresaId, somarDias(hoje, 1)),
     db.from("mensagens").select("cliente_id").eq("empresa_id", empresaId).eq("autor", "ia").gte("criado_em", desde),
     db
       .from("agendamentos")
@@ -68,10 +70,12 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   const erro = clientes.error ?? mensagensIa.error ?? marcadosIa.error ?? comAniversario.error;
   if (erro) return { erro: erro.message };
   if (atendimentos.erro) return { erro: atendimentos.erro };
+  if (deAmanha.erro) return { erro: deAmanha.erro };
 
   return {
     precisam: (clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas)) as Precisa[],
-    hoje: atendimentos.atendimentos.filter((a) => a.status === "agendado"),
+    hoje: atendimentos.atendimentos.filter((a) => a.status !== "cancelado"),
+    amanha: deAmanha.atendimentos.filter((a) => a.status !== "cancelado"),
     iaConversou: new Set((mensagensIa.data ?? []).map((m) => m.cliente_id)).size,
     iaMarcou: marcadosIa.count ?? 0,
     aniversariantes: aniversariantesDaSemana((comAniversario.data ?? []).filter((c) => !estaExcluida(c.etiquetas))),
@@ -101,20 +105,36 @@ function quandoComeca(a: Atendimento): string {
   return `em ${Math.round(falta / 60)}h`;
 }
 
+function emAndamento(a: Atendimento): boolean {
+  const inicio = Date.parse(a.inicio);
+  return Date.now() >= inicio && Date.now() < inicio + minutosDe(a) * 60_000;
+}
+
 // A próxima da fila: o primeiro horário a atender que ainda não terminou
 function proximaCliente(hoje: Atendimento[]): Atendimento | null {
   const agora = Date.now();
-  return hoje.find((a) => Date.parse(a.inicio) + minutosDe(a) * 60_000 > agora) ?? null;
+  return hoje.find((a) => a.status === "agendado" && Date.parse(a.inicio) + minutosDe(a) * 60_000 > agora) ?? null;
+}
+
+// Selo da lista "Hoje", nas mesmas cores da Agenda
+function selo(a: Atendimento): { rotulo: string; classe: string } {
+  if (a.status === "realizado") return { rotulo: "Concluído", classe: "bg-salvia text-salvia-texto" };
+  if (a.status === "faltou") return { rotulo: "Faltou", classe: "bg-rose text-rose-texto" };
+  if (emAndamento(a)) return { rotulo: "Agora", classe: "bg-grafite text-perola" };
+  return { rotulo: "A atender", classe: "bg-taupe text-taupe-texto" };
 }
 
 function nomeDe(c: { nome: string | null; telefone: string } | null | undefined): string {
   return c?.nome ?? (c ? formatarTelefone(c.telefone) : "Cliente");
 }
 
-function Secao({ titulo, children }: { titulo: string; children: ReactNode }) {
+function Secao({ titulo, extra, children }: { titulo: string; extra?: ReactNode; children: ReactNode }) {
   return (
-    <section className="flex flex-col gap-3">
-      <h2 className="rotulo text-texto-2">{titulo}</h2>
+    <section className="flex flex-col gap-2.5">
+      <div className="flex items-baseline justify-between">
+        <h2 className="rotulo text-texto-2">{titulo}</h2>
+        {extra}
+      </div>
       {children}
     </section>
   );
@@ -142,45 +162,50 @@ export default function InicioPage() {
 
   const ok = resumo && !("erro" in resumo) ? resumo : null;
   const proxima = ok ? proximaCliente(ok.hoje) : null;
+  const paraAtender = ok ? ok.hoje.filter((a) => a.status === "agendado").length : 0;
 
   return (
     <>
-      {/* Topo grafite: saudação, configurações e a próxima cliente */}
-      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-5 overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-7">
-        <span aria-hidden="true" className="absolute -top-[110px] -right-[70px] h-60 w-60 rounded-full border-[1.5px] border-bronze/45" />
-        <div className="relative flex items-center justify-between">
-          <div className="flex flex-col gap-1">
-            <span className="text-xs tracking-[0.3em] text-claro uppercase">{saudacao(agoraNoSalao().hora)}</span>
-            <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">{empresa.nome}</h1>
-          </div>
-          <Link
-            href="/configuracoes"
-            aria-label="Configurações"
-            className="relative flex h-11 w-11 items-center justify-center rounded-full border border-bronze/50"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#EFE7DC" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
-            </svg>
-            {/* Ponto bronze quando alguém precisa da dona */}
-            {ok && ok.precisam.length > 0 && <span aria-hidden className="absolute top-2 right-2.5 h-[7px] w-[7px] rounded-full bg-bronze" />}
-          </Link>
+      {/* Topo grafite enxuto: saudação, nome do salão e configurações numa linha só */}
+      <header className="relative -mt-[env(safe-area-inset-top)] flex items-center justify-between overflow-hidden rounded-b-[28px] bg-grafite px-5 pt-[calc(50px+env(safe-area-inset-top))] pb-[18px]">
+        <span aria-hidden="true" className="absolute -top-20 -right-10 h-[150px] w-[150px] rounded-full border-[1.5px] border-bronze/45" />
+        <div className="relative flex min-w-0 flex-col gap-0.5">
+          <span className="text-[11px] tracking-[0.3em] text-claro uppercase">{saudacao(agoraNoSalao().hora)}</span>
+          <h1 className="truncate font-serif text-2xl leading-tight font-semibold text-white">{empresa.nome}</h1>
         </div>
+        <Link
+          href="/configuracoes"
+          aria-label="Configurações"
+          className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-bronze/50"
+        >
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#EFE7DC" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+          </svg>
+          {/* Ponto bronze quando alguém precisa da dona */}
+          {ok && ok.precisam.length > 0 && <span aria-hidden className="absolute top-2 right-2.5 h-[7px] w-[7px] rounded-full bg-bronze" />}
+        </Link>
+      </header>
 
-        {ok && (
+      {!resumo && <p className="p-5 text-texto-2">Carregando…</p>}
+      {resumo && "erro" in resumo && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler o banco: {resumo.erro}</p>}
+
+      {ok && (
+        <div className="flex flex-col gap-[22px] px-5 pt-4">
+          {/* Próxima cliente, logo abaixo do topo */}
           <Link
             href={proxima?.clientes ? `/clientes/${proxima.clientes.id}` : "/agenda"}
-            className="relative flex flex-col gap-3.5 rounded-3xl bg-perola p-[18px] text-texto"
+            className="flex flex-col gap-3 rounded-[22px] bg-card p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)]"
           >
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold tracking-[0.25em] text-bronze-escuro uppercase">Próxima cliente</span>
               {proxima && <span className="rounded-full bg-grafite px-2.5 py-[5px] text-xs font-semibold text-perola">{quandoComeca(proxima)}</span>}
             </div>
             {proxima ? (
-              <div className="flex items-center gap-3.5">
-                <Avatar id={proxima.clientes?.id ?? proxima.id} nome={proxima.clientes?.nome ?? null} tamanho="h-[52px] w-[52px] text-[22px]" />
+              <div className="flex items-center gap-3">
+                <Avatar id={proxima.clientes?.id ?? proxima.id} nome={proxima.clientes?.nome ?? null} tamanho="h-12 w-12 text-xl" />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="truncate font-serif text-[22px] font-semibold">{nomeDe(proxima.clientes)}</span>
+                  <span className="truncate font-serif text-[21px] font-semibold">{nomeDe(proxima.clientes)}</span>
                   <span className="text-[13px] text-texto-2">
                     {proxima.servicos?.nome ?? "Serviço não informado"} · {formatarHora(proxima.inicio)} · {duracao(minutosDe(proxima))}
                   </span>
@@ -194,26 +219,13 @@ export default function InicioPage() {
               </div>
             )}
           </Link>
-        )}
-      </header>
 
-      {!resumo && <p className="p-5 text-texto-2">Carregando…</p>}
-      {resumo && "erro" in resumo && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler o banco: {resumo.erro}</p>}
-
-      {ok && (
-        <div className="flex flex-col gap-[22px] px-5 pt-[22px]">
-          {/* Horários de hoje + o que a IA fez */}
-          <Link href="/agenda" className="flex flex-col gap-1 rounded-[20px] bg-card px-[18px] py-3.5">
-            <span className="flex items-center gap-3.5">
-              <span className="font-serif text-4xl leading-none font-semibold">{ok.hoje.length}</span>
-              <span className="text-sm text-texto-2">{ok.hoje.length === 1 ? "horário para atender hoje" : "horários para atender hoje"}</span>
-            </span>
-            {(ok.iaConversou > 0 || ok.iaMarcou > 0) && (
-              <span className="text-[13px] text-texto-2">
-                A IA conversou com {ok.iaConversou} {ok.iaConversou === 1 ? "cliente" : "clientes"} e marcou {ok.iaMarcou} hoje
-              </span>
-            )}
-          </Link>
+          {/* Três números do dia */}
+          <div className="-mt-2 grid grid-cols-3 gap-2.5">
+            <Numero valor={paraAtender} rotulo="para atender hoje" href="/agenda" />
+            <Numero valor={ok.iaConversou} rotulo={ok.iaConversou === 1 ? "conversa da IA hoje" : "conversas da IA hoje"} href="/conversas" />
+            <Numero valor={ok.iaMarcou} rotulo={ok.iaMarcou === 1 ? "marcado pela IA" : "marcados pela IA"} />
+          </div>
 
           {ok.precisam.length > 0 && (
             <Secao titulo="Precisam de você">
@@ -234,14 +246,71 @@ export default function InicioPage() {
             </Secao>
           )}
 
+          {/* A lista do dia, com a situação de cada horário */}
+          <Secao
+            titulo="Hoje"
+            extra={
+              <Link href="/agenda" className="text-[13px] font-semibold text-bronze-escuro">
+                Ver agenda
+              </Link>
+            }
+          >
+            {ok.hoje.length === 0 ? (
+              <p className="rounded-[22px] bg-card p-4 text-[15px] text-texto-2">Nenhum horário marcado hoje.</p>
+            ) : (
+              <ul className="rounded-[22px] bg-card">
+                {ok.hoje.map((a, i) => {
+                  const s = selo(a);
+                  return (
+                    <li key={a.id} className={i > 0 ? "border-t border-borda" : ""}>
+                      <Link href={a.clientes ? `/clientes/${a.clientes.id}` : "/agenda"} className="flex items-center gap-3 px-3.5 py-3">
+                        <span className="w-11 shrink-0 text-sm font-bold text-rotulo">{formatarHora(a.inicio)}</span>
+                        <span className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate font-semibold">{nomeDe(a.clientes)}</span>
+                          <span className="truncate text-[13px] text-texto-2">{a.servicos?.nome ?? "Serviço não informado"}</span>
+                        </span>
+                        <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-bold whitespace-nowrap ${s.classe}`}>{s.rotulo}</span>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </Secao>
+
+          {/* Amanhã num resumo de uma linha */}
+          <Secao titulo="Amanhã">
+            <Link href="/agenda" className="flex items-center gap-3 rounded-[22px] bg-card p-3.5">
+              <span className="font-serif text-[30px] leading-none font-semibold">{ok.amanha.length}</span>
+              <span className="text-sm text-texto-2">
+                {ok.amanha.length === 0 ? (
+                  "nenhum horário marcado ainda"
+                ) : (
+                  <>
+                    {ok.amanha.length === 1 ? "horário marcado" : "horários marcados"} · primeiro às{" "}
+                    <b className="text-texto">{formatarHora(ok.amanha[0].inicio)}</b> ({nomeDe(ok.amanha[0].clientes)})
+                  </>
+                )}
+              </span>
+            </Link>
+          </Secao>
+
           <Secao titulo="Atalhos">
-            <button onClick={() => setRegistrando(true)} className="flex items-center gap-3.5 rounded-[20px] bg-grafite p-4 text-left text-perola">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A88A68" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <rect x="3" y="4" width="18" height="18" rx="2" />
-                <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" />
-              </svg>
-              <span className="text-[15px] font-semibold">Registrar atendimento</span>
-            </button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <button onClick={() => setRegistrando(true)} className="flex flex-col gap-2 rounded-[18px] bg-grafite p-3.5 text-left text-perola">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#A88A68" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" />
+                </svg>
+                <span className="text-sm font-semibold">Registrar atendimento</span>
+              </button>
+              <Link href="/conversas" className="flex flex-col gap-2 rounded-[18px] bg-card p-3.5 text-texto">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+                </svg>
+                <span className="text-sm font-semibold">Ver conversas</span>
+              </Link>
+            </div>
           </Secao>
 
           {ok.aniversariantes.length > 0 && (
@@ -283,6 +352,24 @@ export default function InicioPage() {
         />
       )}
     </>
+  );
+}
+
+// Número grande com rótulo pequeno, para o resumo do dia
+function Numero({ valor, rotulo, href }: { valor: number; rotulo: string; href?: string }) {
+  const conteudo = (
+    <>
+      <span className="font-serif text-[30px] leading-none font-semibold">{valor}</span>
+      <span className="text-xs leading-tight text-texto-2">{rotulo}</span>
+    </>
+  );
+  const estilo = "flex flex-col gap-1 rounded-[18px] bg-card p-3";
+  return href ? (
+    <Link href={href} className={estilo}>
+      {conteudo}
+    </Link>
+  ) : (
+    <div className={estilo}>{conteudo}</div>
   );
 }
 

@@ -1,14 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { useEmpresa } from "@/lib/empresa";
 import { buscarExcluidas } from "@/lib/excluidas";
-import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao } from "@/lib/formato";
-import { MOTIVOS_PRECISA, situacaoIa, type SituacaoIa } from "@/lib/ia";
+import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao, primeiroNome } from "@/lib/formato";
+import { situacaoIa, type SituacaoIa } from "@/lib/ia";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
+import { abrirWhatsApp } from "@/lib/whatsapp";
+
+// Lista no estilo do WhatsApp no iPhone: título grande no fundo claro, busca, quem precisa de
+// você em bolinhas no topo (como os stories), seletor Tudo/Atenção/IA pausada e linhas que
+// deslizam para o lado mostrando Ficha e WhatsApp.
 
 // Linha da view conversas: a última mensagem de cada cliente
 type Conversa = {
@@ -78,10 +84,100 @@ function AvatarComStatus({ id, nome, situacao, tamanho }: { id: string; nome: st
 // ✓✓ nas mensagens que saíram do salão (da IA ou da dona)
 function Enviada() {
   return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E8CA0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada" className="shrink-0">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6E8CA0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada" className="mr-1 inline-block shrink-0 align-[-3px]">
       <path d="m2 13 4 4 8-9" />
       <path d="m10 16 1 1 8-9" />
     </svg>
+  );
+}
+
+const LARGURA_ACOES = 156;
+
+// Linha que desliza para a esquerda (como no iPhone) e mostra Ficha e WhatsApp.
+// Toque simples abre a conversa; com a linha aberta, um toque só fecha.
+function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa; aberta: boolean; aoAbrir: (aberta: boolean) => void }) {
+  const router = useRouter();
+  const inicio = useRef<{ x: number; y: number } | null>(null);
+  const [arrasto, setArrasto] = useState<number | null>(null);
+  const situacao = situacaoIa(c.ia_pausada, c.motivo_pausa);
+  const nossa = c.ultimo_autor !== "cliente";
+  const deslocamento = arrasto ?? (aberta ? -LARGURA_ACOES : 0);
+
+  function tocar() {
+    if (aberta) aoAbrir(false);
+    else router.push(`/conversas/${c.cliente_id}`);
+  }
+
+  return (
+    <li className="relative overflow-hidden">
+      {/* Atalhos atrás da linha */}
+      <div className="absolute inset-y-0 right-0 flex" aria-hidden={!aberta}>
+        <Link
+          href={`/clientes/${c.cliente_id}`}
+          tabIndex={aberta ? 0 : -1}
+          className="flex w-[78px] flex-col items-center justify-center gap-1 bg-bronze-escuro text-xs font-semibold text-white"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <circle cx="12" cy="8" r="4" />
+            <path d="M4 21a8 8 0 0 1 16 0" />
+          </svg>
+          Ficha
+        </Link>
+        <button
+          onClick={() => abrirWhatsApp(c.telefone)}
+          tabIndex={aberta ? 0 : -1}
+          className="flex w-[78px] flex-col items-center justify-center gap-1 bg-salvia-texto text-xs font-semibold text-white"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+          </svg>
+          WhatsApp
+        </button>
+      </div>
+
+      <button
+        onClick={tocar}
+        onTouchStart={(e) => {
+          inicio.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }}
+        onTouchMove={(e) => {
+          if (!inicio.current) return;
+          const dx = e.touches[0].clientX - inicio.current.x;
+          const dy = e.touches[0].clientY - inicio.current.y;
+          // Só arrasta quando o gesto é mais para o lado do que para baixo (senão é rolagem)
+          if (arrasto === null && Math.abs(dx) < 8) return;
+          if (arrasto === null && Math.abs(dy) > Math.abs(dx)) {
+            inicio.current = null;
+            return;
+          }
+          const base = aberta ? -LARGURA_ACOES : 0;
+          setArrasto(Math.max(-LARGURA_ACOES - 20, Math.min(0, base + dx)));
+        }}
+        onTouchEnd={() => {
+          if (arrasto !== null) aoAbrir(arrasto < -LARGURA_ACOES / 2);
+          setArrasto(null);
+          inicio.current = null;
+        }}
+        style={{ transform: `translateX(${deslocamento}px)` }}
+        className={`relative flex w-full items-center gap-3 bg-perola px-4 text-left active:bg-campo ${arrasto === null ? "transition-transform duration-200" : ""}`}
+      >
+        <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao={situacao} tamanho="h-[52px] w-[52px] text-xl" />
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-b-[0.5px] border-borda pt-[11px] pb-3">
+          <span className="flex items-baseline justify-between gap-2">
+            <span className="truncate text-[17px] font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</span>
+            <span className={`shrink-0 text-sm ${situacao === "precisa" ? "font-bold text-bronze-escuro" : "text-texto-2"}`}>
+              {quando(c.ultima_mensagem_em)}
+            </span>
+          </span>
+          <span className="line-clamp-2 text-[15px] leading-snug text-texto-2">
+            {nossa && <Enviada />}
+            {c.ultimo_autor === "ia" && <b className="font-semibold text-bronze-escuro">IA: </b>}
+            {c.ultimo_autor === "humano" && <b className="font-semibold text-bronze-escuro">Você: </b>}
+            {c.ultima_mensagem ?? "(mensagem sem texto)"}
+          </span>
+        </span>
+      </button>
+    </li>
   );
 }
 
@@ -91,6 +187,8 @@ export default function ConversasPage() {
   const [versao, setVersao] = useState(0);
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [busca, setBusca] = useState("");
+  // Só uma linha aberta (deslizada) por vez, como no iPhone
+  const [aberta, setAberta] = useState<string | null>(null);
 
   useEffect(() => {
     let ativo = true;
@@ -126,32 +224,26 @@ export default function ConversasPage() {
       );
   }, [conversas, filtro, busca]);
 
-  // Em "Tudo", quem precisa de você aparece em destaque no topo (e não repete embaixo)
-  const destacar = filtro === "todas" && !busca.trim() && precisam.length > 0;
-  const recentes = destacar ? lista.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) !== "precisa") : lista;
-
   return (
     <>
-      {/* Topo grafite: título, resumo, busca e filtros */}
-      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-4 overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-5">
-        <span aria-hidden="true" className="absolute -top-[90px] -right-[60px] h-[200px] w-[200px] rounded-full border-[1.5px] border-bronze/45" />
-        <div className="relative flex flex-col gap-1">
-          <h1 className="font-serif text-[32px] leading-tight font-semibold text-white">Conversas</h1>
-          <p className="text-sm text-claro">
+      {/* Título grande no fundo claro, como no iPhone */}
+      <header className="flex flex-col gap-2.5 px-4 pt-6">
+        <div>
+          <h1 className="font-serif text-[34px] leading-tight font-semibold">Conversas</h1>
+          <p className="text-sm text-texto-2">
             {total.todas} {total.todas === 1 ? "conversa" : "conversas"}
             {total.precisa > 0 && (
               <>
                 {" · "}
-                <span className="font-semibold text-bronze">
+                <span className="font-semibold text-rose-texto">
                   {total.precisa} {total.precisa === 1 ? "precisa" : "precisam"} de você
                 </span>
               </>
             )}
           </p>
         </div>
-
-        <label className="relative flex h-12 items-center gap-2.5 rounded-full border border-bronze/30 bg-white/[0.08] px-[18px]">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A88A68" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <label className="flex h-[38px] items-center gap-2 rounded-xl bg-campo px-2.5">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8F8377" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
@@ -161,95 +253,66 @@ export default function ConversasPage() {
             placeholder="Pesquisar"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent text-base text-perola outline-none placeholder:text-[#9A8C80]"
+            className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#8F8377]"
           />
         </label>
-
-        <div className="relative flex gap-2 overflow-x-auto [scrollbar-width:none]">
-          {FILTROS.map((f) => (
-            <button
-              key={f.chave}
-              onClick={() => setFiltro(f.chave)}
-              aria-pressed={filtro === f.chave}
-              className={`h-11 shrink-0 rounded-full px-4 text-sm font-semibold whitespace-nowrap ${
-                filtro === f.chave ? "bg-bronze text-grafite" : "border border-bronze/40 text-perola"
-              }`}
-            >
-              {f.rotulo}
-              {total[f.chave] > 0 && f.chave !== "todas" && <span className="ml-1.5 opacity-70">{total[f.chave]}</span>}
-            </button>
-          ))}
-        </div>
       </header>
 
-      {!resultado && <p className="px-5 pt-5 text-texto-2">Carregando…</p>}
-      {resultado && "erro" in resultado && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler as conversas: {resultado.erro}</p>}
+      {!resultado && <p className="px-4 pt-5 text-texto-2">Carregando…</p>}
+      {resultado && "erro" in resultado && <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler as conversas: {resultado.erro}</p>}
 
-      {/* Destaque: quem pediu para falar com a dona */}
-      {destacar && (
-        <section className="mt-5">
-          <h2 className="rotulo px-5 text-rose-texto">Precisam de você</h2>
-          <div className="mt-3 flex gap-3 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-            {precisam.map((c) => (
-              <Link key={c.cliente_id} href={`/conversas/${c.cliente_id}`} className="w-60 shrink-0 rounded-[20px] bg-card p-3.5 active:bg-campo">
-                <div className="flex items-center gap-2.5">
-                  <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao="precisa" tamanho="h-10 w-10 text-base" />
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</p>
-                    <p className="text-xs text-texto-2">{quando(c.ultima_mensagem_em)}</p>
-                  </div>
-                </div>
-                <p className="mt-2 text-sm font-semibold text-rose-texto">{c.motivo_pausa ? MOTIVOS_PRECISA[c.motivo_pausa] : "Precisa de você"}</p>
-                <p className="truncate text-sm text-texto-2">“{c.ultima_mensagem ?? "…"}”</p>
-              </Link>
-            ))}
-          </div>
+      {/* Quem precisa de você, em bolinhas (como os stories do Instagram/Messenger) */}
+      {precisam.length > 0 && !busca.trim() && (
+        <section aria-label="Precisam de você" className="flex gap-3.5 overflow-x-auto px-4 pt-3.5 pb-1 [scrollbar-width:none]">
+          {precisam.map((c) => (
+            <Link key={c.cliente_id} href={`/conversas/${c.cliente_id}`} className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center text-xs text-rotulo">
+              <span className="rounded-full bg-[conic-gradient(#8A3B2B,#A88A68,#8A3B2B)] p-[3px]">
+                <span className="block rounded-full border-2 border-perola">
+                  <Avatar id={c.cliente_id} nome={c.nome} tamanho="h-[54px] w-[54px] text-xl" />
+                </span>
+              </span>
+              <span className="w-full truncate">{c.nome ? primeiroNome(c.nome) : formatarTelefone(c.telefone)}</span>
+            </Link>
+          ))}
         </section>
       )}
 
+      {/* Seletor do iPhone: troca de lista com um toque */}
+      <div role="group" aria-label="Filtrar conversas" className="mx-4 mt-3 mb-1.5 grid grid-cols-3 rounded-[10px] bg-campo p-0.5">
+        {FILTROS.map((f) => (
+          <button
+            key={f.chave}
+            onClick={() => setFiltro(f.chave)}
+            aria-pressed={filtro === f.chave}
+            className={`h-11 rounded-lg text-[13px] font-semibold ${
+              filtro === f.chave ? "bg-card text-grafite shadow-[0_1px_4px_rgba(30,23,20,0.15)]" : "text-rotulo"
+            }`}
+          >
+            {f.rotulo}
+            {total[f.chave] > 0 && f.chave !== "todas" && ` · ${total[f.chave]}`}
+          </button>
+        ))}
+      </div>
+
       {resultado && "conversas" in resultado && (
-        <section className="mt-2">
-          {destacar && <h2 className="rotulo mt-4 mb-1 px-5 text-texto-2">Recentes</h2>}
-          {recentes.length === 0 ? (
-            <p className="mx-5 mt-6 text-center text-[15px] text-texto-2">
+        <section>
+          {lista.length === 0 ? (
+            <p className="mx-4 mt-6 text-center text-[15px] text-texto-2">
               {busca.trim() ? "Nenhuma conversa encontrada." : "Nenhuma conversa aqui."}
             </p>
           ) : (
             <ul>
-              {recentes.map((c) => {
-                const situacao = situacaoIa(c.ia_pausada, c.motivo_pausa);
-                const nossa = c.ultimo_autor !== "cliente";
-                return (
-                  <li key={c.cliente_id}>
-                    <Link href={`/conversas/${c.cliente_id}`} className="flex items-center gap-3.5 px-5 py-2.5 active:bg-campo">
-                      <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao={situacao} tamanho="h-[52px] w-[52px] text-xl" />
-                      <div className="flex min-w-0 flex-1 flex-col gap-[3px] border-b border-borda pt-1.5 pb-3">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <span className="truncate text-base font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</span>
-                          <span className={`shrink-0 text-xs ${situacao === "precisa" ? "font-bold text-bronze-escuro" : "text-texto-2"}`}>
-                            {quando(c.ultima_mensagem_em)}
-                          </span>
-                        </div>
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          {nossa && <Enviada />}
-                          <span className="min-w-0 flex-1 truncate text-sm text-texto-2">
-                            {c.ultimo_autor === "ia" && <span className="font-semibold text-bronze-escuro">IA: </span>}
-                            {c.ultimo_autor === "humano" && <span className="font-semibold text-bronze-escuro">Você: </span>}
-                            {c.ultima_mensagem ?? "(mensagem sem texto)"}
-                          </span>
-                          {situacao === "precisa" && (
-                            <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-bronze px-1.5 text-xs font-bold text-grafite" aria-label="Precisa de você">
-                              !
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </Link>
-                  </li>
-                );
-              })}
+              {lista.map((c) => (
+                <LinhaDeslizante
+                  key={c.cliente_id}
+                  conversa={c}
+                  aberta={aberta === c.cliente_id}
+                  aoAbrir={(abrir) => setAberta(abrir ? c.cliente_id : null)}
+                />
+              ))}
             </ul>
           )}
+          {lista.length > 0 && <p className="px-4 pt-3 text-center text-xs text-texto-2">Deslize uma conversa para o lado para ver Ficha e WhatsApp.</p>}
         </section>
       )}
     </>

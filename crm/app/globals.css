@@ -46,6 +46,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* A Cormorant desenha o "1" como um "I" (algarismos antigos): nos números, usa os normais */
+.font-serif {
+  font-variant-numeric: lining-nums;
+}
+
 /* Rótulos pequenos em MAIÚSCULAS, bem espaçados */
 @utility rotulo {
   font-size: 11px;
