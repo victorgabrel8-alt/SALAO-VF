@@ -102,7 +102,11 @@ if (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');
 if (ficha.observacoes) linhas.push('Observações da Gleide: ' + ficha.observacoes.replace(/\s*\n\s*/g, ' | '));
 // a Gleide chamou pelo CRM e esta mensagem é a resposta dela
 const alo = $('Supabase: último alô').first().json;
-if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+// remarcação: a Gleide teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)
+if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+  ' a Gleide pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'ela') +
+  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
+else if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');
 return [{ json: { texto: linhas.join('\n') } }];
 ` }),
@@ -111,7 +115,7 @@ return [{ json: { texto: linhas.join('\n') } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,mensagem,criado_em,resultado&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
+    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
   workflow.connections['Supabase: histórico da cliente'] = main('Supabase: último alô');
@@ -135,6 +139,9 @@ Use a ficha como quem já conhece a cliente:
   topar ("quero", "sim", "pode ver"), NÃO pergunte qual serviço: use consultar_horarios_livres para a
   manutenção/serviço citado no alô (ou o último que ela fez) e já ofereça 2 horários. Se ela disser que
   não pode agora, responda com carinho, sem insistir. Não repita o texto do alô.
+- Se a ficha tiver "ALÔ DE REMARCAÇÃO", a Gleide teve um imprevisto e pediu para remarcar aquele horário.
+  É remarcar, não marcar outro: use ver_agendamentos, consultar_horarios_livres para o mesmo serviço
+  (perto do dia que ela preferir) e, com o "sim" dela, remarcar_agendamento. Nunca use criar_agendamento.
 - Nunca leia a ficha para ela nem diga "no sistema consta". Observações da Gleide (alergias, preferências) são para você levar em conta, não para repetir.`;
   entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
     `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,

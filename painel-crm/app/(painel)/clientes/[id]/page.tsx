@@ -403,7 +403,8 @@ function LinhaDoTempo({ ficha }: { ficha: Ficha }) {
     })),
     ...ficha.contatos.map((c) => ({
       quando: c.criado_em,
-      titulo: c.tipo === "reativacao" ? "Alô de reativação enviado" : "Alô de retorno enviado",
+      titulo:
+        c.tipo === "reativacao" ? "Alô de reativação enviado" : c.tipo === "remarcacao" ? "Pedido de remarcação enviado" : "Alô de retorno enviado",
       detalhe: RESULTADO_CONTATO[c.resultado] ?? c.resultado,
     })),
     ...Object.entries(

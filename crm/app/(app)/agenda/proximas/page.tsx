@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { useDialogo } from "@/components/Dialogo";
 import { LinhaDeslizante, type AcaoDeslizante } from "@/components/LinhaDeslizante";
+import { SeloPedido, usePedidos } from "@/components/PedidoRemarcacao";
 import { buscarProximos, type Atendimento } from "@/lib/atendimentos";
 import { useEmpresa } from "@/lib/empresa";
 import { dataNoSalao, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, primeiroNome, somarDias } from "@/lib/formato";
@@ -46,10 +48,21 @@ function mensagemSobreHorario(a: Atendimento): string {
   return `Oi${nome}! Tudo bem? Sobre o seu horário de ${quando} às ${formatarHora(a.inicio)}: `;
 }
 
-function acoesDe(a: Atendimento, abrirFicha: () => void): AcaoDeslizante[] {
+function acoesDe(a: Atendimento, abrirFicha: () => void, pedirRemarcacao: () => void): AcaoDeslizante[] {
   const cliente = a.clientes;
   if (!cliente) return [];
   return [
+    // Imprevisto: grava o pedido e abre o WhatsApp com a mensagem; a resposta dela cai na IA
+    {
+      rotulo: "Remarcar",
+      cor: "bg-grafite",
+      aoTocar: pedirRemarcacao,
+      icone: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8M21 3v5h-5M21 12a9 9 0 0 1-15 6.7L3 16M3 21v-5h5" />
+        </svg>
+      ),
+    },
     {
       rotulo: "Ficha",
       cor: "bg-bronze-escuro",
@@ -98,6 +111,8 @@ export default function ProximasPage() {
   useTempoReal(["agendamentos"], empresa.id, () => setVersao((v) => v + 1));
 
   const lista = resultado && "atendimentos" in resultado ? resultado.atendimentos : null;
+  const { pedidos, pedir } = usePedidos(lista ?? []);
+  const { dialogo, avisar } = useDialogo();
   const carregando = !resultado || ("chave" in resultado && resultado.chave !== periodo);
   const frase = PERIODOS.find((p) => p.chave === periodo)!.frase;
   // Quantos horários cada cliente tem no período: mais de um costuma ser volta marcada em dobro
@@ -203,7 +218,11 @@ export default function ProximasPage() {
                         aberta={aberta === a.id}
                         aoAbrir={(sim) => setAberta(sim ? a.id : null)}
                         aoTocar={() => router.push(a.clientes ? `/clientes/${a.clientes.id}` : "/agenda")}
-                        acoes={acoesDe(a, () => a.clientes && router.push(`/clientes/${a.clientes.id}`))}
+                        acoes={acoesDe(
+                          a,
+                          () => a.clientes && router.push(`/clientes/${a.clientes.id}`),
+                          () => pedir(a, (erro) => avisar(`O WhatsApp abriu, mas o pedido não foi gravado: ${erro}. Envie mesmo assim; a IA pode pausar nessa conversa.`)),
+                        )}
                         className="gap-3 bg-card px-3.5 py-3 active:bg-campo"
                       >
                         <span className="w-11 shrink-0 text-sm font-bold text-rotulo">{formatarHora(a.inicio)}</span>
@@ -217,6 +236,7 @@ export default function ProximasPage() {
                               {porCliente.get(a.clientes?.id ?? a.id)} horários marcados
                             </span>
                           )}
+                          <SeloPedido pedido={pedidos.get(a.id)} atendimento={a} />
                         </span>
                         {/* Quem marcou: a IA (pelo WhatsApp) ou a Gleide */}
                         {a.origem === "ia" && <span className="shrink-0 rounded-full bg-areia px-2 py-1 text-[11px] font-bold text-taupe-texto">IA</span>}
@@ -228,7 +248,10 @@ export default function ProximasPage() {
             ))}
           </section>
         ))}
-        {lista && lista.length > 0 && <p className="text-center text-xs text-texto-2">Deslize uma cliente para o lado para ver Ficha e WhatsApp.</p>}
+        {lista && lista.length > 0 && (
+          <p className="text-center text-xs text-texto-2">Deslize uma cliente para o lado para Remarcar, ver a Ficha ou abrir o WhatsApp.</p>
+        )}
+        {dialogo}
       </div>
     </>
   );
