@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { useDialogo } from "@/components/Dialogo";
 import { Folha } from "@/components/Folha";
+import { BotaoPedir, SeloPedido, usePedidos } from "@/components/PedidoRemarcacao";
 import { buscarProximos, type Atendimento } from "@/lib/atendimentos";
 import { bloqueiosFuturos, salvarBloqueios, type Bloqueio } from "@/lib/bloqueios";
 import { useEmpresa, useTrocarConfig } from "@/lib/empresa";
-import { dataNoSalao, diasEntre, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, primeiroNome, somarDias } from "@/lib/formato";
-import { abrirWhatsApp } from "@/lib/whatsapp";
+import { dataNoSalao, diasEntre, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, somarDias } from "@/lib/formato";
 
 // Dias sem atender: viagem, folga, curso, imprevisto. Bloqueado, o app e a IA deixam de oferecer
 // horário nesses dias. Ao bloquear, a tela mostra quem já tem horário marcado no período, para a
@@ -31,18 +31,30 @@ function quantosDias(b: { de: string; ate: string }): string {
   return n === 1 ? "1 dia" : `${n} dias`;
 }
 
-function avisoDoImprevisto(a: Atendimento): string {
-  const nome = a.clientes?.nome ? `, ${primeiroNome(a.clientes.nome)}` : "";
-  const dia = formatarDiaLongo(dataNoSalao(a.inicio)).toLowerCase();
-  return `Oi${nome}! Tudo bem? Tive um imprevisto e não vou conseguir atender ${dia} às ${formatarHora(a.inicio)}. Vamos remarcar? Qual dia fica bom pra você?`;
-}
-
 export default function BloqueiosPage() {
   const empresa = useEmpresa();
   const trocarConfig = useTrocarConfig();
   const { dialogo, perguntar, avisar } = useDialogo();
   const [novo, setNovo] = useState(false);
   const lista = bloqueiosFuturos(empresa.config);
+
+  // Quem tem horário em algum dia bloqueado daqui para frente, para acompanhar os pedidos
+  const ultimo = lista.reduce((m, b) => (b.ate > m ? b.ate : m), "");
+  const [afetadas, setAfetadas] = useState<Atendimento[] | null>(null);
+  useEffect(() => {
+    const bloqueios = bloqueiosFuturos(empresa.config);
+    const fim = bloqueios.reduce((m, b) => (b.ate > m ? b.ate : m), "");
+    if (!fim) return;
+    let ativo = true;
+    buscarProximos(empresa.id, somarDias(fim, 1)).then((r) => {
+      if (!ativo) return;
+      setAfetadas(r.atendimentos.filter((a) => bloqueios.some((b) => dataNoSalao(a.inicio) >= b.de && dataNoSalao(a.inicio) <= b.ate)));
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [empresa.id, empresa.config]);
+  const afetadasAgora = ultimo ? afetadas : [];
 
   async function remover(b: Bloqueio) {
     if (!(await perguntar(`Voltar a atender em ${periodo(b)}? A IA volta a oferecer horários nesses dias.`, { confirmar: "Voltar a atender" }))) return;
@@ -91,6 +103,13 @@ export default function BloqueiosPage() {
               </li>
             ))}
           </ul>
+        )}
+
+        {afetadasAgora && afetadasAgora.length > 0 && (
+          <div className="flex flex-col gap-2 pt-2">
+            <span className="rotulo text-texto-2">Clientes nesses dias · {afetadasAgora.length}</span>
+            <ListaAfetadas lista={afetadasAgora} />
+          </div>
         )}
 
         <button
@@ -207,33 +226,10 @@ function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: 
           {lista && lista.length > 0 && (
             <>
               <p className="rounded-[16px] bg-ouro px-3.5 py-3 text-[15px] text-ouro-texto">
-                <b>{lista.length === 1 ? "1 cliente tem" : `${lista.length} clientes têm`} horário</b> nesses dias. O bloqueio não desmarca ninguém: avise cada uma
-                para remarcar.
+                <b>{lista.length === 1 ? "1 cliente tem" : `${lista.length} clientes têm`} horário</b> nesses dias. O bloqueio não desmarca ninguém: toque em <b>Pedir para remarcar</b>, envie a
+                mensagem e, quando ela responder, a IA oferece horários novos.
               </p>
-              <ul className="overflow-hidden rounded-[18px] bg-card borda-suave">
-                {lista.map((a, i) => (
-                  <li key={a.id} className={`flex items-center gap-3 px-3.5 py-2.5 ${i > 0 ? "border-t border-borda" : ""}`}>
-                    <Avatar id={a.clientes?.id ?? a.id} nome={a.clientes?.nome ?? null} tamanho="h-9 w-9 text-sm" />
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="truncate text-[15px] font-semibold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</span>
-                      <span className="truncate text-[13px] text-texto-2">
-                        {formatarDiaLongo(dataNoSalao(a.inicio))} · {formatarHora(a.inicio)}
-                      </span>
-                    </span>
-                    {a.clientes && (
-                      <button
-                        onClick={() => abrirWhatsApp(a.clientes!.telefone, avisoDoImprevisto(a))}
-                        aria-label={`Avisar ${a.clientes.nome ?? "a cliente"} pelo WhatsApp`}
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-salvia-texto text-white active:scale-95"
-                      >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                          <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
-                        </svg>
-                      </button>
-                    )}
-                  </li>
-                ))}
-              </ul>
+              <ListaAfetadas lista={lista} />
             </>
           )}
         </div>
@@ -251,5 +247,37 @@ function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: 
         </button>
       </div>
     </Folha>
+  );
+}
+
+// Clientes com horário em dia bloqueado, cada uma com o pedido de remarcação e o andamento dele
+function ListaAfetadas({ lista }: { lista: Atendimento[] }) {
+  const { pedidos, pedir } = usePedidos(lista);
+  const { dialogo, avisar } = useDialogo();
+  return (
+    <>
+      <ul className="overflow-hidden rounded-[18px] bg-card borda-suave">
+        {lista.map((a, i) => (
+          <li key={a.id} className={`flex items-center gap-3 px-3.5 py-2.5 ${i > 0 ? "border-t border-borda" : ""}`}>
+            <Avatar id={a.clientes?.id ?? a.id} nome={a.clientes?.nome ?? null} tamanho="h-9 w-9 text-sm" />
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="truncate text-[15px] font-semibold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</span>
+              <span className="truncate text-[13px] text-texto-2">
+                {formatarDiaLongo(dataNoSalao(a.inicio))} · {formatarHora(a.inicio)}
+              </span>
+              <SeloPedido pedido={pedidos.get(a.id)} atendimento={a} />
+            </span>
+            {a.clientes && (
+              <BotaoPedir
+                pedido={pedidos.get(a.id)}
+                atendimento={a}
+                aoTocar={() => pedir(a, (erro) => avisar(`O WhatsApp abriu, mas o pedido não foi gravado: ${erro}. Envie mesmo assim; a IA pode pausar nessa conversa.`))}
+              />
+            )}
+          </li>
+        ))}
+      </ul>
+      {dialogo}
+    </>
   );
 }

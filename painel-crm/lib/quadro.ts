@@ -125,6 +125,8 @@ async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; 
     db
       .from("contatos")
       .select("id, cliente_id, resultado, criado_em")
+      // Pedido de remarcação (app da dona) não é chamar para voltar: não mexe na coluna do quadro
+      .neq("tipo", "remarcacao")
       .in("cliente_id", ids)
       .gte("criado_em", desde)
       .order("criado_em", { ascending: false }),
