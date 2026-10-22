@@ -182,6 +182,16 @@ const pausaWorkflow = {
   settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', callerPolicy: 'workflowsFromSameOwner' },
 };
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
+const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
+// "[2]" no começo do parágrafo = responder citando a 2ª mensagem (o Quebrar mensagens tira o número)
+const REGRA_CITAR = `
+
+MENSAGENS SEGUIDAS (numeradas)
+Quando a mensagem da cliente vier em linhas numeradas ([1], [2], [3]...), são mensagens separadas que ela mandou em sequência.
+Responda cada pergunta em um parágrafo próprio, na ordem, e comece o parágrafo com o número da mensagem que ele responde (ex.: "[2] A diferença é o jeito de prender...").
+Se um parágrafo responde duas mensagens juntas, use o número da última. Mensagem que não pede resposta (ex.: "oi", "ok") não precisa de parágrafo.
+Nunca escreva os números fora do começo do parágrafo: eles somem do texto e viram o "responder mensagem" do WhatsApp.
+Mensagem sem número: responda normal, sem número.`;
 
 const nodes = [
   node('Webhook Evolution', 'n8n-nodes-base.webhook', 2, [0, 0],
@@ -259,7 +269,8 @@ const nodes = [
   }),
 
   node('Buffer: guardar msg', 'n8n-nodes-base.redis', 1, [2200, 0], {
-    operation: 'push', list: `=buffer:{{ ${D}.telefone }}`, messageData: '={{ $json.texto }}', tail: true,
+    // guarda o id junto do texto: a resposta sai "respondendo" (citando) a mensagem certa
+    operation: 'push', list: `=buffer:{{ ${D}.telefone }}`, messageData: `={{ JSON.stringify({ id: ${D}.msgId, texto: $json.texto }) }}`, tail: true,
   }, { credentials: REDIS }),
 
   node('Buffer: marcar última', 'n8n-nodes-base.redis', 1, [880, 0], {
@@ -309,9 +320,12 @@ const nodes = [
     operation: 'delete', key: `=buffer:{{ ${D}.telefone }}`,
   }, { credentials: REDIS }),
 
+  // Várias mensagens seguidas viram "[1] ...\n[2] ..." para a IA dizer qual está respondendo
+  // (item antigo do buffer, só texto, ainda é aceito)
   node('Montar entrada', 'n8n-nodes-base.set', 3.4, [2200, -20], {
     assignments: { assignments: [
-      str('texto_cliente', "={{ [].concat($('Buffer: ler mensagens').item.json.mensagens || []).join('\\n') }}"),
+      str('mensagens', `={{ JSON.stringify(${LER_BUFFER}) }}`),
+      str('texto_cliente', `={{ (() => { const ms = ${LER_BUFFER}; return ms.length > 1 ? ms.map((m, i) => '[' + (i + 1) + '] ' + m.texto).join('\\n') : ms.map((m) => m.texto).join('\\n'); })() }}`),
       str('telefone', `={{ ${D}.telefone }}`),
       str('jid', `={{ ${D}.jid }}`),
       str('msgId', `={{ ${D}.msgId }}`),
@@ -333,7 +347,7 @@ const nodes = [
     promptType: 'define',
     text: "={{ $('Montar entrada').item.json.texto_cliente }}",
     // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
-    options: { systemMessage: '=' + prompt, returnIntermediateSteps: true },
+    options: { systemMessage: '=' + prompt + REGRA_CITAR, returnIntermediateSteps: true },
   }),
 
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
@@ -357,7 +371,7 @@ const nodes = [
       "const audioEnviado = passos.some(p => p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || '')));",
       "const semTexto = /\\[SEM TEXTO\\]/i.test(t);",
       "t = t.replace(/\\[SEM TEXTO\\]/gi, '').trim();",
-      "if ((audioEnviado || semTexto) && !t.replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];",
+      "if ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];",
       "// sem negrito/markdown: mensagem de gente não tem *asterisco*",
       "t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');",
       "// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)",
@@ -372,33 +386,51 @@ const nodes = [
       "  if (!pediuPreco) fs = fs.filter(f => !/R\\$\\s?\\d|\\bvalor\\b[^.?!]*\\bdepende/i.test(f));",
       "  return fs.join(' ').trim();",
       "};",
-      "let paragrafos = t.split(/\\n\\s*\\n/).map(s => s.trim()).filter(Boolean);",
-      "const limpos = paragrafos.map(limpar).filter(Boolean);",
+      "// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;",
+      "// parágrafo sem número continua respondendo a mesma mensagem do anterior",
+      "t = t.replace(/\\s*\\[(\\d{1,2})\\]\\s*/g, '\\n\\n[$1] ').trim();",
+      "let ref = 0;",
+      "let paragrafos = t.split(/\\n\\s*\\n/).map(s => { const m = s.trim().match(/^\\[(\\d{1,2})\\]\\s*/); if (m) ref = Number(m[1]); return { t: s.trim().slice(m ? m[0].length : 0).trim(), ref }; }).filter(p => p.t);",
+      "const limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);",
       "if (limpos.length) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
-      "if (!paragrafos.length) paragrafos = ['Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊'];",
+      "if (!paragrafos.length) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
       "// Pica como gente faz no WhatsApp: cada parágrafo vira um balão, e um bloco grande (mais de ~200",
-      "// letras) é cortado entre frases em pedaços de até ~170. Balão curtinho junta com o anterior; no máximo 3",
+      "// letras) é cortado entre frases em pedaços de até ~170. Balão curtinho junta com o anterior (se responde a",
+      "// mesma mensagem); no máximo 3",
       "const pedacos = [];",
-      "for (const p of paragrafos) {",
-      "  if (p.length <= 200) { pedacos.push(p); continue; }",
+      "for (const { t: p, ref } of paragrafos) {",
+      "  if (p.length <= 200) { pedacos.push({ t: p, ref }); continue; }",
       "  let atual = '';",
       "  for (const f of p.split(FRASES)) {",
-      "    if (atual && (atual + ' ' + f).length > 170) { pedacos.push(atual); atual = f; } else atual = atual ? atual + ' ' + f : f;",
+      "    if (atual && (atual + ' ' + f).length > 170) { pedacos.push({ t: atual, ref }); atual = f; } else atual = atual ? atual + ' ' + f : f;",
       "  }",
-      "  if (atual) pedacos.push(atual);",
+      "  if (atual) pedacos.push({ t: atual, ref });",
       "}",
       "let baloes = [];",
       "for (const p of pedacos) {",
       "  const ult = baloes[baloes.length - 1];",
-      "  if (ult !== undefined && (p.length < 40 || ult.length < 40) && (ult + ' ' + p).length <= 220) baloes[baloes.length - 1] = ult + ' ' + p; else baloes.push(p);",
+      "  if (ult !== undefined && ult.ref === p.ref && (p.t.length < 40 || ult.t.length < 40) && (ult.t + ' ' + p.t).length <= 220) ult.t = ult.t + ' ' + p.t; else baloes.push({ ...p });",
       "}",
-      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], baloes.slice(2).join(' ')];",
+      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], { t: baloes.slice(2).map(b => b.t).join(' '), ref: baloes[2].ref }];",
+      "// Responder citando (o 'responder mensagem' do WhatsApp): com várias mensagens seguidas, o 1º balão de cada",
+      "// resposta cita a mensagem que ele responde. Mensagem única só é citada se chegou enquanto a IA ainda",
+      "// respondia outra (a resposta sai depois de outros balões e ficaria solta)",
+      "let msgs = [];",
+      "try { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}",
+      "const esperou = $('Aguardar 3s (IA respondendo)').isExecuted;",
+      "const citadas = new Set();",
+      "const citarDe = (b, i) => {",
+      "  const m = msgs.length > 1 ? msgs[b.ref - 1] : (esperou && i === 0 ? msgs[0] : null);",
+      "  if (!m?.id || citadas.has(m.id)) return '';",
+      "  citadas.add(m.id);",
+      "  return m.id;",
+      "};",
       "// Ritmo de gente: antes do 1º balão 'lê' a mensagem dela (quanto maior, mais tempo); entre balões, um",
       "// respiro. Cada balão 'digita' no ritmo do celular (170-210 ms por letra, ~5 letras/s), entre 4 s e 35 s",
       "const ale = (a, b) => a + Math.random() * (b - a);",
       "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
-      "return baloes.map((texto, i) => ({ json: { jid, texto,",
+      "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, citar: citarDe({ ref }, i),",
       "  pausa: Math.round((i === 0 ? Math.min(5, ale(0.8, 2) + lida * 0.02) : ale(1.5, 3)) * 10) / 10,",
       "  delay: Math.round(Math.min(35000, Math.max(4000, texto.length * ale(170, 210)))) } }));",
     ].join('\n'),
@@ -487,7 +519,8 @@ const nodes = [
     url: `${EVO}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}`,
     sendHeaders: true, headerParameters: apikeyHeader,
     sendBody: true, specifyBody: 'json',
-    jsonBody: "={{ JSON.stringify({ number: $('Um balão por vez').item.json.jid, text: $('Um balão por vez').item.json.texto }) }}",
+    // quoted só com o id: a Evolution acha a mensagem dela no próprio banco e manda como resposta citando
+    jsonBody: "={{ JSON.stringify(Object.assign({ number: $('Um balão por vez').item.json.jid, text: $('Um balão por vez').item.json.texto }, $('Um balão por vez').item.json.citar ? { quoted: { key: { id: $('Um balão por vez').item.json.citar } } } : {})) }}",
     options: {},
   // a conexão do WhatsApp às vezes cai por alguns segundos: tenta de novo antes de desistir.
   // executeOnce: chegam vários itens (um por bloco de "digitando"), mas a mensagem sai uma vez só
@@ -561,6 +594,9 @@ const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub,
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
 
+// Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
+const faltas = require('./faltas-workflows.js')({ env, node, main });
+
 // posições dos nós e notas coloridas por etapa (só visual)
 require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
 
@@ -573,6 +609,7 @@ fs.writeFileSync(path.join(dir, 'workflow-assistente-ferramentas.json'), JSON.st
 fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 if (process.argv.includes('--enviar')) {
@@ -615,6 +652,8 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(audiosId);
     const transcreverId = await upsert(audios.transcreverWorkflow, path.join(dir, '.workflow-audios-transcrever-id'));
     if (process.argv.includes('--ativar')) await ativar(transcreverId);
+    const faltasId = await upsert(faltas.faltasWorkflow, faltas.idFile);
+    if (process.argv.includes('--ativar')) await ativar(faltasId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));

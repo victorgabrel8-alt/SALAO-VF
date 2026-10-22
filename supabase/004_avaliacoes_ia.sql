@@ -1,5 +1,5 @@
 -- =====================================================================
--- 004_avaliacoes_ia_RASCUNHO.sql — RASCUNHO, AINDA NÃO RODAR
+-- 004_avaliacoes_ia.sql — aplicado no Supabase em 22/10/2026 (o 006 amplia pendencias_gleide para hoje e ontem)
 -- Para o guardião revisar. Plano completo em docs/PLANO-IA-ALIMENTA-CRM.md.
 -- Depois de aprovado: renomear para 004_avaliacoes_ia.sql, rodar no
 -- SQL Editor, fazer commit e atualizar o CONTRATO.md (seções 3 e 5).

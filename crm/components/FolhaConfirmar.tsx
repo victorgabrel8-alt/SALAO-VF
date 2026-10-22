@@ -26,7 +26,7 @@ import type { ServicoAtivo } from "@/lib/tipos";
 // banco calcula de cada serviço feito.
 // Se o horário é uma Avaliação, a pergunta é o resultado: Fechou / Ficou de pensar / Não fechou
 // (vai para o funil e a IA lê na próxima conversa com a cliente).
-// "Faltou / remarcou": faltou marca a falta (a IA vê na ficha); remarcou leva o mesmo horário
+// "Faltou / remarcou": faltou marca a falta (a IA chama a cliente para remarcar, supabase/007); remarcou leva o mesmo horário
 // para outro dia.
 type Tela = "pergunta" | "mudou" | "faltou" | "remarcar";
 
@@ -245,7 +245,8 @@ export function FolhaConfirmar({
               {aoFaltou && (
                 <button
                   onClick={() =>
-                    gravar(aoFaltou, { titulo: "Falta registrada", texto: `${nome} · ${formatarHora(a.inicio)} foi para os concluídos`, cor: "bg-rose-texto" }, aoFechar)
+                    // A IA chama a cliente sozinha para remarcar (supabase/007) e avisa a Gleide
+                    gravar(aoFaltou, { titulo: "Falta anotada", texto: `A IA vai chamar ${nome} para remarcar e te avisa quando ela marcar.`, cor: "bg-rose-texto" }, aoFechar)
                   }
                   disabled={salvando}
                   className="h-14 rounded-full bg-rose-texto text-[17px] font-bold text-white active:scale-[0.98] disabled:opacity-60"

@@ -52,7 +52,7 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) =>
   workflow.connections['Pausa: alinhar com o CRM'] = main('Buffer: guardar msg');
   const ativa = achar(workflow, 'IA ativa?').parameters.conditions.conditions[0];
   ativa.leftValue = "={{ (() => { const p = $('Supabase: registrar entrada').item.json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}";
-  achar(workflow, 'Buffer: guardar msg').parameters.messageData = "={{ $('Texto da mensagem').item.json.texto }}";
+  achar(workflow, 'Buffer: guardar msg').parameters.messageData = `={{ JSON.stringify({ id: ${D}.msgId, texto: $('Texto da mensagem').item.json.texto }) }}`;
 
   // ---------- Principal: a IA lê a ficha e o histórico antes de responder ----------
   // Não é outra IA: são duas consultas e um texto "Sobre esta cliente" no prompt. O que a Gleide
@@ -103,7 +103,11 @@ if (ficha.observacoes) linhas.push('Observações da Gleide: ' + ficha.observaco
 // a Gleide chamou pelo CRM e esta mensagem é a resposta dela
 const alo = $('Supabase: último alô').first().json;
 // remarcação: a Gleide teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)
-if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+// falta: ela não veio e a IA a chamou sozinha para marcar outro horário (ver supabase/007)
+if (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +
+  (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'antes') +
+  ' e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');
+else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'ela') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
 else if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
@@ -142,6 +146,10 @@ Use a ficha como quem já conhece a cliente:
 - Se a ficha tiver "ALÔ DE REMARCAÇÃO", a Gleide teve um imprevisto e pediu para remarcar aquele horário.
   É remarcar, não marcar outro: use ver_agendamentos, consultar_horarios_livres para o mesmo serviço
   (perto do dia que ela preferir) e, com o "sim" dela, remarcar_agendamento. Nunca use criar_agendamento.
+- Se a ficha tiver "ALÔ DE FALTA", ela não veio ao horário e você a chamou. Acolha sem cobrar nem julgar
+  (imprevisto acontece; o horário já passou, então não fale em desmarcar nem em multa). Se ela quiser,
+  consulte horários do mesmo serviço e, com o "sim", use
+  criar_agendamento (o horário antigo já ficou como falta: é um horário novo). Se não quiser agora, encerre com carinho.
 - Nunca leia a ficha para ela nem diga "no sistema consta". Observações da Gleide (alergias, preferências) são para você levar em conta, não para repetir.`;
   entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
     `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,

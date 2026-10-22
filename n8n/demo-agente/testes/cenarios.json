@@ -537,5 +537,49 @@
         "transferiu": false
       }
     ]
+  },
+  {
+    "id": "pergunta_ou_age",
+    "nome": "Período vago: age direto, sem perguntar e responder na mesma mensagem",
+    "telefone": "556690000191",
+    "mensagens": [
+      "oi, queria marcar uma hidratação",
+      "mais pro começo do mês que vem"
+    ],
+    "espera": [
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "em": "ultima",
+        "nao_deve": "(?<!tudo bem)[?][^?]*[?]"
+      },
+      {
+        "nao_deve": "prefere .{0,40}ent[ãa]o[?]"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "sem_dinheiro",
+    "nome": "Consultiva: \"tô sem dinheiro\" acolhe e oferece mais pra frente, sem empurrar",
+    "telefone": "556690000192",
+    "mensagens": [
+      "oi, queria ver a manutenção da queratina mas tô sem dinheiro esse mês"
+    ],
+    "espera": [
+      {
+        "deve": "(6x|parcel|mais pra frente|fim do m[eê]s|quando ficar melhor|m[eê]s que vem)"
+      },
+      {
+        "em": "ultima",
+        "nao_deve": "(?<!tudo bem)[?][^?]*[?]"
+      },
+      {
+        "transferiu": false
+      }
+    ]
   }
 ]

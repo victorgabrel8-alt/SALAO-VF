@@ -69,9 +69,12 @@ async function enviar(tel, texto, id) {
   });
 }
 
-// Espera a execução da mensagem `id` terminar; devolve a resposta da IA e os tokens do Gemini
+// Espera a execução da mensagem `id` terminar; devolve a resposta da IA e os tokens do Gemini.
+// O envio tem "ritmo humano" (digitando…, balões com pausa): resposta longa passa de 2,5 min.
+// ESPERA_MIN=6 node testes/bateria-ia.js ... muda o limite (padrão 4 min).
+const ESPERA_MIN = Number(process.env.ESPERA_MIN) || 4;
 async function respostaDe(id) {
-  for (let i = 0; i < 50; i++) {
+  for (let i = 0; i < ESPERA_MIN * 20; i++) {
     await dorme(3000);
     for (const e of await execucoes(WF.principal, 20)) {
       const r = e.data?.resultData?.runData || {};
@@ -79,7 +82,8 @@ async function respostaDe(id) {
       const chamadas = (r['Gemini Flash'] || []).map((c) => c.data?.ai_languageModel?.[0]?.[0]?.json?.tokenUsage).filter(Boolean);
       return {
         // o que a cliente recebe (depois do filtro de frases de robô); sem envio, o que a IA escreveu
-        texto: saidaDe(r, 'Quebrar mensagens')?.texto ?? saidaDe(r, 'Agente IA')?.output ?? null,
+        // todos os balões (resposta longa vira 2 ou 3), não só o primeiro
+        texto: (r['Quebrar mensagens']?.[0]?.data?.main?.[0] || []).map((b) => b.json?.texto).filter(Boolean).join(' ') || saidaDe(r, 'Agente IA')?.output || null,
         chamadas: chamadas.length,
         entrada: chamadas.reduce((s, t) => s + (t.promptTokens || 0), 0),
         saida: chamadas.reduce((s, t) => s + (t.completionTokens || 0), 0),
@@ -87,7 +91,7 @@ async function respostaDe(id) {
       };
     }
   }
-  return { texto: null, chamadas: 0, entrada: 0, saida: 0, erros: ['sem resposta em 2,5 min'] };
+  return { texto: null, chamadas: 0, entrada: 0, saida: 0, erros: [`sem resposta em ${ESPERA_MIN} min`] };
 }
 
 // Ferramentas da agenda e transferências que rodaram depois de `desde`

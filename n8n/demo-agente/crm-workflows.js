@@ -59,14 +59,16 @@ ON CONFLICT (telefone) DO UPDATE SET
   inserirEntre(agendaWorkflow, 'Google: cancelar evento', sql('CRM: cancelado',
     `UPDATE clientes SET etapa = 'conversa', agendamento = NULL, servico_agendado = NULL, atualizado_em = now()
 WHERE telefone = $1 AND $2 = 'ok'`,
-    "[ $('Preparar').item.json.telefone, $('Google: cancelar evento').item.json.error ? 'falhou' : 'ok' ]"),
+    // sem evento no Google (marcado pelo app), o nó do Google não roda
+    "[ $('Preparar').item.json.telefone, !$('Google: cancelar evento').isExecuted || $('Google: cancelar evento').item.json.error ? 'falhou' : 'ok' ]"),
   'Resposta (cancelado)');
   trocar(agendaWorkflow, 'Resposta (cancelado)', '$json.error', "$('Google: cancelar evento').item.json.error");
 
   inserirEntre(agendaWorkflow, 'Google: remarcar evento', sql('CRM: remarcado',
     `UPDATE clientes SET etapa = 'agendado', agendamento = $2::timestamptz, atualizado_em = now()
 WHERE telefone = $1 AND $3 = 'ok'`,
-    "[ $('Preparar').item.json.telefone, $('Calcular').item.json.patch.start.dateTime, $('Google: remarcar evento').item.json.id ? 'ok' : 'falhou' ]"),
+    // remarcação só no Supabase (horário marcado pelo app, sem evento no Google): o nó do Google não roda
+    "[ $('Preparar').item.json.telefone, $('Calcular').item.json.patch.start.dateTime, $('Google: remarcar evento').isExecuted && $('Google: remarcar evento').item.json.id ? 'ok' : 'falhou' ]"),
   'Resposta (remarcado)');
   trocar(agendaWorkflow, 'Resposta (remarcado)', '$json.id', "$('Google: remarcar evento').item.json.id");
 
