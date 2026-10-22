@@ -107,6 +107,12 @@ const alo = $('Supabase: último alô').first().json;
 if (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +
   (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'antes') +
   ' e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');
+// vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)
+else if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+  ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'agora') +
+  ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : '?') +
+  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +
+  (alo.vagas && alo.vagas.status !== 'aberta' ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));
 else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'ela') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
@@ -119,7 +125,7 @@ return [{ json: { texto: linhas.join('\n') } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
+    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
   workflow.connections['Supabase: histórico da cliente'] = main('Supabase: último alô');
