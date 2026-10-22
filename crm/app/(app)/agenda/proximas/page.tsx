@@ -131,12 +131,22 @@ export default function ProximasPage() {
   return (
     <>
       <header className="flex flex-col gap-3 px-4 pt-4">
-        <Link href="/agenda" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-          Agenda
-        </Link>
+        <div className="flex items-center justify-between gap-2">
+          <Link href="/agenda" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+            Agenda
+          </Link>
+          {/* Viagem, folga, imprevisto: bloquear dias e ver quem é afetado */}
+          <Link href="/agenda/bloqueios" className="vidro flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold active:scale-95">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A3B2B" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18M9 14l6 6M15 14l-6 6" />
+            </svg>
+            Dias sem atender
+          </Link>
+        </div>
         <div>
           <h1 className="font-serif text-[34px] leading-tight font-semibold">Próximas</h1>
           <p className="text-sm text-texto-2">

@@ -1,4 +1,5 @@
 import { conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
+import { bloqueioDoDia } from "@/lib/bloqueios";
 import { agoraNoSalao, dataNoSalao, formatarHora, inicioDoDia, somarDias } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 
@@ -18,8 +19,9 @@ function hora(minutos: number): string {
   return `${String(Math.floor(minutos / 60)).padStart(2, "0")}:${String(minutos % 60).padStart(2, "0")}`;
 }
 
-// [abre, fecha] em minutos, ou null se o salão não abre nesse dia
+// [abre, fecha] em minutos, ou null se o salão não abre nesse dia (fechado ou dia bloqueado)
 function expediente(config: Record<string, unknown>, dia: string): [number, number] | null {
+  if (bloqueioDoDia(config, dia)) return null;
   const tabela = config.horario_funcionamento as Record<string, string | null> | undefined;
   if (!tabela) return [emMinutos("09:00"), emMinutos("18:00")];
   const faixa = tabela[CHAVES_SEMANA[new Date(`${dia}T12:00:00Z`).getUTCDay()]];
@@ -32,9 +34,10 @@ export function abreNoDia(config: Record<string, unknown>, dia: string): boolean
   return expediente(config, dia) !== null;
 }
 
-// O próprio dia, se o salão abre, ou o próximo dia aberto (até uma semana depois)
+// O próprio dia, se o salão abre, ou o próximo dia aberto (até dois meses depois, para passar
+// por cima de um bloqueio longo)
 export function proximoDiaAberto(config: Record<string, unknown>, dia: string): string {
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 60; i++) {
     const d = somarDias(dia, i);
     if (expediente(config, d)) return d;
   }

@@ -22,6 +22,7 @@ import {
   type StatusAtendimento,
 } from "@/lib/atendimentos";
 import { lerAlmoco, textoAlmoco } from "@/lib/almoco";
+import { bloqueioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import {
   dataNoSalao,
@@ -287,7 +288,7 @@ export default function AgendaPage() {
                   }}
                   onClick={() => setDia(d)}
                   aria-pressed={escolhido}
-                  aria-label={formatarData(d)}
+                  aria-label={`${formatarData(d)}${bloqueioDoDia(empresa.config, d) ? " (sem atender)" : ""}`}
                   className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] transition-colors duration-300 active:scale-95 ${
                     escolhido
                       ? "text-grafite"
@@ -295,7 +296,10 @@ export default function AgendaPage() {
                   }`}
                 >
                   <span className="text-xs font-semibold opacity-85">{DIAS_SEMANA[semanaIdx]}</span>
-                  <span className="font-serif text-[22px] leading-none font-semibold">{Number(d.slice(8))}</span>
+                  {/* Dia sem atender: número riscado */}
+                  <span className={`font-serif text-[22px] leading-none font-semibold ${bloqueioDoDia(empresa.config, d) ? "line-through decoration-[#C9897A] decoration-2 opacity-60" : ""}`}>
+                    {Number(d.slice(8))}
+                  </span>
                   {/* Pontinho: dia com horário marcado */}
                   <span
                     aria-hidden
@@ -325,6 +329,20 @@ export default function AgendaPage() {
       />
 
       <section className="mt-4 px-5">
+        {/* Dia bloqueado (viagem, folga...): a IA não marca ninguém; quem já estava marcado aparece abaixo */}
+        {bloqueioDoDia(empresa.config, dia) && (
+          <Link href="/agenda/bloqueios" className="mb-3 flex items-center gap-3 rounded-[18px] bg-rose px-4 py-3 text-rose-texto active:scale-[0.99]">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18M9 14l6 6M15 14l-6 6" />
+            </svg>
+            <span className="min-w-0 flex-1 text-[15px]">
+              <b>Dia sem atender</b>
+              {bloqueioDoDia(empresa.config, dia)?.motivo && ` · ${bloqueioDoDia(empresa.config, dia)?.motivo}`}. A IA não marca ninguém nesse dia.
+            </span>
+            <span aria-hidden className="text-lg">›</span>
+          </Link>
+        )}
         {!dados && <p className="text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
