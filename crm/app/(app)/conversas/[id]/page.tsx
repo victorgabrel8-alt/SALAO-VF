@@ -109,9 +109,10 @@ function ConversaCliente() {
       : "";
 
   // Visual do app: fundo pérola, topo de vidro com a cliente e a situação da IA, balões nas cores
-  // da marca (cliente em creme, IA em areia, você em grafite) e as ações numa bolha de vidro.
+  // da marca (cliente em branco, IA em grafite, você em bronze) e as ações numa bolha de vidro.
   return (
-    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh">
+    // Fundo pérola com pontinhos bronze bem leves, como o papel de parede do WhatsApp
+    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-[radial-gradient(rgb(168_138_104/0.16)_1px,transparent_1px)] [background-size:18px_18px]">
       <header className="vidro-barra sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2 px-3 py-2">
           <Link href="/conversas" aria-label="Voltar para Conversas" className="vidro flex h-10 w-10 shrink-0 items-center justify-center rounded-full active:scale-95">
@@ -139,7 +140,7 @@ function ConversaCliente() {
       </header>
 
       {/* Só leitura: o app não envia mensagem; a dona responde pelo WhatsApp Business */}
-      <div className="space-y-1 px-3 py-4">
+      <div className="px-4 py-4">
         {/* Etiquetas e aviso no começo, como um "cartão" da cliente */}
         {cliente.etiquetas.length > 0 && <Etiquetas etiquetas={cliente.etiquetas} className="mb-3 justify-center" />}
         {situacao === "precisa" && cliente.motivo_pausa && (
@@ -153,10 +154,10 @@ function ConversaCliente() {
           const novoDia = i === 0 || dataNoSalao(mensagens[i - 1].criado_em) !== dia;
           const mesmoAutor = i > 0 && !novoDia && mensagens[i - 1].autor === m.autor;
           return (
-            <div key={m.id} className={mesmoAutor ? "" : "pt-2"}>
+            <div key={m.id} className={mesmoAutor ? "pt-0.5" : "pt-2.5"}>
               {/* Separador de dia como no iMessage: o dia numa cápsula no meio */}
               {novoDia && (
-                <p className="mx-auto my-3 w-fit rounded-full bg-campo px-3 py-1 text-xs font-semibold text-texto-2">
+                <p className="mx-auto my-3 w-fit rounded-full bg-card px-3 py-1 text-xs font-semibold text-texto-2 shadow-[0_1px_1.5px_rgba(30,23,20,0.1)]">
                   {dia === hojeNoSalao() ? "Hoje" : formatarDiaLongo(dia)}
                 </p>
               )}
@@ -191,49 +192,74 @@ function ConversaCliente() {
   );
 }
 
-// Cada autor tem um balão com cor e lado próprios, na paleta do app
-const AUTOR: Record<Mensagem["autor"], { rotulo: string; lado: string; balao: string; canto: string; etiqueta: string; hora: string }> = {
+// Cada autor tem um balão com cor e lado próprios, inspirados no WhatsApp: a cliente num balão
+// claro à esquerda e o salão (IA ou você) num balão forte à direita, que se destaca do fundo
+const AUTOR: Record<
+  Mensagem["autor"],
+  { rotulo: string; lado: string; balao: string; rabo: string; canto: string; etiqueta: string; hora: string; enviada: boolean }
+> = {
   cliente: {
     rotulo: "",
     lado: "justify-start",
-    balao: "bg-card text-texto shadow-[0_1px_2px_rgba(30,23,20,0.06)]",
-    canto: "rounded-bl-md",
+    balao: "bg-white text-texto shadow-[0_1px_1.5px_rgba(30,23,20,0.13)]",
+    rabo: "text-white -left-[7px]",
+    canto: "rounded-tl-[4px]",
     etiqueta: "",
-    hora: "text-texto-2/70",
+    hora: "text-texto-2",
+    enviada: false,
   },
   ia: {
     rotulo: "IA",
     lado: "justify-end",
-    balao: "bg-areia text-texto",
-    canto: "rounded-br-md",
-    etiqueta: "text-bronze-escuro",
-    hora: "text-texto-2/70",
+    balao: "bg-grafite text-perola shadow-[0_1px_1.5px_rgba(30,23,20,0.25)]",
+    rabo: "text-grafite -right-[7px] -scale-x-100",
+    canto: "rounded-tr-[4px]",
+    etiqueta: "text-bronze",
+    hora: "text-claro/80",
+    enviada: true,
   },
   humano: {
     rotulo: "Você",
     lado: "justify-end",
-    balao: "bg-grafite text-perola",
-    canto: "rounded-br-md",
-    etiqueta: "text-bronze",
-    hora: "text-claro/70",
+    balao: "bg-bronze-escuro text-white shadow-[0_1px_1.5px_rgba(30,23,20,0.25)]",
+    rabo: "text-bronze-escuro -right-[7px] -scale-x-100",
+    canto: "rounded-tr-[4px]",
+    etiqueta: "text-areia",
+    hora: "text-white/75",
+    enviada: true,
   },
 };
 
 function Balao({ mensagem: m, primeiro }: { mensagem: Mensagem; primeiro: boolean }) {
   const a = AUTOR[m.autor];
-  const texto =
-    m.tipo === "audio"
-      ? `🎤 Áudio${m.conteudo ? `: ${m.conteudo}` : ""}`
-      : m.tipo === "imagem"
-        ? `📷 Imagem${m.conteudo ? `: ${m.conteudo}` : ""}`
-        : (m.conteudo ?? "(mensagem sem texto)");
+  const midia = m.tipo === "audio" ? "🎤 Áudio" : m.tipo === "imagem" ? "📷 Foto" : null;
+  const texto = m.conteudo ?? (midia ? "" : "(mensagem sem texto)");
   return (
     <div className={`flex ${a.lado}`}>
-      <div className={`max-w-[80%] rounded-[20px] px-3.5 py-2 ${a.balao} ${primeiro ? a.canto : ""}`}>
+      {/* O primeiro balão de cada sequência tem o "rabinho" no canto de cima, como no WhatsApp */}
+      <div className={`relative max-w-[80%] rounded-[18px] px-3 pt-1.5 pb-2 ${a.balao} ${primeiro ? a.canto : ""}`}>
+        {primeiro && (
+          <svg viewBox="0 0 8 13" aria-hidden className={`absolute top-0 h-[13px] w-2 fill-current ${a.rabo}`}>
+            <path d="M8 0H1.3C.3 0-.3 1.1.3 1.9L8 12Z" />
+          </svg>
+        )}
         {/* Quem respondeu: a IA ou a dona */}
-        {a.rotulo && primeiro && <p className={`mb-0.5 text-xs font-bold ${a.etiqueta}`}>{a.rotulo}</p>}
-        <p className="text-[15px] leading-relaxed whitespace-pre-wrap">{texto}</p>
-        <p className={`mt-0.5 text-right text-[11px] ${a.hora}`}>{formatarHora(m.criado_em)}</p>
+        {a.rotulo && primeiro && <p className={`text-xs font-bold ${a.etiqueta}`}>{a.rotulo}</p>}
+        {midia && <p className="text-xs font-semibold opacity-75">{midia}{m.conteudo && m.tipo === "audio" ? " · transcrição" : ""}</p>}
+        <p className="text-[15px] leading-snug whitespace-pre-wrap">
+          {texto}
+          {/* Espaço reservado para a hora caber na última linha, como no WhatsApp */}
+          <span aria-hidden className={`inline-block ${a.enviada ? "w-[62px]" : "w-[42px]"}`} />
+        </p>
+        <span className={`absolute right-2.5 bottom-1.5 flex items-center gap-0.5 text-[11px] leading-none ${a.hora}`}>
+          {formatarHora(m.criado_em)}
+          {a.enviada && (
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#8DB4CF" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada">
+              <path d="m1 6 3 3 6-7.5" />
+              <path d="m7.5 8 1 1 6-7.5" />
+            </svg>
+          )}
+        </span>
       </div>
     </div>
   );

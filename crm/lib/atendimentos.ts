@@ -37,6 +37,21 @@ export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {
   return { atendimentos, erro: error?.message };
 }
 
+// Todos os horários a atender daqui para frente (a partir de agora), até o dia `ate` (exclusivo)
+// ou sem limite. É a visão "Próximas" da Agenda: quem vem nos próximos dias e meses.
+export async function buscarProximos(empresaId: string, ate: string | null) {
+  let consulta = supabase()
+    .from("agendamentos")
+    .select(CAMPOS)
+    .eq("empresa_id", empresaId)
+    .eq("status", "agendado")
+    .gte("inicio", new Date().toISOString());
+  if (ate) consulta = consulta.lt("inicio", inicioDoDia(ate));
+  const { data, error } = await consulta.order("inicio").limit(500);
+  const atendimentos = ((data ?? []) as unknown as Atendimento[]).filter((a) => !estaExcluida(a.clientes?.etiquetas));
+  return { atendimentos, erro: error?.message };
+}
+
 // Horários que estavam marcados para este dia e foram reagendados para outro
 // (o reagendar anota "Reagendado de 20/10 às 09:00" nas observações)
 export async function buscarReagendadosDoDia(empresaId: string, dia: string) {
