@@ -195,6 +195,12 @@ body {
   }
 }
 
+/* Contorno fino dos cartões: o creme do cartão e o pérola do fundo são quase iguais, então sem
+   isso as bordas somem (como as listas agrupadas do iPhone, que têm uma linha bem leve) */
+@utility borda-suave {
+  border: 1px solid rgb(28 27 31 / 0.07);
+}
+
 /* Rolagem lateral sem a barrinha de rolagem */
 @utility sem-barra {
   scrollbar-width: none;
