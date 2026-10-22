@@ -91,6 +91,16 @@ function Enviada() {
   );
 }
 
+// Prévia da última mensagem: "[áudio] Oi..." vira 🎤 Oi..., e "[imagem]" vira 📷 Foto, como no WhatsApp
+function Previa({ texto }: { texto: string | null }) {
+  if (!texto) return <>(mensagem sem texto)</>;
+  const audio = texto.match(/^\[(?:á|a)udio\]\s*/i);
+  if (audio) return <>🎤 {texto.slice(audio[0].length) || "Áudio"}</>;
+  const imagem = texto.match(/^\[imagem\]\s*/i);
+  if (imagem) return <>📷 {texto.slice(imagem[0].length) || "Foto"}</>;
+  return <>{texto}</>;
+}
+
 const LARGURA_ACOES = 156;
 
 // Linha que desliza para a esquerda (como no iPhone) e mostra Ficha e WhatsApp.
@@ -109,9 +119,9 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
   }
 
   return (
-    <li className="relative overflow-hidden">
-      {/* Atalhos atrás da linha */}
-      <div className="absolute inset-y-0 right-0 flex" aria-hidden={!aberta}>
+    <li className="group relative overflow-hidden">
+      {/* Atalhos atrás da linha; invisíveis com ela parada, para a cor não vazar pelos cantos do cartão */}
+      <div className={`absolute inset-y-0 right-0 flex ${deslocamento === 0 ? "invisible" : ""}`} aria-hidden={!aberta}>
         <Link
           href={`/clientes/${c.cliente_id}`}
           tabIndex={aberta ? 0 : -1}
@@ -159,21 +169,24 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
           inicio.current = null;
         }}
         style={{ transform: `translateX(${deslocamento}px)` }}
-        className={`relative flex w-full items-center gap-3 bg-perola px-4 text-left active:bg-campo ${arrasto === null ? "transition-transform duration-200" : ""}`}
+        className={`relative flex w-full items-center gap-3 bg-card px-3.5 text-left active:bg-campo ${arrasto === null ? "transition-transform duration-200" : ""}`}
       >
-        <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao={situacao} tamanho="h-[52px] w-[52px] text-xl" />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-b-[0.5px] border-borda pt-[11px] pb-3">
+        <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao={situacao} tamanho="h-12 w-12 text-lg" />
+        {/* O nome manda; a prévia fica numa linha só, em cinza, como no WhatsApp */}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-b-[0.5px] border-borda py-3 group-last:border-b-0">
           <span className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[17px] font-semibold">{c.nome ?? formatarTelefone(c.telefone)}</span>
-            <span className={`shrink-0 text-sm ${situacao === "precisa" ? "font-bold text-bronze-escuro" : "text-texto-2"}`}>
+            <span className="truncate text-[16px] font-semibold text-texto">{c.nome ?? formatarTelefone(c.telefone)}</span>
+            <span className={`shrink-0 text-[12px] ${situacao === "precisa" ? "font-bold text-rose-texto" : "text-texto-2"}`}>
               {quando(c.ultima_mensagem_em)}
             </span>
           </span>
-          <span className="line-clamp-2 text-[15px] leading-snug text-texto-2">
+          <span className="flex min-w-0 items-center text-[14px] text-texto-2">
             {nossa && <Enviada />}
-            {c.ultimo_autor === "ia" && <b className="font-semibold text-bronze-escuro">IA: </b>}
-            {c.ultimo_autor === "humano" && <b className="font-semibold text-bronze-escuro">Você: </b>}
-            {c.ultima_mensagem ?? "(mensagem sem texto)"}
+            <span className="truncate">
+              {c.ultimo_autor === "ia" && <span className="text-bronze-escuro">IA: </span>}
+              {c.ultimo_autor === "humano" && "Você: "}
+              <Previa texto={c.ultima_mensagem} />
+            </span>
           </span>
         </span>
       </button>
@@ -242,7 +255,7 @@ export default function ConversasPage() {
             )}
           </p>
         </div>
-        <label className="flex h-[38px] items-center gap-2 rounded-xl bg-campo px-2.5">
+        <label className="flex h-10 items-center gap-2 rounded-full bg-campo px-3.5">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8F8377" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
@@ -277,15 +290,21 @@ export default function ConversasPage() {
         </section>
       )}
 
-      {/* Seletor do iPhone: troca de lista com um toque */}
-      <div role="group" aria-label="Filtrar conversas" className="mx-4 mt-3 mb-1.5 grid grid-cols-3 rounded-[10px] bg-campo p-0.5">
+      {/* Seletor em cápsula, como no iOS 26: a bolha da opção escolhida desliza até a tocada,
+          na mesma mola da barra de abas (bolha-aba) */}
+      <div role="group" aria-label="Filtrar conversas" className="relative mx-4 mt-3 mb-1.5 grid grid-cols-3 rounded-full bg-campo p-1">
+        <span
+          aria-hidden
+          className="bolha-aba pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-full bg-card shadow-[0_1px_4px_rgba(30,23,20,0.15)]"
+          style={{ transform: `translateX(${FILTROS.findIndex((f) => f.chave === filtro) * 100}%)` }}
+        />
         {FILTROS.map((f) => (
           <button
             key={f.chave}
             onClick={() => setFiltro(f.chave)}
             aria-pressed={filtro === f.chave}
-            className={`h-11 rounded-lg text-[13px] font-semibold ${
-              filtro === f.chave ? "bg-card text-grafite shadow-[0_1px_4px_rgba(30,23,20,0.15)]" : "text-rotulo"
+            className={`relative h-10 rounded-full text-[13px] font-semibold transition-colors duration-300 active:scale-95 ${
+              filtro === f.chave ? "text-grafite" : "text-rotulo"
             }`}
           >
             {f.rotulo}
@@ -301,7 +320,8 @@ export default function ConversasPage() {
               {busca.trim() ? "Nenhuma conversa encontrada." : "Nenhuma conversa aqui."}
             </p>
           ) : (
-            <ul>
+            // As conversas num cartão, para os nomes não se perderem no fundo pérola
+            <ul className="mx-4 mt-1.5 overflow-hidden rounded-[22px] bg-card borda-suave">
               {lista.map((c) => (
                 <LinhaDeslizante
                   key={c.cliente_id}

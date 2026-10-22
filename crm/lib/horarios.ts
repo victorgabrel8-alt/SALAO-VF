@@ -28,6 +28,10 @@ function expediente(config: Record<string, unknown>, dia: string): [number, numb
   return [emMinutos(abre), emMinutos(fecha)];
 }
 
+export function abreNoDia(config: Record<string, unknown>, dia: string): boolean {
+  return expediente(config, dia) !== null;
+}
+
 // O próprio dia, se o salão abre, ou o próximo dia aberto (até uma semana depois)
 export function proximoDiaAberto(config: Record<string, unknown>, dia: string): string {
   for (let i = 0; i < 7; i++) {

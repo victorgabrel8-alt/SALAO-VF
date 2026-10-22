@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
 import { FolhaConfirmar } from "@/components/FolhaConfirmar";
@@ -146,6 +146,21 @@ export default function AgendaPage() {
   );
   const [, mes] = dia.split("-").map(Number);
 
+  // Onde está o dia escolhido, para a bolha bronze deslizar até ele (o domingo pode entrar ou
+  // sair da semana, então mede de novo quando a lista de dias muda)
+  const botoesDia = useRef(new Map<string, HTMLButtonElement>());
+  const [bolhaDia, setBolhaDia] = useState<{ x: number; largura: number } | null>(null);
+  useLayoutEffect(() => {
+    const medir = () => {
+      const el = botoesDia.current.get(dia);
+      if (el) setBolhaDia({ x: el.offsetLeft, largura: el.offsetWidth });
+    };
+    medir();
+    // Os dias têm largura fluida: girou o celular, mede de novo
+    window.addEventListener("resize", medir);
+    return () => window.removeEventListener("resize", medir);
+  }, [dia, semana.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
   const contagem: Record<Camada, number> = {
     todos: visiveis.length,
@@ -212,25 +227,34 @@ export default function AgendaPage() {
     <>
       {/* Topo grafite: mês, resumo do dia e os dias da semana */}
       <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
-        <span aria-hidden="true" className="absolute -top-[90px] -right-[50px] h-[200px] w-[200px] rounded-full bg-white/[0.08]" />
+        {/* Detalhe do canto: um brilho bronze suave e dois arcos finos, no lugar do círculo cinza chapado */}
+        <span aria-hidden className="pointer-events-none absolute -top-28 -right-20 h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle,rgb(168_138_104/0.26),transparent_68%)]" />
+        <span aria-hidden className="pointer-events-none absolute -top-[78px] -right-[46px] h-[176px] w-[176px] rounded-full border border-bronze/35" />
+        <span aria-hidden className="pointer-events-none absolute -top-[46px] -right-[14px] h-[112px] w-[112px] rounded-full border border-bronze/20" />
         <div className="relative flex items-end justify-between gap-3">
           <div className="flex flex-col gap-0.5">
             <span className="text-sm text-claro">
               {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)} de {dia.slice(0, 4)}
+              {ok && ` · ${contagem.todos === 1 ? "1 horário" : `${contagem.todos} horários`}`}
             </span>
             <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">Agenda</h1>
           </div>
           <div className="flex items-center gap-2">
             {dia !== hoje && (
-              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-bronze/50 px-4 text-[13px] font-bold text-perola">
+              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-bronze/50 px-4 text-[13px] font-bold text-perola active:scale-95">
                 Hoje
               </button>
             )}
-            {ok && (
-              <span className="rounded-full bg-[#D8C6AE] px-3 py-[7px] text-[13px] font-bold text-grafite">
-                {contagem.todos === 1 ? "1 horário" : `${contagem.todos} horários`}
-              </span>
-            )}
+            {/* Todas as clientes dos próximos dias e meses, numa lista só */}
+            <Link
+              href="/agenda/proximas"
+              className="flex h-11 items-center gap-1.5 rounded-full bg-[#D8C6AE] pr-3.5 pl-3 text-[13px] font-bold text-grafite active:scale-95"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+              </svg>
+              Próximas
+            </Link>
           </div>
         </div>
         <div className="relative flex items-center gap-1">
@@ -241,19 +265,32 @@ export default function AgendaPage() {
           >
             ‹
           </button>
-          <div className={`grid flex-1 gap-1.5 ${semana.length === 7 ? "grid-cols-7" : "grid-cols-6"}`}>
+          <div className={`relative grid flex-1 gap-1.5 ${semana.length === 7 ? "grid-cols-7" : "grid-cols-6"}`}>
+            {/* Bolha bronze do dia escolhido: desliza até o dia tocado na mesma mola da barra de
+                abas. Fica atrás dos dias (que são translúcidos), então aparece passando por baixo */}
+            {bolhaDia && (
+              <span
+                aria-hidden
+                className="bolha-aba pointer-events-none absolute inset-y-0 left-0 rounded-[18px] bg-bronze shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+                style={{ transform: `translateX(${bolhaDia.x}px)`, width: bolhaDia.largura, transitionProperty: "transform, width" }}
+              />
+            )}
             {semana.map((d) => {
               const escolhido = d === dia;
               const semanaIdx = (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7;
               return (
                 <button
                   key={d}
+                  ref={(el) => {
+                    if (el) botoesDia.current.set(d, el);
+                    else botoesDia.current.delete(d);
+                  }}
                   onClick={() => setDia(d)}
                   aria-pressed={escolhido}
                   aria-label={formatarData(d)}
-                  className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] ${
+                  className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] transition-colors duration-300 active:scale-95 ${
                     escolhido
-                      ? "bg-bronze text-grafite shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+                      ? "text-grafite"
                       : `bg-white/[0.07] text-perola ${d === hoje ? "ring-[1.5px] ring-bronze" : "ring-1 ring-bronze/25"}`
                   }`}
                 >
@@ -281,20 +318,11 @@ export default function AgendaPage() {
       </header>
 
       {/* Camadas por status */}
-      <div className="mt-4 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-        {camadas.map((c) => (
-          <button
-            key={c.chave}
-            onClick={() => setCamada(c.chave)}
-            aria-pressed={camadaAtual === c.chave}
-            className={`h-11 shrink-0 rounded-full px-4 text-sm font-semibold whitespace-nowrap ${
-              camadaAtual === c.chave ? "bg-bronze text-grafite" : "border border-borda text-rotulo"
-            }`}
-          >
-            {c.rotulo} {ok ? contagem[c.chave] : ""}
-          </button>
-        ))}
-      </div>
+      <SeletorCamadas
+        camadas={camadas.map((c) => ({ ...c, rotulo: `${c.rotulo}${ok ? ` ${contagem[c.chave]}` : ""}` }))}
+        atual={camadaAtual}
+        aoEscolher={setCamada}
+      />
 
       <section className="mt-4 px-5">
         {!dados && <p className="text-texto-2">Carregando…</p>}
@@ -374,6 +402,60 @@ export default function AgendaPage() {
         </div>
       )}
     </>
+  );
+}
+
+// Todos / A atender / Realizados / Faltaram numa cápsula, com a bolha bronze deslizando até o
+// tocado na mesma mola da barra de abas (bolha-aba). Os botões têm larguras diferentes, então a
+// bolha mede o botão escolhido e acompanha posição e largura.
+function SeletorCamadas({
+  camadas,
+  atual,
+  aoEscolher,
+}: {
+  camadas: { chave: Camada; rotulo: string }[];
+  atual: Camada;
+  aoEscolher: (c: Camada) => void;
+}) {
+  const botoes = useRef(new Map<Camada, HTMLButtonElement>());
+  const [bolha, setBolha] = useState<{ x: number; largura: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = botoes.current.get(atual);
+    if (!el) return;
+    setBolha({ x: el.offsetLeft, largura: el.offsetWidth });
+    // Em tela estreita a lista rola de lado: traz o escolhido para a vista
+    el.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
+  }, [atual, camadas.map((c) => c.rotulo).join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="mt-4 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
+      <div role="group" aria-label="Filtrar horários" className="relative flex w-max gap-1 rounded-full bg-campo p-1">
+        {bolha && (
+          <span
+            aria-hidden
+            className="bolha-aba pointer-events-none absolute inset-y-1 left-0 rounded-full bg-bronze shadow-[0_2px_6px_rgba(30,23,20,0.18)]"
+            style={{ transform: `translateX(${bolha.x}px)`, width: bolha.largura, transitionProperty: "transform, width" }}
+          />
+        )}
+        {camadas.map((c) => (
+          <button
+            key={c.chave}
+            ref={(el) => {
+              if (el) botoes.current.set(c.chave, el);
+              else botoes.current.delete(c.chave);
+            }}
+            onClick={() => aoEscolher(c.chave)}
+            aria-pressed={atual === c.chave}
+            className={`relative h-10 shrink-0 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-300 active:scale-95 ${
+              atual === c.chave ? "text-grafite" : "text-rotulo"
+            }`}
+          >
+            {c.rotulo}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 
