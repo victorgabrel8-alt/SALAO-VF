@@ -249,7 +249,7 @@ begin
       end if;
     end if;
     if array_length(v_problemas, 1) > 0 then
-      raise exception 'NÃO MARQUEI: %. Conte à Gleide; se ela quiser assim mesmo, chame de novo com forcar = sim.',
+      raise exception 'NÃO MARQUEI: % Conte à Gleide; se ela quiser assim mesmo, chame de novo com forcar = sim.',
         array_to_string(v_problemas, ' ');
     end if;
   end if;
@@ -294,7 +294,7 @@ begin
   if not p_forcar then
     v_motivo := assistente_conferir_horario(p_empresa_id, p_inicio, v_dur, ag.id);
     if v_motivo is not null then
-      raise exception 'NÃO REAGENDEI: %. Conte à Gleide; se ela quiser assim mesmo, chame de novo com forcar = sim.', v_motivo;
+      raise exception 'NÃO REAGENDEI: % Conte à Gleide; se ela quiser assim mesmo, chame de novo com forcar = sim.', v_motivo;
     end if;
   end if;
 
