@@ -42,3 +42,8 @@ next-env.d.ts
 
 # o exemplo de variáveis pode ir para o Git
 !.env.local.example
+
+# cloudflare / opennext
+.open-next
+.wrangler
+.dev.vars*

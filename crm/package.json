@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "cf:build": "npm i --no-save @opennextjs/cloudflare@latest wrangler@latest && opennextjs-cloudflare build",
+    "cf:deploy": "opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
