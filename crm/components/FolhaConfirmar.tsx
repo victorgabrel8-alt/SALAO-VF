@@ -19,9 +19,9 @@ import {
 import { abreNoDia, horariosLivres, proximoDiaAberto } from "@/lib/horarios";
 import type { ServicoAtivo } from "@/lib/tipos";
 
-// O ✓ de um horário a atender, como uma pergunta direta: "Maria fez o que estava marcado?".
-// Quase sempre é "Sim" (1 toque). Se a cliente fez outra coisa ou mais coisas (marcou hidratação
-// e fez mega hair), a dona marca o que ela fez de verdade.
+// O ✓ de um horário a atender, como uma pergunta direta: "Como foi o atendimento de Maria?".
+// Quase sempre é "Fez o que estava marcado" (1 toque). Se a cliente fez outra coisa ou mais coisas
+// (marcou hidratação e fez mega hair), a dona marca o que ela fez de verdade.
 // A volta não é marcada aqui: quem chama a cliente na data certa é a IA, pelo retorno que o
 // banco calcula de cada serviço feito.
 // Se o horário é uma Avaliação, a pergunta é o resultado: Fechou / Ficou de pensar / Não fechou
@@ -103,7 +103,7 @@ export function FolhaConfirmar({
       disabled={salvando}
       className="h-13 min-h-[52px] rounded-full bg-card text-[16px] font-semibold text-rose-texto borda-suave active:bg-campo"
     >
-      Faltou / remarcou
+      Faltou ou remarcou
     </button>
   );
 
@@ -131,7 +131,7 @@ export function FolhaConfirmar({
             <div className="flex flex-col gap-1">
               <span className="rotulo text-texto-2">Atendimento das {formatarHora(a.inicio)}</span>
               <h2 className="font-serif text-[26px] leading-tight font-semibold">
-                {avaliacao ? `Como foi a avaliação de ${nome}?` : `${nome} fez o que estava marcado?`}
+                {avaliacao ? `Como foi a avaliação de ${nome}?` : `Como foi o atendimento de ${nome}?`}
               </h2>
             </div>
             <div className="flex items-center gap-3 rounded-[18px] bg-card px-4 py-3.5 borda-suave">
@@ -178,14 +178,14 @@ export function FolhaConfirmar({
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="m5 12 5 5L20 7" />
                   </svg>
-                  {salvando ? "Salvando…" : "Sim, concluir atendimento"}
+                  {salvando ? "Salvando…" : "Fez o que estava marcado"}
                 </button>
                 <button
                   onClick={() => setTela("mudou")}
                   disabled={salvando}
                   className="h-13 min-h-[52px] rounded-full bg-card text-[16px] font-semibold borda-suave active:bg-campo"
                 >
-                  Não, fez outro serviço
+                  Fez outro serviço
                 </button>
                 {botaoFaltou}
               </div>
