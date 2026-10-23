@@ -12,7 +12,7 @@
         "nao_deve": "R\\$ ?\\d"
       },
       {
-        "deve": "(comprimento|volume|objetivo|resultado|foto)"
+        "deve": "(comprimento|volume|objetivo|resultado|foto|grama|quantidade)"
       },
       {
         "transferiu": false
@@ -372,7 +372,7 @@
   },
   {
     "id": "indecisa-pede-foto",
-    "nome": "Não sabe o que escolher: pré-avaliação, pede foto em vez de mandar direto pra avaliação",
+    "nome": "Não sabe o que escolher: pré-avaliação (pede foto ou oferece a avaliação, conforme a conversa), sem escolher a técnica por ela",
     "telefone": "556690000139",
     "mensagens": [
       "oi, queria colocar mega mas não sei qual fica melhor em mim"
@@ -382,7 +382,10 @@
         "deve": "(foto|comprimento|volume|objetivo)"
       },
       {
-        "nao_deve": "avalia"
+        "deve": "\\?"
+      },
+      {
+        "nao_deve": "(essa é a melhor|a melhor (técnica|opção) (pra|para) você|vai precisar de \\d+ ?g)"
       },
       {
         "sem_ferramenta": "criar"
@@ -404,7 +407,7 @@
     ],
     "espera": [
       {
-        "deve": "(fio a fio|aquecid|mecha)"
+        "deve": "(fio a fio|aquecid|mech)"
       },
       {
         "deve": "(cola|adesiv|faixa|raiz)"
