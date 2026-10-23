@@ -112,42 +112,21 @@ Deixe vazio para responder a todos. Depois de mudar: `docker compose up -d n8n`.
 
 ---
 
-## Fase 3 – Google Agenda
+## Fase 3 – Agenda (a do app, sem Google)
 
-### Google Cloud Console (feito à mão, uma vez)
-1. https://console.cloud.google.com → crie/selecione um projeto (ex.: `SALAO`).
-2. **APIs e serviços → Biblioteca → Google Calendar API → Ativar.**
-   (Sem isso o erro é `Google Calendar API has not been used in project ...`.)
-3. **APIs e serviços → Tela de permissão OAuth → Começar**: nome do app, e-mail, público **Externo**,
-   contato, concordar → Criar.
-4. **Público-alvo → Usuários de teste → Add users** → seu Gmail.
-   (Sem isso o erro é `403 access_denied – não concluiu o processo de verificação`.)
-5. **Clientes → Criar cliente → Aplicativo da Web** → URI de redirecionamento:
-   `http://localhost:5678/rest/oauth2-credential/callback` → Criar → copie ID e chave secreta.
-
-### n8n
-1. http://localhost:5678/home/credentials → **Create credential → Google Calendar OAuth2 API**.
-2. Cole Client ID e Client Secret → **Sign in with Google** → Continuar (app não verificado) →
-   permitir → deve aparecer **Account connected** → Save.
-3. Rode `node montar-workflow.js --enviar --ativar` (ele pega o ID da credencial em `N8N_GCAL_CRED_ID`).
-
-> App em modo teste: o Google expira o login a cada 7 dias. Se a agenda parar de responder,
-> abra a credencial e clique em *Sign in with Google* de novo.
+A agenda é a tabela `agendamentos` do Supabase, a mesma que o app/CRM mostra. Não usa Google Agenda
+(foi retirado em 23/10/2026): nada de credencial OAuth nem login que expira.
 
 ### Como funciona
 - Subworkflow **Agenda Salão (ferramentas do agente)** (`workflow-agenda-salao.json`), chamado pelas tools
   `consultar_horarios_livres`, `criar_agendamento`, `ver_agendamentos`, `remarcar_agendamento` e
   `cancelar_agendamento` do Agente IA. **Precisa estar ativo (publicado).**
-- Remarcar = o MESMO evento muda de horário (PATCH); cancelar = DELETE. Os eventos da cliente são achados
-  pelo telefone dela, que fica na descrição de todo evento criado pela IA.
-- Usa a API do Google (freeBusy + events.insert) com a credencial OAuth.
-- O evento leva no título `Serviço - Nome | motivo` e na descrição nome, telefone, serviço e
-  "O que a cliente quer" (ex.: "comprar cabelo vietnamita 60 cm", "selagem - cabelo ressecado"),
-  resumido pela IA a partir da conversa.
-- Regras de horário em `agenda-calculo.js` (manter igual ao prompt):
-  todos os dias: seg–sex 09–12 e 13–18, sáb e dom 08–14, grade de 30 min, 1 h de antecedência.
-- `GOOGLE_CALENDAR_ID` no `.env`: `primary` (agenda principal) ou o ID de uma agenda dedicada
-  (Configurações da agenda → Integrar agenda → ID da agenda).
+- Lê do Supabase: horários ocupados (agendado/realizado; falta libera o horário), horário de funcionamento e
+  almoço do salão (`empresas.config`) e os horários futuros da cliente (pelo telefone).
+- criar = grava em `agendamentos` com `origem = 'ia'` (o motivo vai em observações); remarcar = o MESMO
+  agendamento muda de horário (com "Reagendado de …" nas observações); cancelar = `status = 'cancelado'`.
+- A IA só ouve "AGENDADO / REMARCADO / CANCELADO" se o Supabase gravou; senão pede desculpas e transfere.
+- Regras de horário em `agenda-calculo.js` (grade de 30 min, 1 h de antecedência, 7 dias de busca).
 
 ---
 
@@ -201,7 +180,7 @@ docker exec demo-salao-redis-1 redis-cli --scan --pattern 'pausa:*'
 
 Importando à mão (sem a API): importe primeiro os dois subworkflows, ative-os, depois importe o
 principal e, nos nós `consultar_horarios_livres`, `criar_agendamento` e `transferir_para_humano`,
-selecione o subworkflow correspondente. Selecione também as credenciais (Redis, Gemini, Google).
+selecione o subworkflow correspondente. Selecione também as credenciais (Redis, Gemini).
 
 ---
 
@@ -212,7 +191,7 @@ selecione o subworkflow correspondente. Selecione também as credenciais (Redis,
 | Preço de serviço que existe (queratina) | ✅ R$ 650 de mão de obra, cabelo à parte, oferece avaliação |
 | Serviço que não existe (unha em gel) | ✅ "Trabalhamos só com cabelo" + oferece os serviços |
 | 3 mensagens seguidas rápidas | ✅ Uma resposta só (buffer 10 s + trava por conversa) |
-| Amanhã à tarde + confirmar | ✅ Oferece as faixas livres; confirma nome e horário; cria evento |
+| Amanhã à tarde + confirmar | ✅ Oferece as faixas livres; confirma nome e horário; grava o agendamento no app |
 | Hora fora do expediente (sábado 16h, 12h almoço, 18h) | ✅ Explica e oferece o horário possível mais próximo |
 | Áudio pedindo horário | ✅ Transcreve e consulta a agenda |
 | "Quero falar com a dona" / reclamação / fora do escopo | ✅ Transfere e pausa 12 h (reclamação com acolhimento) |
@@ -226,14 +205,12 @@ selecione o subworkflow correspondente. Selecione também as credenciais (Redis,
    (`restart: unless-stopped`). Se não subirem: `docker compose up -d`.
 2. Confira o WhatsApp conectado:
    `curl -s localhost:8080/instance/connectionState/salao-demo -H "apikey: $EVOLUTION_API_KEY"` → `"state":"open"`.
-3. Confira o Google: abra a credencial do Google Calendar no n8n. Se pedir, clique em
-   *Sign in with Google* (em modo teste o login expira a cada 7 dias).
-4. **Quem pode conversar com a IA**: coloque o número da Gleide (e o seu de teste) em
+3. **Quem pode conversar com a IA**: coloque o número da Gleide (e o seu de teste) em
    `NUMEROS_PERMITIDOS` no `.env`, separados por vírgula, e rode `docker compose up -d n8n`.
    Evite deixar vazio no seu número pessoal, senão todos os seus contatos recebem resposta da IA.
-5. Limpe a memória/pausa de quem vai testar (começa a conversa do zero):
+4. Limpe a memória/pausa de quem vai testar (começa a conversa do zero):
    `docker exec demo-salao-redis-1 redis-cli DEL memoria:55DDDNUMERO pausa:55DDDNUMERO`
-6. Apague da agenda os eventos de teste antigos.
+5. Apague no app os agendamentos de teste antigos.
 
 Roteiro sugerido para mostrar à Gleide: perguntar preço → pedir horário para amanhã → mandar um
 áudio → pedir para falar com a dona → você responde pelo celular → `#ia`.
