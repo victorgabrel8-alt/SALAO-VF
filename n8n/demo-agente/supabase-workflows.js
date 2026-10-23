@@ -107,12 +107,19 @@ const alo = $('Supabase: último alô').first().json;
 if (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +
   (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'antes') +
   ' e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');
+// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)
+else if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +
+  (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : 'hoje') +
+  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +
+  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));
 // vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)
 else if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'agora') +
   ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : '?') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +
-  (alo.vagas && alo.vagas.status !== 'aberta' ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));
+  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)
+  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))
+    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));
 else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'ela') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
@@ -125,7 +132,8 @@ return [{ json: { texto: linhas.join('\n') } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
+    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status)' +
+    '&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
   workflow.connections['Supabase: histórico da cliente'] = main('Supabase: último alô');
@@ -152,6 +160,9 @@ Use a ficha como quem já conhece a cliente:
 - Se a ficha tiver "ALÔ DE REMARCAÇÃO", a Gleide teve um imprevisto e pediu para remarcar aquele horário.
   É remarcar, não marcar outro: use ver_agendamentos, consultar_horarios_livres para o mesmo serviço
   (perto do dia que ela preferir) e, com o "sim" dela, remarcar_agendamento. Nunca use criar_agendamento.
+- Se a ficha tiver "ALÔ DE ATRASO", passou do horário dela e você perguntou se está a caminho. Chegando ou já
+  no salão: responda curto, sem cobrar. Não vem hoje: acolha, consulte horários do mesmo serviço e, com o "sim",
+  use remarcar_agendamento com o data_hora_inicio da ficha (se a ficha disser que já ficou como falta, criar_agendamento).
 - Se a ficha tiver "ALÔ DE FALTA", ela não veio ao horário e você a chamou. Acolha sem cobrar nem julgar
   (imprevisto acontece; o horário já passou, então não fale em desmarcar nem em multa). Se ela quiser,
   consulte horários do mesmo serviço e, com o "sim", use
@@ -209,7 +220,8 @@ Use a ficha como quem já conhece a cliente:
   // ---------- Agenda: o que já está marcado no CRM também ocupa horário (Calcular soma ao Google) ----------
   // inicio desde 12 h antes da janela, para pegar atendimento longo que começou antes e ainda não acabou
   agendaWorkflow.nodes.push(supa('Supabase: horários ocupados', 'GET',
-    `agendamentos?select=inicio,fim,google_event_id&empresa_id=eq.{{ ${EMPRESA} }}&status=in.(agendado,realizado)` +
+    // faltou também vem: o Calcular tira esse horário do que o Google diz que está ocupado (vaga de atraso, 011)
+    `agendamentos?select=inicio,fim,status,google_event_id&empresa_id=eq.{{ ${EMPRESA} }}&status=in.(agendado,realizado,faltou)` +
     `&inicio=gte.{{ DateTime.fromISO(${Pr}.timeMin || $now.toISO()).minus({ hours: 12 }).toUTC().toISO() }}` +
     `&inicio=lt.{{ ${Pr}.timeMax || $now.plus({ days: 8 }).toUTC().toISO() }}`, null));
   // horário de funcionamento e almoço do salão (os mesmos do CRM) e os horários futuros desta cliente
@@ -218,7 +230,8 @@ Use a ficha como quem já conhece a cliente:
     supa('Supabase: config do salão', 'GET', `empresas?select=config&id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }),
     supa('Supabase: agendamentos da cliente', 'GET',
       'agendamentos?select=id,inicio,fim,google_event_id,observacoes,servicos(nome),clientes!inner(telefone)' +
-      `&empresa_id=eq.{{ ${EMPRESA} }}&status=eq.agendado&inicio=gt.{{ $now.toUTC().toISO() }}` +
+      // desde 1 h atrás: a cliente atrasada (011) ainda consegue remarcar o horário que acabou de passar
+      `&empresa_id=eq.{{ ${EMPRESA} }}&status=eq.agendado&inicio=gt.{{ $now.minus(1, 'hour').toUTC().toISO() }}` +
       `&clientes.telefone=eq.{{ ${TEL_BR(`${Pr}.telefone`)} }}&order=inicio`, null),
   );
   agendaWorkflow.connections['Google: agendamentos da cliente'] = main('Supabase: horários ocupados');

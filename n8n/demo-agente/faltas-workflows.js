@@ -1,5 +1,10 @@
 // IA - Faltas e avisos (situação 2, ver supabase/007_ia_chama_faltas.sql).
-// Chamado pelo montar-workflow.js: devolve 1 workflow novo que roda a cada 5 min (8h–20h):
+// Chamado pelo montar-workflow.js: devolve 1 workflow novo que confere a cada 5 min (8h–20h). Conferir não é
+// mandar: cada cliente recebe no máximo 2 mensagens de atraso, 1 de falta e 1 oferta por vaga.
+//   D) atraso (supabase/011): +5 min "está a caminho?", +25 min "conseguiu vir?"
+//   E) sem resposta 10 min depois: pergunta à Gleide "veio ou libera?". Silêncio não libera nada; o "libera"
+//      dela (ferramenta liberar_horario da assistente) marca falta e abre a vaga (C, só no mesmo dia)
+//   F) liberou, outra adiantou e a atrasada apareceu: avisa a Gleide do conflito
 //   A) quem faltou hoje/ontem e ainda não foi chamada -> a IA manda a mensagem pelo número do salão,
 //      grava o contato 'falta' e a mensagem; quando a cliente responde, o agente lê o "ALÔ DE FALTA"
 //      na ficha e marca outro horário
@@ -37,6 +42,42 @@ return $input.all().map((i) => i.json).filter((f) => f.agendamento_id).map((f) =
     ' 💛 Aconteceu alguma coisa? Se quiser, já vejo outro horário pra você.';
   return { json: { ...f, texto } };
 });
+`;
+
+// atraso (supabase/011): etapa 1 = +5 min, etapa 2 = +25 min; depois disso a IA não chama mais
+const MENSAGEM_ATRASO = QUANDO + String.raw`
+return $input.all().map((i) => i.json).filter((a) => a.agendamento_id).map((a) => {
+  const nome = primeiro(a.nome);
+  const texto = a.etapa === 1
+    ? 'Oi' + (nome ? ' ' + nome : '') + '! Seu horário aqui no salão era ' + quando(a.inicio) + ' 💛 Está a caminho?'
+    : (nome ? nome + ', c' : 'C') + 'onseguiu vir? Se hoje não der, me avisa que eu vejo outro horário pra você, sem problema 💛';
+  return { json: { ...a, texto } };
+});
+`;
+
+// atraso sem resposta (supabase/011): a IA não decide sozinha, pergunta à Gleide. Silêncio = o horário continua dela
+const MEMORIA = "memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } })";
+const MENSAGEM_CONFIRMAR = QUANDO + String.raw`
+const as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);
+if (!as.length) return [];
+const linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +
+  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';
+const texto = as.map(linha).join('\n') + '\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';
+const ids = as.map((a) => a.pendencia_id);
+const numeros = ${NUMEROS};
+return numeros.map((tel) => ({ json: { tel, texto, ids, ${MEMORIA} } }));
+`;
+
+// a Gleide liberou, outra adiantou e depois a atrasada apareceu: a Gleide decide
+const MENSAGEM_CONFLITO = QUANDO + String.raw`
+const cs = $input.all().map((i) => i.json).filter((c) => c.contato_id);
+if (!cs.length) return [];
+const n = (s) => '*' + (s || 'cliente').split(' ').slice(0, 2).join(' ') + '*';
+const texto = cs.map((c) => '⚠️ ' + n(c.nome_atrasada) + ' (' + quando(c.horario_atrasada) + ') apareceu, mas ' + n(c.nome_adiantou) +
+  ' já adiantou para ' + quando(c.novo_horario) + '. As duas estão no mesmo horário: como quer resolver?').join('\n');
+const itens = cs.map((c) => ({ id: c.contato_id, situacao: 'conflito' }));
+const numeros = ${NUMEROS};
+return numeros.map((tel) => ({ json: { tel, texto, itens, ${MEMORIA} } }));
 `;
 
 const MENSAGEM_VAGA = QUANDO + String.raw`
@@ -91,6 +132,8 @@ module.exports = ({ env, node, main }) => {
     sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}`, options: {},
   }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, ...extra });
   const cond = (id, left) => ({ id, leftValue: left, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } });
+  const INICIOS = ['Atrasos para chamar', 'Atrasos para confirmar', 'Conflitos de atraso','Faltas para chamar', 'Vagas para oferecer', 'Avisos para a Gleide']
+    .map((n) => ({ node: n, type: 'main', index: 0 }));
 
   const faltasWorkflow = {
     name: 'IA - Faltas e avisos',
@@ -117,6 +160,41 @@ module.exports = ({ env, node, main }) => {
       rpc('Registrar chamada', [1320, -100], 'n8n_registrar_chamada_falta',
         `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Mensagem da falta').item.json.agendamento_id, p_mensagem: $('Mensagem da falta').item.json.texto, p_wa_message_id: $json.key.id }`),
 
+      // D) chamar quem está atrasada (+5 e +25 min)
+      rpc('Atrasos para chamar', [440, -540], 'n8n_atrasos_para_chamar', `{ p_empresa_id: ${EMPRESA} }`),
+      node('Mensagem do atraso', 'n8n-nodes-base.code', 2, [660, -540], { jsCode: MENSAGEM_ATRASO }),
+      evoPost('Chamar a atrasada', [880, -540], '{ number: $json.telefone, text: $json.texto }', { onError: 'continueRegularOutput' }),
+      node('Chamou?', 'n8n-nodes-base.if', 2.2, [1100, -540], {
+        conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+          conditions: [cond('t1', '={{ !!$json.key?.id }}')], combinator: 'and' },
+        options: {},
+      }),
+      rpc('Registrar chamada do atraso', [1320, -540], 'n8n_registrar_chamada_atraso',
+        `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Mensagem do atraso').item.json.agendamento_id, p_mensagem: $('Mensagem do atraso').item.json.texto, p_wa_message_id: $json.key.id }`),
+
+      // E) atraso sem resposta: pergunta à Gleide "veio ou libera?" (quem libera é ela, pela assistente)
+      rpc('Atrasos para confirmar', [440, -760], 'n8n_atrasos_para_confirmar', `{ p_empresa_id: ${EMPRESA} }`),
+      node('Mensagem veio ou libera', 'n8n-nodes-base.code', 2, [660, -760], { jsCode: MENSAGEM_CONFIRMAR }),
+      evoPost('Perguntar à Gleide (atraso)', [880, -760], '{ number: $json.tel, text: $json.texto }'),
+      node('Guardar pergunta do atraso', 'n8n-nodes-base.redis', 1, [1100, -760], {
+        operation: 'push', list: "=assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
+        messageData: "={{ $('Mensagem veio ou libera').item.json.memoria }}", tail: false,
+      }, { credentials: REDIS }),
+      // conta como "perguntou": a cobrança de 1 em 1 h repete daqui a 1 h, não agora
+      rpc('Marcar atraso perguntado', [1320, -760], 'n8n_assistente_marcar_perguntado',
+        `{ p_empresa_id: ${EMPRESA}, p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }`),
+
+      // F) conflito: liberou, outra adiantou e a atrasada apareceu
+      rpc('Conflitos de atraso', [440, -980], 'n8n_conflitos_atraso', `{ p_empresa_id: ${EMPRESA} }`),
+      node('Mensagem do conflito', 'n8n-nodes-base.code', 2, [660, -980], { jsCode: MENSAGEM_CONFLITO }),
+      evoPost('Avisar a Gleide (conflito)', [880, -980], '{ number: $json.tel, text: $json.texto }'),
+      node('Guardar aviso do conflito', 'n8n-nodes-base.redis', 1, [1100, -980], {
+        operation: 'push', list: "=assistente:{{ $('Mensagem do conflito').item.json.tel }}",
+        messageData: "={{ $('Mensagem do conflito').item.json.memoria }}", tail: false,
+      }, { credentials: REDIS }),
+      rpc('Marcar conflito avisado', [1320, -980], 'n8n_marcar_avisado',
+        `{ p_empresa_id: ${EMPRESA}, p_itens: $('Mensagem do conflito').item.json.itens }`, { executeOnce: true }),
+
       // C) oferecer a vaga que abriu
       rpc('Vagas para oferecer', [440, -320], 'n8n_vagas_para_oferecer', `{ p_empresa_id: ${EMPRESA} }`),
       node('Mensagem da vaga', 'n8n-nodes-base.code', 2, [660, -320], { jsCode: MENSAGEM_VAGA }),
@@ -142,8 +220,20 @@ module.exports = ({ env, node, main }) => {
     ],
     connections: {
       'A cada 5 min': main('Horário do salão?'),
-      'Horário do salão?': { main: [[{ node: 'Faltas para chamar', type: 'main', index: 0 }, { node: 'Vagas para oferecer', type: 'main', index: 0 }, { node: 'Avisos para a Gleide', type: 'main', index: 0 }]] },
-      'Disparar agora (teste)': { main: [[{ node: 'Faltas para chamar', type: 'main', index: 0 }, { node: 'Vagas para oferecer', type: 'main', index: 0 }, { node: 'Avisos para a Gleide', type: 'main', index: 0 }]] },
+      'Horário do salão?': { main: [INICIOS] },
+      'Disparar agora (teste)': { main: [INICIOS] },
+      'Atrasos para chamar': main('Mensagem do atraso'),
+      'Mensagem do atraso': main('Chamar a atrasada'),
+      'Chamar a atrasada': main('Chamou?'),
+      'Chamou?': main('Registrar chamada do atraso'),
+      'Atrasos para confirmar': main('Mensagem veio ou libera'),
+      'Mensagem veio ou libera': main('Perguntar à Gleide (atraso)'),
+      'Perguntar à Gleide (atraso)': main('Guardar pergunta do atraso'),
+      'Guardar pergunta do atraso': main('Marcar atraso perguntado'),
+      'Conflitos de atraso': main('Mensagem do conflito'),
+      'Mensagem do conflito': main('Avisar a Gleide (conflito)'),
+      'Avisar a Gleide (conflito)': main('Guardar aviso do conflito'),
+      'Guardar aviso do conflito': main('Marcar conflito avisado'),
       'Faltas para chamar': main('Mensagem da falta'),
       'Mensagem da falta': main('Mandar para a cliente'),
       'Mandar para a cliente': main('Enviou?'),

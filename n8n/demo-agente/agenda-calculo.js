@@ -16,6 +16,7 @@ let EXPEDIENTE = {
 };
 const PASSO_MIN = 30;        // grade de horários
 const ANTECEDENCIA_MIN = 60; // não oferece horário com menos de 1h
+const ANTECEDENCIA_REMARCAR_MIN = 30; // remarcar/adiantar para uma vaga que ela topou: basta 30 min
 const DIAS_BUSCA = 7;        // procura vagas até 7 dias à frente
 const fmt = (d) => d.setLocale('pt-BR').toFormat("cccc, dd/LL 'às' HH:mm");
 const iso = (d) => d.toFormat("yyyy-LL-dd'T'HH:mm");
@@ -112,15 +113,17 @@ if (fb.error || !fb.calendars) return saida({ resposta: FORA });
 
 const cal = Object.values(fb.calendars)[0] || {};
 if (cal.errors) return saida({ resposta: FORA });
-const ocupados = (cal.busy || []).map(b => [DateTime.fromISO(b.start).setZone(TZ), DateTime.fromISO(b.end).setZone(TZ)]);
+let ocupados = (cal.busy || []).map(b => [DateTime.fromISO(b.start).setZone(TZ), DateTime.fromISO(b.end).setZone(TZ)]);
 // Horários marcados pelo CRM (Supabase) também ocupam: a Gleide marca/remarca pelo app e isso não vai para o Google.
 // Sem fim gravado, conta 1 h. Se o Supabase não respondeu, segue só com o Google.
 let doCrm = [];
 try { doCrm = $('Supabase: horários ocupados').all().map(i => i.json).filter(a => a.inicio); } catch (e) {}
-for (const a of doCrm) {
-  const ini = DateTime.fromISO(a.inicio).setZone(TZ);
-  ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);
+const intervalo = (a) => { const ini = DateTime.fromISO(a.inicio).setZone(TZ); return [ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]; };
+// Falta (ex.: atrasou e não respondeu, supabase/011): o evento continua no Google, mas o horário está livre
+for (const [fa, fb2] of doCrm.filter(a => a.status === 'faltou').map(intervalo)) {
+  ocupados = ocupados.flatMap(([a, b]) => b <= fa || a >= fb2 ? [[a, b]] : [a < fa ? [a, fa] : null, b > fb2 ? [fb2, b] : null].filter(Boolean));
 }
+for (const a of doCrm.filter(a => a.status !== 'faltou')) ocupados.push(intervalo(a));
 const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
@@ -168,7 +171,7 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
     if (a < alvo.ini) semEle.push([a, alvo.ini]);
     if (b > alvo.fim) semEle.push([alvo.fim, b]);
   }
-  if (novo < agora.plus({ minutes: ANTECEDENCIA_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
+  if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
   // mesma anotação do CRM ("Reagendado de 20/10 às 13:00"): o app mostra o horário antigo

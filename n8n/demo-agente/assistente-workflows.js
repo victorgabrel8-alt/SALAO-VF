@@ -3,7 +3,8 @@
 // e devolve 3 workflows novos:
 //   - "Assistente da Gleide"         agente que conversa com a Gleide e grava no banco do 004
 //   - "Assistente - Ferramentas"     subworkflow das tools (SQL nas funções n8n_assistente_*)
-//   - "Assistente - Pendências"      a cada 15 min (8h–20h) pergunta à Gleide o que falta no CRM
+//   - "Assistente - Pendências"      de 1 em 1 h (8h–20h) pergunta à Gleide o que falta no CRM
+//                                    (a mesma pendência por no máximo 2 h, ver supabase/011)
 //                                    (GET /webhook/assistente-pendencias dispara na hora, para testar)
 //
 // Banco: o Supabase de verdade (o mesmo do app e do CRM), pela API com a chave de serviço, chamando as funções
@@ -60,6 +61,9 @@ switch (v('acao')) {
   case 'anotar':
     funcao = 'n8n_assistente_anotar_cliente'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
     break;
+  case 'liberar_horario':
+    funcao = 'n8n_assistente_liberar_horario'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')) };
+    break;
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
 }
@@ -108,6 +112,13 @@ REGRAS
 - Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até
   5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.
   Diga isso numa frase curta ("Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍").
+- Cliente ATRASADA (pendência atraso_confirmar, ou o aviso "⏰ … não chegou nem respondeu. Ela está aí?"): aqui a resposta
+  dela já é a confirmação, não peça "tá certo?" (é na hora, ela está ocupada).
+  "veio", "tá aqui", "chegou" → status_atendimento realizado e responda "Beleza ✅".
+  "libera", "não veio", "pode liberar" → liberar_horario e diga em uma frase o que a ferramenta respondeu sobre a vaga.
+  Se não ficou claro, pergunte só "Ela veio?". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.
+- Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra
+  já tinha adiantado para aquele horário).
 - Fora isso, você não fala com clientes. Se ela pedir "chama a Carla", diga que por enquanto você só anota, e grave isso como próximo passo.
 - Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
@@ -264,6 +275,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['observacoes', 'Observações', 'string']]),
       tool('anotar', [2760, 220], 'Acrescenta uma anotação na ficha da cliente (alergia, preferência, combinado). Não apaga as anteriores. Só use DEPOIS da confirmação.',
         'anotar', [ID('cliente_id'), ['texto', 'A anotação, curta', 'string']]),
+      tool('liberar_horario', [2920, 220], 'Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. ' +
+        'Só use quando a Gleide disser "libera" ou "não veio" para essa cliente. Nunca por conta própria.',
+        'liberar_horario', [ID('agendamento_id')]),
       evoPost('Responder a Gleide', [2000, 0], 'message/sendText',
         // **negrito** de markdown aparece com os asteriscos no WhatsApp: vira *negrito*
         `{ number: ${A}.jid, text: ($json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }`,
@@ -281,7 +295,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Agente assistente': main('Responder a Gleide'),
       'Gemini Flash': { ai_languageModel: [[{ node: 'Agente assistente', type: 'ai_languageModel', index: 0 }]] },
       'Memória (Redis)': { ai_memory: [[{ node: 'Agente assistente', type: 'ai_memory', index: 0 }]] },
-      ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar']
+      ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
     },
     settings,
@@ -291,12 +305,11 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
   const pendenciasWorkflow = {
     name: 'Assistente - Pendências',
     nodes: [
-      node('A cada 15 min', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 0], { rule: { interval: [{ field: 'minutes', minutesInterval: 15 }] } }),
+      node('A cada 1 h', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 0], { rule: { interval: [{ field: 'hours', hoursInterval: 1, triggerAtMinute: 0 }] } }),
       ifNode('Horário do salão?', [220, 0], [cond('h1', "={{ $now.setZone('America/Cuiaba').hour >= 8 && $now.setZone('America/Cuiaba').hour < 20 }}")]),
       node('Disparar agora (teste)', 'n8n-nodes-base.webhook', 2, [0, 200],
         { httpMethod: 'GET', path: 'assistente-pendencias', responseMode: 'lastNode', options: {} }, { webhookId: '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91' }),
-      // não pergunta de novo sobre a mesma pendência por 3h
-      // não pergunta de novo sobre a mesma pendência por 3h (a função já filtra)
+      // a mesma pendência: na hora, +1 h e +2 h, depois para (a função já filtra, supabase/011)
       rpc('Pendências novas', [440, 100], 'n8n_assistente_pendencias_novas', `{ p_empresa_id: ${EMPRESA} }`, { onError: 'continueRegularOutput' }),
       node('Montar mensagem', 'n8n-nodes-base.code', 2, [660, 100], { jsCode: String.raw`
 const ps = $input.all().map((i) => i.json).filter((p) => p.tipo);
@@ -314,6 +327,7 @@ const hora = (p) => {
 const brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });
 const linha = (p) => {
   if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';
+  if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';
   if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';
   return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';
 };
@@ -334,7 +348,7 @@ return numeros.map((tel) => ({ json: { tel, texto, ids,
         `{ p_empresa_id: ${EMPRESA}, p_pedido_a: $('Montar mensagem').item.json.tel, p_ids: $('Montar mensagem').item.json.ids }`),
     ],
     connections: {
-      'A cada 15 min': main('Horário do salão?'),
+      'A cada 1 h': main('Horário do salão?'),
       'Horário do salão?': main('Pendências novas'),
       'Disparar agora (teste)': main('Pendências novas'),
       'Pendências novas': main('Montar mensagem'),

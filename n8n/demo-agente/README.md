@@ -277,7 +277,7 @@ Plano: `docs/PLANO-IA-ALIMENTA-CRM.md` (Camada 2). Banco: `supabase/004_avaliaco
   e `Assistente - Pendências`, e coloca no principal o desvio "É a Gleide (assistente)?": mensagens desses
   números vão para a assistente, não para o atendimento.
 - **Disparar as perguntas agora:** `curl localhost:5678/webhook/assistente-pendencias`
-  (sozinho, roda a cada 15 min das 8h às 20h; não repete a mesma pendência por 3h).
+  (sozinho, roda de 1 em 1 h das 8h às 20h; a mesma pendência é cobrada por no máximo 2 h: na hora, +1 h e +2 h).
 - **Recomeçar a conversa:** `docker exec demo-salao-redis-1 redis-cli DEL assistente:<número>` e
   `delete from registros_ia where acao = 'perguntou'` no `salao_teste`.
 - **Desligar:** deixe `ASSISTENTE_NUMEROS` vazio e `docker compose up -d n8n`: o número volta para o atendimento.
