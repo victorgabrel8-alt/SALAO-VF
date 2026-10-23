@@ -9,6 +9,8 @@ export type Atendimento = {
   inicio: string;
   fim: string | null;
   status: StatusAtendimento;
+  // A Gleide tocou "Chegou" no Início: a IA não cobra atraso (supabase/012)
+  chegou_em: string | null;
   origem: "ia" | "manual";
   google_event_id: string | null;
   profissional_id: string | null;
@@ -26,8 +28,9 @@ export type Atendimento = {
 // de quem vai ser atendida e vai para o grupo "Não atendidas", para a Gleide resolver depois
 export const MINUTOS_PARA_NAO_ATENDIDA = 60;
 
-export function naoAtendida(a: Pick<Atendimento, "status" | "inicio">, agora = Date.now()): boolean {
-  return a.status === "agendado" && agora > Date.parse(a.inicio) + MINUTOS_PARA_NAO_ATENDIDA * 60_000;
+// Quem chegou está sendo atendida: não vira "não atendida" enquanto a Gleide não conclui.
+export function naoAtendida(a: Pick<Atendimento, "status" | "inicio"> & { chegou_em?: string | null }, agora = Date.now()): boolean {
+  return a.status === "agendado" && !a.chegou_em && agora > Date.parse(a.inicio) + MINUTOS_PARA_NAO_ATENDIDA * 60_000;
 }
 
 // Todos os serviços do horário, um por linha (para os detalhes do horário)
@@ -103,7 +106,7 @@ async function comExtras(lista: Atendimento[]): Promise<Atendimento[]> {
 // Sem valores: o painel do salão controla atendimentos, não dinheiro (a tabela de preços
 // fica com a profissional e a IA)
 const CAMPOS =
-  "id, inicio, fim, status, origem, google_event_id, profissional_id, servico_id, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
+  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
 
 // Atendimentos de um dia (no fuso do salão), em ordem de horário
 export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {
@@ -115,6 +118,22 @@ export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {
     .lt("inicio", inicioDoDia(somarDias(dia, 1)))
     .order("inicio");
   // Horários de clientes excluídas não aparecem (nem no Início nem na Agenda)
+  const atendimentos = ((data ?? []) as unknown as Atendimento[]).filter((a) => !estaExcluida(a.clientes?.etiquetas));
+  return { atendimentos: await comExtras(atendimentos), erro: error?.message };
+}
+
+// Horários de dias anteriores que ninguém resolveu (nem concluído, nem faltou, nem remarcado):
+// continuam no Início, em "Não atendidas", até a dona resolver. Sem isso, à meia-noite eles
+// sumiam e a cliente ficava sem conclusão e sem retorno.
+export async function buscarPendentesAnteriores(empresaId: string, hoje: string, dias = 14) {
+  const { data, error } = await supabase()
+    .from("agendamentos")
+    .select(CAMPOS)
+    .eq("empresa_id", empresaId)
+    .eq("status", "agendado")
+    .gte("inicio", inicioDoDia(somarDias(hoje, -dias)))
+    .lt("inicio", inicioDoDia(hoje))
+    .order("inicio");
   const atendimentos = ((data ?? []) as unknown as Atendimento[]).filter((a) => !estaExcluida(a.clientes?.etiquetas));
   return { atendimentos: await comExtras(atendimentos), erro: error?.message };
 }
@@ -152,6 +171,16 @@ export async function buscarReagendadosDoDia(empresaId: string, dia: string) {
 
 export async function mudarStatus(id: string, status: StatusAtendimento) {
   const { error } = await supabase().from("agendamentos").update({ status }).eq("id", id);
+  return error?.message;
+}
+
+// "Chegou" (ou desfazer): a cliente entrou no salão. Com isso a IA não manda as mensagens de
+// atraso nem pergunta à Gleide se libera o horário (supabase/012)
+export async function marcarChegou(id: string, chegou = true) {
+  const { error } = await supabase()
+    .from("agendamentos")
+    .update({ chegou_em: chegou ? new Date().toISOString() : null })
+    .eq("id", id);
   return error?.message;
 }
 

@@ -141,6 +141,29 @@ begin
   select count(*) into n from n8n_atrasos_para_chamar(emp) where agendamento_id = ag_bia;
   if n <> 0 then raise exception '13: cobrou quem avisou que está chegando'; end if;
 
+  -- 14. "Chegou" (012): quem chegou não é cobrada, não vira "veio ou libera?" e não tem o horário liberado
+  insert into agendamentos (empresa_id, cliente_id, inicio, fim, chegou_em)
+  values (emp, ana, now() - interval '6 minutes', now() + interval '2 hours', now() - interval '2 minutes') returning id into ag_ana;
+  select count(*) into n from n8n_atrasos_para_chamar(emp) where agendamento_id = ag_ana;
+  if n <> 0 then raise exception '14a: cobrou quem já chegou'; end if;
+  alter table agendamentos disable trigger trg_contato_remarcado;
+  update agendamentos set chegou_em = null where id = ag_ana;
+  perform n8n_registrar_chamada_atraso(emp, ag_ana, 'c1', 'teste-011-c1');
+  perform n8n_registrar_chamada_atraso(emp, ag_ana, 'c2', 'teste-011-c2');
+  update agendamentos set inicio = now() - interval '40 minutes' where id = ag_ana;
+  update contatos set criado_em = now() - interval '12 minutes' where agendamento_id = ag_ana;
+  alter table agendamentos enable trigger trg_contato_remarcado;
+  select count(*) into n from n8n_atrasos_para_confirmar(emp) where agendamento_id = ag_ana;
+  if n <> 1 then raise exception '14b: sem o Chegou devia perguntar à Gleide'; end if;
+  update agendamentos set chegou_em = now() where id = ag_ana;
+  select count(*) into n from n8n_atrasos_para_confirmar(emp) where agendamento_id = ag_ana;
+  if n <> 0 then raise exception '14c: perguntou à Gleide de quem já chegou'; end if;
+  begin
+    perform n8n_assistente_liberar_horario(emp, gle, ag_ana);
+    raise exception '14d: liberou o horário de quem já chegou';
+  exception when others then if sqlerrm not like '%já chegou%' then raise; end if;
+  end;
+
   raise notice 'teste-011: todos os testes passaram';
 end $$;
 

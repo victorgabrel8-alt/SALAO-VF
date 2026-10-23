@@ -6,7 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Etiquetas } from "@/components/Etiquetas";
 import { useEmpresa } from "@/lib/empresa";
-import { dataNoSalao, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao } from "@/lib/formato";
+import { dataNoSalao, formatarData, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, somarDias } from "@/lib/formato";
 import { MOTIVOS_PRECISA, SELO_IA, pausarOuReativarIa, situacaoIa } from "@/lib/ia";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
@@ -103,9 +103,13 @@ function ConversaCliente() {
     setVersao((v) => v + 1);
   }
 
+  // "até hoje às 18:00", "até amanhã às 09:00" ou, se for mais longe, "até 30/10 às 09:00"
+  const diaPausa = cliente.ia_pausada_ate ? dataNoSalao(cliente.ia_pausada_ate) : null;
   const pausaAte =
-    cliente.ia_pausada && cliente.ia_pausada_ate
-      ? `até ${dataNoSalao(cliente.ia_pausada_ate) === hojeNoSalao() ? "hoje" : "amanhã"} às ${formatarHora(cliente.ia_pausada_ate)}`
+    cliente.ia_pausada && cliente.ia_pausada_ate && diaPausa
+      ? `até ${
+          diaPausa === hojeNoSalao() ? "hoje" : diaPausa === somarDias(hojeNoSalao(), 1) ? "amanhã" : formatarData(diaPausa).slice(0, 5)
+        } às ${formatarHora(cliente.ia_pausada_ate)}`
       : "";
 
   // Visual do app: fundo pérola, topo de vidro com a cliente e a situação da IA, balões nas cores

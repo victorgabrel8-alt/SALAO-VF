@@ -2,21 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { Folha } from "@/components/Folha";
-import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
+import { conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
 import { buscarParecidas, horariosMarcadosDaCliente, type ClienteParecida, type HorarioMarcado } from "@/lib/duplicidade";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida, restaurarCliente } from "@/lib/excluidas";
 import {
   agoraNoSalao,
+  dataValida,
   formatarData,
   formatarHora,
   formatarTelefone,
+  horaValida,
   instanteNoSalao,
   normalizarTelefone,
   prazo,
   somarDias,
   telefoneValido,
 } from "@/lib/formato";
+import { conferirHorario } from "@/lib/horarios";
 import { useAgora } from "@/lib/relogio";
 import { supabase } from "@/lib/supabase/client";
 
@@ -78,9 +81,13 @@ export function FormAtendimento({
 
   const servico = servicos.find((s) => s.id === servicoId);
   const almocoDoSalao = lerAlmoco(empresa.config);
-  const retornoPrevisto = servico?.dias_retorno ? somarDias(data, servico.dias_retorno) : null;
+  // O celular deixa apagar o dia ou a hora: sem os dois, nada de contas com data (quebravam a tela)
+  const quandoValido = dataValida(data) && horaValida(hora);
+  const retornoPrevisto = quandoValido && servico?.dias_retorno ? somarDias(data, servico.dias_retorno) : null;
   // Registrar com hora que ainda não chegou = horário marcado (a próxima cliente), não atendimento feito
-  const noFuturo = Date.parse(instanteNoSalao(data, hora)) > agoraMs;
+  const noFuturo = quandoValido && Date.parse(instanteNoSalao(data, hora.slice(0, 5))) > agoraMs;
+  // Vai entrar na agenda como horário a atender (e não como atendimento já feito)
+  const vaiAgendar = modo === "agendar" || noFuturo;
 
   useEffect(() => {
     const db = supabase();
@@ -169,14 +176,25 @@ export function FormAtendimento({
       setErro("Escolha o serviço.");
       return;
     }
-    // Não marca horário no almoço (registrar um atendimento que já aconteceu continua liberado)
-    const almoco = lerAlmoco(empresa.config);
-    const duracao = servico?.duracao_min ?? 60;
-    if (almoco && modo === "agendar" && conflitaComAlmoco(almoco, hora, duracao)) {
-      setErro(avisoAlmoco(almoco));
+    if (!quandoValido) {
+      setErro("Escolha o dia e a hora.");
+      return;
+    }
+    if (modo === "agendar" && !noFuturo) {
+      setErro("Esse horário já passou. Para um atendimento que já aconteceu, use Registrar atendimento.");
       return;
     }
     setSalvando(true);
+    // Horário a atender: confere a agenda (salão aberto, expediente, almoço e sem encavalar com
+    // outra cliente). Registrar um atendimento que já aconteceu continua liberado.
+    if (vaiAgendar) {
+      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, servico?.duracao_min ?? 60);
+      if (problema) {
+        setSalvando(false);
+        setErro(problema);
+        return;
+      }
+    }
     // 1) Cliente nova parecida com uma que já existe? Pergunta antes de criar outra ficha
     if (nova && !conf.novaConfirmada) {
       const telefone = normalizarTelefone(telefoneNova);
@@ -215,7 +233,7 @@ export function FormAtendimento({
     const novos = [
       {
         ...base,
-        inicio: instanteNoSalao(data, hora),
+        inicio: instanteNoSalao(data, hora.slice(0, 5)),
         status: realizado ? "realizado" : "agendado",
         // Sem valor: o app não controla dinheiro
         valor: null,
@@ -235,7 +253,17 @@ export function FormAtendimento({
   async function mudarHorario(h: HorarioMarcado) {
     setSalvando(true);
     setErro("");
-    const novoInicio = instanteNoSalao(data, hora);
+    // O horário que muda não conta como ocupado (ele mesmo sai de onde estava)
+    if (vaiAgendar) {
+      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, servico?.duracao_min ?? 60, h.id);
+      if (problema) {
+        setSalvando(false);
+        setAviso(null);
+        setErro(problema);
+        return;
+      }
+    }
+    const novoInicio = instanteNoSalao(data, hora.slice(0, 5));
     const mudou = Date.parse(h.inicio) !== Date.parse(novoInicio);
     const anotacao = `Reagendado de ${formatarData(h.inicio).slice(0, 5)} às ${formatarHora(h.inicio)}`;
     const { error } = await supabase()
@@ -359,9 +387,9 @@ export function FormAtendimento({
         </label>
       </section>
       {/* Aviso na hora, antes de salvar */}
-      {modo === "agendar" &&
+      {vaiAgendar &&
         almocoDoSalao &&
-        conflitaComAlmoco(almocoDoSalao, hora, servico?.duracao_min ?? 60) && (
+        conflitaComAlmoco(almocoDoSalao, hora.slice(0, 5), servico?.duracao_min ?? 60) && (
           <p className="-mt-3 text-sm font-medium text-amber-700">
             Cai no almoço ({almocoDoSalao.inicio} às {almocoDoSalao.fim}).
           </p>
@@ -480,7 +508,7 @@ export function FormAtendimento({
                   disabled={salvando}
                   className="h-12 w-full rounded-xl bg-[var(--cor-principal)] font-bold text-white disabled:opacity-50"
                 >
-                  {salvando ? "Salvando…" : `Substituir pelo novo (${formatarData(data).slice(0, 5)} às ${hora})`}
+                  {salvando ? "Salvando…" : `Substituir pelo novo (${quandoValido ? formatarData(data).slice(0, 5) : "—"} às ${hora.slice(0, 5)})`}
                 </button>
               </div>
             ))}

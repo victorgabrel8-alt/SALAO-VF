@@ -134,6 +134,13 @@ export default function AgendaPage() {
   useTempoReal(["agendamentos"], empresa.id, recarregar);
 
   const hoje = hojeNoSalao();
+  // Virou o dia com o app aberto (o relógio anda a cada minuto): quem estava olhando "hoje"
+  // passa para o dia novo, em vez de ficar parada no dia anterior
+  const [hojeVisto, setHojeVisto] = useState(hoje);
+  if (hoje !== hojeVisto) {
+    setHojeVisto(hoje);
+    if (dia === hojeVisto) setDia(hoje);
+  }
   const dados = resultado?.dia === dia ? resultado.dados : null;
   const ok = dados && !("erro" in dados) ? dados : null;
   const ordem = ok ? ok.profissionais.map((p) => p.id) : [];
@@ -181,7 +188,8 @@ export default function AgendaPage() {
   const repetidaNoDia = (a: Atendimento) => (a.clientes ? (horariosDaCliente.get(a.clientes.id) ?? 0) : 0);
   const faltas = concluidos.filter((a) => a.status === "faltou").length;
 
-  // Linha do tempo: os horários a atender e o bloco do almoço no lugar certo
+  // Linha do tempo: os horários a atender e o bloco do almoço no lugar certo (dia livre mostra
+  // só "Dia livre", sem o almoço sozinho embaixo)
   const almoco = lerAlmoco(empresa.config);
   const entradas: Entrada[] = [
     ...naLinha.map((a) => ({
@@ -190,7 +198,7 @@ export default function AgendaPage() {
       inicio: Date.parse(a.inicio),
       fim: Date.parse(a.inicio) + minutos(a) * 60_000,
     })),
-    ...(almoco
+    ...(almoco && visiveis.length > 0
       ? [
           {
             tipo: "almoco" as const,
@@ -200,6 +208,24 @@ export default function AgendaPage() {
         ]
       : []),
   ].sort((x, y) => x.inicio - y.inicio);
+
+  // Trocar de semana: na semana de hoje, abre hoje; nas outras, abre no mesmo dia da semana e,
+  // se ele estiver vazio, pula para o primeiro dia que tem horário. Antes ficava no dia vazio
+  // (ex.: sexta 30) e parecia que a cliente marcada na terça não estava na Agenda.
+  async function irParaSemana(delta: number) {
+    const novaSegunda = somarDias(segunda, delta);
+    const dias = Array.from({ length: 7 }, (_, i) => somarDias(novaSegunda, i));
+    if (dias.includes(hoje)) {
+      setDia(hoje);
+      return;
+    }
+    const provisorio = somarDias(dia, delta);
+    setDia(provisorio);
+    const comHorario = await buscarDiasComHorario(empresa.id, novaSegunda, somarDias(novaSegunda, 6));
+    if (comHorario.has(provisorio)) return;
+    const primeiro = dias.find((d) => comHorario.has(d));
+    if (primeiro) setDia((atual) => (atual === provisorio ? primeiro : atual));
+  }
 
   // A atender -> abre a folha "Foi isso / Fez outra coisa / Faltou". Realizado ou faltou -> desfaz
   // (volta para a linha do tempo; pergunta antes quando algo vai sumir: os serviços feitos junto).
@@ -304,7 +330,7 @@ export default function AgendaPage() {
         </div>
         <div className="relative flex items-center gap-1">
           <button
-            onClick={() => setDia(somarDias(dia, -7))}
+            onClick={() => irParaSemana(-7)}
             aria-label="Semana anterior"
             className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
           >
@@ -356,7 +382,7 @@ export default function AgendaPage() {
             })}
           </div>
           <button
-            onClick={() => setDia(somarDias(dia, 7))}
+            onClick={() => irParaSemana(7)}
             aria-label="Próxima semana"
             className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
           >
@@ -531,11 +557,13 @@ const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string;
   // Concluído e Faltou saem da frente: sem fundo cheio nem sombra, só um contorno e bem mais claros,
   // para os pendentes (cartão creme com sombra) saltarem aos olhos
   concluido: { rotulo: "Concluído", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-salvia text-salvia-texto", sub: "text-texto-2" },
+  // Em atendimento agora: o mesmo cartão claro, destacado com contorno e brilho bronze (o
+  // grafite cheio pesava demais quando havia mais de uma cliente no horário)
   agora: {
     rotulo: "Agora",
-    cartao: "bg-grafite text-white shadow-[0_14px_30px_rgba(30,23,20,0.25)]",
+    cartao: "bg-card ring-[1.5px] ring-bronze shadow-[0_10px_26px_rgba(168,138,104,0.28)]",
     selo: "bg-bronze text-grafite",
-    sub: "text-[#C7BBAC]",
+    sub: "text-texto-2",
   },
   atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
   faltou: { rotulo: "Faltou", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
@@ -618,7 +646,7 @@ function ItemLinhaDoTempo({
         {!resolvido && (
           <>
             {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
-            <Intencao avaliacao={intencao} claro={situacao === "agora"} />
+            <Intencao avaliacao={intencao} />
             <Observacao texto={a.clientes?.observacoes} />
             {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
           </>

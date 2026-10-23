@@ -1,4 +1,4 @@
-import { conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
+import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
 import { bloqueioDoDia } from "@/lib/bloqueios";
 import { agoraNoSalao, dataNoSalao, formatarHora, inicioDoDia, somarDias } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
@@ -44,6 +44,59 @@ export function proximoDiaAberto(config: Record<string, unknown>, dia: string): 
   return dia;
 }
 
+type Ocupado = { ini: number; fim: number; nome: string };
+
+// O que já ocupa o dia: horários a atender e concluídos (falta e cancelado liberam a vaga).
+// Sem fim gravado, conta 1 h; atendimento que passa da meia-noite ocupa até o fim do dia.
+async function ocupadosDoDia(empresaId: string, dia: string, ignorarId?: string): Promise<Ocupado[] | { erro: string }> {
+  let consulta = supabase()
+    .from("agendamentos")
+    .select("inicio, fim, clientes (nome, telefone)")
+    .eq("empresa_id", empresaId)
+    .in("status", ["agendado", "realizado"])
+    .gte("inicio", inicioDoDia(dia))
+    .lt("inicio", inicioDoDia(somarDias(dia, 1)));
+  if (ignorarId) consulta = consulta.neq("id", ignorarId);
+  const { data, error } = await consulta;
+  if (error) return { erro: error.message };
+  return ((data ?? []) as unknown as { inicio: string; fim: string | null; clientes: { nome: string | null; telefone: string } | null }[]).map((a) => {
+    const ini = emMinutos(formatarHora(a.inicio));
+    const fim = !a.fim ? ini + 60 : dataNoSalao(a.fim) === dia ? emMinutos(formatarHora(a.fim)) : 24 * 60;
+    return { ini, fim, nome: a.clientes?.nome ?? "outra cliente" };
+  });
+}
+
+// Antes de gravar um horário a atender (marcar, remarcar, mudar): o salão abre nesse dia, está
+// dentro do expediente, fora do almoço e sem encavalar com outra cliente? Devolve o motivo
+// para a dona, ou null se pode marcar. ignorarId: o próprio horário que está mudando.
+export async function conferirHorario(
+  empresaId: string,
+  config: Record<string, unknown>,
+  dia: string,
+  horaInicio: string,
+  duracaoMin: number,
+  ignorarId?: string,
+): Promise<string | null> {
+  const bloqueio = bloqueioDoDia(config, dia);
+  if (bloqueio) return `Esse dia está marcado como sem atender${bloqueio.motivo ? ` (${bloqueio.motivo})` : ""}. Escolha outro dia.`;
+  const faixa = expediente(config, dia);
+  if (!faixa) return "O salão não abre nesse dia. Escolha outro dia.";
+  const ini = emMinutos(horaInicio.slice(0, 5));
+  const fim = ini + Math.max(duracaoMin, 1);
+  if (ini < faixa[0] || fim > faixa[1]) {
+    return `Fora do horário do salão nesse dia (${hora(faixa[0])} às ${hora(faixa[1])}), contando a duração do serviço.`;
+  }
+  const almoco = lerAlmoco(config);
+  if (almoco && conflitaComAlmoco(almoco, horaInicio.slice(0, 5), duracaoMin)) return avisoAlmoco(almoco);
+  const ocupados = await ocupadosDoDia(empresaId, dia, ignorarId);
+  if ("erro" in ocupados) return `Não foi possível conferir a agenda: ${ocupados.erro}`;
+  const choque = ocupados.find((o) => ini < o.fim && fim > o.ini);
+  if (choque) {
+    return `Encavala com ${choque.nome} (${hora(choque.ini)} às ${hora(choque.fim)}). Escolha outro horário.`;
+  }
+  return null;
+}
+
 // Horários de início livres no dia, de 30 em 30 minutos, para um serviço com essa duração.
 // ignorarId: o horário que está sendo remarcado não ocupa a própria vaga.
 export async function horariosLivres(
@@ -55,21 +108,8 @@ export async function horariosLivres(
 ): Promise<string[]> {
   const faixa = expediente(config, dia);
   if (!faixa) return [];
-  let consulta = supabase()
-    .from("agendamentos")
-    .select("inicio, fim")
-    .eq("empresa_id", empresaId)
-    .in("status", ["agendado", "realizado"])
-    .gte("inicio", inicioDoDia(dia))
-    .lt("inicio", inicioDoDia(somarDias(dia, 1)));
-  if (ignorarId) consulta = consulta.neq("id", ignorarId);
-  const { data } = await consulta;
-  // Sem fim gravado, conta 1 h; atendimento que passa da meia-noite ocupa até o fim do dia
-  const ocupados = ((data ?? []) as { inicio: string; fim: string | null }[]).map((a) => {
-    const ini = emMinutos(formatarHora(a.inicio));
-    const fim = !a.fim ? ini + 60 : dataNoSalao(a.fim) === dia ? emMinutos(formatarHora(a.fim)) : 24 * 60;
-    return [ini, fim] as const;
-  });
+  const resultado = await ocupadosDoDia(empresaId, dia, ignorarId);
+  const ocupados = "erro" in resultado ? [] : resultado.map((o) => [o.ini, o.fim] as const);
   const almoco = lerAlmoco(config);
   const agora = agoraNoSalao();
   const livres: string[] = [];

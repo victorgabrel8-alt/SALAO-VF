@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Recria o banco local "salao_teste" (Postgres do docker-compose) com 001 a 011,
+# Recria o banco local "salao_teste" (Postgres do docker-compose) com 001 a 012,
 # carrega o cenário da assistente e roda os testes do 004 e do 011 (cliente atrasada).
 # Uso (Git Bash, nesta pasta, com o docker compose no ar):  ./recriar-banco-teste.sh  [pasta do supabase/]
 set -euo pipefail
@@ -21,7 +21,7 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role')  then create role service_role nologin bypassrls; end if;
 end $$;
 SQL
-for f in 001_schema.sql 003_minhas_empresas_privado.sql 002_seed_dev.sql 004_avaliacoes_ia.sql 005_pedido_remarcacao.sql 006_assistente_no_supabase.sql 007_ia_chama_faltas.sql 008_avisos_sem_falso_remarcou.sql 009_indices_e_rls.sql 010_retorno_por_linha_e_varios_servicos.sql 010_vagas_adiantar.sql 011_atrasos_e_cobranca.sql; do
+for f in 001_schema.sql 003_minhas_empresas_privado.sql 002_seed_dev.sql 004_avaliacoes_ia.sql 005_pedido_remarcacao.sql 006_assistente_no_supabase.sql 007_ia_chama_faltas.sql 008_avisos_sem_falso_remarcou.sql 009_indices_e_rls.sql 010_retorno_por_linha_e_varios_servicos.sql 010_vagas_adiantar.sql 011_atrasos_e_cobranca.sql 012_chegou.sql; do
   echo "== $f"; $P -d salao_teste < "$SUPA/$f" 2>&1 | grep -v NOTICE || true
 done
 GLEIDE="${ASSISTENTE_NUMEROS%%,*}"; GLEIDE="${GLEIDE:-5566900000000}"

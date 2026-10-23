@@ -594,7 +594,7 @@
         "deve": "(14h|14:00)"
       },
       {
-        "nao_deve": "(tenho|livre|dispon[ií]ve[li]s?|consigo)[^.?!]{0,30}\b1[4-9](h|:dd)"
+        "nao_deve": "(tenho|livre|dispon[ií]ve[li]s?|consigo)[^.?!]{0,30}\\b1[4-9](h|:\\d\\d)"
       },
       {
         "sem_ferramenta": "criar"
@@ -686,7 +686,13 @@
         "deve": "10(h|:00)"
       },
       {
+        "deve": "{data:+3d 10:00}"
+      },
+      {
         "nao_deve": "não (encontrei|achei)"
+      },
+      {
+        "sem_ferramenta": "criar"
       }
     ]
   },
@@ -703,6 +709,12 @@
       },
       {
         "deve": "(não (encontrei|achei|vi|tem)|nenhum)"
+      },
+      {
+        "nao_deve": "\\b\\d{1,2}(h|:\\d\\d)"
+      },
+      {
+        "sem_ferramenta": "criar"
       }
     ]
   },
@@ -739,7 +751,7 @@
         "em": "ultima"
       },
       {
-        "nao_deve": "\bREMARCADO\b",
+        "nao_deve": "\\bREMARCADO\\b",
         "caixa": true
       }
     ]
