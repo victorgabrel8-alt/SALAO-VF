@@ -121,8 +121,11 @@ begin
   r := crm_confirmar_atendimento(ag13, array[
          (select id from servicos where empresa_id = emp and nome = 'Manutenção – queratina'),
          (select id from servicos where empresa_id = emp and nome = 'Selagem')]);
+  -- um horário só (007): a selagem entra como serviço a mais do mesmo horário
   select count(*) into n from agendamentos where cliente_id = jpr and status = 'realizado';
-  if n <> 2 then raise exception '14a: % realizados', n; end if;
+  if n <> 1 then raise exception '14a: % horários realizados (esperado 1)', n; end if;
+  select count(*) into n from servicos_feitos where cliente_id = jpr;
+  if n <> 2 then raise exception '14a: % serviços feitos (esperado 2)', n; end if;
   select count(distinct retorno_previsto) into n from retornos_por_servico where cliente_id = jpr;
   if n <> 2 then raise exception '14b: % retornos distintos (esperado 2: 75 e 25 dias)', n; end if;
   select status into v from clientes_status where id = jpr;

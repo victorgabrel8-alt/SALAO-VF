@@ -10,6 +10,7 @@ import {
   ETAPAS,
   adicionarEtiqueta,
   etapaDe,
+  faltaEnviar,
   moverCard,
   previa,
   proximaEtapa,
@@ -127,8 +128,9 @@ export function QuadroRetorno({ busca }: { busca: string }) {
   const empresa = useEmpresa();
   const [versao, setVersao] = useState(0);
   const { quadro, trocarCard } = useQuadro(empresa.id, versao);
-  // Atendimento marcado/desmarcado na Agenda do salão, horário novo da IA etc.: o quadro se atualiza sozinho
-  useTempoReal(["agendamentos", "clientes"], empresa.id, () => setVersao((v) => v + 1));
+  // Atendimento marcado/desmarcado na Agenda do salão, horário novo da IA, alô que saiu pelo
+  // WhatsApp do salão etc.: o quadro se atualiza sozinho
+  useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, () => setVersao((v) => v + 1));
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [arrastando, setArrastando] = useState<CardCliente | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
@@ -148,17 +150,17 @@ export function QuadroRetorno({ busca }: { busca: string }) {
 
   async function mover(card: CardCliente, destino: Etapa, mensagem?: string) {
     if (etapaDe(card) === destino && !mensagem) return;
-    // Com horário marcado ela não precisa ser chamada: só pode ficar em "Agendado" ou "Em dia"
-    if (card.proximo_agendamento && destino !== "agendado" && destino !== "em_dia") {
+    // Com horário marcado (ou remarcado) ela fica em "Agendado" até o horário acontecer
+    if (card.proximo_agendamento && destino !== "agendado") {
       setErro(
         `${card.nome ?? "A cliente"} tem horário marcado em ${formatarData(card.proximo_agendamento).slice(0, 5)}, ` +
-          "então não precisa ser chamada. Para mudar, cancele ou remarque o horário na Agenda do salão.",
+          "então fica em Agendado. Para mudar, cancele ou remarque o horário na Agenda do salão.",
       );
       return;
     }
     const antes = card;
     // Mostra já na coluna nova; se o banco recusar, volta
-    trocarCard(previa(card, destino));
+    trocarCard(previa(card, destino, mensagem));
     const r = await moverCard(empresa.id, card, destino, mensagem);
     if (r.erro || !r.card) {
       trocarCard(antes);
@@ -350,6 +352,11 @@ function Card({
         <span className={`h-2 w-2 rounded-full ${s.ponto}`} />
         {s.texto}
       </span>
+      {faltaEnviar(card) && (
+        <span className="mt-2 block w-fit rounded-full bg-rose px-2.5 py-0.5 text-sm font-semibold text-rose-texto">
+          Abriu o WhatsApp · falta enviar
+        </span>
+      )}
       <Etiquetas etiquetas={card.etiquetas} className="mt-2" />
       <div className="mt-3 flex items-center justify-between gap-2 border-t border-borda/60 pt-3">
         <span className="text-sm leading-tight text-texto-2">{textoVisita(card)}</span>
@@ -419,7 +426,10 @@ function Mensagem({
             Abrir no WhatsApp
           </button>
         </div>
-        <p className="text-sm text-texto-2">Ao abrir o WhatsApp, o card vai para “Mensagem enviada”.</p>
+        <p className="text-sm text-texto-2">
+          O card vai para “Mensagem enviada” quando a mensagem sair pelo WhatsApp do salão. Enviou de outro jeito? Arraste o card
+          para “Mensagem enviada”.
+        </p>
       </div>
     </div>
   );

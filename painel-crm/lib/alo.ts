@@ -40,10 +40,31 @@ export function diasDesdeContato(ultimoContato: string | null): number | null {
   return ultimoContato ? diasEntre(dataNoSalao(ultimoContato), hojeNoSalao()) : null;
 }
 
-// Para cada cliente, o serviço a citar no alô: o que tem o retorno mais próximo/atrasado;
-// se nenhum tiver retorno, o mais recente.
+// Para cada cliente, o serviço a citar no alô: o que vence primeiro entre as linhas de serviço
+// pendentes (view retornos_pendentes, supabase/007; a mesma regra do status).
+// Sem o 007: o da visita mais recente que tem retorno e, se ela fez vários, o de retorno mais
+// curto. Se nenhum tiver retorno, o mais recente.
 // Só para as clientes que estão na tela (não baixa o histórico da base inteira).
 export async function buscarServicoDoAlo(empresaId: string, clienteIds: string[]): Promise<Record<string, string>> {
+  if (clienteIds.length === 0) return {};
+  const pendentes = await supabase()
+    .from("retornos_pendentes")
+    .select("cliente_id, servico_nome, retorno_previsto")
+    .eq("empresa_id", empresaId)
+    .in("cliente_id", clienteIds)
+    .order("retorno_previsto");
+  if (!pendentes.error) {
+    const primeiro: Record<string, string> = {};
+    for (const r of (pendentes.data ?? []) as { cliente_id: string; servico_nome: string }[]) primeiro[r.cliente_id] ??= r.servico_nome;
+    // Quem não tem retorno pendente cai na regra de baixo (o serviço mais recente)
+    if (clienteIds.every((id) => primeiro[id])) return primeiro;
+    const resto = await buscarServicoDoAloSem007(empresaId, clienteIds.filter((id) => !primeiro[id]));
+    return { ...resto, ...primeiro };
+  }
+  return buscarServicoDoAloSem007(empresaId, clienteIds);
+}
+
+async function buscarServicoDoAloSem007(empresaId: string, clienteIds: string[]): Promise<Record<string, string>> {
   if (clienteIds.length === 0) return {};
   const { data } = await supabase()
     .from("retornos_por_servico")
@@ -60,7 +81,10 @@ export async function buscarServicoDoAlo(empresaId: string, clienteIds: string[]
     const atual = escolhido[r.cliente_id];
     const melhor =
       !atual ||
-      (r.retorno_previsto && (!atual.retorno || r.retorno_previsto < atual.retorno)) ||
+      (r.retorno_previsto &&
+        (!atual.retorno ||
+          r.ultima_vez > atual.ultima ||
+          (r.ultima_vez === atual.ultima && r.retorno_previsto < atual.retorno))) ||
       (!r.retorno_previsto && !atual.retorno && r.ultima_vez > atual.ultima);
     if (melhor) escolhido[r.cliente_id] = { nome: r.servico_nome, retorno: r.retorno_previsto, ultima: r.ultima_vez };
   }

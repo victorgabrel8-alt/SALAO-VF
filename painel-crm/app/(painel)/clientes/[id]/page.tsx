@@ -12,6 +12,7 @@ import {
   prazo,
 } from "@/lib/formato";
 import { useDialogo } from "@/components/Dialogo";
+import { CAMPOS_PRE, ETAPAS_FUNIL, buscarSaberIa, type SaberIa } from "@/lib/avaliacoes";
 import { pausarOuReativarIa } from "@/lib/ia";
 import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
 import { ORIGENS, etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem, type Origem } from "@/lib/origem";
@@ -40,13 +41,14 @@ type Ficha = {
   atendimentos: Atendimento[];
   contatos: Contato[];
   mensagens: Mensagem[];
+  saberIa: SaberIa | null;
 };
 
 const ETIQUETAS_SUGERIDAS = ["vip", "alergia", "mega hair", "coloração", "química", "gestante"];
 
 async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
   const db = supabase();
-  const [cliente, retornos, atendimentos, contatos, mensagens] = await Promise.all([
+  const [cliente, retornos, atendimentos, contatos, mensagens, saberIa] = await Promise.all([
     db.from("clientes_status").select("*").eq("id", id).maybeSingle(),
     db.from("retornos_por_servico").select("servico_id, servico_nome, ultima_vez, retorno_previsto").eq("cliente_id", id),
     db
@@ -56,6 +58,7 @@ async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
       .order("inicio", { ascending: false }),
     db.from("contatos").select("id, tipo, resultado, criado_em").eq("cliente_id", id),
     db.from("mensagens").select("criado_em").eq("cliente_id", id),
+    buscarSaberIa(id),
   ]);
   const falha = [cliente, retornos, atendimentos, contatos, mensagens].find((r) => r.error);
   if (falha?.error) return { erro: falha.error.message };
@@ -66,6 +69,7 @@ async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
     atendimentos: atendimentos.data as unknown as Atendimento[],
     contatos: contatos.data as Contato[],
     mensagens: mensagens.data as Mensagem[],
+    saberIa,
   };
 }
 
@@ -106,6 +110,7 @@ function FichaCliente() {
     // No painel do computador, a ficha fica numa coluna central de leitura confortável
     <div className="mx-auto max-w-3xl space-y-6 pt-6 pb-4">
       <Topo cliente={ficha.cliente} aoMudar={carregar} />
+      {ficha.saberIa && <OQueAIaSabe saber={ficha.saberIa} />}
       <Retornos retornos={ficha.retornos} />
       {/* key: se uma etiqueta for tirada lá em cima, o formulário recomeça com as etiquetas certas */}
       <Dados key={ficha.cliente.etiquetas.join("|")} cliente={ficha.cliente} aoSalvar={carregar} />
@@ -207,6 +212,51 @@ function Topo({ cliente, aoMudar }: { cliente: ClienteStatus; aoMudar: () => voi
         >
           {cliente.ia_pausada ? "Reativar IA" : "Pausar IA"}
         </button>
+      </div>
+    </section>
+  );
+}
+
+// O que a IA anotou nas conversas (pré-avaliação), o resultado que a Gleide deu no app e a etapa
+// do funil. É o que a IA usa para continuar a conversa com a cliente.
+function OQueAIaSabe({ saber }: { saber: SaberIa }) {
+  const a = saber.avaliacao;
+  const valor = (v: string | number | boolean | null | undefined, campo: string) => {
+    if (v === null || v === undefined || v === "") return null;
+    if (typeof v === "boolean") return v ? "sim" : "não";
+    if (campo === "pre_data_ocasiao") return formatarData(String(v));
+    if (campo === "valor_orcado") return Number(v).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    return String(v);
+  };
+  const linhas = a
+    ? CAMPOS_PRE.map(([campo, rotulo]) => [rotulo, valor(a[campo], campo)] as const).filter((l): l is [string, string] => l[1] !== null)
+    : [];
+  return (
+    <section className="space-y-2 px-4">
+      <h2 className="flex items-center gap-3 text-xl font-semibold">
+        O que a IA sabe
+        <span className="rounded-full bg-cobre-claro px-2.5 py-0.5 text-sm font-semibold text-cobre-escuro">
+          {ETAPAS_FUNIL[saber.etapa]}
+        </span>
+      </h2>
+      <div className="space-y-3 rounded-xl border border-grafite/10 bg-card p-4">
+        {typeof a?.pre_resumo === "string" && a.pre_resumo && <p className="text-lg">{a.pre_resumo}</p>}
+        {linhas.length > 0 && (
+          <dl className="grid grid-cols-2 gap-x-6 gap-y-1">
+            {linhas.map(([rotulo, v]) => (
+              <div key={rotulo} className="flex justify-between gap-3 border-b border-borda/60 py-1.5">
+                <dt className="text-texto-2">{rotulo}</dt>
+                <dd className="text-right font-medium">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        )}
+        {saber.resumoConversas && (
+          <p className="text-texto-2">
+            <b className="font-semibold text-grafite">Conversas com a Gleide:</b> {saber.resumoConversas}
+          </p>
+        )}
+        {!a && !saber.resumoConversas && <p className="text-texto-2">A IA ainda não anotou nada sobre ela.</p>}
       </div>
     </section>
   );

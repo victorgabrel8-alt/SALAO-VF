@@ -33,3 +33,6 @@ export type RetornoServico = {
 };
 
 export type Profissional = { id: string; nome: string };
+
+// Serviço ativo do salão, para o ✓ do atendimento ("Fez outro serviço")
+export type ServicoAtivo = { id: string; nome: string; dias_retorno: number | null; duracao_min: number };
