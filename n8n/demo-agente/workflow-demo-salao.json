@@ -2419,7 +2419,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000110",
+      "id": "00000000-0000-4000-8000-000000000114",
       "name": "enviar_audio",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2491,7 +2491,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000111",
+      "id": "00000000-0000-4000-8000-000000000115",
       "name": "Supabase: áudios do salão",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2522,7 +2522,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000112",
+      "id": "00000000-0000-4000-8000-000000000116",
       "name": "Supabase: áudios já enviados",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2552,7 +2552,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000113",
+      "id": "00000000-0000-4000-8000-000000000117",
       "name": "Áudios disponíveis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2565,7 +2565,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000114",
+      "id": "00000000-0000-4000-8000-000000000118",
       "name": "É a Gleide (assistente)?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2599,7 +2599,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000115",
+      "id": "00000000-0000-4000-8000-000000000119",
       "name": "Repassar para a assistente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2618,7 +2618,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000180",
+      "id": "00000000-0000-4000-8000-000000000184",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2642,7 +2642,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000181",
+      "id": "00000000-0000-4000-8000-000000000185",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2655,7 +2655,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000182",
+      "id": "00000000-0000-4000-8000-000000000186",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2689,7 +2689,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000183",
+      "id": "00000000-0000-4000-8000-000000000187",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2709,7 +2709,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000184",
+      "id": "00000000-0000-4000-8000-000000000188",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2722,7 +2722,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000185",
+      "id": "00000000-0000-4000-8000-000000000189",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2744,7 +2744,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000186",
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

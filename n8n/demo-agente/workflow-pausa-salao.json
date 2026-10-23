@@ -11,8 +11,8 @@
         -180
       ],
       "parameters": {
-        "content": "## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.",
-        "width": 920,
+        "content": "## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.\nAvisa a dona no WhatsApp de alerta (Configurações do app), se houver.",
+        "width": 1700,
         "height": 360,
         "color": 3
       }
@@ -68,7 +68,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        880,
+        1540,
         0
       ],
       "parameters": {
@@ -145,6 +145,104 @@
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000082",
+      "name": "Supabase: número de alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ $env.EMPRESA_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000083",
+      "name": "Tem número de alerta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "alerta1",
+              "leftValue": "={{ !!String($('Supabase: número de alerta').first().json.config?.whatsapp_alerta || '').replace(/\\D/g, '') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000084",
+      "name": "Avisar a dona no WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: ((n) => (n.length <= 11 ? '55' + n : n))(String($('Supabase: número de alerta').first().json.config?.whatsapp_alerta).replace(/\\D/g, '')), text: [\n        '🔔 *' + ($('Supabase: pausar IA').first().json.nome || 'Uma cliente') + '* precisa de você',\n        // o motivo da IA só entra se disser algo a mais que \"pediu para falar com a Gleide\"\n        ($('Supabase: pausar IA').first().json.motivo_pausa === 'reclamacao' ? 'Fez uma reclamação' : 'Pediu para falar com você') +\n          (String($('Recebe pedido do agente').first().json.motivo || '').replace(/^(a cliente )?(pediu|quer|gostaria)( de)?( para| pra)? (falar|conversar)( direto)? com (a )?(gleide|alguém|alguem|uma pessoa|atendente|humano|dona)[.!]?/i, '').trim() ? ': ' + $('Recebe pedido do agente').first().json.motivo : ''),\n        'WhatsApp dela: wa.me/' + String($('Supabase: pausar IA').first().json.telefone || $('Recebe pedido do agente').first().json.telefone || '').replace(/\\D/g, ''),\n        '', 'A IA ficou pausada para ela por 12 h. Responda pelo WhatsApp do salão.',\n      ].join('\\n') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 3
     }
   ],
   "connections": {
@@ -182,6 +280,46 @@
       ]
     },
     "Supabase: pausar IA": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: número de alerta": {
+      "main": [
+        [
+          {
+            "node": "Tem número de alerta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem número de alerta?": {
+      "main": [
+        [
+          {
+            "node": "Avisar a dona no WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a dona no WhatsApp": {
       "main": [
         [
           {

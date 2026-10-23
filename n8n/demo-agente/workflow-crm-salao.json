@@ -75,6 +75,43 @@
         },
         "options": {}
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000085",
+      "name": "Supabase: pré-avaliação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_salvar_pre_avaliacao",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Recebe pedido do agente').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(),\n       p_dados: { resumo: ($('Recebe pedido do agente').first().json.resumo || $('Recebe pedido do agente').first().json.interesse || '').trim(), tecnica_interesse: ($('Recebe pedido do agente').first().json.interesse || '').trim() } }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -90,6 +127,17 @@
       ]
     },
     "Anotar na ficha": {
+      "main": [
+        [
+          {
+            "node": "Supabase: pré-avaliação",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: pré-avaliação": {
       "main": [
         [
           {

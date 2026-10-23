@@ -14,7 +14,7 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 const TIPO = (t) => `({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[${t}] || 'outro'`;
 const EMPRESA = '$env.EMPRESA_ID';
 
-module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) => {
+module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow }) => {
   const headers = { parameters: [
     { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
     { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
@@ -221,6 +221,55 @@ Use a ficha como quem já conhece a cliente:
   entre(pausaWorkflow, ultimoPausa, supa('Supabase: pausar IA', 'PATCH',
     `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${P}.telefone`)} }}`,
     `{ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: ${motivoPausa} }`), 'Resposta');
+
+  // ---------- Pausa: avisa a dona no WhatsApp (CONTRATO.md §5) ----------
+  // Número em empresas.config.whatsapp_alerta (o app edita em Configurações → WhatsApp para alertas).
+  // Sem número cadastrado, só pausa como antes. A IA pausa por 12 h: a mesma cliente não gera aviso repetido.
+  const ALERTA = "$('Supabase: número de alerta').first().json.config?.whatsapp_alerta";
+  const CLIENTE = "$('Supabase: pausar IA').first().json";
+  const R = "$('Recebe pedido do agente').first().json";
+  pausaWorkflow.nodes.push(
+    supa('Supabase: número de alerta', 'GET', `empresas?select=config&id=eq.{{ ${EMPRESA} }}`, null),
+    node('Tem número de alerta?', 'n8n-nodes-base.if', 2.2, [0, 0], {
+      conditions: {
+        options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+        conditions: [{ id: 'alerta1', leftValue: `={{ !!String(${ALERTA} || '').replace(/\\D/g, '') }}`, rightValue: '',
+          operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+        combinator: 'and',
+      },
+      options: {},
+    }),
+    node('Avisar a dona no WhatsApp', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
+      method: 'POST', url: '={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}',
+      sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
+      sendBody: true, specifyBody: 'json',
+      // "🔔 Ana precisa de você / Fez uma reclamação: a mega caiu / WhatsApp dela: wa.me/55..."
+      // número sem o 55 (só DDD + celular) ganha o código do Brasil
+      jsonBody: `={{ JSON.stringify({ number: ((n) => (n.length <= 11 ? '55' + n : n))(String(${ALERTA}).replace(/\\D/g, '')), text: [
+        '🔔 *' + (${CLIENTE}.nome || 'Uma cliente') + '* precisa de você',
+        // o motivo da IA só entra se disser algo a mais que "pediu para falar com a Gleide"
+        (${CLIENTE}.motivo_pausa === 'reclamacao' ? 'Fez uma reclamação' : 'Pediu para falar com você') +
+          (String(${R}.motivo || '').replace(/^(a cliente )?(pediu|quer|gostaria)( de)?( para| pra)? (falar|conversar)( direto)? com (a )?(gleide|alguém|alguem|uma pessoa|atendente|humano|dona)[.!]?/i, '').trim() ? ': ' + ${R}.motivo : ''),
+        'WhatsApp dela: wa.me/' + String(${CLIENTE}.telefone || ${R}.telefone || '').replace(/\\D/g, ''),
+        '', 'A IA ficou pausada para ela por 12 h. Responda pelo WhatsApp do salão.',
+      ].join('\\n') }) }}`,
+      options: {},
+    }, { onError: 'continueRegularOutput', retryOnFail: true, maxTries: 3 }),
+  );
+  pausaWorkflow.connections['Supabase: pausar IA'] = main('Supabase: número de alerta');
+  pausaWorkflow.connections['Supabase: número de alerta'] = main('Tem número de alerta?');
+  pausaWorkflow.connections['Tem número de alerta?'] = { main: [[{ node: 'Avisar a dona no WhatsApp', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] };
+  pausaWorkflow.connections['Avisar a dona no WhatsApp'] = main('Resposta');
+
+  // ---------- CRM: anotar_no_crm também no Supabase ----------
+  // O que a IA anota (interesse, orçamento, objeção) vira a pré-avaliação da cliente (supabase/004):
+  // o app mostra o pre_resumo com o selo "IA" na Agenda, no Início, no ✓ e na ficha. A ficha antiga
+  // (Postgres do PC) continua recebendo também. Pré-avaliação sem horário ligado não vira pendência
+  // da assistente (pendencias_gleide só cobra avaliação com agendamento).
+  const A = "$('Recebe pedido do agente').first().json";
+  entre(crmWorkflow, 'Anotar na ficha', supa('Supabase: pré-avaliação', 'POST', 'rpc/n8n_salvar_pre_avaliacao',
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${A}.telefone`)},
+       p_dados: { resumo: (${A}.resumo || ${A}.interesse || '').trim(), tecnica_interesse: (${A}.interesse || '').trim() } }`), 'Resposta');
 
   const Pr = "$('Preparar').item.json";
 

@@ -76,7 +76,8 @@ module.exports = (principal, agenda, pausa) => {
     nota(1080, -340, 1420, 900, 4, '## 2. Executa a ação\n**criar** → grava em agendamentos (origem ia) · **cancelar** → status cancelado · **remarcar** → move o MESMO agendamento\nConsultar/ver → só devolve o texto (Resposta).\nCRM: agendado / cancelado / remarcado = etapa na ficha antiga (Postgres).'),
   ]);
 
-  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0], 'Resposta': [880, 0] }, [
-    nota(-60, -180, 920, 360, 3, '## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.'),
+  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0],
+    'Supabase: número de alerta': [880, 0], 'Tem número de alerta?': [1100, 0], 'Avisar a dona no WhatsApp': [1320, -100], 'Resposta': [1540, 0] }, [
+    nota(-60, -180, 1700, 360, 3, '## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.\nAvisa a dona no WhatsApp de alerta (Configurações do app), se houver.'),
   ]);
 };

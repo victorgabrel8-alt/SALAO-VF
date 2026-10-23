@@ -559,7 +559,7 @@ const lerCrmId = () => (fs.existsSync(crmIdFile) ? fs.readFileSync(crmIdFile, 'u
 const { crmWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
 
 // Supabase (banco do CRM): mensagens, pausa e agenda passam a ser gravadas lá (ver supabase-workflows.js)
-require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow });
+require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow });
 
 // Áudios prontos da Gleide: tool enviar_audio + catálogo no fim do prompt (ver audios-workflows.js)
 const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });
