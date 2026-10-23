@@ -4,19 +4,15 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
-import { FolhaConfirmar } from "@/components/FolhaConfirmar";
-import type { ServicoAtivo } from "@/components/MarcarVolta";
 import { Observacao } from "@/components/Observacao";
 import {
   buscarAtendimentosDoDia,
   buscarDiasComHorario,
-  buscarReagendadosDoDia,
   confirmarAtendimento,
   corDaProfissional,
   desfazerConfirmacao,
   ehFeitoJunto,
   excluirAtendimento,
-  mudarStatus,
   feitosJunto,
   ultimoReagendamento,
   type Atendimento,
@@ -26,7 +22,6 @@ import { lerAlmoco, textoAlmoco } from "@/lib/almoco";
 import { bloqueioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import {
-  dataNoSalao,
   formatarData,
   formatarHora,
   formatarTelefone,
@@ -40,26 +35,14 @@ import type { Profissional } from "@/lib/tipos";
 
 // Agenda (design/salao-redesign): topo grafite com os dias da semana e o dia como uma lista de
 // cartões (Concluído / Agora / A atender), com os intervalos livres e o almoço entre eles.
-// O círculo à direita confirma o atendimento ("Foi isso" ou "Fez outra coisa", e em seguida
-// "Já combinou a volta?"); tocar no cartão abre todos os detalhes.
-
-// Cancelados não aparecem na agenda: a dona não precisa ver quem desmarcou.
-// "Reagendados" só aparece no dia em que alguém reagendou.
-type Camada = "todos" | Exclude<StatusAtendimento, "cancelado"> | "reagendado";
-
-const CAMADAS: { chave: Camada; rotulo: string }[] = [
-  { chave: "todos", rotulo: "Todos" },
-  { chave: "agendado", rotulo: "A atender" },
-  { chave: "realizado", rotulo: "Realizados" },
-  { chave: "faltou", rotulo: "Faltaram" },
-  { chave: "reagendado", rotulo: "Reagendados" },
-];
+// O círculo à direita conclui o atendimento num toque, sem perguntas; tocar no cartão abre
+// todos os detalhes. Cancelados não aparecem: a dona não precisa ver quem desmarcou.
 
 const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 type Dia =
-  | { atendimentos: Atendimento[]; reagendados: Atendimento[]; profissionais: Profissional[]; comHorario: Set<string> }
+  | { atendimentos: Atendimento[]; profissionais: Profissional[]; comHorario: Set<string> }
   | { erro: string };
 
 // Segunda-feira da semana do dia
@@ -70,18 +53,15 @@ function inicioDaSemana(dia: string): string {
 
 async function buscarDia(empresaId: string, dia: string): Promise<Dia> {
   const segunda = inicioDaSemana(dia);
-  const [atendimentos, reagendados, profissionais, comHorario] = await Promise.all([
+  const [atendimentos, profissionais, comHorario] = await Promise.all([
     buscarAtendimentosDoDia(empresaId, dia),
-    buscarReagendadosDoDia(empresaId, dia),
     supabase().from("profissionais").select("id, nome").eq("empresa_id", empresaId).order("nome"),
     buscarDiasComHorario(empresaId, segunda, somarDias(segunda, 6)),
   ]);
   if (atendimentos.erro) return { erro: atendimentos.erro };
-  if (reagendados.erro) return { erro: reagendados.erro };
   if (profissionais.error) return { erro: profissionais.error.message };
   return {
     atendimentos: atendimentos.atendimentos,
-    reagendados: reagendados.atendimentos,
     profissionais: profissionais.data as Profissional[],
     comHorario,
   };
@@ -105,29 +85,16 @@ function duracao(min: number): string {
 export default function AgendaPage() {
   const empresa = useEmpresa();
   const [dia, setDia] = useState(hojeNoSalao());
-  const [camada, setCamada] = useState<Camada>("todos");
   const [resultado, setResultado] = useState<{ dia: string; dados: Dia } | null>(null);
   const [versao, setVersao] = useState(0);
   const [aberto, setAberto] = useState<string | null>(null);
-  const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
-  const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
-  // Concluído agora há pouco: quando a folha fecha, o cartão dele acende em verde por um instante
-  const confirmadoAgora = useRef<string | null>(null);
+  // Concluído agora há pouco: o cartão dele acende em verde por um instante
   const [celebrando, setCelebrando] = useState<string | null>(null);
-  // Em "Todos", os concluídos ficam recolhidos numa linha "✓ 4 concluídos" que abre ao tocar
+  // Os concluídos ficam recolhidos numa linha "✓ 4 concluídos" que abre ao tocar
   const [verConcluidos, setVerConcluidos] = useState(false);
+  const salvando = useRef(new Set<string>());
   const { dialogo, perguntar, avisar } = useDialogo();
   const recarregar = () => setVersao((v) => v + 1);
-
-  useEffect(() => {
-    supabase()
-      .from("servicos")
-      .select("id, nome, dias_retorno, duracao_min")
-      .eq("empresa_id", empresa.id)
-      .eq("ativo", true)
-      .order("nome")
-      .then(({ data }) => setServicos((data ?? []) as ServicoAtivo[]));
-  }, [empresa.id]);
 
   useEffect(() => {
     let ativo = true;
@@ -168,25 +135,14 @@ export default function AgendaPage() {
     return () => window.removeEventListener("resize", medir);
   }, [dia, semana.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
-  const contagem: Record<Camada, number> = {
-    todos: visiveis.length,
-    agendado: visiveis.filter((a) => a.status === "agendado").length,
-    realizado: visiveis.filter((a) => a.status === "realizado").length,
-    faltou: visiveis.filter((a) => a.status === "faltou").length,
-    reagendado: ok?.reagendados.length ?? 0,
-  };
-  const camadas = CAMADAS.filter((c) => c.chave !== "reagendado" || contagem.reagendado > 0);
-  // Ao trocar para um dia sem reagendados, volta para "Todos"
-  const camadaAtual: Camada = camadas.some((c) => c.chave === camada) ? camada : "todos";
-  const lista = camadaAtual === "todos" ? visiveis : visiveis.filter((a) => a.status === camadaAtual);
-  const selecionado = visiveis.find((a) => a.id === aberto) ?? null;
+  const lista = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
+  const selecionado = lista.find((a) => a.id === aberto) ?? null;
   // O que acabou de ser concluído fica à vista até terminar de acender, depois entra no recolhido
-  const concluidos = camadaAtual === "todos" ? lista.filter((a) => a.status === "realizado" && a.id !== celebrando) : [];
+  const concluidos = lista.filter((a) => a.status === "realizado" && a.id !== celebrando);
   const recolher = concluidos.length > 0 && !verConcluidos;
   const naLinha = recolher ? lista.filter((a) => !concluidos.includes(a)) : lista;
 
-  // Linha do tempo: os horários e, em "Todos", o bloco do almoço no lugar certo
+  // Linha do tempo: os horários e o bloco do almoço no lugar certo (dia livre não mostra almoço)
   const almoco = lerAlmoco(empresa.config);
   const entradas: Entrada[] = [
     ...naLinha.map((a) => ({
@@ -195,7 +151,7 @@ export default function AgendaPage() {
       inicio: Date.parse(a.inicio),
       fim: Date.parse(a.inicio) + minutos(a) * 60_000,
     })),
-    ...(almoco && camadaAtual === "todos"
+    ...(almoco && lista.length > 0
       ? [
           {
             tipo: "almoco" as const,
@@ -206,11 +162,43 @@ export default function AgendaPage() {
       : []),
   ].sort((x, y) => x.inicio - y.inicio);
 
-  // A atender -> abre a folha "Foi isso / Fez outra coisa". Realizado -> desfaz (um toque; só
-  // pergunta antes quando algo vai sumir da agenda: os serviços feitos junto).
+  function trocarStatusNaTela(id: string, status: StatusAtendimento) {
+    setResultado((r) =>
+      r && !("erro" in r.dados)
+        ? { ...r, dados: { ...r.dados, atendimentos: r.dados.atendimentos.map((x) => (x.id === id ? { ...x, status } : x)) } }
+        : r,
+    );
+  }
+
+  // A atender -> conclui na hora com o serviço que estava marcado, e o cartão acende em verde.
+  // Realizado -> desfaz (um toque; só pergunta antes quando algo vai sumir da agenda: os
+  // serviços feitos junto).
   async function alternarRealizado(a: Atendimento) {
+    // Toque duplo sem querer: o segundo toque não desfaz o que ainda está salvando
+    if (salvando.current.has(a.id)) return;
+    salvando.current.add(a.id);
+    try {
+      await alternar(a);
+    } finally {
+      salvando.current.delete(a.id);
+    }
+  }
+
+  async function alternar(a: Atendimento) {
     if (a.status !== "realizado") {
-      setConfirmando(a);
+      // Fica verde no mesmo instante (sem esperar o banco), para a dona não tocar duas vezes;
+      // se o banco recusar, o cartão volta como estava e ela é avisada
+      trocarStatusNaTela(a.id, "realizado");
+      navigator.vibrate?.(35);
+      setCelebrando(a.id);
+      setTimeout(() => setCelebrando((atual) => (atual === a.id ? null : atual)), 2000);
+      const erro = await confirmarAtendimento(empresa.id, a, []);
+      if (erro) {
+        trocarStatusNaTela(a.id, a.status);
+        setCelebrando(null);
+        await avisar(`Não deu certo: ${erro}`);
+      }
+      recarregar();
       return;
     }
     let erro: string | undefined;
@@ -227,25 +215,6 @@ export default function AgendaPage() {
     recarregar();
   }
 
-  // A folha continua aberta depois de salvar: em seguida pergunta se já combinou a volta
-  async function confirmar(a: Atendimento, servicoIds: string[]) {
-    const erro = await confirmarAtendimento(empresa.id, a, servicoIds);
-    if (!erro) {
-      confirmadoAgora.current = a.id;
-      recarregar();
-    }
-    return erro;
-  }
-
-  function fecharConfirmar() {
-    setConfirmando(null);
-    const id = confirmadoAgora.current;
-    if (!id) return;
-    confirmadoAgora.current = null;
-    setCelebrando(id);
-    setTimeout(() => setCelebrando((atual) => (atual === id ? null : atual)), 2000);
-  }
-
   return (
     <>
       {/* Topo grafite: mês, resumo do dia e os dias da semana */}
@@ -258,7 +227,7 @@ export default function AgendaPage() {
           <div className="flex flex-col gap-0.5">
             <span className="text-sm text-claro">
               {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)} de {dia.slice(0, 4)}
-              {ok && ` · ${contagem.todos === 1 ? "1 horário" : `${contagem.todos} horários`}`}
+              {ok && ` · ${lista.length === 1 ? "1 horário" : `${lista.length} horários`}`}
             </span>
             <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">Agenda</h1>
           </div>
@@ -343,14 +312,7 @@ export default function AgendaPage() {
         </div>
       </header>
 
-      {/* Camadas por status */}
-      <SeletorCamadas
-        camadas={camadas.map((c) => ({ ...c, rotulo: `${c.rotulo}${ok ? ` ${contagem[c.chave]}` : ""}` }))}
-        atual={camadaAtual}
-        aoEscolher={setCamada}
-      />
-
-      <section className="mt-4 px-5">
+      <section className="mt-5 px-5">
         {/* Dia bloqueado (viagem, folga...): a IA não marca ninguém; quem já estava marcado aparece abaixo */}
         {bloqueioDoDia(empresa.config, dia) && (
           <Link href="/agenda/bloqueios" className="mb-3 flex items-center gap-3 rounded-[18px] bg-rose px-4 py-3 text-rose-texto active:scale-[0.99]">
@@ -368,20 +330,9 @@ export default function AgendaPage() {
         {!dados && <p className="text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
-        {ok && camadaAtual === "reagendado" && (
-          <div className="space-y-3">
-            {ok.reagendados.length === 0 && <Vazio texto="Nenhum horário deste dia foi reagendado." />}
-            {ok.reagendados.map((a) => (
-              <CartaoReagendado key={a.id} atendimento={a} aoVerDia={setDia} />
-            ))}
-          </div>
-        )}
-
-        {ok && camadaAtual !== "reagendado" && (
+        {ok && (
           <>
-            {lista.length === 0 && (
-              <Vazio texto={camadaAtual === "todos" ? "Dia livre. Nenhum horário marcado." : "Nenhum horário aqui neste dia."} />
-            )}
+            {lista.length === 0 && <Vazio texto="Dia livre. Nenhum horário marcado." />}
             <ol className="flex flex-col gap-3">
               {concluidos.length > 0 && (
                 <li>
@@ -403,7 +354,7 @@ export default function AgendaPage() {
                 const livre = fimAnterior ? Math.round((e.inicio - fimAnterior) / 60_000) : 0;
                 return (
                   <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id} className="flex flex-col gap-3">
-                    {camadaAtual === "todos" && livre >= 30 && <IntervaloLivre minutos={livre} />}
+                    {livre >= 30 && <IntervaloLivre minutos={livre} />}
                     {e.tipo === "almoco" ? (
                       <BlocoAlmoco texto={textoAlmoco(almoco!)} />
                     ) : (
@@ -428,20 +379,6 @@ export default function AgendaPage() {
 
       {dialogo}
 
-      {confirmando && (
-        <FolhaConfirmar
-          atendimento={confirmando}
-          servicos={servicos}
-          aoConfirmar={(ids) => confirmar(confirmando, ids)}
-          aoFaltou={async () => {
-            const erro = await mudarStatus(confirmando.id, "faltou");
-            if (!erro) recarregar();
-            return erro;
-          }}
-          aoFechar={fecharConfirmar}
-        />
-      )}
-
       {/* Detalhes do horário: tudo do cartão completo, numa folha que sobe de baixo */}
       {selecionado && (
         <div className="fixed inset-0 z-20 flex items-end bg-black/40" onClick={() => setAberto(null)}>
@@ -463,60 +400,6 @@ export default function AgendaPage() {
         </div>
       )}
     </>
-  );
-}
-
-// Todos / A atender / Realizados / Faltaram numa cápsula, com a bolha bronze deslizando até o
-// tocado na mesma mola da barra de abas (bolha-aba). Os botões têm larguras diferentes, então a
-// bolha mede o botão escolhido e acompanha posição e largura.
-function SeletorCamadas({
-  camadas,
-  atual,
-  aoEscolher,
-}: {
-  camadas: { chave: Camada; rotulo: string }[];
-  atual: Camada;
-  aoEscolher: (c: Camada) => void;
-}) {
-  const botoes = useRef(new Map<Camada, HTMLButtonElement>());
-  const [bolha, setBolha] = useState<{ x: number; largura: number } | null>(null);
-
-  useLayoutEffect(() => {
-    const el = botoes.current.get(atual);
-    if (!el) return;
-    setBolha({ x: el.offsetLeft, largura: el.offsetWidth });
-    // Em tela estreita a lista rola de lado: traz o escolhido para a vista
-    el.scrollIntoView({ inline: "nearest", block: "nearest", behavior: "smooth" });
-  }, [atual, camadas.map((c) => c.rotulo).join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  return (
-    <div className="mt-4 overflow-x-auto px-5 pb-1 [scrollbar-width:none]">
-      <div role="group" aria-label="Filtrar horários" className="relative flex w-max gap-1 rounded-full bg-campo p-1">
-        {bolha && (
-          <span
-            aria-hidden
-            className="bolha-aba pointer-events-none absolute inset-y-1 left-0 rounded-full bg-bronze shadow-[0_2px_6px_rgba(30,23,20,0.18)]"
-            style={{ transform: `translateX(${bolha.x}px)`, width: bolha.largura, transitionProperty: "transform, width" }}
-          />
-        )}
-        {camadas.map((c) => (
-          <button
-            key={c.chave}
-            ref={(el) => {
-              if (el) botoes.current.set(c.chave, el);
-              else botoes.current.delete(c.chave);
-            }}
-            onClick={() => aoEscolher(c.chave)}
-            aria-pressed={atual === c.chave}
-            className={`relative h-10 shrink-0 rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors duration-300 active:scale-95 ${
-              atual === c.chave ? "text-grafite" : "text-rotulo"
-            }`}
-          >
-            {c.rotulo}
-          </button>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -760,36 +643,3 @@ function IntervaloLivre({ minutos: min }: { minutos: number }) {
   );
 }
 
-// Horário que era deste dia e foi para outro: mostra de quando para quando
-function CartaoReagendado({ atendimento: a, aoVerDia }: { atendimento: Atendimento; aoVerDia: (dia: string) => void }) {
-  const novoDia = dataNoSalao(a.inicio);
-  return (
-    <article className="rounded-[20px] bg-card p-4">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="text-base font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
-        {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
-      </div>
-      <p className="text-[13px] text-texto-2">
-        {a.servicos?.nome ?? "Serviço não informado"}
-      </p>
-      <div className="mt-2 grid grid-cols-2 gap-2 rounded-2xl bg-campo p-3 text-sm">
-        <div>
-          <p className="text-texto-2">Era</p>
-          <p className="font-medium">{ultimoReagendamento(a)?.replace("Reagendado de ", "") ?? "—"}</p>
-        </div>
-        <div>
-          <p className="text-texto-2">Agora</p>
-          <p className="font-semibold">
-            {formatarData(a.inicio).slice(0, 5)} às {formatarHora(a.inicio)}
-          </p>
-        </div>
-      </div>
-      <button
-        onClick={() => aoVerDia(novoDia)}
-        className="mt-3 h-11 w-full rounded-2xl border border-borda font-semibold active:bg-campo"
-      >
-        Ver no dia {formatarData(novoDia).slice(0, 5)}
-      </button>
-    </article>
-  );
-}
