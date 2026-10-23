@@ -108,7 +108,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Recebe pedido do agente').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(),\n       p_dados: { resumo: ($('Recebe pedido do agente').first().json.resumo || $('Recebe pedido do agente').first().json.interesse || '').trim(), tecnica_interesse: ($('Recebe pedido do agente').first().json.interesse || '').trim() } }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true

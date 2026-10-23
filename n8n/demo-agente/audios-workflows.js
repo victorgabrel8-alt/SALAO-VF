@@ -23,8 +23,10 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
   ] };
   const supa = (name, method, rota, body, extra = {}) => node(name, 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
     method, url: `={{ $env.SUPABASE_URL }}/rest/v1/${rota}`, sendHeaders: true, headerParameters: SUPA_H,
-    ...(body ? { sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}` } : {}), options: {},
-  }, { onError: 'continueRegularOutput', alwaysOutputData: true, ...extra });
+    // mesmo cuidado do supabase-workflows.js: 15 s no máximo e leitura tenta de novo
+    ...(body ? { sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}` } : {}), options: { timeout: 15000 },
+  }, { onError: 'continueRegularOutput', alwaysOutputData: true,
+    ...(method === 'GET' ? { retryOnFail: true, maxTries: 3, waitBetweenTries: 1000 } : {}), ...extra });
   const settings = { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', saveManualExecutions: true };
   const ifNode = (name, cond) => node(name, 'n8n-nodes-base.if', 2.2, [0, 0], {
     conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
@@ -159,7 +161,8 @@ return [{ json: { ok: true, ...melhor } }];
   const fs = require('fs');
   const idFile = require('path').join(__dirname, '.workflow-audios-id');
   const lerId = () => (fs.existsSync(idFile) ? fs.readFileSync(idFile, 'utf8').trim() : 'ID_DO_WORKFLOW_AUDIOS');
-  const M = "$('Montar entrada').item.json";
+  // .first(): com .item o fio até "Montar entrada" se perdia em alguns caminhos e o áudio ia sem número
+  const M = "$('Montar entrada').first().json";
   workflow.nodes.push(toolSub('enviar_audio', [0, 0],
     'Manda para a cliente um ÁUDIO pronto (voz de terceiro, não diga que é a Gleide) explicando um assunto (temas em ÁUDIOS PRONTOS, no fim das instruções). ' +
     'Use quando a pergunta dela for exatamente sobre um desses temas. A resposta diz se o áudio foi enviado e o que ele fala.',

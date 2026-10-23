@@ -31,7 +31,9 @@ ON CONFLICT (telefone) DO UPDATE SET
     'Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse ' +
     'dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente.',
     lerCrmId, ['telefone', 'nome', 'interesse', 'resumo'],
-    { telefone: "={{ $('Montar entrada').item.json.telefone }}" },
+    // .first(): o .item perdia o fio até "Montar entrada" (ex.: mensagem que esperou a IA terminar outra)
+    // e a anotação chegava sem telefone, sem ir para lugar nenhum
+    { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "progressiva")', 'string'],
       ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 6x. Casamento em dezembro.")', 'string'],

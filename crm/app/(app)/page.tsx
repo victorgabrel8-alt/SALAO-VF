@@ -406,6 +406,11 @@ export default function InicioPage() {
             if (!erro) recarregar();
             return erro;
           }}
+          aoCancelar={async () => {
+            const erro = await mudarStatus(confirmando.id, "cancelado");
+            if (!erro) recarregar();
+            return erro;
+          }}
           aoFechar={() => setConfirmando(null)}
         />
       )}

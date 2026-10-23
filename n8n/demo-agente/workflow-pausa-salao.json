@@ -141,7 +141,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam|insatisf|chatead|chate|frustr|caiu|mal feit|ruim|estrag|defeito|problema com o servi/i.test($('Recebe pedido do agente').item.json.motivo || '') ? 'reclamacao' : 'pediu_humano') }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -175,10 +177,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "id": "00000000-0000-4000-8000-000000000083",

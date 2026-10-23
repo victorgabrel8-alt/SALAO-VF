@@ -285,6 +285,13 @@ export default function AgendaPage() {
     return erro;
   }
 
+  // Desmarcou: sai da agenda (cancelado não é falta) e a IA pode oferecer a vaga
+  async function cancelar(a: Atendimento) {
+    const erro = await mudarStatus(a.id, "cancelado");
+    if (!erro) recarregar();
+    return erro;
+  }
+
   function fecharConfirmar() {
     setConfirmando(null);
     const id = confirmadoAgora.current;
@@ -512,6 +519,7 @@ export default function AgendaPage() {
           aoResultado={(r) => confirmarComResultado(confirmando, r)}
           aoFaltou={() => marcarFalta(confirmando)}
           aoRemarcar={(inicio) => remarcar(confirmando, inicio)}
+          aoCancelar={() => cancelar(confirmando)}
           intencao={intencaoDe(confirmando)}
           aoFechar={fecharConfirmar}
         />

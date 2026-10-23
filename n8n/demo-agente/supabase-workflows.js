@@ -20,12 +20,16 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmW
     { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
     { name: 'Prefer', value: 'return=representation' },
   ] };
+  // Supabase oscilando (502 do Cloudflare, "socket hang up" depois de 2,5 min): no máximo 15 s por chamada,
+  // e leitura (GET) tenta de novo até 3x antes de a IA dizer que a agenda está fora do ar. Gravação não
+  // repete sozinha, para não duplicar horário ou mensagem.
   const supa = (name, method, rota, body, extra = {}) => node(name, 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
     method, url: `={{ $env.SUPABASE_URL }}/rest/v1/${rota}`,
     sendHeaders: true, headerParameters: headers,
     ...(body ? { sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}` } : {}),
-    options: {},
-  }, { onError: 'continueRegularOutput', alwaysOutputData: true, ...extra });
+    options: { timeout: 15000 },
+  }, { onError: 'continueRegularOutput', alwaysOutputData: true,
+    ...(method === 'GET' ? { retryOnFail: true, maxTries: 3, waitBetweenTries: 1000 } : {}), ...extra });
   const entre = (wf, de, novo, para, saida = 0) => {
     wf.nodes.push(novo);
     wf.connections[de].main[saida] = [{ node: novo.name, type: 'main', index: 0 }];

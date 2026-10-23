@@ -197,7 +197,8 @@ if (p.acao === 'consultar') {
   const quadro = (dia, v) => dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + ') — horários de INÍCIO livres para ' + p.dur +
     ' min, de 30 em 30 min: ' + faixas(v) + '. Qualquer horário dentro dessas faixas está livre; fora delas, não.';
   const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');
-  const fechado = !(EXPEDIENTE[pedido.weekday]);
+  // dia bloqueado no app (folga, viagem) também é "fechado": senão a IA dizia "não temos mais vaga"
+  const fechado = !(EXPEDIENTE[pedido.weekday]) || bloqueado(pedido);
 
   // Horário específico pedido pela cliente
   if (p.inicio && !fechado) {

@@ -1976,7 +1976,7 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "telefone": "={{ $('Montar entrada').item.json.telefone }}",
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
             "interesse": "={{ $fromAI('interesse', `O que ela quer, curto (ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"progressiva\")`, 'string') }}",
             "resumo": "={{ $fromAI('resumo', `Resumo de 1-2 frases da conversa até agora (ex.: \"Achou caro, quer parcelar em 6x. Casamento em dezembro.\")`, 'string') }}",
             "nome": "={{ $fromAI('nome', `Nome da cliente, se ela disse (senão deixe vazio)`, 'string') }}"
@@ -2061,7 +2061,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_nome: $('Extrair dados').item.json.nome || null,\n       p_conteudo: $json.texto, p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').item.json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').item.json.msgId }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -2115,10 +2117,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "id": "00000000-0000-4000-8000-000000000072",
@@ -2149,10 +2156,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "id": "00000000-0000-4000-8000-000000000073",
@@ -2196,10 +2208,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "executeOnce": true
     },
     {
@@ -2234,7 +2251,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').first().json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -2271,7 +2290,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').item.json.texto || '[mídia]',\n       p_autor: 'humano', p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').item.json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').item.json.msgId, p_pausar_horas: 12 }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -2308,7 +2329,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: null, motivo_pausa: null }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -2342,10 +2365,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "id": "00000000-0000-4000-8000-000000000079",
@@ -2413,7 +2441,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').item.json.texto, p_autor: 'humano', p_tipo: 'texto', p_wa_message_id: $('Extrair dados').item.json.msgId }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -2437,9 +2467,9 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "telefone": "={{ $('Montar entrada').item.json.telefone }}",
-            "jid": "={{ $('Montar entrada').item.json.jid }}",
-            "mensagem": "={{ $('Montar entrada').item.json.texto_cliente }}",
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "jid": "={{ $('Montar entrada').first().json.jid }}",
+            "mensagem": "={{ $('Montar entrada').first().json.texto_cliente }}",
             "tema": "={{ $fromAI('tema', `O tema do áudio, igual à lista ÁUDIOS PRONTOS`, 'string') }}"
           },
           "matchingColumns": [],
@@ -2515,10 +2545,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "executeOnce": true
     },
     {
@@ -2546,10 +2581,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
       "id": "00000000-0000-4000-8000-000000000117",

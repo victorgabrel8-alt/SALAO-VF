@@ -38,6 +38,7 @@ export function FolhaConfirmar({
   aoResultado,
   aoFaltou,
   aoRemarcar,
+  aoCancelar,
   aoFechar,
 }: {
   atendimento: Atendimento;
@@ -47,6 +48,8 @@ export function FolhaConfirmar({
   aoResultado?: (resultado: ResultadoAvaliacao) => Promise<string | undefined>;
   aoFaltou?: () => Promise<string | undefined>;
   aoRemarcar?: (novoInicio: string) => Promise<string | undefined>;
+  // Ela desmarcou (ligou, mandou mensagem): o horário sai da agenda e a vaga fica livre para a IA
+  aoCancelar?: () => Promise<string | undefined>;
   aoFechar: () => void;
 }) {
   const [tela, setTela] = useState<Tela>("pergunta");
@@ -102,13 +105,13 @@ export function FolhaConfirmar({
     </button>
   );
 
-  const botaoFaltou = (aoFaltou || aoRemarcar) && (
+  const botaoFaltou = (aoFaltou || aoRemarcar || aoCancelar) && (
     <button
       onClick={() => setTela("faltou")}
       disabled={salvando}
       className="h-13 min-h-[52px] rounded-full bg-card text-[16px] font-semibold text-rose-texto borda-suave active:bg-campo"
     >
-      Faltou ou remarcou
+      {aoCancelar ? "Faltou, remarcou ou desmarcou" : "Faltou ou remarcou"}
     </button>
   );
 
@@ -266,6 +269,18 @@ export function FolhaConfirmar({
                   className="h-14 rounded-full bg-card text-[17px] font-bold borda-suave active:bg-campo"
                 >
                   Remarcou para outro dia
+                </button>
+              )}
+              {aoCancelar && (
+                <button
+                  onClick={() =>
+                    // Cancelado (não falta): a IA não cobra atraso, não chama para remarcar e a vaga volta a ser oferecida
+                    gravar(aoCancelar, { titulo: "Horário cancelado", texto: `${nome} · ${formatarHora(a.inicio)} saiu da agenda. A vaga ficou livre.`, cor: "bg-grafite" }, aoFechar)
+                  }
+                  disabled={salvando}
+                  className="h-14 rounded-full bg-card text-[17px] font-bold text-texto-2 borda-suave active:bg-campo"
+                >
+                  Desmarcou (cancelar horário)
                 </button>
               )}
             </div>
