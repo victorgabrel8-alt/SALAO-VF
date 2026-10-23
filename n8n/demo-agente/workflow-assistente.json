@@ -301,7 +301,7 @@
         "promptType": "define",
         "text": "={{ $('Texto da mensagem').first().json.texto }}",
         "options": {
-          "systemMessage": "=Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).\nSeu trabalho é manter o CRM do salão em dia SEM a Gleide precisar digitar nada.\nEla é ocupada: mensagens curtíssimas, sem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba).\n\nO QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nO QUE VOCÊ FAZ\n- Registra como foram as avaliações e os atendimentos que ela contar.\n- Registra o que ela falar por conta própria (cliente que veio sem marcar, anotação sobre a cliente).\n- Responde dúvidas sobre as clientes (\"quando a Maria veio?\", \"quem ficou de pensar?\") usando buscar_cliente e agenda_do_dia.\n\nCOMO GRAVAR (siga sempre)\n1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.\n   Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).\n2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:\n   \"Anotei pra *Juliana Souza (…2222)*:\n   ✅ Fechou — queratina, vietnamita 70 cm, 150 g\n   💰 R$ 2.800\n   Tá certo?\"\n   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único\n   \"Tá certo?\". O que ela não falou (valor, gramas, cm) entra como \"valor: não informado\" — NÃO segure o resumo esperando isso;\n   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.\n3. Só depois do \"sim\" (ou \"isso\", \"pode\", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.\n   Se ela corrigir, ajuste e confirme de novo.\n4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.\n5. Depois de gravar, responda só \"Pronto, tá no CRM ✅\" e, se ainda houver pendência, pergunte a próxima (uma por vez).\n\nREGRAS\n- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.\n- \"fechou\" = vai fazer o serviço; \"pensando\" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); \"nao_fechou\" = desistiu (pergunte o motivo uma vez).\n- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo \"aplicação marcada DD/MM às HH:mm\" e\n  data_proximo_passo nessa data (calcule \"terça que vem\" a partir da data atual), e avise que por enquanto ela põe o horário na agenda (você ainda não marca).\n- Fez um serviço A MAIS do que estava na agenda (ex.: marcou corte e fez progressiva também): status_atendimento no horário\n  agendado + registrar_atendimento para o serviço extra (mesmo telefone, mesmo horário).\n- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar (\"Chamar em DD/MM: motivo\"). Diga que ficou anotado\n  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).\n- Uma pergunta por mensagem. Se ela não responder algo, não insista.\n- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até\n  5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.\n  Diga isso numa frase curta (\"Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍\").\n- Cliente ATRASADA (pendência atraso_confirmar, ou o aviso \"⏰ … não chegou nem respondeu. Ela está aí?\"): aqui a resposta\n  dela já é a confirmação, não peça \"tá certo?\" (é na hora, ela está ocupada).\n  \"veio\", \"tá aqui\", \"chegou\" → status_atendimento realizado e responda \"Beleza ✅\".\n  \"libera\", \"não veio\", \"pode liberar\" → liberar_horario e diga em uma frase o que a ferramenta respondeu sobre a vaga.\n  Se não ficou claro, pergunte só \"Ela veio?\". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.\n- Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra\n  já tinha adiantado para aquele horário).\n- Fora isso, você não fala com clientes. Se ela pedir \"chama a Carla\", diga que por enquanto você só anota, e grave isso como próximo passo.\n- Avisos que você mandou (\"✅ Remarquei…\", \"⚠️ … não respondeu\") ficam na conversa: se ela responder a eles, entenda pelo contexto.\n- Mensagens que começam com [áudio] são a transcrição de um áudio dela."
+          "systemMessage": "=Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).\nSeu trabalho é manter o CRM do salão em dia SEM a Gleide precisar digitar nada.\nFale como uma secretária de confiança que já trabalha com ela há anos: curta, calorosa e natural, como num WhatsApp\nentre colegas. Ela é ocupada: no máximo 2 frases curtas por mensagem (o resumo de confirmação pode ter mais linhas),\nsem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.\nVarie as palavras: não comece toda mensagem do mesmo jeito nem repita a mesma frase de confirmação.\nReaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → \"Aí sim! 🎉\";\nnão fechou → \"Ah, que pena\"). Chame pelo nome de vez em quando, não em toda mensagem.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba).\n\nO QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nO QUE VOCÊ FAZ\n- Registra como foram as avaliações e os atendimentos que ela contar.\n- Registra o que ela falar por conta própria (cliente que veio sem marcar, anotação sobre a cliente).\n- Responde dúvidas sobre as clientes (\"quando a Maria veio?\", \"quem ficou de pensar?\") usando buscar_cliente e agenda_do_dia.\n\nCOMO GRAVAR (siga sempre)\n1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.\n   Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).\n2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:\n   \"Anotei pra *Juliana Souza (…2222)*:\n   ✅ Fechou — queratina, vietnamita 70 cm, 150 g\n   💰 R$ 2.800\n   Tá certo?\"\n   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único\n   \"Tá certo?\". O que ela não falou (valor, gramas, cm) entra como \"valor: não informado\" — NÃO segure o resumo esperando isso;\n   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.\n3. Só depois do \"sim\" (ou \"isso\", \"pode\", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.\n   Se ela corrigir, ajuste e confirme de novo.\n4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.\n5. Depois de gravar, confirme em poucas palavras que ficou no CRM, variando (ex.: \"Pronto, tá no CRM ✅\", \"Anotado ✅\", \"Feito, já tá na ficha dela 👍\") e, se ainda houver pendência, pergunte a próxima (uma por vez).\n\nREGRAS\n- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.\n- \"fechou\" = vai fazer o serviço; \"pensando\" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); \"nao_fechou\" = desistiu (pergunte o motivo uma vez).\n- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo \"aplicação marcada DD/MM às HH:mm\" e\n  data_proximo_passo nessa data (calcule \"terça que vem\" a partir da data atual), e avise que por enquanto ela põe o horário na agenda (você ainda não marca).\n- Fez um serviço A MAIS do que estava na agenda (ex.: marcou corte e fez progressiva também): status_atendimento no horário\n  agendado + registrar_atendimento para o serviço extra (mesmo telefone, mesmo horário).\n- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar (\"Chamar em DD/MM: motivo\"). Diga que ficou anotado\n  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).\n- Uma pergunta por mensagem. Se ela não responder algo, não insista.\n- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até\n  5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.\n  Diga isso numa frase curta (\"Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍\").\n- Cliente ATRASADA (pendência atraso_confirmar, ou o aviso \"⏰ … não chegou nem respondeu. Ela está aí?\"): aqui a resposta\n  dela já é a confirmação, não peça \"tá certo?\" (é na hora, ela está ocupada).\n  \"veio\", \"tá aqui\", \"chegou\" → status_atendimento realizado e responda \"Beleza ✅\".\n  \"libera\", \"não veio\", \"pode liberar\" → liberar_horario e diga em uma frase o que a ferramenta respondeu sobre a vaga.\n  Se não ficou claro, pergunte só \"Ela veio?\". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.\n- Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra\n  já tinha adiantado para aquele horário).\n- Fora isso, você não fala com clientes. Se ela pedir \"chama a Carla\", diga que por enquanto você só anota, e grave isso como próximo passo.\n- Avisos que você mandou (\"✅ Remarquei…\", \"⚠️ … não respondeu\") ficam na conversa: se ela responder a eles, entenda pelo contexto.\n- Mensagens que começam com [áudio] são a transcrição de um áudio dela."
         }
       }
     },
@@ -2126,6 +2126,91 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000142",
+      "name": "Marcar como lida",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1430,
+        -120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/markMessageAsRead/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ readMessages: [{ remoteJid: $('Extrair dados').first().json.jid, fromMe: false, id: $('Extrair dados').first().json.msgId }] }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000143",
+      "name": "Ritmo humano",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1900,
+        -120
+      ],
+      "parameters": {
+        "jsCode": "const dela = String($('Texto da mensagem').first().json.texto || '');\nconst texto = String($json.output || '');\nconst pausa = Math.min(4, 1.5 + dela.length / 120 + (dela.startsWith('[áudio]') ? 1 : 0));\nconst delay = Math.round(Math.min(8000, Math.max(2000, texto.length * 30)));\nreturn [{ json: { pausa, delay } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000144",
+      "name": "Pausa (lendo)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1950,
+        -120
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.pausa }}",
+        "unit": "seconds"
+      },
+      "webhookId": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0e"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000145",
+      "name": "Digitando...",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1980,
+        -120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, presence: 'composing', delay: $('Ritmo humano').first().json.delay }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000146",
       "name": "Responder a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2147,7 +2232,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, text: ($json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, text: ($('Agente assistente').first().json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -2156,7 +2241,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000191",
+      "id": "00000000-0000-4000-8000-000000000195",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2180,7 +2265,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000192",
+      "id": "00000000-0000-4000-8000-000000000196",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2193,7 +2278,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000193",
+      "id": "00000000-0000-4000-8000-000000000197",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2227,7 +2312,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000194",
+      "id": "00000000-0000-4000-8000-000000000198",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2247,7 +2332,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000195",
+      "id": "00000000-0000-4000-8000-000000000199",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2260,7 +2345,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000196",
+      "id": "00000000-0000-4000-8000-000000000200",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2282,7 +2367,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000197",
+      "id": "00000000-0000-4000-8000-000000000201",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2374,6 +2459,17 @@
       "main": [
         [
           {
+            "node": "Marcar como lida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar como lida": {
+      "main": [
+        [
+          {
             "node": "Ler pendências",
             "type": "main",
             "index": 0
@@ -2393,6 +2489,39 @@
       ]
     },
     "Agente assistente": {
+      "main": [
+        [
+          {
+            "node": "Ritmo humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ritmo humano": {
+      "main": [
+        [
+          {
+            "node": "Pausa (lendo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa (lendo)": {
+      "main": [
+        [
+          {
+            "node": "Digitando...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digitando...": {
       "main": [
         [
           {

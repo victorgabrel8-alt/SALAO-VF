@@ -2,7 +2,7 @@
   "name": "IA - Faltas e avisos",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000151",
+      "id": "00000000-0000-4000-8000-000000000155",
       "name": "A cada 5 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000152",
+      "id": "00000000-0000-4000-8000-000000000156",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000153",
+      "id": "00000000-0000-4000-8000-000000000157",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -73,7 +73,7 @@
       "webhookId": "8a9b0c1d-2e3f-4a5b-8c6d-7e8f9a0b1c2d"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000154",
+      "id": "00000000-0000-4000-8000-000000000158",
       "name": "Faltas para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -105,7 +105,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000155",
+      "id": "00000000-0000-4000-8000-000000000159",
       "name": "Mensagem da falta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -118,7 +118,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000156",
+      "id": "00000000-0000-4000-8000-000000000160",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -149,7 +149,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000157",
+      "id": "00000000-0000-4000-8000-000000000161",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -183,7 +183,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000158",
+      "id": "00000000-0000-4000-8000-000000000162",
       "name": "Registrar chamada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -215,7 +215,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000159",
+      "id": "00000000-0000-4000-8000-000000000163",
       "name": "Atrasos para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -247,7 +247,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000160",
+      "id": "00000000-0000-4000-8000-000000000164",
       "name": "Mensagem do atraso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -260,7 +260,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000161",
+      "id": "00000000-0000-4000-8000-000000000165",
       "name": "Chamar a atrasada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -291,7 +291,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000162",
+      "id": "00000000-0000-4000-8000-000000000166",
       "name": "Chamou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -325,7 +325,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000163",
+      "id": "00000000-0000-4000-8000-000000000167",
       "name": "Registrar chamada do atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -357,7 +357,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000164",
+      "id": "00000000-0000-4000-8000-000000000168",
       "name": "Atrasos para confirmar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -389,7 +389,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000165",
+      "id": "00000000-0000-4000-8000-000000000169",
       "name": "Mensagem veio ou libera",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -402,7 +402,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000166",
+      "id": "00000000-0000-4000-8000-000000000170",
       "name": "Perguntar à Gleide (atraso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -432,7 +432,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000167",
+      "id": "00000000-0000-4000-8000-000000000171",
       "name": "Guardar pergunta do atraso",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -454,7 +454,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000168",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "Marcar atraso perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -486,7 +486,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000169",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -518,7 +518,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000170",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "Mensagem do conflito",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -531,7 +531,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000171",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "Avisar a Gleide (conflito)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -561,7 +561,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000172",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "Guardar aviso do conflito",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -583,7 +583,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000173",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "Marcar conflito avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -616,7 +616,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000174",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "Vagas para oferecer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -648,7 +648,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000175",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Mensagem da vaga",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -661,7 +661,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000176",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "Oferecer para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -692,7 +692,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000177",
+      "id": "00000000-0000-4000-8000-000000000181",
       "name": "Ofereceu?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -726,7 +726,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000178",
+      "id": "00000000-0000-4000-8000-000000000182",
       "name": "Registrar oferta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -758,7 +758,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000179",
+      "id": "00000000-0000-4000-8000-000000000183",
       "name": "Avisos para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -790,7 +790,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000180",
+      "id": "00000000-0000-4000-8000-000000000184",
       "name": "Mensagem do aviso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -803,7 +803,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000181",
+      "id": "00000000-0000-4000-8000-000000000185",
       "name": "Mandar para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -833,7 +833,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000182",
+      "id": "00000000-0000-4000-8000-000000000186",
       "name": "Guardar na memória da assistente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -855,7 +855,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000183",
+      "id": "00000000-0000-4000-8000-000000000187",
       "name": "Marcar avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

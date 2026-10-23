@@ -72,7 +72,12 @@ return [{ json: { funcao, args } }];
 
 const PROMPT = `Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).
 Seu trabalho é manter o CRM do salão em dia SEM a Gleide precisar digitar nada.
-Ela é ocupada: mensagens curtíssimas, sem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.
+Fale como uma secretária de confiança que já trabalha com ela há anos: curta, calorosa e natural, como num WhatsApp
+entre colegas. Ela é ocupada: no máximo 2 frases curtas por mensagem (o resumo de confirmação pode ter mais linhas),
+sem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.
+Varie as palavras: não comece toda mensagem do mesmo jeito nem repita a mesma frase de confirmação.
+Reaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → "Aí sim! 🎉";
+não fechou → "Ah, que pena"). Chame pelo nome de vez em quando, não em toda mensagem.
 Data e hora atual: {{ $now.setZone('America/Cuiaba').toFormat("cccc, dd/MM/yyyy HH:mm", { locale: 'pt-BR' }) }} (America/Cuiaba).
 
 O QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):
@@ -97,7 +102,7 @@ COMO GRAVAR (siga sempre)
 3. Só depois do "sim" (ou "isso", "pode", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.
    Se ela corrigir, ajuste e confirme de novo.
 4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.
-5. Depois de gravar, responda só "Pronto, tá no CRM ✅" e, se ainda houver pendência, pergunte a próxima (uma por vez).
+5. Depois de gravar, confirme em poucas palavras que ficou no CRM, variando (ex.: "Pronto, tá no CRM ✅", "Anotado ✅", "Feito, já tá na ficha dela 👍") e, se ainda houver pendência, pergunte a próxima (uma por vez).
 
 REGRAS
 - Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.
@@ -278,9 +283,27 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       tool('liberar_horario', [2920, 220], 'Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. ' +
         'Só use quando a Gleide disser "libera" ou "não veio" para essa cliente. Nunca por conta própria.',
         'liberar_horario', [ID('agendamento_id')]),
+      // Ritmo de gente, como no atendimento das clientes: marca como lida, "lê" a mensagem dela,
+      // mostra "digitando…" e só então responde (antes a resposta chegava na hora, parecendo robô)
+      evoPost('Marcar como lida', [1430, -120], 'chat/markMessageAsRead',
+        `{ readMessages: [{ remoteJid: ${A}.jid, fromMe: false, id: ${A}.msgId }] }`, { onError: 'continueRegularOutput' }),
+      // lendo: 1,5 s + um pouco pelo tamanho do que ela mandou (áudio conta mais), até 4 s
+      // digitando: ~30 ms por letra, entre 2 e 8 s (o WhatsApp apaga o "digitando…" em ~10 s)
+      node('Ritmo humano', 'n8n-nodes-base.code', 2, [1900, -120], { jsCode: [
+        "const dela = String($('Texto da mensagem').first().json.texto || '');",
+        "const texto = String($json.output || '');",
+        "const pausa = Math.min(4, 1.5 + dela.length / 120 + (dela.startsWith('[áudio]') ? 1 : 0));",
+        "const delay = Math.round(Math.min(8000, Math.max(2000, texto.length * 30)));",
+        'return [{ json: { pausa, delay } }];',
+      ].join('\n') }),
+      node('Pausa (lendo)', 'n8n-nodes-base.wait', 1.1, [1950, -120], { resume: 'timeInterval', amount: '={{ $json.pausa }}', unit: 'seconds' },
+        { webhookId: '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0e' }),
+      evoPost('Digitando...', [1980, -120], 'chat/sendPresence',
+        `{ number: ${A}.jid, presence: 'composing', delay: $('Ritmo humano').first().json.delay }`, { onError: 'continueRegularOutput' }),
       evoPost('Responder a Gleide', [2000, 0], 'message/sendText',
         // **negrito** de markdown aparece com os asteriscos no WhatsApp: vira *negrito*
-        `{ number: ${A}.jid, text: ($json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }`,
+        // a resposta vem do agente (o $json que chega aqui é o do "digitando…")
+        `{ number: ${A}.jid, text: ($('Agente assistente').first().json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }`,
         { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
     ],
     connections: {
@@ -290,9 +313,13 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'É áudio?': { main: [[{ node: 'Baixar áudio (Evolution)', type: 'main', index: 0 }], [{ node: 'Texto da mensagem', type: 'main', index: 0 }]] },
       'Baixar áudio (Evolution)': main('Transcrever (Gemini)'),
       'Transcrever (Gemini)': main('Texto da mensagem'),
-      'Texto da mensagem': main('Ler pendências'),
+      'Texto da mensagem': main('Marcar como lida'),
+      'Marcar como lida': main('Ler pendências'),
       'Ler pendências': main('Agente assistente'),
-      'Agente assistente': main('Responder a Gleide'),
+      'Agente assistente': main('Ritmo humano'),
+      'Ritmo humano': main('Pausa (lendo)'),
+      'Pausa (lendo)': main('Digitando...'),
+      'Digitando...': main('Responder a Gleide'),
       'Gemini Flash': { ai_languageModel: [[{ node: 'Agente assistente', type: 'ai_languageModel', index: 0 }]] },
       'Memória (Redis)': { ai_memory: [[{ node: 'Agente assistente', type: 'ai_memory', index: 0 }]] },
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario']
