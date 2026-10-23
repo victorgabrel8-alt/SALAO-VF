@@ -90,12 +90,12 @@ Este arquivo é o acordo entre as duas partes do projeto. **O banco do Supabase 
 |---|---|---|
 | Mensagem chega | chama `n8n_registrar_entrada`; se `ia_pausada = true`, **não responde** | mostra em tempo real (Realtime na tabela `mensagens`) |
 | IA responde | envia e chama `n8n_registrar_saida(..., autor='ia', wa_message_id do envio)` | mostra o balão como "IA" |
-| Cliente pede humano / reclama / fora do escopo | grava a resposta da IA com `n8n_registrar_saida(..., autor='ia', pausar_horas=12, motivo_pausa='pediu_humano')` (ou `reclamacao`, `fora_escopo`) **e manda um WhatsApp para `empresas.config.whatsapp_alerta`** com nome, telefone da cliente e o que ela pediu | mostra em **"Precisam de você"** no Início, com botão para abrir o WhatsApp da cliente; o número de alerta é editado em **Configurações → WhatsApp para alertas** |
+| Cliente pede humano / reclama / fora do escopo | grava a resposta da IA com `n8n_registrar_saida(..., autor='ia', pausar_horas=12, motivo_pausa='pediu_humano')` (ou `reclamacao`, `fora_escopo`) **e manda um WhatsApp para `empresas.config.whatsapp_alerta`** com nome, telefone da cliente e o que ela pediu (**PENDENTE**: em 23/10/2026 o n8n só pausa e grava o motivo; o alerta ainda não é enviado) | mostra em **"Precisam de você"** no Início, com botão para abrir o WhatsApp da cliente; o número de alerta é editado em **Configurações → WhatsApp para alertas** |
 | Dona responde pelo WhatsApp Business | chama `n8n_registrar_saida(..., autor='humano', pausar_horas=12)` (motivo vira `dona_respondeu`) | mostra o balão como "Você" |
 | Dona aperta "Pausar IA" / "Reativar IA" | lê `ia_pausada_ate` antes de cada resposta | grava `ia_pausada_ate` (`now()+12h` ou `null`) e `motivo_pausa='manual'` |
-| IA agenda | cria evento no Google Agenda **e** grava em `agendamentos` (`origem='ia'`, `google_event_id`) | mostra na Agenda |
+| IA agenda | grava em `agendamentos` (`origem='ia'`); sem Google Agenda desde 23/10/2026 (a agenda é só a do app) | mostra na Agenda |
 | Dona marca realizado/faltou/cancelado | — | atualiza `agendamentos.status` |
-| Dona cancela pelo CRM | — (por enquanto **não** apaga do Google) | avisa na tela: "apague também do Google Agenda" |
+| Dona cancela pelo CRM | — (a IA lê o status em `agendamentos`; não há Google Agenda para apagar) | atualiza `agendamentos.status` |
 | Dona altera serviço/preço | lê `servicos` a cada conversa (preço sempre atualizado) | edita `servicos` |
 
 ---

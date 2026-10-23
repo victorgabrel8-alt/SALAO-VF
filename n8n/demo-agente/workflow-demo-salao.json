@@ -1627,7 +1627,7 @@
             "acao": "criar",
             "telefone": "={{ $('Montar entrada').first().json.telefone }}",
             "nome": "={{ $fromAI('nome', `Nome da cliente`, 'string') }}",
-            "servico": "={{ $fromAI('servico', `Nome do serviço, como na lista (ex.: Mega hair com queratina)`, 'string') }}",
+            "servico": "={{ $fromAI('servico', `Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: \"Manutenção – queratina\", \"Aplicação de mega hair – tela adesiva\", \"Selagem\")`, 'string') }}",
             "motivo": "={{ $fromAI('motivo', `Resumo curto (até ~60 caracteres) do que a cliente quer e do que ela contou na conversa, para a Gleide ler na agenda. Ex.: \"comprar cabelo vietnamita 60 cm\", \"selagem - cabelo ressecado\", \"manutenção tela adesiva colocada em agosto\", \"avaliar técnica, cabelo curto\"`, 'string') }}",
             "data_hora_inicio": "={{ $fromAI('data_hora_inicio', `Início no formato AAAA-MM-DDTHH:mm, exatamente como veio em consultar_horarios_livres`, 'string') }}",
             "duracao_minutos": "={{ $fromAI('duracao_minutos', `Duração do serviço em minutos`, 'number') }}"
@@ -2213,7 +2213,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/{{ $json.key?.id ? 'rpc/n8n_registrar_saida' : 'nao_gravar' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -2233,7 +2233,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').item.json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').first().json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",

@@ -445,7 +445,7 @@ const nodes = [
     { acao: 'criar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['nome', 'Nome da cliente', 'string'],
-      ['servico', 'Nome do serviço, como na lista (ex.: Mega hair com queratina)', 'string'],
+      ['servico', 'Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: "Manutenção – queratina", "Aplicação de mega hair – tela adesiva", "Selagem")', 'string'],
       ['motivo', 'Resumo curto (até ~60 caracteres) do que a cliente quer e do que ela contou na conversa, para a Gleide ler na agenda. Ex.: "comprar cabelo vietnamita 60 cm", "selagem - cabelo ressecado", "manutenção tela adesiva colocada em agosto", "avaliar técnica, cabelo curto"', 'string'],
       ['data_hora_inicio', 'Início no formato AAAA-MM-DDTHH:mm, exatamente como veio em consultar_horarios_livres', 'string'],
       ['duracao_minutos', 'Duração do serviço em minutos', 'number'],

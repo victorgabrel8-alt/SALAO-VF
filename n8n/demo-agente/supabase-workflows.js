@@ -168,9 +168,15 @@ Use a ficha como quem já conhece a cliente:
   consulte horários do mesmo serviço e, com o "sim", use
   criar_agendamento (o horário antigo já ficou como falta: é um horário novo). Se não quiser agora, encerre com carinho.
 - Nunca leia a ficha para ela nem diga "no sistema consta". Observações da Gleide (alergias, preferências) são para você levar em conta, não para repetir.`;
+  // .first(), não .item: quando a mensagem esperou a IA terminar outra resposta ("Aguardar 3s"), o n8n
+  // perdia o fio do .item até "Extrair dados", a expressão quebrava ("JSON Body não é JSON válido") e o
+  // balão não ia para o app. Cada execução é de uma mensagem só e o loop manda um balão por vez.
   entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
-    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR("$('Extrair dados').first().json.telefone")}, p_conteudo: $('Um balão por vez').first().json.texto,
        p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }`), 'Um balão por vez');
+  // só grava o balão que o WhatsApp aceitou: o app não mostra como enviada a mensagem que não chegou
+  achar(workflow, 'Supabase: registrar saída').parameters.url =
+    "={{ $env.SUPABASE_URL }}/rest/v1/{{ $json.key?.id ? 'rpc/n8n_registrar_saida' : 'nao_gravar' }}";
 
   // ---------- Principal: a dona respondeu pelo celular / "#ia" ----------
   workflow.nodes.push(supa('Supabase: dona respondeu', 'POST', 'rpc/n8n_registrar_saida',
@@ -262,6 +268,9 @@ const cliente = $('Supabase: cliente e serviços').first().json;
 const servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);
 const prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);
 const alvo = palavras(pedido.servico);
+// A IA às vezes manda só "Queratina" e deixa o "manutenção" no motivo ("manutenção queratina"):
+// sem isso virava a aplicação (240 min, outro preço e outro retorno)
+if (!alvo.includes('manutencao') && palavras(pedido.motivo).includes('manutencao')) alvo.push('manutencao');
 let melhor = null, nota = 0;
 // Manutenção só se o pedido falar em manutenção ("Tela adesiva" é aplicação). E precisa de pelo menos
 // uma palavra em comum que não seja genérica ("Corte de cabelo" não vira "Visita para escolher cabelo").
