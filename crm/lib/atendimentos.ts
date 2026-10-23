@@ -186,7 +186,7 @@ export async function marcarChegou(id: string, chegou = true) {
 
 // Confirmar o atendimento (o ✓ da agenda).
 //   "Foi isso" (sem serviços): só marca realizado, com o serviço que estava marcado.
-//   "Fez outra coisa": o 1º serviço escolhido fica neste horário e os outros entram como serviços
+//   "Fez outra coisa": o 1º serviço escolhido (o que estava marcado, se ela também fez) fica neste horário e os outros entram como serviços
 //   a mais DO MESMO horário (nunca um horário novo). Cada serviço tem o próprio retorno (o banco
 //   calcula pelo dias_retorno) e a IA enxerga o que foi feito de verdade.
 // Trocou o serviço? O que estava marcado fica anotado ("Marcado era: Hidratação") para o desfazer

@@ -81,10 +81,15 @@ export function FolhaConfirmar({
   const concluido = { titulo: "Atendimento concluído", texto: `${nome} · ${formatarHora(a.inicio)} foi para os concluídos`, cor: "bg-[#5E7A50]" };
 
   function salvar(escolha: string[]) {
-    // Vários serviços: o de retorno mais curto fica como o principal do horário. É dele o retorno
-    // da cliente (mega hair + pintura -> volta pela pintura), já antes do 007 rodar no banco.
+    // Vários serviços: o que estava marcado continua o principal do horário (o cartão mostra o que
+    // ela veio fazer) e os outros entram como serviços a mais. O retorno de cada um quem calcula é o
+    // banco (supabase/010: a cliente volta pelo mais próximo). Se a Gleide desmarcou o que estava
+    // marcado, o de retorno mais curto fica como principal.
     const retorno = (id: string) => servicos.find((s) => s.id === id)?.dias_retorno ?? Infinity;
-    const ids = escolha.length > 1 ? [...escolha].sort((x, y) => retorno(x) - retorno(y)) : escolha;
+    const porRetorno = [...escolha].sort((x, y) => retorno(x) - retorno(y));
+    const ids = a.servico_id && escolha.includes(a.servico_id)
+      ? [a.servico_id, ...porRetorno.filter((id) => id !== a.servico_id)]
+      : porRetorno;
     gravar(() => aoConfirmar(ids), concluido, aoFechar);
   }
 
