@@ -15,7 +15,7 @@ const NUMEROS = "($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).f
 const TEL = "($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]";
 // número cadastrado que bate com o telefone t (no WhatsApp, celular antigo de MT pode chegar sem o 9: 5566999990000 → 556699990000)
 const NUMERO_DE = (t) => `(${NUMEROS}.find(n => n === ${t} || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === ${t}) || '')`;
-const A = "$('Extrair dados').item.json";
+const A = "$('Extrair dados').first().json";
 
 const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendamento_id', 'resultado', 'tecnica_indicada',
   'tipo_cabelo', 'comprimento_cm', 'gramas', 'valor', 'motivo_nao_fechou', 'proximo_passo', 'data_proximo_passo',
@@ -236,7 +236,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       rpc('Ler pendências', [1540, 0], 'n8n_assistente_pendencias_texto', `{ p_empresa_id: ${EMPRESA} }`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       node('Agente assistente', '@n8n/n8n-nodes-langchain.agent', 3.1, [1760, 0], {
-        promptType: 'define', text: "={{ $('Texto da mensagem').item.json.texto }}",
+        promptType: 'define', text: "={{ $('Texto da mensagem').first().json.texto }}",
         options: { systemMessage: '=' + PROMPT },
       }),
       node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [1640, 220], {

@@ -155,7 +155,8 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   if (p.acao === 'listar') return [{ json: { acao: 'listar', ok: true, resposta: 'Agendamentos futuros desta cliente:\\n' + listaEvs } }];
 
   let alvo = null;
-  if (p.inicio) alvo = evs.find(x => +x.ini === +DateTime.fromISO(p.inicio).setZone(TZ));
+  // compara até o minuto: a IA manda "HH:mm" e o horário gravado pode ter segundos
+  if (p.inicio) alvo = evs.find(x => +x.ini.startOf('minute') === +DateTime.fromISO(p.inicio).setZone(TZ).startOf('minute'));
   else if (evs.length === 1) alvo = evs[0];
   if (!alvo) return saida({ resposta: 'A cliente tem mais de um agendamento (ou o horário informado não bate). Agendamentos dela:\\n' + listaEvs + '\\nPergunte qual e chame de novo com o data_hora_inicio certo.' });
 

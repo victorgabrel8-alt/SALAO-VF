@@ -209,7 +209,8 @@ Use a ficha como quem já conhece a cliente:
 
   // ---------- Pausa: transferir_para_humano ----------
   const P = "$('Recebe pedido do agente').item.json";
-  const motivoPausa = `(/reclam/i.test(${P}.motivo || '') ? 'reclamacao' : 'pediu_humano')`;
+  // a IA escreve o motivo com as palavras dela ("insatisfeita, a mega caiu"): não só "reclamação"
+  const motivoPausa = `(/reclam|insatisf|chatead|chate|frustr|caiu|mal feit|ruim|estrag|defeito|problema com o servi/i.test(${P}.motivo || '') ? 'reclamacao' : 'pediu_humano')`;
   const ultimoPausa = Object.keys(pausaWorkflow.connections).find((k) => pausaWorkflow.connections[k].main[0][0].node === 'Resposta');
   entre(pausaWorkflow, ultimoPausa, supa('Supabase: pausar IA', 'PATCH',
     `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${P}.telefone`)} }}`,
