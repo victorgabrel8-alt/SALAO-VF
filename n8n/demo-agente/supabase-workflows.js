@@ -123,6 +123,9 @@ else if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + 
 else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'ela') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
+// aviso: a Gleide pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)
+else if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+  ' a Gleide mandou avisar: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');
 else if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');
 return [{ json: { texto: linhas.join('\n') } }];
@@ -163,6 +166,9 @@ Use a ficha como quem já conhece a cliente:
 - Se a ficha tiver "ALÔ DE ATRASO", passou do horário dela e você perguntou se está a caminho. Chegando ou já
   no salão: responda curto, sem cobrar. Não vem hoje: acolha, consulte horários do mesmo serviço e, com o "sim",
   use remarcar_agendamento com o data_hora_inicio da ficha (se a ficha disser que já ficou como falta, criar_agendamento).
+- Se a ficha tiver "AVISO DO SALÃO", a Gleide mandou um aviso sobre o horário dela (ex.: horário mudou porque a agenda
+  atrasou). Se ela confirmar ("ok", "tudo bem"), responda curto e carinhoso. Se o novo horário não der, peça desculpas pelo
+  transtorno, use ver_agendamentos e consultar_horarios_livres do mesmo serviço e, com o "sim", remarcar_agendamento.
 - Se a ficha tiver "ALÔ DE FALTA", ela não veio ao horário e você a chamou. Acolha sem cobrar nem julgar
   (imprevisto acontece; o horário já passou, então não fale em desmarcar nem em multa). Se ela quiser,
   consulte horários do mesmo serviço e, com o "sim", use
