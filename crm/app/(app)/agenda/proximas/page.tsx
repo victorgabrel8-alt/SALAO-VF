@@ -19,11 +19,13 @@ import { abrirWhatsApp } from "@/lib/whatsapp";
 
 type Periodo = "7" | "30" | "90" | "tudo";
 
-const PERIODOS: { chave: Periodo; rotulo: string; frase: string }[] = [
-  { chave: "7", rotulo: "7 dias", frase: "nos próximos 7 dias" },
-  { chave: "30", rotulo: "30 dias", frase: "nos próximos 30 dias" },
-  { chave: "90", rotulo: "3 meses", frase: "nos próximos 3 meses" },
-  { chave: "tudo", rotulo: "Tudo", frase: "daqui para frente" },
+// Faixas que não se repetem: quem aparece em "7 dias" não aparece de novo em "8 a 30".
+// de/ate contam dias a partir de hoje (hoje = 0; `ate` fica de fora). Só "Tudo" junta todas.
+const PERIODOS: { chave: Periodo; rotulo: string; frase: string; de: number | null; ate: number | null }[] = [
+  { chave: "7", rotulo: "7 dias", frase: "nos próximos 7 dias", de: null, ate: 7 },
+  { chave: "30", rotulo: "8 a 30", frase: "do 8º ao 30º dia", de: 7, ate: 30 },
+  { chave: "90", rotulo: "31 a 90", frase: "do 31º ao 90º dia", de: 30, ate: 90 },
+  { chave: "tudo", rotulo: "Tudo", frase: "daqui para frente", de: null, ate: null },
 ];
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -90,15 +92,16 @@ function acoesDe(a: Atendimento, abrirFicha: () => void, pedirRemarcacao: () => 
 export default function ProximasPage() {
   const empresa = useEmpresa();
   const router = useRouter();
-  const [periodo, setPeriodo] = useState<Periodo>("30");
+  const [periodo, setPeriodo] = useState<Periodo>("7");
   const [resultado, setResultado] = useState<{ chave: Periodo; atendimentos: Atendimento[] } | { erro: string } | null>(null);
   const [versao, setVersao] = useState(0);
   const [aberta, setAberta] = useState<string | null>(null);
 
   useEffect(() => {
     let ativo = true;
-    const ate = periodo === "tudo" ? null : somarDias(hojeNoSalao(), Number(periodo) + 1);
-    buscarProximos(empresa.id, ate).then((r) => {
+    const { de, ate } = PERIODOS.find((p) => p.chave === periodo)!;
+    const hoje = hojeNoSalao();
+    buscarProximos(empresa.id, ate === null ? null : somarDias(hoje, ate), de === null ? null : somarDias(hoje, de)).then((r) => {
       if (!ativo) return;
       setResultado(r.erro ? { erro: r.erro } : { chave: periodo, atendimentos: r.atendimentos });
     });

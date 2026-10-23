@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
 import { FolhaConfirmar } from "@/components/FolhaConfirmar";
@@ -18,7 +18,7 @@ import {
   excluirAtendimento,
   feitosJunto,
   mudarStatus,
-  nomeDosServicos,
+  nomeCurto,
   reagendar,
   resumoDosServicos,
   ultimoReagendamento,
@@ -104,8 +104,10 @@ export default function AgendaPage() {
   const [celebrando, setCelebrando] = useState<string | null>(null);
   // Concluídos e faltas ficam recolhidos numa linha "✓ 4 concluídos" que abre ao tocar
   const [verConcluidos, setVerConcluidos] = useState(false);
-  // Não atendidas (passou 1 h e ninguém confirmou) saem da Agenda: elas ficam no Início
+  // Não atendidas (passou 1 h e ninguém confirmou) saem da linha do tempo e ficam recolhidas numa
+  // linha rosé, como no Início; tocar mostra quem é, e o ✓ de cada uma resolve
   const agora = useAgora();
+  const [verNaoAtendidas, setVerNaoAtendidas] = useState(false);
   const { dialogo, perguntar, avisar } = useDialogo();
   const recarregar = () => setVersao((v) => v + 1);
 
@@ -169,7 +171,7 @@ export default function AgendaPage() {
   // Concluídos e faltas saem da linha do tempo e vão para o grupo recolhido. O que acabou de ser
   // concluído fica à vista até terminar de acender.
   const concluidos = visiveis.filter((a) => (a.status === "realizado" || a.status === "faltou") && a.id !== celebrando);
-  // Passou 1 h do horário e ninguém confirmou: some da Agenda (o Início mostra em "Não atendidas")
+  // Passou 1 h do horário e ninguém confirmou: sai da linha do tempo e vai para "Não atendidas"
   const naoAtendidas = visiveis.filter((a) => naoAtendida(a, agora));
   const naLinha = visiveis.filter((a) => !concluidos.includes(a) && !naoAtendidas.includes(a));
   // Mesma cliente com mais de um horário no dia (ex.: mudou de horário e alguém criou outro em vez
@@ -415,6 +417,28 @@ export default function AgendaPage() {
                     ))}
                 </li>
               )}
+              {naoAtendidas.length > 0 && (
+                <li className="flex flex-col gap-3">
+                  <LinhaNaoAtendidas
+                    quantidade={naoAtendidas.length}
+                    aberto={verNaoAtendidas}
+                    aoAlternar={() => setVerNaoAtendidas((v) => !v)}
+                  />
+                  {verNaoAtendidas &&
+                    naoAtendidas.map((a) => (
+                      <ItemLinhaDoTempo
+                        key={a.id}
+                        atendimento={a}
+                        intencao={intencaoDe(a)}
+                        vezesNoDia={repetidaNoDia(a)}
+                        barra={corDaProfissional(a.profissional_id, ordem).ponto}
+                        celebrar={false}
+                        aoAbrir={() => setAberto(a.id)}
+                        aoMarcar={() => alternarRealizado(a)}
+                      />
+                    ))}
+                </li>
+              )}
               {entradas.map((e, i) => {
                 // Os concluídos também ocupavam a agenda: contam para o intervalo livre
                 const antes = [
@@ -499,8 +523,9 @@ function Vazio({ texto }: { texto: string }) {
   );
 }
 
-// Situação do cartão (como no desenho): Concluído, Agora (cartão grafite) ou A atender
-type Situacao = "concluido" | "agora" | "atender" | "faltou";
+// Situação do cartão (como no desenho): Concluído, Agora (cartão grafite), A atender ou
+// Não atendida (passou 1 h e ninguém confirmou)
+type Situacao = "concluido" | "agora" | "atender" | "faltou" | "naoAtendida";
 
 const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string; sub: string }> = {
   // Concluído e Faltou saem da frente: sem fundo cheio nem sombra, só um contorno e bem mais claros,
@@ -514,11 +539,13 @@ const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string;
   },
   atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
   faltou: { rotulo: "Faltou", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
+  naoAtendida: { rotulo: "Não atendida", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
 };
 
 function situacaoDe(a: Atendimento): Situacao {
   if (a.status === "realizado") return "concluido";
   if (a.status === "faltou") return "faltou";
+  if (naoAtendida(a)) return "naoAtendida";
   const agora = Date.now();
   const inicio = Date.parse(a.inicio);
   return agora >= inicio && agora < inicio + minutos(a) * 60_000 ? "agora" : "atender";
@@ -682,6 +709,40 @@ function LinhaConcluidos({
   );
 }
 
+// Não atendidas do dia numa linha rosé (a mesma do Início); tocar abre (ou esconde) os cartões
+function LinhaNaoAtendidas({ quantidade, aberto, aoAlternar }: { quantidade: number; aberto: boolean; aoAlternar: () => void }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-12 shrink-0" />
+      <button
+        onClick={aoAlternar}
+        aria-expanded={aberto}
+        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[20px] border border-rose-texto/30 bg-rose/60 px-4 py-2.5 text-left active:scale-[0.99]"
+      >
+        <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
+          {aberto ? "Esconder" : quantidade === 1 ? "1 não atendida" : `${quantidade} não atendidas`}
+        </span>
+        <svg
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2.2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+          className={`shrink-0 text-rose-texto transition-transform duration-300 ${aberto ? "rotate-180" : ""}`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+      <span className="w-8 shrink-0" />
+    </div>
+  );
+}
+
 // Almoço na agenda: uma faixa discreta, sem ações
 function BlocoAlmoco({ texto }: { texto: string }) {
   return (
@@ -706,9 +767,9 @@ const ROTULO_STATUS: Record<StatusAtendimento, string> = {
 // e dos valores é a IA). Dá para abrir a ficha da cliente.
 function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento; intencao: Avaliacao | undefined }) {
   const reagendado = ultimoReagendamento(a);
-  const linhas: [string, string][] = [
+  const linhas: [string, ReactNode][] = [
     ["Horário", `${formatarHora(a.inicio)}${a.fim ? ` até ${formatarHora(a.fim)}` : ""}`],
-    [a.extras?.length ? "Serviços" : "Serviço", nomeDosServicos(a, "Não informado")],
+    [a.extras?.length ? "Serviços" : "Serviço", <ServicosDoHorario key="servicos" atendimento={a} />],
     ...(a.clientes ? ([["Telefone", formatarTelefone(a.clientes.telefone)]] as [string, string][]) : []),
     ["Situação", ROTULO_STATUS[a.status]],
     ...(reagendado ? ([["Reagendado", reagendado.replace("Reagendado de ", "era ")]] as [string, string][]) : []),
@@ -739,6 +800,33 @@ function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento
         </Link>
       )}
     </div>
+  );
+}
+
+// Serviços do horário nos detalhes: só o principal, com nome curto ("Aplicação tela adesiva");
+// os outros ficam recolhidos em "+ 5 serviços" e aparecem ao tocar
+function ServicosDoHorario({ atendimento: a }: { atendimento: Atendimento }) {
+  const [aberto, setAberto] = useState(false);
+  const principal = a.servicos ? nomeCurto(a.servicos.nome) : "Não informado";
+  const extras = (a.extras ?? []).map(nomeCurto);
+  if (!extras.length) return principal;
+  return (
+    <span className="flex flex-col items-end gap-1">
+      <span>{principal}</span>
+      {aberto &&
+        extras.map((nome, i) => (
+          <span key={i} className="text-texto-2">
+            {nome}
+          </span>
+        ))}
+      <button
+        onClick={() => setAberto((v) => !v)}
+        aria-expanded={aberto}
+        className="-mr-1 rounded-full px-2.5 py-1 text-sm font-semibold text-bronze-escuro active:bg-campo"
+      >
+        {aberto ? "Mostrar menos" : `+ ${extras.length} ${extras.length === 1 ? "serviço" : "serviços"}`}
+      </button>
+    </span>
   );
 }
 

@@ -597,6 +597,11 @@ const assistente = require('./assistente-workflows.js')({ env, node, str, main, 
 // Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
 const faltas = require('./faltas-workflows.js')({ env, node, main });
 
+// memória sem começo quebrado no meio de uma ferramenta (ver memoria-janela.js)
+const memoriaJanela = require('./memoria-janela.js')({ node, main });
+memoriaJanela(workflow, 'Agente IA', REDIS);
+memoriaJanela(assistente.assistenteWorkflow, 'Agente assistente', REDIS);
+
 // posições dos nós e notas coloridas por etapa (só visual)
 require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
 

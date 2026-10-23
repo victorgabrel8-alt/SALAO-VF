@@ -4,8 +4,12 @@
 //      grava o contato 'falta' e a mensagem; quando a cliente responde, o agente lê o "ALÔ DE FALTA"
 //      na ficha e marca outro horário
 //   B) o que contar à Gleide -> remarcou (falta ou pedido de remarcação do app) ou sem resposta em 24 h
+//   C) vaga que abriu (horário cancelado/remarcado, ver supabase/010_vagas_adiantar.sql) -> oferece
+//      para a cliente com o próximo horário depois dela; se ela topar, o agente lê o "ALÔ DE VAGA"
+//      na ficha e remarca o horário dela para a vaga. A Gleide recebe "adiantou" pelo aviso B
 // GET /webhook/faltas-avisos dispara na hora, para testar.
 // Ligar no salão: empresas.config.faltas = {"chamar": true, "so_para": [...]} (só_para vazio = todas).
+//                 empresas.config.vagas = {"oferecer": true, "so_para": [...]} (idem, para as vagas).
 
 const EMPRESA = "$env.EMPRESA_ID";
 const NUMEROS = "($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean)";
@@ -35,6 +39,17 @@ return $input.all().map((i) => i.json).filter((f) => f.agendamento_id).map((f) =
 });
 `;
 
+const MENSAGEM_VAGA = QUANDO + String.raw`
+// uma oferta por cliente por vez, mesmo se abriram duas vagas antes do horário dela
+const vistas = new Set();
+return $input.all().map((i) => i.json).filter((v) => v.vaga_id && !vistas.has(v.cliente_id) && vistas.add(v.cliente_id)).map((v) => {
+  const nome = primeiro(v.nome);
+  const texto = 'Oi' + (nome ? ' ' + nome : '') + '! Abriu um horário ' + quando(v.vaga_inicio) + ', antes do seu (' + quando(v.inicio_atual) +
+    ') 💛 Se quiser adiantar, é só me falar que eu já troco pra você. Se preferir manter o seu, tudo certo também!';
+  return { json: { ...v, texto } };
+});
+`;
+
 const MENSAGEM_AVISO = QUANDO + String.raw`
 const as = $input.all().map((i) => i.json).filter((a) => a.contato_id);
 if (!as.length) return [];
@@ -42,6 +57,7 @@ const linha = (a) => {
   const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';
   if (a.situacao === 'remarcou') {
     const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';
+    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';
     return a.tipo === 'falta'
       ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'
       : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';
@@ -101,6 +117,18 @@ module.exports = ({ env, node, main }) => {
       rpc('Registrar chamada', [1320, -100], 'n8n_registrar_chamada_falta',
         `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Mensagem da falta').item.json.agendamento_id, p_mensagem: $('Mensagem da falta').item.json.texto, p_wa_message_id: $json.key.id }`),
 
+      // C) oferecer a vaga que abriu
+      rpc('Vagas para oferecer', [440, -320], 'n8n_vagas_para_oferecer', `{ p_empresa_id: ${EMPRESA} }`),
+      node('Mensagem da vaga', 'n8n-nodes-base.code', 2, [660, -320], { jsCode: MENSAGEM_VAGA }),
+      evoPost('Oferecer para a cliente', [880, -320], '{ number: $json.telefone, text: $json.texto }', { onError: 'continueRegularOutput' }),
+      node('Ofereceu?', 'n8n-nodes-base.if', 2.2, [1100, -320], {
+        conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+          conditions: [cond('v1', '={{ !!$json.key?.id }}')], combinator: 'and' },
+        options: {},
+      }),
+      rpc('Registrar oferta', [1320, -320], 'n8n_registrar_oferta_vaga',
+        `{ p_empresa_id: ${EMPRESA}, p_vaga_id: $('Mensagem da vaga').item.json.vaga_id, p_agendamento_id: $('Mensagem da vaga').item.json.agendamento_id, p_mensagem: $('Mensagem da vaga').item.json.texto, p_wa_message_id: $json.key.id }`),
+
       // B) avisar a Gleide
       rpc('Avisos para a Gleide', [440, 120], 'n8n_avisos_para_gleide', `{ p_empresa_id: ${EMPRESA} }`),
       node('Mensagem do aviso', 'n8n-nodes-base.code', 2, [660, 120], { jsCode: MENSAGEM_AVISO }),
@@ -114,12 +142,16 @@ module.exports = ({ env, node, main }) => {
     ],
     connections: {
       'A cada 5 min': main('Horário do salão?'),
-      'Horário do salão?': { main: [[{ node: 'Faltas para chamar', type: 'main', index: 0 }, { node: 'Avisos para a Gleide', type: 'main', index: 0 }]] },
-      'Disparar agora (teste)': { main: [[{ node: 'Faltas para chamar', type: 'main', index: 0 }, { node: 'Avisos para a Gleide', type: 'main', index: 0 }]] },
+      'Horário do salão?': { main: [[{ node: 'Faltas para chamar', type: 'main', index: 0 }, { node: 'Vagas para oferecer', type: 'main', index: 0 }, { node: 'Avisos para a Gleide', type: 'main', index: 0 }]] },
+      'Disparar agora (teste)': { main: [[{ node: 'Faltas para chamar', type: 'main', index: 0 }, { node: 'Vagas para oferecer', type: 'main', index: 0 }, { node: 'Avisos para a Gleide', type: 'main', index: 0 }]] },
       'Faltas para chamar': main('Mensagem da falta'),
       'Mensagem da falta': main('Mandar para a cliente'),
       'Mandar para a cliente': main('Enviou?'),
       'Enviou?': main('Registrar chamada'),
+      'Vagas para oferecer': main('Mensagem da vaga'),
+      'Mensagem da vaga': main('Oferecer para a cliente'),
+      'Oferecer para a cliente': main('Ofereceu?'),
+      'Ofereceu?': main('Registrar oferta'),
       'Avisos para a Gleide': main('Mensagem do aviso'),
       'Mensagem do aviso': main('Mandar para a Gleide'),
       'Mandar para a Gleide': main('Guardar na memória da assistente'),
