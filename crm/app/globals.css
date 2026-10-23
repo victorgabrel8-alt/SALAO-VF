@@ -283,6 +283,51 @@ body {
   border: 1px solid rgb(28 27 31 / 0.07);
 }
 
+/* Tela de login (app/login): o ícone surge com um leve "pulo", o resto sobe em sequência
+   e o cartão dos campos treme quando a senha está errada, como no iPhone */
+@keyframes login-icone {
+  from {
+    transform: scale(0.82) translateY(10px);
+    opacity: 0;
+  }
+}
+@keyframes login-subir {
+  from {
+    transform: translateY(14px);
+    opacity: 0;
+  }
+}
+@keyframes login-tremer {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20%,
+  60% {
+    transform: translateX(-8px);
+  }
+  40%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+@utility login-icone {
+  animation: login-icone 0.7s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@utility login-subir {
+  animation: login-subir 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@utility login-tremer {
+  animation: login-tremer 0.4s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .login-icone,
+  .login-subir,
+  .login-tremer {
+    animation: none;
+  }
+}
+
 /* Rolagem lateral sem a barrinha de rolagem */
 @utility sem-barra {
   scrollbar-width: none;
