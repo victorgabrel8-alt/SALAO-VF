@@ -26,7 +26,7 @@ O script `recuperar.sh` faz a parte automática; o resto é o que só dá para f
 2. **Abrir o Docker Desktop** e esperar "Engine running".
 3. **Baixar o projeto e rodar o script** (no Git Bash):
    ```bash
-   cd ~ && git clone -b claude/gracious-ptolemy-2w5gr1 https://github.com/victorgabrel8-alt/SALAO-VF.git
+   cd ~ && git clone https://github.com/victorgabrel8-alt/SALAO-VF.git
    cd SALAO-VF/n8n/demo-agente && bash recuperar.sh
    ```
 4. **Responder o que ele perguntar:**
