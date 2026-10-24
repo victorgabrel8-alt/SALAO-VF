@@ -72,11 +72,23 @@ const hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filte
 const dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');
 const data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');
 const NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';
-if (!ficha.id) return [{ json: { texto: NOVA } }];
+// Mensagens dela que ficaram sem resposta (ex.: a IA falhou e só mandou o pedido de desculpas): não estão na
+// memória do Redis, mas estão no banco. Sem isso a IA esquece o que ela pediu antes.
+let agora_ids = [];
+try { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]').map((m) => m.id).filter(Boolean); } catch (e) {}
+const recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);
+const pendentes = [];
+for (const m of recentes) {
+  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada
+  if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);
+}
+const SEM_RESPOSTA = pendentes.length ? '\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +
+  pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';
+if (!ficha.id) return [{ json: { texto: NOVA + SEM_RESPOSTA } }];
 // A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então "sem visita" sozinho não diz se é nova:
 // nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).
 const recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });
-if (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: NOVA + (ficha.observacoes ? '\nObservações da Gleide: ' + ficha.observacoes : '') } }];
+if (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: NOVA + (ficha.observacoes ? '\nObservações da Gleide: ' + ficha.observacoes : '') + SEM_RESPOSTA } }];
 
 const SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',
   inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };
@@ -118,7 +130,7 @@ else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCA
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
 else if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');
-return [{ json: { texto: linhas.join('\n') } }];
+return [{ json: { texto: linhas.join('\n') + SEM_RESPOSTA } }];
 ` }),
   );
   workflow.connections['Marcar como lida'] = main('Supabase: ficha da cliente');
@@ -128,8 +140,14 @@ return [{ json: { texto: linhas.join('\n') } }];
     'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
+  // últimas mensagens (12 h, mais nova primeiro) para achar as que ficaram sem resposta
+  workflow.nodes.push(supa('Supabase: últimas mensagens', 'GET',
+    'mensagens?select=direcao,conteudo,wa_message_id,criado_em&order=criado_em.desc&limit=15' +
+    "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
+    "&criado_em=gte.{{ $now.minus(12, 'hours').toUTC().toISO() }}", null, { executeOnce: true }));
   workflow.connections['Supabase: histórico da cliente'] = main('Supabase: último alô');
-  workflow.connections['Supabase: último alô'] = main('Sobre esta cliente');
+  workflow.connections['Supabase: último alô'] = main('Supabase: últimas mensagens');
+  workflow.connections['Supabase: últimas mensagens'] = main('Sobre esta cliente');
   workflow.connections['Sobre esta cliente'] = main('Agente IA');
   const agente = achar(workflow, 'Agente IA').parameters.options;
   // o prompt do Victor já traz a ficha na seção 22: só acrescenta se ele não tiver
