@@ -91,7 +91,7 @@ Em n8n → *Executions* deve aparecer uma execução com
 `Webhook` → `Extrair dados` → `Filtro` (só `messages.upsert`, sem grupo/status, sem `fromMe`,
 só texto, só números de `NUMEROS_PERMITIDOS`) → **buffer Redis 20 s** (`buffer:{tel}` + `buffer_ultima:{tel}`;
 só a última mensagem da rajada segue; trava `processando:{tel}` impede duas respostas em paralelo para a mesma pessoa) → `Marcar como lida` → `Agente IA` (Gemini Flash +
-memória Redis `memoria:{tel}`, 12 mensagens, expira em 24 h) → `Quebrar mensagens` (até 3 balões)
+memória Redis `memoria:{tel}`, últimas 20 trocas, expira em 7 dias) → `Quebrar mensagens` (uma mensagem só)
 → laço `Digitando...` (sendPresence, ~45 ms/caractere, 1,5–6 s) → `Enviar mensagem`.
 
 ### Montar / atualizar o workflow
