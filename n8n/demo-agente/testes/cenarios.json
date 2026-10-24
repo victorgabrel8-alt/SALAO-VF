@@ -518,6 +518,9 @@
         "deve": "R\\$ ?1\\.?100"
       },
       {
+        "deve": "Gleide[^.?!]*(confirma|passa|fecha|define)|(confirma|passa|fecha|define)[^.?!]*Gleide"
+      },
+      {
         "transferiu": false
       }
     ]
@@ -579,6 +582,72 @@
       },
       {
         "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "preco-base-manutencao",
+    "nome": "Preço de serviço: dá a base (em torno de) e diz que a Gleide confirma o valor certinho",
+    "telefone": "556690000193",
+    "mensagens": [
+      "quanto fica a manutenção da tela adesiva?"
+    ],
+    "espera": [
+      {
+        "deve": "R\\$ ?300"
+      },
+      {
+        "deve": "(em torno|a partir|mais ou menos|base|aproximad|por volta)"
+      },
+      {
+        "deve": "Gleide[^.?!]*(confirma|passa|fecha|define)|(confirma|passa|fecha|define)[^.?!]*Gleide"
+      },
+      {
+        "nao_deve": "(fica|custa|é|sai|valor final|fechado)( de)? R\\$ ?\\d"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "preco-base-aplicacao",
+    "nome": "Mão de obra de uma técnica: base + cabelo à parte + Gleide confirma",
+    "telefone": "556690000194",
+    "mensagens": [
+      "qual o valor só da aplicação de queratina?"
+    ],
+    "espera": [
+      {
+        "deve": "(em torno|a partir|mais ou menos|base|aproximad|por volta)"
+      },
+      {
+        "deve": "Gleide[^.?!]*(confirma|passa|fecha|define)|(confirma|passa|fecha|define)[^.?!]*Gleide"
+      },
+      {
+        "nao_deve": "(fica|custa|é|sai|valor final|fechado)( de)? R\\$ ?\\d"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "preco-exato",
+    "nome": "Pede valor exato/fechado: não crava número, diz que a Gleide confirma",
+    "telefone": "556690000195",
+    "mensagens": [
+      "quanto é a progressiva?",
+      "mas qual o valor exato? quero saber certinho"
+    ],
+    "espera": [
+      {
+        "em": "ultima",
+        "deve": "Gleide[^.?!]*(confirma|passa|fecha|define)|(confirma|passa|fecha|define)[^.?!]*Gleide"
+      },
+      {
+        "em": "ultima",
+        "nao_deve": "(fica|custa|é|sai|valor final|fechado)( de)? R\\$ ?\\d"
       }
     ]
   }
