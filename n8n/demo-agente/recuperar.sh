@@ -109,15 +109,16 @@ if [ "$MODO" = vps ]; then
   if ! curl -sf -m 10 "$N8N/rest/settings" | grep -q userManagement; then
     clip < "$amb" 2>/dev/null && copiado=" (já está copiado: é só colar com Ctrl+V)" || copiado=""
     echo
-    info "No Easypanel (http://IP-DO-VPS:3000):"
-    info "  1. Crie um projeto 'salao' → + Service → Compose → nome 'ia'."
-    info "  2. Source: GitHub → repositório victorgabrel8-alt/SALAO-VF, branch claude/gracious-ptolemy-2w5gr1,"
-    info "     Docker Compose File: n8n/demo-agente/easypanel/docker-compose.yml"
-    info "  3. Aba Environment: cole o conteúdo de $amb$copiado → Save."
-    info "  4. Aba Domains → Add Domain:"
+    info "No Easypanel (Hostinger → Gerenciar painel):"
+    info "  1. No projeto 'salao-vf' → + Serviço → Compose → nome 'ia'."
+    info "  2. Fonte → Git:  URL https://github.com/victorgabrel8-alt/SALAO-VF.git"
+    info "     Ramo claude/gracious-ptolemy-2w5gr1 · Caminho de Build /"
+    info "     Arquivo do Docker Compose: n8n/demo-agente/easypanel/docker-compose.yml → Salvar"
+    info "  3. Ambiente (Environment): cole o conteúdo de $amb$copiado → Salvar."
+    info "  4. Domínios → Adicionar Domínio (HTTPS ligado):"
     info "       $DOMINIO_N8N  → serviço n8n,       porta 5678, HTTPS ligado"
     info "       $DOMINIO_EVO  → serviço evolution, porta 8080, HTTPS ligado"
-    info "  5. Deploy."
+    info "  5. Implantar."
     abrir "$amb"
     read -rp "  Aperte Enter depois do Deploy... " _
   fi
