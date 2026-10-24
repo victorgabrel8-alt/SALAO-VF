@@ -78,9 +78,10 @@ gravar N8N_URL "$N8N"
 
 echo "2/7 O que só você sabe (pergunto uma vez e guardo no .env)"
 perguntar MEU_NUMERO "Número do WhatsApp que vai ler o QR code (55+DDD+número, só dígitos)"
-if ! grep -q '^NUMEROS_PERMITIDOS=.' .env; then
-  echo; read -rp "  Números que podem falar com a IA, separados por vírgula (Enter = só $MEU_NUMERO): " v
-  v=$(printf '%s' "${v:-$MEU_NUMERO}" | tr -d '\r '); gravar NUMEROS_PERMITIDOS "$v"
+# vazio = a IA responde qualquer número (NUMEROS_PERMITIDOS_OK marca que já foi perguntado)
+if ! grep -q '^NUMEROS_PERMITIDOS_OK=1' .env; then
+  echo; read -rp "  Quem pode falar com a IA? Enter = TODOS, ou digite os números separados por vírgula: " v
+  v=$(printf '%s' "$v" | tr -d '\r '); gravar NUMEROS_PERMITIDOS "$v"; gravar NUMEROS_PERMITIDOS_OK 1
 fi
 perguntar SUPABASE_SERVICE_KEY "Supabase: cole a chave service_role / secret (clique em Reveal)" \
   "https://supabase.com/dashboard/project/zgbzyzsqpkqvwkquofpn/settings/api-keys" secreto
@@ -229,5 +230,5 @@ if [ "$(estado)" = "open" ]; then ok "WhatsApp conectado"; else
   info "  ou use o painel: $EVO_URL/manager (API Key = EVOLUTION_API_KEY do .env)."; fi
 
 echo
-echo "✅ Tudo pronto. Teste: de outro celular (de NUMEROS_PERMITIDOS) mande 'oi' para $MEU_NUMERO."
+echo "✅ Tudo pronto. Teste: de outro celular mande 'oi' para $MEU_NUMERO."
 echo "   ⚠️  Guarde uma cópia do arquivo .env fora deste computador (Drive, pendrive)."
