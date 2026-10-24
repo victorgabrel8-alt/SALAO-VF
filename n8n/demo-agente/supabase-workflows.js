@@ -84,11 +84,15 @@ for (const m of recentes) {
 }
 const SEM_RESPOSTA = pendentes.length ? '\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +
   pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';
-if (!ficha.id) return [{ json: { texto: NOVA + SEM_RESPOSTA } }];
+// Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo
+const ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));
+const JA_FALOU = ultimaIA ? '\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +
+  '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '';
+if (!ficha.id) return [{ json: { texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA } }];
 // A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então "sem visita" sozinho não diz se é nova:
 // nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).
 const recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });
-if (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: NOVA + (ficha.observacoes ? '\nObservações da Gleide: ' + ficha.observacoes : '') + SEM_RESPOSTA } }];
+if (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: (ultimaIA ? 'Ainda não veio ao salão e não tem nada marcado.' : NOVA) + (ficha.observacoes ? '\nObservações da Gleide: ' + ficha.observacoes : '') + JA_FALOU + SEM_RESPOSTA } }];
 
 const SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',
   inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };
@@ -130,7 +134,7 @@ else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCA
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
 else if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');
-return [{ json: { texto: linhas.join('\n') + SEM_RESPOSTA } }];
+return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
 ` }),
   );
   workflow.connections['Marcar como lida'] = main('Supabase: ficha da cliente');
