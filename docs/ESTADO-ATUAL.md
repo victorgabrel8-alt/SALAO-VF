@@ -26,7 +26,7 @@ Atendimento por WhatsApp com IA para o salão Toda Bonita Mega Hair (dona: Gleid
   - a IA espera 20 s sem mensagem nova para juntar a rajada;
   - responde com um parágrafo por assunto;
   - se o Gemini falhar, tenta de novo e, em último caso, pede para a cliente repetir.
-- Preços como base aproximada ("em torno de…, a Gleide confirma"), mudança do José Paulo.
+- Prompt reescrito pelo Victor em 24/10 (editado no n8n e passado para o `prompt-agente.md`). Preços: valor da tabela para o serviço pedido, "a partir de" só onde a tabela marca; deixou de usar "em torno de…, a Gleide confirma".
 - No Easypanel, a aba Ambiente NÃO funciona para o Compose: as variáveis chegavam vazias. Por isso, o compose do serviço `ia` é colado já com os valores na aba Fonte → docker-compose.yml. Quem gera esse arquivo é o `recuperar.sh`, a partir do modelo `docker-compose.easypanel.yml` da raiz.
 - A chave do Supabase usada é a `service_role` da aba Legacy (começa com `eyJ`). A chave nova `sb_secret_` não funciona nos workflows.
 - API oficial da Meta: só depois da entrega. Por enquanto continua a Evolution.
