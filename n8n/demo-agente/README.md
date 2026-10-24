@@ -89,7 +89,7 @@ Em n8n → *Executions* deve aparecer uma execução com
 
 ### Fluxo
 `Webhook` → `Extrair dados` → `Filtro` (só `messages.upsert`, sem grupo/status, sem `fromMe`,
-só texto, só números de `NUMEROS_PERMITIDOS`) → **buffer Redis 10 s** (`buffer:{tel}` + `buffer_ultima:{tel}`;
+só texto, só números de `NUMEROS_PERMITIDOS`) → **buffer Redis 20 s** (`buffer:{tel}` + `buffer_ultima:{tel}`;
 só a última mensagem da rajada segue; trava `processando:{tel}` impede duas respostas em paralelo para a mesma pessoa) → `Marcar como lida` → `Agente IA` (Gemini Flash +
 memória Redis `memoria:{tel}`, 12 mensagens, expira em 24 h) → `Quebrar mensagens` (até 3 balões)
 → laço `Digitando...` (sendPresence, ~45 ms/caractere, 1,5–6 s) → `Enviar mensagem`.
@@ -217,7 +217,7 @@ selecione o subworkflow correspondente. Selecione também as credenciais (Redis,
 |---|---|
 | Preço de serviço que existe (queratina) | ✅ R$ 650 de mão de obra, cabelo à parte, oferece avaliação |
 | Serviço que não existe (unha em gel) | ✅ "Trabalhamos só com cabelo" + oferece os serviços |
-| 3 mensagens seguidas rápidas | ✅ Uma resposta só (buffer 10 s + trava por conversa) |
+| 3 mensagens seguidas rápidas | ✅ Uma resposta só (buffer 20 s + trava por conversa) |
 | Amanhã à tarde + confirmar | ✅ Oferece as faixas livres; confirma nome e horário; cria evento |
 | Hora fora do expediente (sábado 16h, 12h almoço, 18h) | ✅ Explica e oferece o horário possível mais próximo |
 | Áudio pedindo horário | ✅ Transcreve e consulta a agenda |

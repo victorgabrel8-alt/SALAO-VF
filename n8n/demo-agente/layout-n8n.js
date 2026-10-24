@@ -28,7 +28,7 @@ module.exports = (principal, agenda, pausa) => {
     // 3. Áudio e fotos
     'É áudio ou foto?': [1400, 0], 'Baixar mídia (Evolution)': [1620, -160], 'Entender mídia (Gemini)': [1840, -160], 'Texto da mensagem': [2060, 0],
     // 4. Buffer
-    'Buffer: guardar msg': [2320, 0], 'Buffer: marcar última': [2540, 0], 'Aguardar 10s': [2760, 0], 'Buffer: ler última': [2980, 0],
+    'Buffer: guardar msg': [2320, 0], 'Buffer: marcar última': [2540, 0], 'Aguardar (juntar mensagens)': [2760, 0], 'Buffer: ler última': [2980, 0],
     'É a última msg?': [3200, 0], 'Pausa: verificar de novo': [3420, 0], 'Ainda ativa?': [3640, 0],
     'Trava: ler': [3880, 0], 'Ninguém respondendo?': [4100, 0], 'Aguardar 3s (IA respondendo)': [4100, 200], 'Trava: marcar': [4320, 0],
     'Buffer: ler mensagens': [4540, 0], 'Buffer: limpar': [4760, 0], 'Buffer: descartar (pausada)': [3880, 200],
@@ -55,9 +55,9 @@ module.exports = (principal, agenda, pausa) => {
     nota(640, -520, 540, 340, 3, '## Sua resposta pelo celular\nMensagem SUA (fromMe) numa conversa → **pausa a IA 12 h** para esse número.\nMandou `#ia` → tira a pausa.'),
     nota(640, -140, 680, 320, 4, '## 2. Filtro e pausa\nIgnora grupos, status e figurinhas.\nSe a cliente está pausada (pediu humano ou você respondeu), para aqui.'),
     nota(1340, -320, 920, 500, 6, '## 3. Áudio e fotos\nBaixa a mídia pela Evolution.\nÁudio → Gemini **transcreve**. Foto → Gemini **descreve o cabelo**.\nTexto normal passa direto.'),
-    nota(2260, -140, 2740, 500, 2, '## 4. Buffer de 10 s + trava\nJunta mensagens seguidas da mesma pessoa (Redis).\nSó a ÚLTIMA mensagem da rajada segue, depois de 10 s sem novas.\nConfere a pausa de novo antes de responder.\n**Trava:** se a IA ainda está respondendo essa pessoa, espera terminar e lê tudo junto.\n\n➡️ continua na linha de baixo (Montar entrada)'),
+    nota(2260, -140, 2740, 500, 2, '## 4. Buffer de 20 s + trava\nJunta mensagens seguidas da mesma pessoa (Redis).\nSó a ÚLTIMA mensagem da rajada segue, depois de 20 s sem novas.\nConfere a pausa de novo antes de responder.\n**Trava:** se a IA ainda está respondendo essa pessoa, espera terminar e lê tudo junto.\n\n➡️ continua na linha de baixo (Montar entrada)'),
     nota(-60, 660, 1380, 600, 5, '## 5. Agente IA\nGemini + memória por telefone (Redis, 24 h) + ferramentas:\nagenda (consultar, criar, ver, remarcar, cancelar), transferir para humano e anotar no CRM.\nCRM: registrar contato = cria/atualiza a ficha da cliente a cada conversa.\nPrompt: `prompt-agente.md` · publicar: `node montar-workflow.js --enviar --ativar`'),
-    nota(1380, 660, 1180, 480, 4, '## 6. Resposta humanizada\nQuebra em até 2 balões, sem negrito.\nPausa de leitura/respiro (1–3 s) → "digitando…" 55–85 ms por letra (2–9 s) → envia.\nUm balão por vez (tenta 3x se o WhatsApp oscilar).'),
+    nota(1380, 660, 1180, 480, 4, '## 6. Resposta humanizada\nUma mensagem só, um parágrafo por assunto, sem negrito.\nPausa de leitura (1–5 s) → "digitando…" 60–90 ms por letra (3–10 s) → envia.\nTenta 3x se o WhatsApp oscilar.'),
   ]);
 
   organizar(agenda, {

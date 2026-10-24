@@ -133,15 +133,13 @@ const pausaWorkflow = {
 };
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
 const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
-// "[2]" no começo do parágrafo = responder citando a 2ª mensagem (o Quebrar mensagens tira o número)
+// Várias mensagens seguidas chegam numeradas; a resposta é uma mensagem só (o Quebrar mensagens junta tudo)
 const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
 Quando a mensagem da cliente vier em linhas numeradas ([1], [2], [3]...), são mensagens separadas que ela mandou em sequência.
-Responda cada pergunta em um parágrafo próprio, na ordem, e comece o parágrafo com o número da mensagem que ele responde (ex.: "[2] A diferença é o jeito de prender...").
-Se um parágrafo responde duas mensagens juntas, use o número da última. Mensagem que não pede resposta (ex.: "oi", "ok") não precisa de parágrafo.
-Nunca escreva os números fora do começo do parágrafo: eles somem do texto e viram o "responder mensagem" do WhatsApp.
-Mensagem sem número: responda normal, sem número.`;
+Leia tudo como uma conversa só e responda numa ÚNICA mensagem, cobrindo todas as perguntas na ordem (um parágrafo curto por assunto).
+Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.`;
 
 const nodes = [
   node('Webhook Evolution', 'n8n-nodes-base.webhook', 2, [0, 0],
@@ -227,7 +225,8 @@ const nodes = [
     operation: 'set', key: `=buffer_ultima:{{ ${D}.telefone }}`, value: `={{ ${D}.msgId }}`, expire: true, ttl: 120,
   }, { credentials: REDIS }),
 
-  node('Aguardar 10s', 'n8n-nodes-base.wait', 1.1, [1100, 0], { resume: 'timeInterval', amount: 10, unit: 'seconds' }, { webhookId: '1b2c3d4e-5f60-4718-9a0b-c1d2e3f40516' }),
+  // junta a rajada: só responde depois de 20 s sem mensagem nova da mesma pessoa (10 s cortava quem digita devagar)
+  node('Aguardar (juntar mensagens)', 'n8n-nodes-base.wait', 1.1, [1100, 0], { resume: 'timeInterval', amount: 20, unit: 'seconds' }, { webhookId: '1b2c3d4e-5f60-4718-9a0b-c1d2e3f40516' }),
 
   node('Buffer: ler última', 'n8n-nodes-base.redis', 1, [1320, 0], {
     operation: 'get', key: `=buffer_ultima:{{ ${D}.telefone }}`, propertyName: 'ultima', keyType: 'string', options: {},
@@ -298,7 +297,10 @@ const nodes = [
     text: "={{ $('Montar entrada').item.json.texto_cliente }}",
     // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
     options: { systemMessage: '=' + prompt + REGRA_CITAR, returnIntermediateSteps: true },
-  }),
+  // Gemini falhou (sobrecarga, erro de ferramenta): tenta de novo; se ainda falhar, segue sem resposta e o
+  // Quebrar mensagens manda o pedido de desculpas. Antes a execução morria com a trava presa (2 min) e a
+  // mensagem da cliente se perdia.
+  }, { retryOnFail: true, maxTries: 2, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
 
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
     modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.4 },
@@ -345,44 +347,23 @@ const nodes = [
       "if (limpos.length) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
       "if (!paragrafos.length) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
-      "// Pica como gente faz no WhatsApp: cada parágrafo vira um balão, e um bloco grande (mais de ~200",
-      "// letras) é cortado entre frases em pedaços de até ~170. Balão curtinho junta com o anterior (se responde a",
-      "// mesma mensagem); no máximo 3",
-      "const pedacos = [];",
-      "for (const { t: p, ref } of paragrafos) {",
-      "  if (p.length <= 200) { pedacos.push({ t: p, ref }); continue; }",
-      "  let atual = '';",
-      "  for (const f of p.split(FRASES)) {",
-      "    if (atual && (atual + ' ' + f).length > 170) { pedacos.push({ t: atual, ref }); atual = f; } else atual = atual ? atual + ' ' + f : f;",
-      "  }",
-      "  if (atual) pedacos.push({ t: atual, ref });",
-      "}",
-      "let baloes = [];",
-      "for (const p of pedacos) {",
-      "  const ult = baloes[baloes.length - 1];",
-      "  if (ult !== undefined && ult.ref === p.ref && (p.t.length < 40 || ult.t.length < 40) && (ult.t + ' ' + p.t).length <= 220) ult.t = ult.t + ' ' + p.t; else baloes.push({ ...p });",
-      "}",
-      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], { t: baloes.slice(2).map(b => b.t).join(' '), ref: baloes[2].ref }];",
-      "// Responder citando (o 'responder mensagem' do WhatsApp): com várias mensagens seguidas, o 1º balão de cada",
-      "// resposta cita a mensagem que ele responde. Mensagem única só é citada se chegou enquanto a IA ainda",
-      "// respondia outra (a resposta sai depois de outros balões e ficaria solta)",
+      "// Uma mensagem só (pedido do Victor): a IA lê a rajada inteira e responde num balão, com os parágrafos",
+      "// separados por linha em branco",
+      "const baloes = [{ t: paragrafos.map(p => p.t).join('\\n\\n'), ref: 0 }];",
+      "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
+      "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
       "try { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}",
       "const esperou = $('Aguardar 3s (IA respondendo)').isExecuted;",
-      "const citadas = new Set();",
-      "const citarDe = (b, i) => {",
-      "  const m = msgs.length > 1 ? msgs[b.ref - 1] : (esperou && i === 0 ? msgs[0] : null);",
-      "  if (!m?.id || citadas.has(m.id)) return '';",
-      "  citadas.add(m.id);",
-      "  return m.id;",
-      "};",
+      "const citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');",
       "// Ritmo de gente: antes do 1º balão 'lê' a mensagem dela (quanto maior, mais tempo); entre balões, um",
-      "// respiro. Cada balão 'digita' no ritmo do celular (170-210 ms por letra, ~5 letras/s), entre 4 s e 35 s",
+      "// respiro. 'Digita' 60-90 ms por letra, entre 3 s e 10 s: com a espera de 20 s para juntar a rajada, mais que",
+      "// isso deixa a cliente quase 1 minuto sem resposta",
       "const ale = (a, b) => a + Math.random() * (b - a);",
       "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
       "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, citar: citarDe({ ref }, i),",
       "  pausa: Math.round((i === 0 ? Math.min(5, ale(0.8, 2) + lida * 0.02) : ale(1.5, 3)) * 10) / 10,",
-      "  delay: Math.round(Math.min(35000, Math.max(4000, texto.length * ale(170, 210)))) } }));",
+      "  delay: Math.round(Math.min(10000, Math.max(3000, texto.length * ale(60, 90)))) } }));",
     ].join('\n'),
   }),
 
@@ -490,8 +471,8 @@ const connections = {
   'Entender mídia (Gemini)': main('Texto da mensagem'),
   'Texto da mensagem': main('Buffer: guardar msg'),
   'Buffer: guardar msg': main('Buffer: marcar última'),
-  'Buffer: marcar última': main('Aguardar 10s'),
-  'Aguardar 10s': main('Buffer: ler última'),
+  'Buffer: marcar última': main('Aguardar (juntar mensagens)'),
+  'Aguardar (juntar mensagens)': main('Buffer: ler última'),
   'Buffer: ler última': main('É a última msg?'),
   'É a última msg?': main('Pausa: verificar de novo'),
   'Pausa: verificar de novo': main('Ainda ativa?'),
