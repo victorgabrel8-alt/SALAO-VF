@@ -42,6 +42,8 @@ Atendimento por WhatsApp com IA para o salão Toda Bonita Mega Hair (dona: Gleid
   ```
 
   Os workflows são gerados por código (`montar-workflow.js` e os outros `*-workflows.js`). Não se edita pela tela do n8n.
+  O `--enviar` se recusa a rodar se a cópia estiver atrás da `main` ou com mudança não commitada no prompt/`*.js` (em 24/10 um envio de cópia antiga apagou o prompt novo do n8n). `--forcar` pula a trava.
+  Depois de enviar, teste uma conversa que use ferramenta (pedir horário) e confira n8n → Executions sem erro vermelho.
 - Mudou alguma variável do servidor: Easypanel → ia → Fonte → editar o compose → Salvar → Implantar.
 - Recuperar tudo do zero (PC novo ou VPS novo): `bash recuperar.sh`. O passo a passo está em `n8n/demo-agente/RECUPERACAO.md`.
 - O `.env` fica no PC (`n8n/demo-agente/.env`, fora do Git) e guarda as chaves, os IDs das credenciais do n8n e a `N8N_API_KEY`. Precisa de cópia fora do PC.

@@ -548,6 +548,26 @@ fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.string
 fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
+// Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
+// cópia antiga e apagou do n8n o prompt novo e a mensagem única. --forcar pula a trava.
+if (process.argv.includes('--enviar') && !process.argv.includes('--forcar')) {
+  const { execSync } = require('child_process');
+  const git = (c) => execSync(`git ${c}`, { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  let erro = '';
+  try {
+    git('fetch -q origin main');
+    const faltam = git('rev-list --count HEAD..origin/main');
+    if (faltam !== '0') erro = `sua cópia está ${faltam} commit(s) atrás da main. Rode: git pull origin main`;
+    else if (git("status --porcelain -- '*.js' prompt-agente.md")) erro = 'há mudanças não commitadas no prompt ou nos *.js. Faça commit e push antes de enviar';
+  } catch (e) {
+    erro = 'não consegui conferir o Git (sem internet ou fora do repositório)';
+  }
+  if (erro) {
+    console.error(`\nNÃO ENVIEI: ${erro}.\nO n8n ficaria diferente do Git. Para enviar mesmo assim: --forcar\n`);
+    process.exit(1);
+  }
+}
+
 if (process.argv.includes('--enviar')) {
   const base = `${env.N8N_URL || 'http://localhost:5678'}/api/v1/workflows`;
   const headers = { 'X-N8N-API-KEY': env.N8N_API_KEY, 'Content-Type': 'application/json' };
