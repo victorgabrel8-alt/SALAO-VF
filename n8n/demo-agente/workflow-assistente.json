@@ -1905,7 +1905,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000169",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1929,7 +1929,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000170",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1942,7 +1942,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000171",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1976,7 +1976,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000172",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1996,7 +1996,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000173",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2009,7 +2009,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000174",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2031,7 +2031,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000175",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2329,6 +2329,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "WLbjR5DvKLRVPVX8"
   }
 }

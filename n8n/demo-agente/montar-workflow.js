@@ -593,6 +593,7 @@ if (process.argv.includes('--enviar')) {
   (async () => {
     // alerta primeiro: os outros workflows apontam para ele em settings.errorWorkflow
     const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
+    await ativar(alertaId); // o n8n só aceita errorWorkflow publicado
     alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
       assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
