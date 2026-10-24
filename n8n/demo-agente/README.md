@@ -2,6 +2,8 @@
 
 Roda 100% local: **n8n + Evolution API v2 + Postgres + Redis** no Docker Desktop.
 
+> **Computador novo / perdeu os volumes do Docker?** Siga [`RECUPERACAO.md`](RECUPERACAO.md) e rode `bash recuperar.sh`.
+
 | Serviço   | Endereço no seu PC              | Endereço dentro do Docker |
 |-----------|----------------------------------|---------------------------|
 | n8n       | http://localhost:5678            | http://n8n:5678           |
@@ -87,7 +89,7 @@ Em n8n → *Executions* deve aparecer uma execução com
 
 ### Fluxo
 `Webhook` → `Extrair dados` → `Filtro` (só `messages.upsert`, sem grupo/status, sem `fromMe`,
-só texto, só números de `NUMEROS_PERMITIDOS`) → **buffer Redis 10 s** (`buffer:{tel}` + `buffer_ultima:{tel}`;
+só texto, só números de `NUMEROS_PERMITIDOS`) → **buffer Redis 20 s** (`buffer:{tel}` + `buffer_ultima:{tel}`;
 só a última mensagem da rajada segue; trava `processando:{tel}` impede duas respostas em paralelo para a mesma pessoa) → `Marcar como lida` → `Agente IA` (Gemini Flash +
 memória Redis `memoria:{tel}`, 12 mensagens, expira em 24 h) → `Quebrar mensagens` (até 3 balões)
 → laço `Digitando...` (sendPresence, ~45 ms/caractere, 1,5–6 s) → `Enviar mensagem`.
@@ -112,7 +114,10 @@ Deixe vazio para responder a todos. Depois de mudar: `docker compose up -d n8n`.
 
 ---
 
-## Fase 3 – Google Agenda
+## Fase 3 – Google Agenda (desativada)
+
+> **A IA não usa mais a Google Agenda:** consulta, marca, remarca e cancela direto na agenda do app
+> (Supabase, tabela `agendamentos`; ver `supabase-workflows.js` e `agenda-calculo.js`). O texto abaixo é histórico.
 
 ### Google Cloud Console (feito à mão, uma vez)
 1. https://console.cloud.google.com → crie/selecione um projeto (ex.: `SALAO`).
@@ -198,6 +203,7 @@ docker exec demo-salao-redis-1 redis-cli --scan --pattern 'pausa:*'
 | `workflow-crm-salao.json` | Subworkflow do CRM |
 | `layout-n8n.js` | Posições dos nós e notas coloridas no n8n |
 | `vigia.sh` | Vigia: reabre Docker/containers/WhatsApp se caírem |
+| `recuperar.sh`, `RECUPERACAO.md` | Reconstrói o ambiente num PC novo (containers, banco, instância, credenciais e workflows) |
 
 Importando à mão (sem a API): importe primeiro os dois subworkflows, ative-os, depois importe o
 principal e, nos nós `consultar_horarios_livres`, `criar_agendamento` e `transferir_para_humano`,
@@ -211,7 +217,7 @@ selecione o subworkflow correspondente. Selecione também as credenciais (Redis,
 |---|---|
 | Preço de serviço que existe (queratina) | ✅ R$ 650 de mão de obra, cabelo à parte, oferece avaliação |
 | Serviço que não existe (unha em gel) | ✅ "Trabalhamos só com cabelo" + oferece os serviços |
-| 3 mensagens seguidas rápidas | ✅ Uma resposta só (buffer 10 s + trava por conversa) |
+| 3 mensagens seguidas rápidas | ✅ Uma resposta só (buffer 20 s + trava por conversa) |
 | Amanhã à tarde + confirmar | ✅ Oferece as faixas livres; confirma nome e horário; cria evento |
 | Hora fora do expediente (sábado 16h, 12h almoço, 18h) | ✅ Explica e oferece o horário possível mais próximo |
 | Áudio pedindo horário | ✅ Transcreve e consulta a agenda |

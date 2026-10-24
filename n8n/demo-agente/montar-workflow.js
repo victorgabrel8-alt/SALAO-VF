@@ -41,79 +41,34 @@ const ifNode = (name, position, conditions) =>
 const main = (to) => ({ main: [[{ node: to, type: 'main', index: 0 }]] });
 
 // ================= Subworkflow "Agenda Salão" (ferramentas do agente) =================
+// A agenda é a do app (Supabase, tabela agendamentos): o supabase-workflows.js encaixa as leituras
+// (horários ocupados, config do salão, horários da cliente) e as gravações (criar, cancelar, remarcar).
 const { PREPARAR, CALCULAR } = require('./agenda-calculo.js');
-const GCAL = { googleCalendarOAuth2Api: { id: env.N8N_GCAL_CRED_ID || '', name: 'Google Calendar account 2' } };
-const gcalAuth = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api' };
 const CAMPOS = ['acao', 'data', 'periodo', 'duracao_minutos', 'nome', 'telefone', 'servico', 'data_hora_inicio', 'motivo', 'data_hora_nova'];
-const GCAL_EVENTS = '=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($env.GOOGLE_CALENDAR_ID) }}/events';
 
 const agendaNodes = [
   node('Recebe pedido do agente', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
     workflowInputs: { values: CAMPOS.map((name) => (name === 'duracao_minutos' ? { name, type: 'number' } : { name })) },
   }),
   node('Preparar', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: PREPARAR.trim() }),
-  node('Google: horários ocupados', 'n8n-nodes-base.httpRequest', 4.2, [440, 0], {
-    method: 'POST', url: 'https://www.googleapis.com/calendar/v3/freeBusy', ...gcalAuth,
-    sendBody: true, specifyBody: 'json',
-    jsonBody: "={{ JSON.stringify({ timeMin: $json.timeMin, timeMax: $json.timeMax, timeZone: 'America/Cuiaba', items: [{ id: $env.GOOGLE_CALENDAR_ID }] }) }}",
-    options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  // agendamentos futuros desta cliente: o telefone dela está na descrição dos eventos criados pela IA
-  node('Google: agendamentos da cliente', 'n8n-nodes-base.httpRequest', 4.2, [550, 160], {
-    method: 'GET', url: GCAL_EVENTS, ...gcalAuth,
-    sendQuery: true,
-    queryParameters: { parameters: [
-      { name: 'q', value: "={{ $('Preparar').item.json.telefone || 'sem-telefone' }}" },
-      { name: 'timeMin', value: "={{ $('Preparar').item.json.agoraUtc }}" },
-      { name: 'singleEvents', value: 'true' },
-      { name: 'orderBy', value: 'startTime' },
-      { name: 'maxResults', value: '20' },
-    ] },
-    options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
   node('Calcular', 'n8n-nodes-base.code', 2, [660, 0], { jsCode: CALCULAR.trim() }),
   ifNode('Criar evento?', [880, 0], [
     cond('g1', '={{ $json.acao }}', { type: 'string', operation: 'equals' }, 'criar'),
     cond('g2', '={{ $json.ok }}', { type: 'boolean', operation: 'true', singleValue: true }),
   ]),
-  node('Google: criar evento', 'n8n-nodes-base.httpRequest', 4.2, [1100, -100], {
-    method: 'POST', url: '=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($env.GOOGLE_CALENDAR_ID) }}/events', ...gcalAuth,
-    sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.evento) }}',
-    options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  node('Resposta (agendado)', 'n8n-nodes-base.set', 3.4, [1320, -100], {
-    assignments: { assignments: [
-      str('resposta', "={{ $json.id ? 'AGENDADO com sucesso na agenda do salão: ' + $('Calcular').item.json.quando + '. Agora confirme para a cliente o serviço, o dia e a hora.' : 'NÃO AGENDADO: a agenda falhou ao gravar. Peça desculpas e use transferir_para_humano para a equipe marcar.' }}"),
-    ] },
-    options: {},
-  }),
   ifNode('Cancelar evento?', [1100, 120], [
     cond('x1', '={{ $json.acao }}', { type: 'string', operation: 'equals' }, 'cancelar'),
     cond('x2', '={{ $json.ok }}', { type: 'boolean', operation: 'true', singleValue: true }),
   ]),
-  node('Google: cancelar evento', 'n8n-nodes-base.httpRequest', 4.2, [1320, 40], {
-    method: 'DELETE', url: GCAL_EVENTS.slice(0) + '/{{ $json.eventId }}', ...gcalAuth, options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  node('Resposta (cancelado)', 'n8n-nodes-base.set', 3.4, [1540, 40], {
-    assignments: { assignments: [
-      str('resposta', "={{ $json.error ? 'NÃO CANCELADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' : 'CANCELADO com sucesso: o agendamento de ' + $('Calcular').item.json.de + ' foi removido da agenda. Confirme para a cliente.' }}"),
-    ] },
-    options: {},
-  }),
   ifNode('Remarcar evento?', [1320, 220], [
     cond('r1', '={{ $json.acao }}', { type: 'string', operation: 'equals' }, 'remarcar'),
     cond('r2', '={{ $json.ok }}', { type: 'boolean', operation: 'true', singleValue: true }),
   ]),
-  node('Google: remarcar evento', 'n8n-nodes-base.httpRequest', 4.2, [1540, 160], {
-    method: 'PATCH', url: GCAL_EVENTS + '/{{ $json.eventId }}', ...gcalAuth,
-    sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.patch) }}', options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  node('Resposta (remarcado)', 'n8n-nodes-base.set', 3.4, [1760, 160], {
-    assignments: { assignments: [
-      str('resposta', "={{ $json.id ? 'REMARCADO com sucesso: o agendamento saiu de ' + $('Calcular').item.json.de + ' para ' + $('Calcular').item.json.quando + ' (é o MESMO agendamento, o horário antigo não existe mais). Confirme para a cliente.' : 'NÃO REMARCADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' }}"),
-    ] },
+  // o texto de sucesso/falha de cada ação é preenchido pelo supabase-workflows.js (depende da gravação no app)
+  ...['Resposta (agendado)', 'Resposta (cancelado)', 'Resposta (remarcado)'].map((nome) => node(nome, 'n8n-nodes-base.set', 3.4, [0, 0], {
+    assignments: { assignments: [str('resposta', '')] },
     options: {},
-  }),
+  })),
   node('Resposta', 'n8n-nodes-base.set', 3.4, [1540, 300], {
     assignments: { assignments: [str('resposta', '={{ $json.resposta }}')] },
     options: {},
@@ -124,16 +79,11 @@ const agendaWorkflow = {
   nodes: agendaNodes,
   connections: {
     'Recebe pedido do agente': main('Preparar'),
-    'Preparar': main('Google: horários ocupados'),
-    'Google: horários ocupados': main('Google: agendamentos da cliente'),
-    'Google: agendamentos da cliente': main('Calcular'),
+    'Preparar': main('Calcular'),
     'Calcular': main('Criar evento?'),
-    'Criar evento?': { main: [[{ node: 'Google: criar evento', type: 'main', index: 0 }], [{ node: 'Cancelar evento?', type: 'main', index: 0 }]] },
-    'Google: criar evento': main('Resposta (agendado)'),
-    'Cancelar evento?': { main: [[{ node: 'Google: cancelar evento', type: 'main', index: 0 }], [{ node: 'Remarcar evento?', type: 'main', index: 0 }]] },
-    'Google: cancelar evento': main('Resposta (cancelado)'),
-    'Remarcar evento?': { main: [[{ node: 'Google: remarcar evento', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
-    'Google: remarcar evento': main('Resposta (remarcado)'),
+    'Criar evento?': { main: [[{ node: 'Resposta (agendado)', type: 'main', index: 0 }], [{ node: 'Cancelar evento?', type: 'main', index: 0 }]] },
+    'Cancelar evento?': { main: [[{ node: 'Resposta (cancelado)', type: 'main', index: 0 }], [{ node: 'Remarcar evento?', type: 'main', index: 0 }]] },
+    'Remarcar evento?': { main: [[{ node: 'Resposta (remarcado)', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
   },
   settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', callerPolicy: 'workflowsFromSameOwner' },
 };
@@ -183,15 +133,13 @@ const pausaWorkflow = {
 };
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
 const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
-// "[2]" no começo do parágrafo = responder citando a 2ª mensagem (o Quebrar mensagens tira o número)
+// Várias mensagens seguidas chegam numeradas; a resposta é uma mensagem só (o Quebrar mensagens junta tudo)
 const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
 Quando a mensagem da cliente vier em linhas numeradas ([1], [2], [3]...), são mensagens separadas que ela mandou em sequência.
-Responda cada pergunta em um parágrafo próprio, na ordem, e comece o parágrafo com o número da mensagem que ele responde (ex.: "[2] A diferença é o jeito de prender...").
-Se um parágrafo responde duas mensagens juntas, use o número da última. Mensagem que não pede resposta (ex.: "oi", "ok") não precisa de parágrafo.
-Nunca escreva os números fora do começo do parágrafo: eles somem do texto e viram o "responder mensagem" do WhatsApp.
-Mensagem sem número: responda normal, sem número.`;
+Leia tudo como uma conversa só e responda numa ÚNICA mensagem, cobrindo todas as perguntas na ordem (um parágrafo curto por assunto).
+Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.`;
 
 const nodes = [
   node('Webhook Evolution', 'n8n-nodes-base.webhook', 2, [0, 0],
@@ -277,7 +225,8 @@ const nodes = [
     operation: 'set', key: `=buffer_ultima:{{ ${D}.telefone }}`, value: `={{ ${D}.msgId }}`, expire: true, ttl: 120,
   }, { credentials: REDIS }),
 
-  node('Aguardar 10s', 'n8n-nodes-base.wait', 1.1, [1100, 0], { resume: 'timeInterval', amount: 10, unit: 'seconds' }, { webhookId: '1b2c3d4e-5f60-4718-9a0b-c1d2e3f40516' }),
+  // junta a rajada: só responde depois de 20 s sem mensagem nova da mesma pessoa (10 s cortava quem digita devagar)
+  node('Aguardar (juntar mensagens)', 'n8n-nodes-base.wait', 1.1, [1100, 0], { resume: 'timeInterval', amount: 20, unit: 'seconds' }, { webhookId: '1b2c3d4e-5f60-4718-9a0b-c1d2e3f40516' }),
 
   node('Buffer: ler última', 'n8n-nodes-base.redis', 1, [1320, 0], {
     operation: 'get', key: `=buffer_ultima:{{ ${D}.telefone }}`, propertyName: 'ultima', keyType: 'string', options: {},
@@ -348,7 +297,10 @@ const nodes = [
     text: "={{ $('Montar entrada').item.json.texto_cliente }}",
     // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
     options: { systemMessage: '=' + prompt + REGRA_CITAR, returnIntermediateSteps: true },
-  }),
+  // Gemini falhou (sobrecarga, erro de ferramenta): tenta de novo; se ainda falhar, segue sem resposta e o
+  // Quebrar mensagens manda o pedido de desculpas. Antes a execução morria com a trava presa (2 min) e a
+  // mensagem da cliente se perdia.
+  }, { retryOnFail: true, maxTries: 2, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
 
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
     modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.4 },
@@ -395,44 +347,23 @@ const nodes = [
       "if (limpos.length) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
       "if (!paragrafos.length) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
-      "// Pica como gente faz no WhatsApp: cada parágrafo vira um balão, e um bloco grande (mais de ~200",
-      "// letras) é cortado entre frases em pedaços de até ~170. Balão curtinho junta com o anterior (se responde a",
-      "// mesma mensagem); no máximo 3",
-      "const pedacos = [];",
-      "for (const { t: p, ref } of paragrafos) {",
-      "  if (p.length <= 200) { pedacos.push({ t: p, ref }); continue; }",
-      "  let atual = '';",
-      "  for (const f of p.split(FRASES)) {",
-      "    if (atual && (atual + ' ' + f).length > 170) { pedacos.push({ t: atual, ref }); atual = f; } else atual = atual ? atual + ' ' + f : f;",
-      "  }",
-      "  if (atual) pedacos.push({ t: atual, ref });",
-      "}",
-      "let baloes = [];",
-      "for (const p of pedacos) {",
-      "  const ult = baloes[baloes.length - 1];",
-      "  if (ult !== undefined && ult.ref === p.ref && (p.t.length < 40 || ult.t.length < 40) && (ult.t + ' ' + p.t).length <= 220) ult.t = ult.t + ' ' + p.t; else baloes.push({ ...p });",
-      "}",
-      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], { t: baloes.slice(2).map(b => b.t).join(' '), ref: baloes[2].ref }];",
-      "// Responder citando (o 'responder mensagem' do WhatsApp): com várias mensagens seguidas, o 1º balão de cada",
-      "// resposta cita a mensagem que ele responde. Mensagem única só é citada se chegou enquanto a IA ainda",
-      "// respondia outra (a resposta sai depois de outros balões e ficaria solta)",
+      "// Uma mensagem só (pedido do Victor): a IA lê a rajada inteira e responde num balão, com os parágrafos",
+      "// separados por linha em branco",
+      "const baloes = [{ t: paragrafos.map(p => p.t).join('\\n\\n'), ref: 0 }];",
+      "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
+      "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
       "try { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}",
       "const esperou = $('Aguardar 3s (IA respondendo)').isExecuted;",
-      "const citadas = new Set();",
-      "const citarDe = (b, i) => {",
-      "  const m = msgs.length > 1 ? msgs[b.ref - 1] : (esperou && i === 0 ? msgs[0] : null);",
-      "  if (!m?.id || citadas.has(m.id)) return '';",
-      "  citadas.add(m.id);",
-      "  return m.id;",
-      "};",
+      "const citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');",
       "// Ritmo de gente: antes do 1º balão 'lê' a mensagem dela (quanto maior, mais tempo); entre balões, um",
-      "// respiro. Cada balão 'digita' no ritmo do celular (170-210 ms por letra, ~5 letras/s), entre 4 s e 35 s",
+      "// respiro. 'Digita' 60-90 ms por letra, entre 3 s e 10 s: com a espera de 20 s para juntar a rajada, mais que",
+      "// isso deixa a cliente quase 1 minuto sem resposta",
       "const ale = (a, b) => a + Math.random() * (b - a);",
       "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
       "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, citar: citarDe({ ref }, i),",
       "  pausa: Math.round((i === 0 ? Math.min(5, ale(0.8, 2) + lida * 0.02) : ale(1.5, 3)) * 10) / 10,",
-      "  delay: Math.round(Math.min(35000, Math.max(4000, texto.length * ale(170, 210)))) } }));",
+      "  delay: Math.round(Math.min(10000, Math.max(3000, texto.length * ale(60, 90)))) } }));",
     ].join('\n'),
   }),
 
@@ -540,8 +471,8 @@ const connections = {
   'Entender mídia (Gemini)': main('Texto da mensagem'),
   'Texto da mensagem': main('Buffer: guardar msg'),
   'Buffer: guardar msg': main('Buffer: marcar última'),
-  'Buffer: marcar última': main('Aguardar 10s'),
-  'Aguardar 10s': main('Buffer: ler última'),
+  'Buffer: marcar última': main('Aguardar (juntar mensagens)'),
+  'Aguardar (juntar mensagens)': main('Buffer: ler última'),
   'Buffer: ler última': main('É a última msg?'),
   'É a última msg?': main('Pausa: verificar de novo'),
   'Pausa: verificar de novo': main('Ainda ativa?'),
@@ -618,7 +549,7 @@ fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.f
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 if (process.argv.includes('--enviar')) {
-  const base = 'http://localhost:5678/api/v1/workflows';
+  const base = `${env.N8N_URL || 'http://localhost:5678'}/api/v1/workflows`;
   const headers = { 'X-N8N-API-KEY': env.N8N_API_KEY, 'Content-Type': 'application/json' };
   const upsert = async (wf, idFile) => {
     const id = fs.existsSync(idFile) ? fs.readFileSync(idFile, 'utf8').trim() : '';

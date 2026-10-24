@@ -2,7 +2,7 @@
   "name": "Assistente - Pendências",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000145",
+      "id": "00000000-0000-4000-8000-000000000135",
       "name": "A cada 15 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000146",
+      "id": "00000000-0000-4000-8000-000000000136",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000147",
+      "id": "00000000-0000-4000-8000-000000000137",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -73,30 +73,39 @@
       "webhookId": "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000148",
+      "id": "00000000-0000-4000-8000-000000000138",
       "name": "Pendências novas",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         440,
         100
       ],
       "parameters": {
-        "operation": "executeQuery",
-        "query": "select * from pendencias_gleide where empresa_id = $1\n    and (perguntado_em is null or perguntado_em < now() - interval '3 hours') order by inicio nulls last",
-        "options": {
-          "queryReplacement": "={{ [ $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001' ] }}"
-        }
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_pendencias_novas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001' }) }}",
+        "options": {}
       },
-      "credentials": {
-        "postgres": {
-          "id": "vWZfw25p31IboD1j",
-          "name": "Salão teste (004)"
-        }
-      }
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000149",
+      "id": "00000000-0000-4000-8000-000000000139",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -105,11 +114,11 @@
         100
       ],
       "parameters": {
-        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\nconst nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');\nconst hora = (p) => (p.inicio ? new Date(p.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' }) : '');\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação da *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atendimento_sem_status') return '• A *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  return '• A *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = 'Oi, Gleide! Pra deixar o CRM em dia:\\n' + ps.map(linha).join('\\n') + '\\n\\nPode responder em áudio, do seu jeito 🙂';\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\nconst nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = 'Oi, Gleide! Pra deixar o CRM em dia:\\n' + ps.map(linha).join('\\n') + '\\n\\nPode responder em áudio, do seu jeito 🙂';\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000150",
+      "id": "00000000-0000-4000-8000-000000000140",
       "name": "Mandar para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -139,7 +148,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000151",
+      "id": "00000000-0000-4000-8000-000000000141",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -155,32 +164,40 @@
       },
       "credentials": {
         "redis": {
-          "id": "bSZHOsNCSsDVJpK7",
+          "id": "",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000152",
+      "id": "00000000-0000-4000-8000-000000000142",
       "name": "Marcar como perguntado",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1320,
         100
       ],
       "parameters": {
-        "operation": "executeQuery",
-        "query": "select n8n_assistente_marcar_perguntado($1, $2, $3::uuid[])",
-        "options": {
-          "queryReplacement": "={{ [ $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001', $('Montar mensagem').item.json.tel, '{' + $('Montar mensagem').item.json.ids.join(',') + '}' ] }}"
-        }
-      },
-      "credentials": {
-        "postgres": {
-          "id": "vWZfw25p31IboD1j",
-          "name": "Salão teste (004)"
-        }
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001', p_pedido_a: $('Montar mensagem').item.json.tel, p_ids: $('Montar mensagem').item.json.ids }) }}",
+        "options": {}
       }
     }
   ],

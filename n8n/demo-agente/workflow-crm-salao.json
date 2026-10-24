@@ -2,7 +2,7 @@
   "name": "CRM (anotações do agente)",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000071",
+      "id": "00000000-0000-4000-8000-000000000063",
       "name": "Recebe pedido do agente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -30,7 +30,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000072",
+      "id": "00000000-0000-4000-8000-000000000064",
       "name": "Anotar na ficha",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
@@ -47,14 +47,14 @@
       },
       "credentials": {
         "postgres": {
-          "id": "zzYnr5Tvb8vIFf4H",
+          "id": "",
           "name": "CRM Postgres"
         }
       },
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000073",
+      "id": "00000000-0000-4000-8000-000000000065",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

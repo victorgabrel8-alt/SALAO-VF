@@ -53,7 +53,7 @@ async function pedir(url, opcoes) {
   console.log(`duração: ${duracao.toFixed(1)} s`);
 
   // 3. transcrição (workflow "Áudios prontos - Transcrever")
-  const { transcricao } = await pedir('http://localhost:5678/webhook/audios-transcrever', { method: 'POST',
+  const { transcricao } = await pedir(`${env.N8N_URL || 'http://localhost:5678'}/webhook/audios-transcrever`, { method: 'POST',
     headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ base64: dados.toString('base64'), mime }) });
   if (!transcricao) throw new Error('a transcrição veio vazia');
   console.log(`transcrição: ${transcricao}`);

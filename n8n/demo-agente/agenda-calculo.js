@@ -83,7 +83,6 @@ return [{ json: {
 
 const CALCULAR = CONFIG + `
 const p = $('Preparar').first().json;
-const fb = $('Google: horários ocupados').first().json;
 const agora = DateTime.now().setZone(TZ);
 const saida = (o) => [{ json: { acao: p.acao, ok: false, ...o } }];
 const FORA = 'A agenda está fora do ar agora. Peça desculpas à cliente e use transferir_para_humano para a equipe atender.';
@@ -108,16 +107,13 @@ try {
 } catch (e) {}
 
 if (p.erro) return saida({ resposta: p.erro });
-if (fb.error || !fb.calendars) return saida({ resposta: FORA });
-
-const cal = Object.values(fb.calendars)[0] || {};
-if (cal.errors) return saida({ resposta: FORA });
-const ocupados = (cal.busy || []).map(b => [DateTime.fromISO(b.start).setZone(TZ), DateTime.fromISO(b.end).setZone(TZ)]);
-// Horários marcados pelo CRM (Supabase) também ocupam: a Gleide marca/remarca pelo app e isso não vai para o Google.
-// Sem fim gravado, conta 1 h. Se o Supabase não respondeu, segue só com o Google.
-let doCrm = [];
-try { doCrm = $('Supabase: horários ocupados').all().map(i => i.json).filter(a => a.inicio); } catch (e) {}
-for (const a of doCrm) {
+// A agenda é a do app (Supabase): o que a IA e a Gleide marcaram ocupa o horário. Sem fim gravado, conta 1 h.
+// Se o Supabase não respondeu, não dá para saber o que está livre: a IA passa para a equipe.
+const falhou = (itens) => itens.some((x) => x.error || (x.code && x.message));
+const doCrm = $('Supabase: horários ocupados').all().map(i => i.json);
+if (falhou(doCrm)) return saida({ resposta: FORA });
+const ocupados = [];
+for (const a of doCrm.filter(a => a.inicio)) {
   const ini = DateTime.fromISO(a.inicio).setZone(TZ);
   ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);
 }
@@ -125,26 +121,15 @@ const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
 // ---- horários futuros desta cliente ----
-// Do CRM (Supabase): os marcados pela IA E pela Gleide no app, só os que ainda vão acontecer.
-// Se o Supabase não respondeu, usa os eventos do Google (só os que a IA marcou, achados pelo telefone).
+// Do app (Supabase): os marcados pela IA E pela Gleide, só os que ainda vão acontecer.
 if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
-  let evs = null;
-  try {
-    const itens = $('Supabase: agendamentos da cliente').all().map(i => i.json);
-    if (!itens.some(x => x.error || x.code)) {
-      evs = itens.filter(x => x.id).map(x => {
-        const ini = DateTime.fromISO(x.inicio).setZone(TZ);
-        return { id: x.google_event_id || null, agendamentoId: x.id, obs: x.observacoes || '', titulo: (x.servicos && x.servicos.nome) || 'Horário',
-          ini, fim: x.fim ? DateTime.fromISO(x.fim).setZone(TZ) : ini.plus({ hours: 1 }) };
-      });
-    }
-  } catch (e) {}
-  if (!evs) {
-    const ev = $('Google: agendamentos da cliente').first().json;
-    if (ev.error) return saida({ resposta: FORA });
-    evs = (ev.items || []).filter(x => x.start && x.start.dateTime && x.status !== 'cancelled')
-      .map(x => ({ id: x.id, agendamentoId: null, obs: '', titulo: x.summary || '', ini: DateTime.fromISO(x.start.dateTime).setZone(TZ), fim: DateTime.fromISO(x.end.dateTime).setZone(TZ) }));
-  }
+  const itens = $('Supabase: agendamentos da cliente').all().map(i => i.json);
+  if (falhou(itens)) return saida({ resposta: FORA });
+  const evs = itens.filter(x => x.id).map(x => {
+    const ini = DateTime.fromISO(x.inicio).setZone(TZ);
+    return { agendamentoId: x.id, obs: x.observacoes || '', titulo: (x.servicos && x.servicos.nome) || 'Horário',
+      ini, fim: x.fim ? DateTime.fromISO(x.fim).setZone(TZ) : ini.plus({ hours: 1 }) };
+  });
   // "HOJE"/"AMANHÃ" escrito na lista: a IA errava o dia relativo fazendo a conta de cabeça
   const relativo = (d) => { const n = Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days); return n === 0 ? 'HOJE, ' : n === 1 ? 'AMANHÃ, ' : ''; };
   const listaEvs = evs.map(x => '- ' + x.titulo + ': ' + relativo(x.ini) + fmt(x.ini) + ' (data_hora_inicio: ' + iso(x.ini) + ')').join('\\n');
@@ -156,9 +141,9 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   else if (evs.length === 1) alvo = evs[0];
   if (!alvo) return saida({ resposta: 'A cliente tem mais de um agendamento (ou o horário informado não bate). Agendamentos dela:\\n' + listaEvs + '\\nPergunte qual e chame de novo com o data_hora_inicio certo.' });
 
-  if (p.acao === 'cancelar') return [{ json: { acao: 'cancelar', ok: true, eventId: alvo.id, agendamentoId: alvo.agendamentoId, de: fmt(alvo.ini) } }];
+  if (p.acao === 'cancelar') return [{ json: { acao: 'cancelar', ok: true, agendamentoId: alvo.agendamentoId, de: fmt(alvo.ini) } }];
 
-  // remarcar: mesmo evento, novo horário (mesma duração). O horário atual dela não conta como ocupado.
+  // remarcar: mesmo agendamento, novo horário (mesma duração). O horário atual dela não conta como ocupado.
   const novo = DateTime.fromISO(p.novo).setZone(TZ);
   const dur = alvo.fim.diff(alvo.ini, 'minutes').minutes;
   const fimNovo = novo.plus({ minutes: dur });
@@ -173,7 +158,7 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
   // mesma anotação do CRM ("Reagendado de 20/10 às 13:00"): o app mostra o horário antigo
   const observacoes = [alvo.obs, 'Reagendado de ' + alvo.ini.toFormat('dd/LL') + ' às ' + alvo.ini.toFormat('HH:mm')].filter(Boolean).join('\\n');
-  return [{ json: { acao: 'remarcar', ok: true, eventId: alvo.id, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo),
+  return [{ json: { acao: 'remarcar', ok: true, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo),
     patch: { start: { dateTime: novo.toISO({ suppressMilliseconds: true }), timeZone: TZ }, end: { dateTime: fimNovo.toISO({ suppressMilliseconds: true }), timeZone: TZ } } } }];
 }
 
@@ -251,12 +236,8 @@ if (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocup
 return [{ json: {
   acao: 'criar', ok: true,
   quando: fmt(ini),
+  // início e fim do novo horário (o "Montar agendamento" grava no app)
   evento: {
-    // título com o motivo resumido, para a Gleide bater o olho na agenda e saber o que a cliente quer
-    summary: (p.servico + ' - ' + p.nome + (p.motivo ? ' | ' + p.motivo : '')).slice(0, 90),
-    description: 'Cliente: ' + p.nome + '\\nTelefone: ' + p.telefone + '\\nServiço: ' + p.servico +
-      '\\nO que a cliente quer: ' + (p.motivo || '(não informado)') +
-      '\\n\\nAgendado pelo WhatsApp (assistente virtual).',
     start: { dateTime: ini.toISO({ suppressMilliseconds: true }), timeZone: TZ },
     end: { dateTime: fim.toISO({ suppressMilliseconds: true }), timeZone: TZ },
   },
