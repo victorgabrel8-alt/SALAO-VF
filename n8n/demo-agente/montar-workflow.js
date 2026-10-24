@@ -309,8 +309,8 @@ const nodes = [
   node('Memória (Redis)', '@n8n/n8n-nodes-langchain.memoryRedisChat', 1.5, [2720, 200], {
     sessionIdType: 'customKey',
     sessionKey: "=memoria:{{ $('Montar entrada').first().json.telefone }}",
-    sessionTTL: 86400,
-    contextWindowLength: 12,
+    sessionTTL: 604800, // 7 dias: quem volta no dia seguinte ainda é lembrada
+    contextWindowLength: 20,
   }, { credentials: REDIS }),
 
   node('Quebrar mensagens', 'n8n-nodes-base.code', 2, [2960, -20], {

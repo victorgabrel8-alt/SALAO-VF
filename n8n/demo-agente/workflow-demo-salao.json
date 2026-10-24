@@ -1061,8 +1061,8 @@
       "parameters": {
         "sessionIdType": "customKey",
         "sessionKey": "=memoria:{{ $('Montar entrada').first().json.telefone }}",
-        "sessionTTL": 86400,
-        "contextWindowLength": 12
+        "sessionTTL": 604800,
+        "contextWindowLength": 20
       },
       "credentials": {
         "redis": {
@@ -2690,7 +2690,7 @@
         520
       ],
       "parameters": {
-        "jsCode": "// lista do Redis: [0] = mais nova (a memória grava com LPUSH)\nconst lista = [].concat($input.first().json.memoria || []);\nconst quebra = (s) => { try { const m = JSON.parse(s); return m.type === 'tool' || (m.type === 'ai' && (m.data?.tool_calls || []).length > 0); } catch (e) { return false; } };\nlet fim = Math.min(lista.length, 24);\nif (!fim || !quebra(lista[fim - 1])) return [{ json: { cortar: false }, pairedItem: 0 }];\n// recua até uma mensagem dela: o histórico começa como uma conversa normal\nconst dela = (s) => { try { return JSON.parse(s).type === 'human'; } catch (e) { return false; } };\nwhile (fim > 0 && !dela(lista[fim - 1])) fim--;\n// toda interação começa com a mensagem dela, então sempre há um ponto bom; sem ele, não mexe\nif (!fim) return [{ json: { cortar: false }, pairedItem: 0 }];\nreturn [{ json: { cortar: true, de: lista.length, para: fim, manter: lista.slice(0, fim) }, pairedItem: 0 }];"
+        "jsCode": "// lista do Redis: [0] = mais nova (a memória grava com LPUSH)\nconst lista = [].concat($input.first().json.memoria || []);\nconst quebra = (s) => { try { const m = JSON.parse(s); return m.type === 'tool' || (m.type === 'ai' && (m.data?.tool_calls || []).length > 0); } catch (e) { return false; } };\nlet fim = Math.min(lista.length, 40);\nif (!fim || !quebra(lista[fim - 1])) return [{ json: { cortar: false }, pairedItem: 0 }];\n// recua até uma mensagem dela: o histórico começa como uma conversa normal\nconst dela = (s) => { try { return JSON.parse(s).type === 'human'; } catch (e) { return false; } };\nwhile (fim > 0 && !dela(lista[fim - 1])) fim--;\n// toda interação começa com a mensagem dela, então sempre há um ponto bom; sem ele, não mexe\nif (!fim) return [{ json: { cortar: false }, pairedItem: 0 }];\nreturn [{ json: { cortar: true, de: lista.length, para: fim, manter: lista.slice(0, fim) }, pairedItem: 0 }];"
       }
     },
     {
