@@ -297,7 +297,7 @@
       ],
       "parameters": {
         "operation": "delete",
-        "key": "=pausa:{{ $('Extrair dados').item.json.telefone }}"
+        "key": "=pausa:{{ $('Extrair dados').first().json.telefone }}"
       },
       "credentials": {
         "redis": {
@@ -317,7 +317,7 @@
       ],
       "parameters": {
         "operation": "set",
-        "key": "=pausa:{{ $('Extrair dados').item.json.telefone }}",
+        "key": "=pausa:{{ $('Extrair dados').first().json.telefone }}",
         "value": "manual",
         "expire": true,
         "ttl": 43200
@@ -413,7 +413,7 @@
       ],
       "parameters": {
         "operation": "get",
-        "key": "=pausa:{{ $('Extrair dados').item.json.telefone }}",
+        "key": "=pausa:{{ $('Extrair dados').first().json.telefone }}",
         "propertyName": "pausa",
         "keyType": "string",
         "options": {}
@@ -445,7 +445,7 @@
           "conditions": [
             {
               "id": "p1",
-              "leftValue": "={{ (() => { const p = $('Supabase: registrar entrada').item.json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}",
+              "leftValue": "={{ (() => { const p = $('Supabase: registrar entrada').first().json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -479,7 +479,7 @@
           "conditions": [
             {
               "id": "a1",
-              "leftValue": "={{ ['audioMessage', 'imageMessage'].includes($('Extrair dados').item.json.tipo) }}",
+              "leftValue": "={{ ['audioMessage', 'imageMessage'].includes($('Extrair dados').first().json.tipo) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -516,7 +516,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').item.json.msgId } }, convertToMp4: false }) }}",
+        "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').first().json.msgId } }, convertToMp4: false }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput"
@@ -537,7 +537,7 @@
         "nodeCredentialType": "googlePalmApi",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').item.json.tipo === 'imageMessage' ? 'Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 3 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor; textura (liso, ondulado, cacheado); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo. Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').first().json.tipo === 'imageMessage' ? 'Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 3 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor; textura (liso, ondulado, cacheado); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo. Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
         "options": {}
       },
       "credentials": {
@@ -563,7 +563,7 @@
             {
               "id": "a-texto",
               "name": "texto",
-              "value": "={{ (() => { const tipo = $('Extrair dados').item.json.tipo; if (!['audioMessage', 'imageMessage'].includes(tipo)) return $('Extrair dados').item.json.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); if (tipo === 'audioMessage') return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; const legenda = $('Extrair dados').item.json.texto ? ' Legenda: ' + $('Extrair dados').item.json.texto : ''; return (r ? '[foto da cliente] ' + r : '[foto da cliente que não consegui ver]') + legenda; })() }}",
+              "value": "={{ (() => { const tipo = $('Extrair dados').first().json.tipo; if (!['audioMessage', 'imageMessage'].includes(tipo)) return $('Extrair dados').first().json.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); if (tipo === 'audioMessage') return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; const legenda = $('Extrair dados').first().json.texto ? ' Legenda: ' + $('Extrair dados').first().json.texto : ''; return (r ? '[foto da cliente] ' + r : '[foto da cliente que não consegui ver]') + legenda; })() }}",
               "type": "string"
             }
           ]
@@ -582,8 +582,8 @@
       ],
       "parameters": {
         "operation": "push",
-        "list": "=buffer:{{ $('Extrair dados').item.json.telefone }}",
-        "messageData": "={{ JSON.stringify({ id: $('Extrair dados').item.json.msgId, texto: $('Texto da mensagem').item.json.texto }) }}",
+        "list": "=buffer:{{ $('Extrair dados').first().json.telefone }}",
+        "messageData": "={{ JSON.stringify({ id: $('Extrair dados').first().json.msgId, texto: $('Texto da mensagem').item.json.texto }) }}",
         "tail": true
       },
       "credentials": {
@@ -604,8 +604,8 @@
       ],
       "parameters": {
         "operation": "set",
-        "key": "=buffer_ultima:{{ $('Extrair dados').item.json.telefone }}",
-        "value": "={{ $('Extrair dados').item.json.msgId }}",
+        "key": "=buffer_ultima:{{ $('Extrair dados').first().json.telefone }}",
+        "value": "={{ $('Extrair dados').first().json.msgId }}",
         "expire": true,
         "ttl": 120
       },
@@ -643,7 +643,7 @@
       ],
       "parameters": {
         "operation": "get",
-        "key": "=buffer_ultima:{{ $('Extrair dados').item.json.telefone }}",
+        "key": "=buffer_ultima:{{ $('Extrair dados').first().json.telefone }}",
         "propertyName": "ultima",
         "keyType": "string",
         "options": {}
@@ -676,7 +676,7 @@
             {
               "id": "u1",
               "leftValue": "={{ $json.ultima }}",
-              "rightValue": "={{ $('Extrair dados').item.json.msgId }}",
+              "rightValue": "={{ $('Extrair dados').first().json.msgId }}",
               "operator": {
                 "type": "string",
                 "operation": "equals"
@@ -699,7 +699,7 @@
       ],
       "parameters": {
         "operation": "get",
-        "key": "=pausa:{{ $('Extrair dados').item.json.telefone }}",
+        "key": "=pausa:{{ $('Extrair dados').first().json.telefone }}",
         "propertyName": "pausa",
         "keyType": "string",
         "options": {}
@@ -756,7 +756,7 @@
       ],
       "parameters": {
         "operation": "delete",
-        "key": "=buffer:{{ $('Extrair dados').item.json.telefone }}"
+        "key": "=buffer:{{ $('Extrair dados').first().json.telefone }}"
       },
       "credentials": {
         "redis": {
@@ -776,7 +776,7 @@
       ],
       "parameters": {
         "operation": "get",
-        "key": "=processando:{{ $('Extrair dados').item.json.telefone }}",
+        "key": "=processando:{{ $('Extrair dados').first().json.telefone }}",
         "propertyName": "processando",
         "keyType": "string",
         "options": {}
@@ -849,8 +849,8 @@
       ],
       "parameters": {
         "operation": "set",
-        "key": "=processando:{{ $('Extrair dados').item.json.telefone }}",
-        "value": "={{ $('Extrair dados').item.json.msgId }}",
+        "key": "=processando:{{ $('Extrair dados').first().json.telefone }}",
+        "value": "={{ $('Extrair dados').first().json.msgId }}",
         "expire": true,
         "ttl": 120
       },
@@ -872,7 +872,7 @@
       ],
       "parameters": {
         "operation": "delete",
-        "key": "=processando:{{ $('Extrair dados').item.json.telefone }}"
+        "key": "=processando:{{ $('Extrair dados').first().json.telefone }}"
       },
       "credentials": {
         "redis": {
@@ -892,7 +892,7 @@
       ],
       "parameters": {
         "operation": "get",
-        "key": "=buffer:{{ $('Extrair dados').item.json.telefone }}",
+        "key": "=buffer:{{ $('Extrair dados').first().json.telefone }}",
         "propertyName": "mensagens",
         "keyType": "list",
         "options": {}
@@ -915,7 +915,7 @@
       ],
       "parameters": {
         "operation": "delete",
-        "key": "=buffer:{{ $('Extrair dados').item.json.telefone }}"
+        "key": "=buffer:{{ $('Extrair dados').first().json.telefone }}"
       },
       "credentials": {
         "redis": {
@@ -951,25 +951,25 @@
             {
               "id": "a-telefone",
               "name": "telefone",
-              "value": "={{ $('Extrair dados').item.json.telefone }}",
+              "value": "={{ $('Extrair dados').first().json.telefone }}",
               "type": "string"
             },
             {
               "id": "a-jid",
               "name": "jid",
-              "value": "={{ $('Extrair dados').item.json.jid }}",
+              "value": "={{ $('Extrair dados').first().json.jid }}",
               "type": "string"
             },
             {
               "id": "a-msgId",
               "name": "msgId",
-              "value": "={{ $('Extrair dados').item.json.msgId }}",
+              "value": "={{ $('Extrair dados').first().json.msgId }}",
               "type": "string"
             },
             {
               "id": "a-nome",
               "name": "nome",
-              "value": "={{ $('Extrair dados').item.json.nome }}",
+              "value": "={{ $('Extrair dados').first().json.nome }}",
               "type": "string"
             }
           ]
@@ -2064,7 +2064,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_nome: $('Extrair dados').item.json.nome || null,\n       p_conteudo: $json.texto, p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').item.json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').item.json.msgId }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_nome: $('Extrair dados').first().json.nome || null,\n       p_conteudo: $json.texto, p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').first().json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').first().json.msgId }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",
@@ -2081,7 +2081,7 @@
       ],
       "parameters": {
         "operation": "delete",
-        "key": "=pausa:{{ $('Extrair dados').item.json.telefone }}"
+        "key": "=pausa:{{ $('Extrair dados').first().json.telefone }}"
       },
       "credentials": {
         "redis": {
@@ -2272,7 +2272,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').item.json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').item.json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",
@@ -2309,7 +2309,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').item.json.texto || '[mídia]',\n       p_autor: 'humano', p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').item.json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').item.json.msgId, p_pausar_horas: 12 }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').first().json.texto || '[mídia]',\n       p_autor: 'humano', p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').first().json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').first().json.msgId, p_pausar_horas: 12 }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",
@@ -2326,7 +2326,7 @@
       ],
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ $env.EMPRESA_ID }}&telefone=eq.{{ (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ $env.EMPRESA_ID }}&telefone=eq.{{ (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -2363,7 +2363,7 @@
       ],
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?select=mensagem,clientes!inner(telefone)&order=criado_em.desc&limit=1&empresa_id=eq.{{ $env.EMPRESA_ID }}&clientes.telefone=eq.{{ (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}&criado_em=gte.{{ $now.minus(2, 'hours').toUTC().toISO() }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?select=mensagem,clientes!inner(telefone)&order=criado_em.desc&limit=1&empresa_id=eq.{{ $env.EMPRESA_ID }}&clientes.telefone=eq.{{ (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}&criado_em=gte.{{ $now.minus(2, 'hours').toUTC().toISO() }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -2412,7 +2412,7 @@
                 "singleValue": true
               },
               "rightValue": "",
-              "leftValue": "={{ (() => { const n = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 60); const a = n($json.mensagem); return a.length > 10 && a === n($('Extrair dados').item.json.texto); })() }}"
+              "leftValue": "={{ (() => { const n = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 60); const a = n($json.mensagem); return a.length > 10 && a === n($('Extrair dados').first().json.texto); })() }}"
             }
           ],
           "combinator": "and"
@@ -2451,7 +2451,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').item.json.texto, p_autor: 'humano', p_tipo: 'texto', p_wa_message_id: $('Extrair dados').item.json.msgId }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').first().json.texto, p_autor: 'humano', p_tipo: 'texto', p_wa_message_id: $('Extrair dados').first().json.msgId }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",

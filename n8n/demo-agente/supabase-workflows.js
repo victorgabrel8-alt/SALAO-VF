@@ -51,7 +51,7 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) =>
   workflow.connections['IA ativa?'] = main('Pausa: alinhar com o CRM');
   workflow.connections['Pausa: alinhar com o CRM'] = main('Buffer: guardar msg');
   const ativa = achar(workflow, 'IA ativa?').parameters.conditions.conditions[0];
-  ativa.leftValue = "={{ (() => { const p = $('Supabase: registrar entrada').item.json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}";
+  ativa.leftValue = "={{ (() => { const p = $('Supabase: registrar entrada').first().json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}";
   achar(workflow, 'Buffer: guardar msg').parameters.messageData = `={{ JSON.stringify({ id: ${D}.msgId, texto: $('Texto da mensagem').item.json.texto }) }}`;
 
   // ---------- Principal: a IA lê a ficha e o histórico antes de responder ----------

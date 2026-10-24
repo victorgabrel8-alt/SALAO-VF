@@ -14,7 +14,7 @@ const NUMEROS = "($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).f
 const TEL = "($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]";
 // número cadastrado que bate com o telefone t (no WhatsApp, celular antigo de MT pode chegar sem o 9: 5566999990000 → 556699990000)
 const NUMERO_DE = (t) => `(${NUMEROS}.find(n => n === ${t} || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === ${t}) || '')`;
-const A = "$('Extrair dados').item.json";
+const A = "$('Extrair dados').first().json";
 
 const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendamento_id', 'resultado', 'tecnica_indicada',
   'tipo_cabelo', 'comprimento_cm', 'gramas', 'valor', 'motivo_nao_fechou', 'proximo_passo', 'data_proximo_passo',

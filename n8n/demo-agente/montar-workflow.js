@@ -19,7 +19,7 @@ const GEMINI = env.N8N_GEMINI_CRED_ID ? { googlePalmApi: { id: env.N8N_GEMINI_CR
 
 const EVO = "={{ $env.EVOLUTION_URL }}";
 const apikeyHeader = { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] };
-const D = "$('Extrair dados').item.json";
+const D = "$('Extrair dados').first().json"; // .first(): depois de uma ferramenta o .item não acha mais os nós de antes do agente
 
 let n = 0;
 const node = (name, type, typeVersion, position, parameters, extra = {}) => ({
@@ -206,7 +206,7 @@ const nodes = [
   node('Entender mídia (Gemini)', 'n8n-nodes-base.httpRequest', 4.2, [1760, -120], {
     method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent', ...GEMINI_HTTP,
     sendBody: true, specifyBody: 'json',
-    jsonBody: "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').item.json.tipo === 'imageMessage' ? 'Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 3 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor; textura (liso, ondulado, cacheado); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo. Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
+    jsonBody: "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').first().json.tipo === 'imageMessage' ? 'Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 3 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor; textura (liso, ondulado, cacheado); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo. Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
     options: {},
   }, { credentials: GEMINI || {}, onError: 'continueRegularOutput' }),
   node('Texto da mensagem', 'n8n-nodes-base.set', 3.4, [1980, 0], {

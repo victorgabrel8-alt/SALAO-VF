@@ -193,7 +193,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').item.json.msgId } }, convertToMp4: false }) }}",
+        "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').first().json.msgId } }, convertToMp4: false }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput"
@@ -240,7 +240,7 @@
             {
               "id": "a-texto",
               "name": "texto",
-              "value": "={{ (() => { if ($('Extrair dados').item.json.tipo !== 'audioMessage') return $('Extrair dados').item.json.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; })() }}",
+              "value": "={{ (() => { if ($('Extrair dados').first().json.tipo !== 'audioMessage') return $('Extrair dados').first().json.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; })() }}",
               "type": "string"
             }
           ]
@@ -338,7 +338,7 @@
       ],
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "=assistente:{{ $('Extrair dados').item.json.numero }}",
+        "sessionKey": "=assistente:{{ $('Extrair dados').first().json.numero }}",
         "sessionTTL": 259200,
         "contextWindowLength": 20
       },
@@ -369,7 +369,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "acao": "buscar_cliente",
-            "pedido_por": "={{ $('Extrair dados').item.json.numero }}",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "busca": "={{ $fromAI('busca', `Nome (ou parte) ou telefone da cliente`, 'string') }}"
           },
           "matchingColumns": [],
@@ -620,7 +620,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "acao": "agenda_do_dia",
-            "pedido_por": "={{ $('Extrair dados').item.json.numero }}",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "data": "={{ $fromAI('data', `Dia AAAA-MM-DD (vazio = hoje)`, 'string') }}"
           },
           "matchingColumns": [],
@@ -871,7 +871,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "acao": "resultado_avaliacao",
-            "pedido_por": "={{ $('Extrair dados').item.json.numero }}",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "resultado": "={{ $fromAI('resultado', `fechou, pensando ou nao_fechou`, 'string') }}",
             "tecnica_indicada": "={{ $fromAI('tecnica_indicada', `Técnica que a Gleide indicou (ex.: queratina, fita adesiva)`, 'string') }}",
@@ -1132,7 +1132,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "acao": "status_atendimento",
-            "pedido_por": "={{ $('Extrair dados').item.json.numero }}",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "status": "={{ $fromAI('status', `realizado, faltou ou cancelado`, 'string') }}",
             "valor": "={{ $fromAI('valor', `Valor cobrado em reais, só o número (se ela disse)`, 'string') }}"
@@ -1385,7 +1385,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "acao": "registrar_atendimento",
-            "pedido_por": "={{ $('Extrair dados').item.json.numero }}",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "telefone": "={{ $fromAI('telefone', `Telefone da cliente (de buscar_cliente, ou o que a Gleide disser)`, 'string') }}",
             "nome": "={{ $fromAI('nome', `Nome da cliente`, 'string') }}",
             "servico": "={{ $fromAI('servico', `Serviço feito (ex.: manutenção, aplicação, avaliação)`, 'string') }}",
@@ -1641,7 +1641,7 @@
           "mappingMode": "defineBelow",
           "value": {
             "acao": "anotar",
-            "pedido_por": "={{ $('Extrair dados').item.json.numero }}",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "texto": "={{ $fromAI('texto', `A anotação, curta`, 'string') }}"
           },
@@ -1896,7 +1896,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').item.json.jid, text: ($json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, text: ($json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -1915,7 +1915,7 @@
       ],
       "parameters": {
         "operation": "get",
-        "key": "=assistente:{{ $('Extrair dados').item.json.numero }}",
+        "key": "=assistente:{{ $('Extrair dados').first().json.numero }}",
         "propertyName": "memoria",
         "keyType": "list",
         "options": {}
@@ -1986,7 +1986,7 @@
       ],
       "parameters": {
         "operation": "delete",
-        "key": "=assistente:{{ $('Extrair dados').item.json.numero }}"
+        "key": "=assistente:{{ $('Extrair dados').first().json.numero }}"
       },
       "credentials": {
         "redis": {
@@ -2019,7 +2019,7 @@
       ],
       "parameters": {
         "operation": "push",
-        "list": "=assistente:{{ $('Extrair dados').item.json.numero }}",
+        "list": "=assistente:{{ $('Extrair dados').first().json.numero }}",
         "messageData": "={{ $json.m }}",
         "tail": false
       },
