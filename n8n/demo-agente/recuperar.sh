@@ -166,7 +166,10 @@ if [ "$MODO" = vps ]; then
       if(m)return m[1]+JSON.stringify(v(m[2],m[3]));
       return l.replace(/\\$\{([A-Z0-9_]+)(?::-([^}]*))?\}/g,(_,k,pad)=>v(k,pad));
     }).join('\n');
-    if(/\\$\{/.test(s))throw new Error('sobrou variável sem valor');fs.writeFileSync(process.argv[1],s)" "$cmp"
+    if(/\\$\{/.test(s))throw new Error('sobrou variável sem valor');
+    // sem comentários e sem acento: o clip do Windows estraga UTF-8 ao colar
+    const limpo=s.split('\n').filter(l=>!/^\s*#/.test(l)).join('\n').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x00-\x7e]/g,'-');
+    fs.writeFileSync(process.argv[1],limpo)" "$cmp"
   # n8n certo = já responde pelo domínio (um n8n subido sem as variáveis responde com localhost)
   n8n_certo() { curl -sf -m 10 "$N8N/rest/settings" | grep -q "https://$DOMINIO_N8N"; }
   if ! n8n_certo; then
