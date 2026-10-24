@@ -50,6 +50,8 @@ perguntar() {
     # tira caracteres invisíveis (Ctrl+V no Git Bash) e espaços nas pontas; chave secreta não tem espaço
     v=$(printf '%s' "$v" | tr -d '[:cntrl:]' | sed 's/^ *//; s/ *$//')
     [ -z "${4:-}" ] || v=$(printf '%s' "$v" | tr -d '[:space:]')
+    # número: aceita "+55 (66) 99999-9999" e deixa só os dígitos
+    [ "${5:-}" != "$RE_NUMERO" ] || v=$(printf '%s' "$v" | tr -cd '0-9')
     if [ -z "$v" ]; then info "ficou vazio. Para colar no Git Bash use o botão direito do mouse (ou Shift+Insert)."; continue; fi
     if [ -n "${5:-}" ] && ! [[ $v =~ $5 ]]; then info "resposta inválida: ${6:-confira e digite de novo}"; continue; fi
     break
@@ -114,7 +116,7 @@ if ! grep -q '^NUMEROS_PERMITIDOS_OK=1' .env; then
   echo
   while true; do
     read -rp "  Quem pode falar com a IA? Enter = TODOS, ou digite os números separados por vírgula: " v
-    v=$(printf '%s' "$v" | tr -d '[:cntrl:][:space:]')
+    v=$(printf '%s' "$v" | tr -cd '0-9,' | sed 's/,,*/,/g; s/^,//; s/,$//')
     [ -z "$v" ] || [[ $v =~ $RE_NUMEROS ]] && break
     info "resposta inválida: aperte só Enter (todos) ou números com 55, separados por vírgula"
   done
