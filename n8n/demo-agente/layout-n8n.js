@@ -49,7 +49,7 @@ module.exports = (principal, agenda, pausa) => {
     'Supabase: registrar entrada': [2060, 220], 'Pausa: alinhar com o CRM': [2280, 220], 'Supabase: registrar saída': [2540, 940],
     'Supabase: dona respondeu': [1160, -280], 'Supabase: reativar IA': [1160, -440],
     'Supabase: alô recente': [940, -160], 'É o alô do CRM?': [1160, -160], 'Supabase: registrar alô': [1380, -160],
-    'Supabase: último alô': [300, 1380],
+    'Supabase: último alô': [300, 1380], 'Supabase: últimas mensagens': [300, 1580],
   }, [
     nota(-60, -140, 680, 320, 7, '## 1. Entrada\nMensagem do WhatsApp chega da Evolution.\nExtrai telefone, nome, tipo e texto.'),
     nota(640, -520, 540, 340, 3, '## Sua resposta pelo celular\nMensagem SUA (fromMe) numa conversa → **pausa a IA 12 h** para esse número.\nMandou `#ia` → tira a pausa.'),

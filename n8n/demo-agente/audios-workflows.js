@@ -159,7 +159,7 @@ return [{ json: { ok: true, ...melhor } }];
   const fs = require('fs');
   const idFile = require('path').join(__dirname, '.workflow-audios-id');
   const lerId = () => (fs.existsSync(idFile) ? fs.readFileSync(idFile, 'utf8').trim() : 'ID_DO_WORKFLOW_AUDIOS');
-  const M = "$('Montar entrada').item.json";
+  const M = "$('Montar entrada').first().json";
   workflow.nodes.push(toolSub('enviar_audio', [0, 0],
     'Manda para a cliente um ÁUDIO pronto (voz de terceiro, não diga que é a Gleide) explicando um assunto (temas em ÁUDIOS PRONTOS, no fim das instruções). ' +
     'Use quando a pergunta dela for exatamente sobre um desses temas. A resposta diz se o áudio foi enviado e o que ele fala.',

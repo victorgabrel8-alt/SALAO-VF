@@ -9,6 +9,8 @@ WhatsApp da dona ──► n8n (IA) ──► Supabase ◄── CRM (app no iPh
                       └──► Google Agenda
 ```
 
+> **Estado atual (infra no ar, decisões, pendências): [docs/ESTADO-ATUAL.md](docs/ESTADO-ATUAL.md).** A IA agora usa a agenda do app (Supabase), não a Google Agenda.
+
 O **Supabase é a única ligação** entre as duas partes. Quem trabalha no n8n grava; quem trabalha no CRM lê. As regras estão no **[CONTRATO.md](CONTRATO.md)** — leia antes de começar.
 
 ## Estrutura
@@ -31,6 +33,7 @@ salao-ia/
 │   ├── PROMPT-ATENDIMENTO.md  ← colar no Claude Code do Victor
 │   └── PROMPT-CRM.md          ← colar no Claude Code do amigo
 └── docs/
+    ├── ESTADO-ATUAL.md        ← resumo do que está no ar, decisões e pendências (comece aqui)
     ├── CRONOGRAMA.md          ← quem faz o quê, dia a dia
     ├── CHECKLIST-ENTREGA.md   ← o que conferir antes e durante a entrega
     ├── DADOS-DO-SALAO.md      ← lista do que pedir para a dona
