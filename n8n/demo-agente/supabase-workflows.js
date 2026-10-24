@@ -57,7 +57,7 @@ module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) =>
   // ---------- Principal: a IA lê a ficha e o histórico antes de responder ----------
   // Não é outra IA: são duas consultas e um texto "Sobre esta cliente" no prompt. O que a Gleide
   // confirma no ✓ da agenda (inclusive "Fez outra coisa") aparece aqui na próxima mensagem.
-  const M = "$('Montar entrada').item.json";
+  const M = "$('Montar entrada').first().json";
   workflow.nodes.push(
     supa('Supabase: ficha da cliente', 'GET',
       'clientes_status?select=id,nome,status,criado_em,ultima_visita,total_visitas,proximo_agendamento,retorno_previsto,observacoes' +

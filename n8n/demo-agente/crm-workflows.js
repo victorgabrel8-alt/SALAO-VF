@@ -23,7 +23,7 @@ ON CONFLICT (telefone) DO UPDATE SET
   total_mensagens = clientes.total_mensagens + 1,
   ultimo_contato = now(), atualizado_em = now(),
   etapa = CASE WHEN clientes.etapa IN ('novo', 'atendido', 'perdido') THEN 'conversa' ELSE clientes.etapa END`,
-    "[ $('Montar entrada').item.json.telefone, $('Montar entrada').item.json.nome || '' ]"));
+    "[ $('Montar entrada').first().json.telefone, $('Montar entrada').first().json.nome || '' ]"));
   // ramo paralelo: Montar entrada → (Marcar como lida, CRM: registrar contato)
   workflow.connections['Montar entrada'].main[0].push({ node: 'CRM: registrar contato', type: 'main', index: 0 });
 
@@ -31,7 +31,7 @@ ON CONFLICT (telefone) DO UPDATE SET
     'Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse ' +
     'dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente.',
     lerCrmId, ['telefone', 'nome', 'interesse', 'resumo'],
-    { telefone: "={{ $('Montar entrada').item.json.telefone }}" },
+    { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "progressiva")', 'string'],
       ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 6x. Casamento em dezembro.")', 'string'],

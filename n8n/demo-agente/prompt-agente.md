@@ -288,8 +288,8 @@ Ficha e histórico não se sobrepõem a uma nova informação da pessoa. Se houv
 ====================================================================
 Data e hora atual: {{ $now.setZone('America/Cuiaba').setLocale('pt-BR').toFormat("cccc, dd/LL/yyyy HH:mm") }} (horário de Cuiabá/Sinop).
 Hoje em formato AAAA-MM-DD: {{ $now.setZone('America/Cuiaba').toFormat('yyyy-LL-dd') }}.
-Nome da cliente no WhatsApp: {{ $('Montar entrada').item.json.nome }}
-Telefone da cliente: {{ $('Montar entrada').item.json.telefone }}
+Nome da cliente no WhatsApp: {{ $('Montar entrada').first().json.nome }}
+Telefone da cliente: {{ $('Montar entrada').first().json.telefone }}
 
 SOBRE ESTA CLIENTE (ficha do salão, atualizada agora)
 {{ $('Sobre esta cliente').first().json.texto }}

@@ -294,7 +294,7 @@ const nodes = [
 
   node('Agente IA', '@n8n/n8n-nodes-langchain.agent', 3.1, [2640, -20], {
     promptType: 'define',
-    text: "={{ $('Montar entrada').item.json.texto_cliente }}",
+    text: "={{ $('Montar entrada').first().json.texto_cliente }}",
     // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
     options: { systemMessage: '=' + prompt + REGRA_CITAR, returnIntermediateSteps: true },
   // Gemini falhou (sobrecarga, erro de ferramenta): tenta de novo; se ainda falhar, segue sem resposta e o
@@ -308,7 +308,7 @@ const nodes = [
 
   node('Memória (Redis)', '@n8n/n8n-nodes-langchain.memoryRedisChat', 1.5, [2720, 200], {
     sessionIdType: 'customKey',
-    sessionKey: "=memoria:{{ $('Montar entrada').item.json.telefone }}",
+    sessionKey: "=memoria:{{ $('Montar entrada').first().json.telefone }}",
     sessionTTL: 86400,
     contextWindowLength: 12,
   }, { credentials: REDIS }),
@@ -380,12 +380,12 @@ const nodes = [
   toolAgenda('ver_agendamentos', [2880, 360],
     'Lista os agendamentos futuros desta cliente (os que foram marcados por este WhatsApp). Use quando ela perguntar o horário ' +
     'dela, ou antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.',
-    { acao: 'listar', telefone: "={{ $('Montar entrada').item.json.telefone }}" }, []),
+    { acao: 'listar', telefone: "={{ $('Montar entrada').first().json.telefone }}" }, []),
 
   toolAgenda('remarcar_agendamento', [3040, 360],
     'MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo evento passa para o novo horário). Use sempre que ela quiser ' +
     'remarcar/trocar/mudar/adiantar/atrasar o horário. NUNCA use criar_agendamento para remarcar. Só diga que remarcou se a resposta começar com REMARCADO.',
-    { acao: 'remarcar', telefone: "={{ $('Montar entrada').item.json.telefone }}" },
+    { acao: 'remarcar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['data_hora_inicio', 'Horário ATUAL do agendamento, AAAA-MM-DDTHH:mm (pode deixar vazio se ela só tem um agendamento)', 'string'],
       ['data_hora_nova', 'NOVO horário desejado, AAAA-MM-DDTHH:mm', 'string'],
@@ -394,13 +394,13 @@ const nodes = [
   toolAgenda('cancelar_agendamento', [3200, 360],
     'Cancela (remove da agenda) um agendamento que a cliente já tem. Use só depois que ela confirmar que quer cancelar. ' +
     'Só diga que cancelou se a resposta começar com CANCELADO.',
-    { acao: 'cancelar', telefone: "={{ $('Montar entrada').item.json.telefone }}" },
+    { acao: 'cancelar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [['data_hora_inicio', 'Horário do agendamento a cancelar, AAAA-MM-DDTHH:mm (pode deixar vazio se ela só tem um)', 'string']]),
 
   toolAgenda('criar_agendamento', [3040, 200],
     'Cria um agendamento NOVO na agenda do salão. Use SOMENTE depois que a cliente escolheu um dos horários de consultar_horarios_livres ' +
     'e confirmou serviço e nome. NÃO use para remarcar (para isso existe remarcar_agendamento). Se a resposta não começar com AGENDADO, o horário NÃO foi marcado.',
-    { acao: 'criar', telefone: "={{ $('Montar entrada').item.json.telefone }}" },
+    { acao: 'criar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['nome', 'Nome da cliente', 'string'],
       ['servico', 'Nome do serviço, como na lista (ex.: Mega hair com queratina)', 'string'],
@@ -413,7 +413,7 @@ const nodes = [
     'Transfere a conversa para a equipe humana e PAUSA a IA para esta cliente por 12h. Use quando a cliente pedir para falar com ' +
     'uma pessoa (Gleide, dona, atendente), reclamar, ou pedir algo fora do atendimento do salão.',
     lerPausaId, ['telefone', 'motivo'],
-    { telefone: "={{ $('Montar entrada').item.json.telefone }}" },
+    { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [['motivo', 'Motivo curto da transferência (ex.: pediu para falar com a dona, reclamação)', 'string']]),
 
   // Só áudio nesta resposta ([SEM TEXTO]): não manda balão, só libera a trava
