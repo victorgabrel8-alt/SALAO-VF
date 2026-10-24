@@ -1,8 +1,10 @@
-# Produção no VPS (Easypanel → serviço "Compose"). Mesmo conjunto do ../docker-compose.yml, mas:
+# Produção no VPS (Easypanel → serviço "Compose"). Mesmo conjunto do n8n/demo-agente/docker-compose.yml, mas:
 #  - sem "ports": o Easypanel publica n8n e Evolution com HTTPS pelos domínios (aba Domains);
 #  - endereços públicos vêm de DOMINIO_N8N e DOMINIO_EVO (aba Environment);
 #  - o banco "crm" é criado sozinho na primeira subida do Postgres.
-# Passo a passo: ../RECUPERACAO.md, seção "VPS com Easypanel".
+# Fica na raiz do repositório porque o Easypanel grava as variáveis da aba Ambiente num .env na raiz,
+# e o docker compose só lê o .env da pasta do compose (numa subpasta, tudo chegava vazio).
+# Passo a passo: n8n/demo-agente/RECUPERACAO.md, seção "VPS com Easypanel".
 
 services:
   postgres:
@@ -13,7 +15,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: evolution
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_dados:/var/lib/postgresql/data
     configs:
       - source: crm_init
         target: /docker-entrypoint-initdb.d/crm.sql
@@ -72,7 +74,7 @@ services:
       LOG_LEVEL: ERROR,WARN,INFO
       TZ: America/Cuiaba
     volumes:
-      - evolution_instances:/evolution/instances
+      - evolution_dados:/evolution/instances
 
   n8n:
     image: n8nio/n8n:2.43.7
@@ -107,13 +109,13 @@ services:
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
       EMPRESA_ID: ${EMPRESA_ID:-}
     volumes:
-      - n8n_data:/home/node/.n8n
+      - n8n_dados:/home/node/.n8n
 
 volumes:
-  postgres_data:
+  postgres_dados:
   redis_data:
-  evolution_instances:
-  n8n_data:
+  evolution_dados:
+  n8n_dados:
 
 configs:
   crm_init:

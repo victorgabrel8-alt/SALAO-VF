@@ -168,7 +168,7 @@ if [ "$MODO" = vps ]; then
     info "  1. No projeto 'salao-vf' → + Serviço → Compose → nome 'ia'."
     info "  2. Fonte → Git:  URL https://github.com/victorgabrel8-alt/SALAO-VF.git"
     info "     Ramo claude/gracious-ptolemy-2w5gr1 · Caminho de Build /"
-    info "     Arquivo do Docker Compose: n8n/demo-agente/easypanel/docker-compose.yml → Salvar"
+    info "     Arquivo do Docker Compose: docker-compose.easypanel.yml → Salvar"
     info "  3. Ambiente (Environment): cole o conteúdo de $amb$copiado → Salvar."
     info "  4. Domínios → Adicionar Domínio (HTTPS ligado):"
     info "       $DOMINIO_N8N  → serviço n8n,       porta 5678, HTTPS ligado"

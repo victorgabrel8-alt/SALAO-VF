@@ -103,7 +103,7 @@ do servidor pelos domínios, com HTTPS.
 1. **DNS:** registro **A** de `n8n.seudominio` e `evo.seudominio` → IP do VPS.
 2. **Easypanel** (`http://IP-DO-VPS:3000`): projeto `salao` → *+ Service* → **Compose** → `ia`.
    - Source: GitHub `victorgabrel8-alt/SALAO-VF`, branch `claude/gracious-ptolemy-2w5gr1`,
-     arquivo `n8n/demo-agente/easypanel/docker-compose.yml`.
+     arquivo `docker-compose.easypanel.yml` (na raiz: o Easypanel grava o `.env` da aba Ambiente na raiz).
    - *Environment*: cole o que o script copiou. *Domains*: n8n → porta 5678; evolution → porta 8080. *Deploy*.
 3. Volte ao terminal e aperte Enter: o resto (conta do n8n, credenciais, workflows, QR code) é igual ao PC.
 
