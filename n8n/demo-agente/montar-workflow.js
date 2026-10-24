@@ -346,7 +346,8 @@ const nodes = [
       "const limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);",
       "if (limpos.length) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
-      "if (!paragrafos.length) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
+      "const falhou = !paragrafos.length; // o alerta-workflows.js avisa o Victor",
+      "if (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
       "// Uma mensagem só (pedido do Victor): a IA lê a rajada inteira e responde num balão, com os parágrafos",
       "// separados por linha em branco",
       "const baloes = [{ t: paragrafos.map(p => p.t).join('\\n\\n'), ref: 0 }];",
@@ -361,7 +362,7 @@ const nodes = [
       "// isso deixa a cliente quase 1 minuto sem resposta",
       "const ale = (a, b) => a + Math.random() * (b - a);",
       "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
-      "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, citar: citarDe({ ref }, i),",
+      "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, citar: citarDe({ ref }, i),",
       "  pausa: Math.round((i === 0 ? Math.min(5, ale(0.8, 2) + lida * 0.02) : ale(1.5, 3)) * 10) / 10,",
       "  delay: Math.round(Math.min(10000, Math.max(3000, texto.length * ale(60, 90)))) } }));",
     ].join('\n'),
@@ -528,6 +529,9 @@ const assistente = require('./assistente-workflows.js')({ env, node, str, main, 
 // Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
 const faltas = require('./faltas-workflows.js')({ env, node, main });
 
+// Alerta de erro no WhatsApp do Victor (ver alerta-workflows.js)
+const alerta = require('./alerta-workflows.js')({ env, node, main, workflow });
+
 // memória sem começo quebrado no meio de uma ferramenta (ver memoria-janela.js)
 const memoriaJanela = require('./memoria-janela.js')({ node, main });
 memoriaJanela(workflow, 'Agente IA', REDIS);
@@ -546,6 +550,7 @@ fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.str
 fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 // Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
@@ -586,6 +591,10 @@ if (process.argv.includes('--enviar')) {
     console.log(a.ok ? `  ativo: ${ab.active}` : `  erro ao ativar: ${JSON.stringify(ab)}`);
   };
   (async () => {
+    // alerta primeiro: os outros workflows apontam para ele em settings.errorWorkflow
+    const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
+    alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
+      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
     // n8n 2.x: subworkflow também precisa estar publicado (ativo) para ser chamado
     if (process.argv.includes('--ativar')) await ativar(agendaId);
