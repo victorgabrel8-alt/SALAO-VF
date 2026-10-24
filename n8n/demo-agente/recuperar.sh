@@ -20,26 +20,45 @@ info() { echo "  ➜ $*"; }
 erro() { echo; echo "❌ $*"; echo "   Corrija e rode de novo:  bash recuperar.sh"; exit 1; }
 abrir() { start "" "$1" 2>/dev/null || xdg-open "$1" >/dev/null 2>&1 || true; }
 aleatorio() { openssl rand -hex 24 2>/dev/null || node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"; }
-# grava CHAVE=valor no .env (troca a linha se existir, senão acrescenta)
+# grava CHAVE=valor no .env: uma linha só por chave (no lugar da primeira, senão no fim)
 gravar() {
-  node -e "const fs=require('fs');const [k,v]=process.argv.slice(1);let s=fs.readFileSync('.env','utf8');
-    const re=new RegExp('^'+k+'=.*$','m');s=re.test(s)?s.replace(re,()=>k+'='+v):s.replace(/\n*$/,'\n')+k+'='+v+'\n';fs.writeFileSync('.env',s)" "$1" "$2"
+  node -e "const fs=require('fs');const [k,v]=process.argv.slice(1);const ls=fs.readFileSync('.env','utf8').split(/\r?\n/);
+    const i=ls.findIndex(l=>l.startsWith(k+'='));const fora=ls.filter(l=>!l.startsWith(k+'='));
+    if(i<0){while(fora.length&&!fora[fora.length-1])fora.pop();fora.push(k+'='+v,'')}else fora.splice(ls.slice(0,i).filter(l=>!l.startsWith(k+'=')).length,0,k+'='+v);
+    fs.writeFileSync('.env',fora.join('\n'))" "$1" "$2"
 }
-carregar() { set -a; . ./.env; set +a; }
-# perguntar VAR "pergunta" [página para abrir] [secreto]  -> só pergunta se VAR estiver vazia
-novo=""
+# lê o .env sem executar nada (um comando colado por engano numa resposta não roda)
+carregar() {
+  local l
+  while IFS= read -r l || [ -n "$l" ]; do
+    l=${l%$'\r'}
+    [[ $l =~ ^[A-Z0-9_]+= ]] && export "${l%%=*}=${l#*=}"
+  done < .env
+}
+# perguntar VAR "pergunta" [página para abrir] [secreto] [regex válida] [dica se inválida]
+# Só pergunta se VAR estiver vazia; repete até a resposta ser válida.
+novo=""; abertas=""
 perguntar() {
   novo=""
   [ -z "${!1:-}" ] || return 0
   novo=1
   echo
-  [ -z "${3:-}" ] || { info "abrindo $3"; abrir "$3"; }
+  case " $abertas " in *" ${3:-} "*) ;; *) [ -z "${3:-}" ] || { info "abrindo $3"; abrir "$3"; abertas="$abertas $3"; } ;; esac
   local v
-  if [ -n "${4:-}" ]; then read -rsp "  $2: " v; echo; else read -rp "  $2: " v; fi
-  v=$(printf '%s' "$v" | tr -d '\r' | sed 's/^ *//; s/ *$//')
-  [ -n "$v" ] || erro "$1 ficou vazio."
+  while true; do
+    if [ -n "${4:-}" ]; then read -rsp "  $2: " v; echo; else read -rp "  $2: " v; fi
+    # tira caracteres invisíveis (Ctrl+V no Git Bash) e espaços nas pontas; chave secreta não tem espaço
+    v=$(printf '%s' "$v" | tr -d '[:cntrl:]' | sed 's/^ *//; s/ *$//')
+    [ -z "${4:-}" ] || v=$(printf '%s' "$v" | tr -d '[:space:]')
+    if [ -z "$v" ]; then info "ficou vazio. Para colar no Git Bash use o botão direito do mouse (ou Shift+Insert)."; continue; fi
+    if [ -n "${5:-}" ] && ! [[ $v =~ $5 ]]; then info "resposta inválida: ${6:-confira e digite de novo}"; continue; fi
+    break
+  done
   gravar "$1" "$v"; printf -v "$1" '%s' "$v"
 }
+RE_NUMERO='^55[0-9]{10,11}$'
+RE_NUMEROS='^(55[0-9]{10,11})(,55[0-9]{10,11})*$'
+RE_DOMINIO='^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$'
 
 command -v node >/dev/null || erro "Node.js não instalado. No PowerShell: winget install OpenJS.NodeJS.LTS  (depois feche e abra o Git Bash)"
 
@@ -52,9 +71,21 @@ done
 [ -n "${SUPABASE_URL:-}" ] || gravar SUPABASE_URL "$SUPABASE_PADRAO"
 [ -n "${EMPRESA_ID:-}" ] || gravar EMPRESA_ID "$EMPRESA_PADRAO"
 carregar
+# apaga do .env linhas que não são CHAVE=valor (sobra de comando colado) e chaves repetidas (vale a última)
+node -e "const fs=require('fs');const ls=fs.readFileSync('.env','utf8').split(/\r?\n/).filter(l=>!l.trim()||/^#|^[A-Z0-9_]+=/.test(l));
+  const ult={};ls.forEach(l=>{const m=l.match(/^([A-Z0-9_]+)=/);if(m)ult[m[1]]=l});const feito=new Set();
+  fs.writeFileSync('.env',ls.flatMap(l=>{const m=l.match(/^([A-Z0-9_]+)=/);if(!m)return[l];if(feito.has(m[1]))return[];feito.add(m[1]);return[ult[m[1]]]}).join('\n'))"
+carregar
+# respostas erradas de uma rodada anterior (ex.: um comando colado no lugar do número): pergunta de novo
+[ -z "${MEU_NUMERO:-}" ] || [[ $MEU_NUMERO =~ $RE_NUMERO ]] || gravar MEU_NUMERO ""
+[ -z "${NUMEROS_PERMITIDOS:-}" ] || [[ $NUMEROS_PERMITIDOS =~ $RE_NUMEROS ]] || { gravar NUMEROS_PERMITIDOS ""; gravar NUMEROS_PERMITIDOS_OK ""; }
+for k in DOMINIO_N8N DOMINIO_EVO; do [ -z "${!k:-}" ] || [[ ${!k} =~ $RE_DOMINIO ]] || gravar "$k" ""; done
+case "${MODO:-}" in ''|pc|vps) ;; *) gravar MODO "" ;; esac
+for k in MEU_NUMERO NUMEROS_PERMITIDOS NUMEROS_PERMITIDOS_OK DOMINIO_N8N DOMINIO_EVO MODO; do unset "$k"; done
+carregar
 if [ -z "${MODO:-}" ]; then
   echo; read -rp "  Onde a IA vai rodar?  1 = neste PC   2 = VPS com Easypanel  [2]: " v
-  case "$(printf '%s' "${v:-2}" | tr -d '\r ')" in
+  case "$(printf '%s' "${v:-2}" | tr -d '[:cntrl:][:space:]')" in
     1) gravar MODO pc ;;
     *) gravar MODO vps
        # IDs de uma tentativa anterior neste PC não valem no n8n do VPS
@@ -64,10 +95,10 @@ if [ -z "${MODO:-}" ]; then
 fi
 if [ "$MODO" = vps ]; then
   echo; info "Domínios do VPS: crie no seu DNS um registro A de cada um apontando para o IP do VPS."
-  perguntar DOMINIO_N8N "Domínio do n8n (ex.: n8n.seudominio.com.br)"
-  perguntar DOMINIO_EVO "Domínio da Evolution/WhatsApp (ex.: evo.seudominio.com.br)"
+  perguntar DOMINIO_N8N "Domínio do n8n (ex.: n8n.seudominio.com.br)" "" "" "^(https?://)?[A-Za-z0-9.-]+\\.[A-Za-z]{2,}/?$" "só o endereço, ex.: n8n.oistudio.com.br"
+  perguntar DOMINIO_EVO "Domínio da Evolution/WhatsApp (ex.: evo.seudominio.com.br)" "" "" "^(https?://)?[A-Za-z0-9.-]+\\.[A-Za-z]{2,}/?$" "só o endereço, ex.: evo.oistudio.com.br"
   for k in DOMINIO_N8N DOMINIO_EVO; do
-    v=$(printf '%s' "${!k}" | sed -E 's#^https?://##; s#/.*$##'); gravar "$k" "$v"
+    v=$(printf '%s' "${!k}" | tr 'A-Z' 'a-z' | sed -E 's#^https?://##; s#/.*$##'); gravar "$k" "$v"
   done
   carregar
   N8N=https://$DOMINIO_N8N; EVO_URL=https://$DOMINIO_EVO
@@ -77,20 +108,48 @@ fi
 gravar N8N_URL "$N8N"
 
 echo "2/7 O que só você sabe (pergunto uma vez e guardo no .env)"
-perguntar MEU_NUMERO "Número do WhatsApp que vai ler o QR code (55+DDD+número, só dígitos)"
+perguntar MEU_NUMERO "Número do WhatsApp que vai ler o QR code (55+DDD+número, só dígitos)" "" "" "$RE_NUMERO" "só números, começando com 55. Ex.: 5566999999999"
 # vazio = a IA responde qualquer número (NUMEROS_PERMITIDOS_OK marca que já foi perguntado)
 if ! grep -q '^NUMEROS_PERMITIDOS_OK=1' .env; then
-  echo; read -rp "  Quem pode falar com a IA? Enter = TODOS, ou digite os números separados por vírgula: " v
-  v=$(printf '%s' "$v" | tr -d '\r '); gravar NUMEROS_PERMITIDOS "$v"; gravar NUMEROS_PERMITIDOS_OK 1
+  echo
+  while true; do
+    read -rp "  Quem pode falar com a IA? Enter = TODOS, ou digite os números separados por vírgula: " v
+    v=$(printf '%s' "$v" | tr -d '[:cntrl:][:space:]')
+    [ -z "$v" ] || [[ $v =~ $RE_NUMEROS ]] && break
+    info "resposta inválida: aperte só Enter (todos) ou números com 55, separados por vírgula"
+  done
+  gravar NUMEROS_PERMITIDOS "$v"; gravar NUMEROS_PERMITIDOS_OK 1
 fi
-perguntar SUPABASE_SERVICE_KEY "Supabase: cole a chave service_role / secret (clique em Reveal)" \
-  "https://supabase.com/dashboard/project/zgbzyzsqpkqvwkquofpn/settings/api-keys" secreto
-[ -z "$novo" ] || curl -sf -m 15 "$SUPABASE_URL/rest/v1/empresas?select=id&limit=1" -H "apikey: $SUPABASE_SERVICE_KEY" \
-  -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" >/dev/null \
-  || { gravar SUPABASE_SERVICE_KEY ""; erro "O Supabase recusou essa chave. Confira se copiou a service_role inteira."; }
-perguntar GEMINI_API_KEY "Gemini: cole a API key (use a que já existe ou 'Create API key')" "https://aistudio.google.com/apikey" secreto
-[ -z "$novo" ] || curl -sf -m 15 "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" >/dev/null \
-  || { gravar GEMINI_API_KEY ""; erro "O Google recusou essa chave do Gemini."; }
+# a service_role "legacy" (JWT eyJ...): os workflows mandam a chave também em "Authorization: Bearer",
+# e as chaves novas sb_secret_ não são aceitas aí
+conferir_supabase() {
+  local k=$1 papel codigo
+  case "$k" in
+    sb_secret_*|sb_publishable_*) echo "essa é a chave nova ($( [ "${k#sb_secret_}" != "$k" ] && echo secret || echo publishable )). Use a aba 'Legacy API Keys' → service_role (começa com eyJ)."; return 1 ;;
+    eyJ*) ;;
+    *) echo "não parece uma chave do Supabase (a service_role começa com eyJ e é bem longa)."; return 1 ;;
+  esac
+  papel=$(node -e "try{const p=JSON.parse(Buffer.from(process.argv[1].split('.')[1],'base64url'));console.log(p.role+'|'+p.ref)}catch{console.log('?|?')}" "$k")
+  [ "${papel#*|}" = zgbzyzsqpkqvwkquofpn ] || { echo "essa chave é de outro projeto do Supabase."; return 1; }
+  [ "${papel%|*}" = service_role ] || { echo "essa é a chave '${papel%|*}'. Copie a da linha service_role (clique em Reveal)."; return 1; }
+  codigo=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "$SUPABASE_URL/rest/v1/empresas?select=id&limit=1" -H "apikey: $k" -H "Authorization: Bearer $k")
+  [ "$codigo" = 200 ] || { echo "o Supabase respondeu $codigo (sem internet, ou a chave foi trocada no painel)."; return 1; }
+}
+while true; do
+  perguntar SUPABASE_SERVICE_KEY "Supabase: cole a service_role (aba Legacy API Keys → Reveal → Copy)" \
+    "https://supabase.com/dashboard/project/zgbzyzsqpkqvwkquofpn/settings/api-keys" secreto
+  [ -n "$novo" ] || break
+  if motivo=$(conferir_supabase "$SUPABASE_SERVICE_KEY"); then ok "chave do Supabase conferida"; break; fi
+  info "chave recusada: $motivo"; gravar SUPABASE_SERVICE_KEY ""; SUPABASE_SERVICE_KEY=""
+done
+while true; do
+  perguntar GEMINI_API_KEY "Gemini: cole a API key (começa com AIza)" "https://aistudio.google.com/apikey" secreto
+  [ -n "$novo" ] || break
+  codigo=$(curl -s -o /dev/null -w '%{http_code}' -m 20 "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY")
+  if [ "$codigo" = 200 ]; then ok "chave do Gemini conferida"; break; fi
+  info "o Google recusou essa chave (resposta $codigo). Copie de novo pelo botão de copiar do AI Studio."
+  gravar GEMINI_API_KEY ""; GEMINI_API_KEY=""
+done
 ok "dados guardados no .env"
 carregar
 
