@@ -94,7 +94,7 @@ export function FormAtendimento({
 
   // Busca por nome ou telefone enquanto a dona digita
   useEffect(() => {
-    const termo = busca.replace(/[,()%*]/g, " ").trim();
+    const termo = busca.replace(/[,()%*"\\]/g, " ").trim();
     if (termo.length < 2) return;
     const digitos = busca.replace(/\D/g, "");
     const filtros = [`nome.ilike.%${termo}%`];

@@ -93,7 +93,7 @@ async function buscarPagina(empresaId: string, c: Consulta, de: number, quantida
   if (regra.agendado === false) q = q.is("proximo_agendamento", null);
   if (c.origem) q = q.contains("etiquetas", [`origem:${c.origem}`]);
 
-  const termo = c.busca.replace(/[,()%*]/g, " ").trim();
+  const termo = c.busca.replace(/[,()%*"\\]/g, " ").trim();
   if (termo) {
     const digitos = c.busca.replace(/\D/g, "");
     q = q.or([`nome.ilike.%${termo}%`, ...(digitos.length >= 3 ? [`telefone.like.%${digitos}%`] : [])].join(","));
