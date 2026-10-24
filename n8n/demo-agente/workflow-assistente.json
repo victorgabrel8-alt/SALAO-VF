@@ -2,7 +2,7 @@
   "name": "Assistente da Gleide",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000127",
+      "id": "00000000-0000-4000-8000-000000000117",
       "name": "Webhook assistente",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -18,7 +18,7 @@
       "webhookId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a80"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000128",
+      "id": "00000000-0000-4000-8000-000000000118",
       "name": "Extrair dados",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -83,7 +83,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000129",
+      "id": "00000000-0000-4000-8000-000000000119",
       "name": "Filtro",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -137,7 +137,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000130",
+      "id": "00000000-0000-4000-8000-000000000120",
       "name": "É áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -171,7 +171,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000131",
+      "id": "00000000-0000-4000-8000-000000000121",
       "name": "Baixar áudio (Evolution)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -199,7 +199,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000132",
+      "id": "00000000-0000-4000-8000-000000000122",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -217,16 +217,11 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
         "options": {}
       },
-      "credentials": {
-        "googlePalmApi": {
-          "id": "MjEGxdJcHhSejzG7",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      },
+      "credentials": {},
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000133",
+      "id": "00000000-0000-4000-8000-000000000123",
       "name": "Texto da mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -249,31 +244,47 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000134",
+      "id": "00000000-0000-4000-8000-000000000124",
       "name": "Ler pendências",
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1540,
         0
       ],
       "parameters": {
-        "operation": "executeQuery",
-        "query": "select coalesce(string_agg(format('- [%s] %s (…%s)%s%s — cliente_id=%s%s',\n           tipo, nome, right(telefone, 4),\n           case when inicio is not null then ' ' || to_char(inicio at time zone 'America/Cuiaba', 'DD/MM HH24:MI') else '' end,\n           case when servico is not null then ', ' || servico else '' end ||\n           case when valor_orcado is not null then ', orçado R$ ' || valor_orcado else '' end ||\n           case when proximo_passo is not null then ', próximo passo: ' || proximo_passo else '' end,\n           cliente_id, case when agendamento_id is not null then ', agendamento_id=' || agendamento_id else '' end),\n           E'\\n' order by inicio nulls last), '(nenhuma)') as pendencias\n   from pendencias_gleide where empresa_id = $1",
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_pendencias_texto",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001' }) }}",
         "options": {
-          "queryReplacement": "={{ [ $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001' ] }}"
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
         }
       },
-      "credentials": {
-        "postgres": {
-          "id": "vWZfw25p31IboD1j",
-          "name": "Salão teste (004)"
-        }
-      },
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000135",
+      "id": "00000000-0000-4000-8000-000000000125",
       "name": "Agente assistente",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
@@ -285,12 +296,12 @@
         "promptType": "define",
         "text": "={{ $('Texto da mensagem').item.json.texto }}",
         "options": {
-          "systemMessage": "=Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).\nSeu trabalho é manter o CRM do salão em dia SEM a Gleide precisar digitar nada.\nEla é ocupada: mensagens curtíssimas, sem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba).\n\nO QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):\n{{ $('Ler pendências').first().json.pendencias }}\n\nO QUE VOCÊ FAZ\n- Registra como foram as avaliações e os atendimentos que ela contar.\n- Registra o que ela falar por conta própria (cliente que veio sem marcar, anotação sobre a cliente).\n- Responde dúvidas sobre as clientes (\"quando a Maria veio?\", \"quem ficou de pensar?\") usando buscar_cliente e agenda_do_dia.\n\nCOMO GRAVAR (siga sempre)\n1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.\n   Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).\n2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:\n   \"Anotei pra *Juliana Souza (…2222)*:\n   ✅ Fechou — queratina, vietnamita 70 cm, 150 g\n   💰 R$ 2.800\n   Tá certo?\"\n   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único\n   \"Tá certo?\". O que ela não falou (valor, gramas, cm) entra como \"valor: não informado\" — NÃO segure o resumo esperando isso;\n   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.\n3. Só depois do \"sim\" (ou \"isso\", \"pode\", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.\n   Se ela corrigir, ajuste e confirme de novo.\n4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.\n5. Depois de gravar, responda só \"Pronto, tá no CRM ✅\" e, se ainda houver pendência, pergunte a próxima (uma por vez).\n\nREGRAS\n- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.\n- \"fechou\" = vai fazer o serviço; \"pensando\" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); \"nao_fechou\" = desistiu (pergunte o motivo uma vez).\n- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo \"aplicação marcada DD/MM às HH:mm\" e\n  data_proximo_passo nessa data (calcule \"terça que vem\" a partir da data atual), e avise que por enquanto ela põe o horário na agenda (você ainda não marca).\n- Fez um serviço A MAIS do que estava na agenda (ex.: marcou corte e fez progressiva também): status_atendimento no horário\n  agendado + registrar_atendimento para o serviço extra (mesmo telefone, mesmo horário).\n- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar (\"Chamar em DD/MM: motivo\"). Diga que ficou anotado\n  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).\n- Uma pergunta por mensagem. Se ela não responder algo, não insista.\n- Você não fala com clientes. Se ela pedir \"chama a Carla\", diga que por enquanto você só anota, e grave isso como próximo passo.\n- Mensagens que começam com [áudio] são a transcrição de um áudio dela."
+          "systemMessage": "=Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).\nSeu trabalho é manter o CRM do salão em dia SEM a Gleide precisar digitar nada.\nEla é ocupada: mensagens curtíssimas, sem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba).\n\nO QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nO QUE VOCÊ FAZ\n- Registra como foram as avaliações e os atendimentos que ela contar.\n- Registra o que ela falar por conta própria (cliente que veio sem marcar, anotação sobre a cliente).\n- Responde dúvidas sobre as clientes (\"quando a Maria veio?\", \"quem ficou de pensar?\") usando buscar_cliente e agenda_do_dia.\n\nCOMO GRAVAR (siga sempre)\n1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.\n   Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).\n2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:\n   \"Anotei pra *Juliana Souza (…2222)*:\n   ✅ Fechou — queratina, vietnamita 70 cm, 150 g\n   💰 R$ 2.800\n   Tá certo?\"\n   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único\n   \"Tá certo?\". O que ela não falou (valor, gramas, cm) entra como \"valor: não informado\" — NÃO segure o resumo esperando isso;\n   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.\n3. Só depois do \"sim\" (ou \"isso\", \"pode\", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.\n   Se ela corrigir, ajuste e confirme de novo.\n4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.\n5. Depois de gravar, responda só \"Pronto, tá no CRM ✅\" e, se ainda houver pendência, pergunte a próxima (uma por vez).\n\nREGRAS\n- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.\n- \"fechou\" = vai fazer o serviço; \"pensando\" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); \"nao_fechou\" = desistiu (pergunte o motivo uma vez).\n- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo \"aplicação marcada DD/MM às HH:mm\" e\n  data_proximo_passo nessa data (calcule \"terça que vem\" a partir da data atual), e avise que por enquanto ela põe o horário na agenda (você ainda não marca).\n- Fez um serviço A MAIS do que estava na agenda (ex.: marcou corte e fez progressiva também): status_atendimento no horário\n  agendado + registrar_atendimento para o serviço extra (mesmo telefone, mesmo horário).\n- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar (\"Chamar em DD/MM: motivo\"). Diga que ficou anotado\n  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).\n- Uma pergunta por mensagem. Se ela não responder algo, não insista.\n- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até\n  5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.\n  Diga isso numa frase curta (\"Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍\").\n- Fora isso, você não fala com clientes. Se ela pedir \"chama a Carla\", diga que por enquanto você só anota, e grave isso como próximo passo.\n- Avisos que você mandou (\"✅ Remarquei…\", \"⚠️ … não respondeu\") ficam na conversa: se ela responder a eles, entenda pelo contexto.\n- Mensagens que começam com [áudio] são a transcrição de um áudio dela."
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000136",
+      "id": "00000000-0000-4000-8000-000000000126",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
@@ -304,15 +315,10 @@
           "temperature": 0.2
         }
       },
-      "credentials": {
-        "googlePalmApi": {
-          "id": "MjEGxdJcHhSejzG7",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
+      "credentials": {}
     },
     {
-      "id": "00000000-0000-4000-8000-000000000137",
+      "id": "00000000-0000-4000-8000-000000000127",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
@@ -328,13 +334,13 @@
       },
       "credentials": {
         "redis": {
-          "id": "bSZHOsNCSsDVJpK7",
+          "id": "",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000138",
+      "id": "00000000-0000-4000-8000-000000000128",
       "name": "buscar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -346,7 +352,7 @@
         "description": "Procura clientes pelo nome ou telefone. Devolve id, telefone, status, etapa do funil, pré-avaliação, valor orçado e observações.",
         "workflowId": {
           "__rl": true,
-          "value": "49AdkUAS0oLDVIEM",
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
           "mode": "id"
         },
         "workflowInputs": {
@@ -585,7 +591,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000139",
+      "id": "00000000-0000-4000-8000-000000000129",
       "name": "agenda_do_dia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -597,7 +603,7 @@
         "description": "Lista os horários de um dia (com agendamento_id, hora, cliente, serviço, status).",
         "workflowId": {
           "__rl": true,
-          "value": "49AdkUAS0oLDVIEM",
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
           "mode": "id"
         },
         "workflowInputs": {
@@ -836,7 +842,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000140",
+      "id": "00000000-0000-4000-8000-000000000130",
       "name": "resultado_avaliacao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -848,7 +854,7 @@
         "description": "Grava o resultado de uma avaliação. Só use DEPOIS que a Gleide confirmou o resumo.",
         "workflowId": {
           "__rl": true,
-          "value": "49AdkUAS0oLDVIEM",
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1097,7 +1103,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000141",
+      "id": "00000000-0000-4000-8000-000000000131",
       "name": "status_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1109,7 +1115,7 @@
         "description": "Marca um horário como realizado (veio), faltou ou cancelado. Só use DEPOIS da confirmação.",
         "workflowId": {
           "__rl": true,
-          "value": "49AdkUAS0oLDVIEM",
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1350,7 +1356,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000142",
+      "id": "00000000-0000-4000-8000-000000000132",
       "name": "registrar_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1362,7 +1368,7 @@
         "description": "Registra um atendimento que já aconteceu e não estava na agenda (cliente veio sem marcar). Só use DEPOIS da confirmação.",
         "workflowId": {
           "__rl": true,
-          "value": "49AdkUAS0oLDVIEM",
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1606,7 +1612,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000143",
+      "id": "00000000-0000-4000-8000-000000000133",
       "name": "anotar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1618,7 +1624,7 @@
         "description": "Acrescenta uma anotação na ficha da cliente (alergia, preferência, combinado). Não apaga as anteriores. Só use DEPOIS da confirmação.",
         "workflowId": {
           "__rl": true,
-          "value": "49AdkUAS0oLDVIEM",
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1858,7 +1864,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000144",
+      "id": "00000000-0000-4000-8000-000000000134",
       "name": "Responder a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1887,6 +1893,146 @@
       "maxTries": 3,
       "waitBetweenTries": 3000,
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000168",
+      "name": "Memória: ler (Agente assistente)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=assistente:{{ $('Extrair dados').item.json.numero }}",
+        "propertyName": "memoria",
+        "keyType": "list",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000169",
+      "name": "Memória: conferir (Agente assistente)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// lista do Redis: [0] = mais nova (a memória grava com LPUSH)\nconst lista = [].concat($input.first().json.memoria || []);\nconst quebra = (s) => { try { const m = JSON.parse(s); return m.type === 'tool' || (m.type === 'ai' && (m.data?.tool_calls || []).length > 0); } catch (e) { return false; } };\nlet fim = Math.min(lista.length, 40);\nif (!fim || !quebra(lista[fim - 1])) return [{ json: { cortar: false }, pairedItem: 0 }];\n// recua até uma mensagem dela: o histórico começa como uma conversa normal\nconst dela = (s) => { try { return JSON.parse(s).type === 'human'; } catch (e) { return false; } };\nwhile (fim > 0 && !dela(lista[fim - 1])) fim--;\n// toda interação começa com a mensagem dela, então sempre há um ponto bom; sem ele, não mexe\nif (!fim) return [{ json: { cortar: false }, pairedItem: 0 }];\nreturn [{ json: { cortar: true, de: lista.length, para: fim, manter: lista.slice(0, fim) }, pairedItem: 0 }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000170",
+      "name": "Memória: cortar? (Agente assistente)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mj1",
+              "leftValue": "={{ $json.cortar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000171",
+      "name": "Memória: apagar (Agente assistente)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=assistente:{{ $('Extrair dados').item.json.numero }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000172",
+      "name": "Memória: regravar itens (Agente assistente)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [].concat($('Memória: conferir (Agente assistente)').first().json.manter || []).reverse().map((m) => ({ json: { m }, pairedItem: 0 }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000173",
+      "name": "Memória: regravar (Agente assistente)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=assistente:{{ $('Extrair dados').item.json.numero }}",
+        "messageData": "={{ $json.m }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000174",
+      "name": "Memória: pronta (Agente assistente)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: {}, pairedItem: 0 }];"
+      },
+      "executeOnce": true
     }
   ],
   "connections": {
@@ -1978,7 +2124,7 @@
       "main": [
         [
           {
-            "node": "Agente assistente",
+            "node": "Memória: ler (Agente assistente)",
             "type": "main",
             "index": 0
           }
@@ -2079,6 +2225,90 @@
           {
             "node": "Agente assistente",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: ler (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Memória: conferir (Agente assistente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: conferir (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Memória: cortar? (Agente assistente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: cortar? (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Memória: apagar (Agente assistente)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: apagar (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Memória: regravar itens (Agente assistente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: regravar itens (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Memória: regravar (Agente assistente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: regravar (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Memória: pronta (Agente assistente)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: pronta (Agente assistente)": {
+      "main": [
+        [
+          {
+            "node": "Agente assistente",
+            "type": "main",
             "index": 0
           }
         ]

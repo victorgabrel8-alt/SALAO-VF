@@ -61,19 +61,19 @@ module.exports = (principal, agenda, pausa) => {
   ]);
 
   organizar(agenda, {
-    'Recebe pedido do agente': [0, 0], 'Preparar': [220, 0], 'Google: horários ocupados': [440, 0],
-    'Google: agendamentos da cliente': [660, 0], 'Supabase: horários ocupados': [770, 160], 'Supabase: config do salão': [770, 320], 'Supabase: agendamentos da cliente': [990, 160],
-    'Calcular': [880, 0],
-    'Criar evento?': [1140, 0], 'Google: criar evento': [1380, -180], 'CRM: agendado': [1600, -180],
-    'Supabase: cliente e serviços': [1820, -340], 'Supabase: serviços': [2040, -340], 'Supabase: profissionais': [2260, -340],
-    'Montar agendamento': [2480, -340], 'Supabase: gravar agendamento': [2700, -340], 'Supabase: nome da cliente': [2920, -340],
-    'Resposta (agendado)': [3140, -180],
-    'Cancelar evento?': [1380, 120], 'Tem evento no Google (cancelar)?': [1490, -40], 'Google: cancelar evento': [1600, 40], 'CRM: cancelado': [1820, 40], 'Supabase: cancelar agendamento': [2040, 40], 'Resposta (cancelado)': [2260, 40],
-    'Remarcar evento?': [1600, 260], 'Tem evento no Google (remarcar)?': [1710, 340], 'Google: remarcar evento': [1820, 200], 'CRM: remarcado': [2040, 200], 'Supabase: remarcar agendamento': [2260, 200], 'Resposta (remarcado)': [2480, 200],
-    'Resposta': [1820, 400],
+    'Recebe pedido do agente': [0, 0], 'Preparar': [220, 0],
+    'Supabase: horários ocupados': [440, 0], 'Supabase: config do salão': [660, 0], 'Supabase: agendamentos da cliente': [880, 0],
+    'Calcular': [1100, 0],
+    'Criar evento?': [1320, 0],
+    'Supabase: cliente e serviços': [1540, -180], 'Supabase: serviços': [1760, -180], 'Supabase: profissionais': [1980, -180],
+    'Montar agendamento': [2200, -180], 'Supabase: gravar agendamento': [2420, -180], 'Supabase: nome da cliente': [2640, -180],
+    'Resposta (agendado)': [2860, -180],
+    'Cancelar evento?': [1540, 120], 'Supabase: cancelar agendamento': [1760, 40], 'Resposta (cancelado)': [1980, 40],
+    'Remarcar evento?': [1760, 260], 'Supabase: remarcar agendamento': [1980, 200], 'Resposta (remarcado)': [2200, 200],
+    'Resposta': [1980, 400],
   }, [
-    nota(-60, -160, 1120, 360, 5, '## 1. Lê a agenda\nChamado pelas ferramentas do agente.\nGoogle: horários ocupados (freeBusy) + agendamentos da cliente (achados pelo telefone).\n**Calcular** = regras de `agenda-calculo.js` (expediente, almoço, faixas livres).'),
-    nota(1080, -340, 1420, 900, 4, '## 2. Executa a ação\n**criar** → novo evento · **cancelar** → apaga · **remarcar** → move o MESMO evento\nConsultar/ver → só devolve o texto (Resposta).\nCRM: agendado / cancelado / remarcado = atualiza a etapa da cliente (só se o Google confirmou).'),
+    nota(-60, -160, 1340, 360, 5, '## 1. Lê a agenda do app\nChamado pelas ferramentas do agente.\nSupabase: horários ocupados (IA + Gleide) · horário do salão · horários desta cliente.\n**Calcular** = regras de `agenda-calculo.js` (expediente, almoço, bloqueios, faixas livres).'),
+    nota(1280, -340, 1820, 900, 4, '## 2. Executa a ação no app\n**criar** → novo horário (origem IA) · **cancelar** → status cancelado · **remarcar** → move o MESMO horário\nConsultar/ver → só devolve o texto (Resposta).'),
   ]);
 
   organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0], 'Resposta': [880, 0] }, [

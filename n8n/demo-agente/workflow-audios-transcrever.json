@@ -2,7 +2,7 @@
   "name": "Áudios prontos - Transcrever",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000114",
+      "id": "00000000-0000-4000-8000-000000000104",
       "name": "Recebe áudio",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c02"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000115",
+      "id": "00000000-0000-4000-8000-000000000105",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -37,15 +37,10 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: 'Transcreva este áudio em português do Brasil, exatamente como foi falado, com pontuação. Responda só com a transcrição.' }, { inline_data: { mime_type: $json.body.mime || 'audio/mpeg', data: $json.body.base64 } } ] }] }) }}",
         "options": {}
       },
-      "credentials": {
-        "googlePalmApi": {
-          "id": "MjEGxdJcHhSejzG7",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
+      "credentials": {}
     },
     {
-      "id": "00000000-0000-4000-8000-000000000116",
+      "id": "00000000-0000-4000-8000-000000000106",
       "name": "Transcrição",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

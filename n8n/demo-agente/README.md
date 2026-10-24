@@ -114,7 +114,10 @@ Deixe vazio para responder a todos. Depois de mudar: `docker compose up -d n8n`.
 
 ---
 
-## Fase 3 – Google Agenda
+## Fase 3 – Google Agenda (desativada)
+
+> **A IA não usa mais a Google Agenda:** consulta, marca, remarca e cancela direto na agenda do app
+> (Supabase, tabela `agendamentos`; ver `supabase-workflows.js` e `agenda-calculo.js`). O texto abaixo é histórico.
 
 ### Google Cloud Console (feito à mão, uma vez)
 1. https://console.cloud.google.com → crie/selecione um projeto (ex.: `SALAO`).

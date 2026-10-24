@@ -2,7 +2,7 @@
 
 Os volumes do Docker do PC antigo se perderam. Este guia reconstrói tudo a partir do GitHub.
 O script `recuperar.sh` faz a parte automática; o resto é o que só dá para fazer à mão
-(contas, QR code, login no Google).
+(contas e QR code do WhatsApp).
 
 ## O que se perdeu e o que NÃO se perdeu
 
@@ -10,9 +10,9 @@ O script `recuperar.sh` faz a parte automática; o resto é o que só dá para f
 |---|---|---|
 | Código, prompts, workflows (GitHub) | ✅ intacto | nada |
 | **Supabase** (CRM: clientes, conversas, agenda, avaliações, áudios prontos no Storage) | ✅ intacto — fica na nuvem, não no PC | só pegar a URL e a chave de novo |
-| **Google Agenda** (eventos marcados pela IA) | ✅ intacto — fica no Google | só refazer o login OAuth no n8n |
+| Agenda | ✅ intacta — é a do app (Supabase); a IA não usa mais a Google Agenda | nada |
 | Áudios prontos da Gleide | ✅ intactos — bucket `audios` do Supabase + `empresas.config.audios_prontos` | conferir (seção 7) |
-| Credenciais do n8n (Gemini, Google, Redis, Postgres) | ❌ perdidas | o script recria (precisa das chaves) |
+| Credenciais do n8n (Gemini, Redis, Postgres) | ❌ perdidas | o script recria (precisa das chaves) |
 | Histórico de execuções do n8n | ❌ perdido | não tem volta (não afeta o funcionamento) |
 | Redis: memória das conversas (`memoria:*`, expirava em 24 h) e pausas (`pausa:*`) | ❌ perdido | nada: a IA recomeça as conversas; o histórico de verdade está no Supabase |
 | Sessão do WhatsApp na Evolution | ❌ perdida | ler o QR code de novo |
@@ -33,12 +33,9 @@ O script `recuperar.sh` faz a parte automática; o resto é o que só dá para f
    - seu número do WhatsApp e quem pode falar com a IA;
    - a chave `service_role` do Supabase (ele abre a página; clique em *Reveal* e copie);
    - a API key do Gemini (ele abre o AI Studio; use a que já existe ou crie outra);
-   - o ID e uma chave secreta nova do cliente OAuth no Google Cloud (ele abre a página; confira a URI
-     `http://localhost:5678/rest/oauth2-credential/callback` e clique em *Adicionar chave secreta*);
    - um e-mail e uma senha para o n8n (pode ser o mesmo login de antes).
-5. **Google Agenda:** na página do n8n que ele abre, *Sign in with Google* → permitir → Save → Enter no terminal.
-6. **WhatsApp:** no celular, desconecte o aparelho antigo em *Dispositivos conectados* e leia o QR code que ele abre.
-7. **Guardar uma cópia do `.env`** fora do PC.
+5. **WhatsApp:** no celular, desconecte o aparelho antigo em *Dispositivos conectados* e leia o QR code que ele abre.
+6. **Guardar uma cópia do `.env`** fora do PC.
 
 ## 2. O que o script faz sozinho
 
@@ -46,8 +43,7 @@ O script `recuperar.sh` faz a parte automática; o resto é o que só dá para f
 - confere se as chaves do Supabase e do Gemini funcionam antes de seguir;
 - sobe os 4 containers e cria o banco `crm` local;
 - cria a conta de dono do n8n e a API key;
-- cria as credenciais **Redis local**, **CRM Postgres**, **Google Gemini(PaLM) Api account** e
-  **Google Calendar account 2** e grava os IDs no `.env`;
+- cria as credenciais **Redis local**, **CRM Postgres** e **Google Gemini(PaLM) Api account** e grava os IDs no `.env`;
 - roda `node montar-workflow.js --enviar --ativar`: cria e ativa os 10 workflows com as credenciais novas;
 - cria o `.env.local` do `crm/` e do `painel-crm/` (URL + anon key do Supabase);
 - cria a instância do WhatsApp com o webhook do n8n e mostra o QR code.
@@ -70,7 +66,7 @@ curl -s "$SUPABASE_URL/rest/v1/empresas?id=eq.$EMPRESA_ID&select=nome,config->au
 ```
 - n8n → *Workflows*: 10 workflows, todos ativos.
 - Mande uma mensagem de um número de `NUMEROS_PERMITIDOS` → n8n → *Executions* deve mostrar a execução e a IA responder.
-- Peça um horário → o evento aparece na Google Agenda e no CRM.
+- Peça um horário → ele aparece na agenda do app.
 - Mande um áudio → a IA transcreve e responde.
 - Bateria completa: `node testes/bateria-ia.js recuperacao` (ver "Bateria de testes" no `README.md`).
 
@@ -109,7 +105,6 @@ do servidor pelos domínios, com HTTPS.
    - Source: GitHub `victorgabrel8-alt/SALAO-VF`, branch `claude/gracious-ptolemy-2w5gr1`,
      arquivo `n8n/demo-agente/easypanel/docker-compose.yml`.
    - *Environment*: cole o que o script copiou. *Domains*: n8n → porta 5678; evolution → porta 8080. *Deploy*.
-3. **Google Cloud:** no cliente OAuth, adicione a URI `https://n8n.seudominio/rest/oauth2-credential/callback`.
-4. Volte ao terminal e aperte Enter: o resto (conta do n8n, credenciais, workflows, QR code) é igual ao PC.
+3. Volte ao terminal e aperte Enter: o resto (conta do n8n, credenciais, workflows, QR code) é igual ao PC.
 
 O Postgres e o Redis não ficam expostos na internet; o banco `crm` é criado na primeira subida.

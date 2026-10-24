@@ -4,6 +4,7 @@
 # Serve para rodar a IA neste PC (Docker Desktop) ou num VPS com Easypanel: no modo VPS ele roda
 # daqui do seu PC e configura o n8n e a Evolution do servidor pelos domínios (https).
 # Pergunta só o que depende de você (chaves e senha do n8n) e faz o resto.
+# A agenda é a do app (Supabase): não usa Google Agenda.
 # Pode rodar quantas vezes quiser: cada passo só faz o que ainda falta.
 # Detalhes e o que fica de fora: RECUPERACAO.md
 set -euo pipefail
@@ -57,7 +58,7 @@ if [ -z "${MODO:-}" ]; then
     1) gravar MODO pc ;;
     *) gravar MODO vps
        # IDs de uma tentativa anterior neste PC não valem no n8n do VPS
-       for k in N8N_API_KEY N8N_REDIS_CRED_ID N8N_GEMINI_CRED_ID N8N_GCAL_CRED_ID N8N_CRM_CRED_ID; do gravar "$k" ""; done ;;
+       for k in N8N_API_KEY N8N_REDIS_CRED_ID N8N_GEMINI_CRED_ID N8N_CRM_CRED_ID; do gravar "$k" ""; done ;;
   esac
   carregar
 fi
@@ -89,14 +90,6 @@ perguntar SUPABASE_SERVICE_KEY "Supabase: cole a chave service_role / secret (cl
 perguntar GEMINI_API_KEY "Gemini: cole a API key (use a que já existe ou 'Create API key')" "https://aistudio.google.com/apikey" secreto
 [ -z "$novo" ] || curl -sf -m 15 "https://generativelanguage.googleapis.com/v1beta/models?key=$GEMINI_API_KEY" >/dev/null \
   || { gravar GEMINI_API_KEY ""; erro "O Google recusou essa chave do Gemini."; }
-if [ -z "${GOOGLE_CLIENT_ID:-}" ] || [ -z "${GOOGLE_CLIENT_SECRET:-}" ]; then
-  echo
-  info "Google Cloud: abra o cliente OAuth 'Aplicativo da Web' do projeto do salão."
-  info "  Em 'URIs de redirecionamento autorizados' adicione: $N8N/rest/oauth2-credential/callback"
-  info "  Em 'Chaves secretas do cliente' clique em 'Adicionar chave secreta'."
-fi
-perguntar GOOGLE_CLIENT_ID "Google Cloud: cole o ID do cliente (...apps.googleusercontent.com)" "https://console.cloud.google.com/apis/credentials"
-perguntar GOOGLE_CLIENT_SECRET "Google Cloud: cole a chave secreta do cliente" "" secreto
 ok "dados guardados no .env"
 carregar
 
@@ -104,7 +97,7 @@ echo "3/7 Containers"
 if [ "$MODO" = vps ]; then
   amb=easypanel-environment.txt
   { for k in POSTGRES_USER POSTGRES_PASSWORD EVOLUTION_API_KEY EVOLUTION_INSTANCE N8N_ENCRYPTION_KEY MEU_NUMERO \
-      NUMEROS_PERMITIDOS ASSISTENTE_NUMEROS SUPABASE_URL SUPABASE_SERVICE_KEY EMPRESA_ID GOOGLE_CALENDAR_ID DOMINIO_N8N DOMINIO_EVO; do
+      NUMEROS_PERMITIDOS ASSISTENTE_NUMEROS SUPABASE_URL SUPABASE_SERVICE_KEY EMPRESA_ID DOMINIO_N8N DOMINIO_EVO; do
       echo "$k=${!k:-}"; done; } > "$amb"
   if ! curl -sf -m 10 "$N8N/rest/settings" | grep -q userManagement; then
     clip < "$amb" 2>/dev/null && copiado=" (já está copiado: é só colar com Ctrl+V)" || copiado=""
@@ -198,8 +191,6 @@ criar_credencial N8N_CRM_CRED_ID "CRM Postgres" postgres \
   "{\"host\":\"postgres\",\"port\":5432,\"database\":\"crm\",\"user\":\"$POSTGRES_USER\",\"password\":\"$POSTGRES_PASSWORD\",\"ssl\":\"disable\",\"allowUnauthorizedCerts\":false,\"sshTunnel\":false}"
 criar_credencial N8N_GEMINI_CRED_ID "Google Gemini(PaLM) Api account" googlePalmApi \
   "{\"host\":\"https://generativelanguage.googleapis.com\",\"apiKey\":\"$GEMINI_API_KEY\"}"
-criar_credencial N8N_GCAL_CRED_ID "Google Calendar account 2" googleCalendarOAuth2Api \
-  "{\"clientId\":\"$GOOGLE_CLIENT_ID\",\"clientSecret\":\"$GOOGLE_CLIENT_SECRET\",\"sendAdditionalBodyProperties\":false,\"additionalBodyProperties\":\"\"}"
 carregar
 node montar-workflow.js --enviar --ativar | grep -E 'erro|Criado|Atualizado' || true
 # app do CRM e painel: mesma URL e anon key do Supabase
@@ -209,12 +200,7 @@ for app in ../../crm ../../painel-crm; do
 done
 ok "workflows publicados e ativos"
 
-echo "7/7 Os dois cliques que só você pode dar"
-echo
-info "GOOGLE AGENDA: vou abrir a credencial no n8n. Clique em 'Sign in with Google' →"
-info "  sua conta → Avançado → Acessar → Permitir → 'Account connected' → Save."
-abrir "$N8N/home/credentials/$N8N_GCAL_CRED_ID"
-read -rp "  Aperte Enter quando aparecer 'Account connected'... " _
+echo "7/7 WhatsApp (o QR code é a única coisa que só você pode fazer)"
 
 EVO=(-H "apikey: $EVOLUTION_API_KEY" -H 'Content-Type: application/json')
 if ! curl -s $EVO_URL/instance/fetchInstances "${EVO[@]}" | grep -q "\"name\":\"$EVOLUTION_INSTANCE\""; then

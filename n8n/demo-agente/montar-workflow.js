@@ -41,79 +41,34 @@ const ifNode = (name, position, conditions) =>
 const main = (to) => ({ main: [[{ node: to, type: 'main', index: 0 }]] });
 
 // ================= Subworkflow "Agenda Salão" (ferramentas do agente) =================
+// A agenda é a do app (Supabase, tabela agendamentos): o supabase-workflows.js encaixa as leituras
+// (horários ocupados, config do salão, horários da cliente) e as gravações (criar, cancelar, remarcar).
 const { PREPARAR, CALCULAR } = require('./agenda-calculo.js');
-const GCAL = { googleCalendarOAuth2Api: { id: env.N8N_GCAL_CRED_ID || '', name: 'Google Calendar account 2' } };
-const gcalAuth = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googleCalendarOAuth2Api' };
 const CAMPOS = ['acao', 'data', 'periodo', 'duracao_minutos', 'nome', 'telefone', 'servico', 'data_hora_inicio', 'motivo', 'data_hora_nova'];
-const GCAL_EVENTS = '=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($env.GOOGLE_CALENDAR_ID) }}/events';
 
 const agendaNodes = [
   node('Recebe pedido do agente', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
     workflowInputs: { values: CAMPOS.map((name) => (name === 'duracao_minutos' ? { name, type: 'number' } : { name })) },
   }),
   node('Preparar', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: PREPARAR.trim() }),
-  node('Google: horários ocupados', 'n8n-nodes-base.httpRequest', 4.2, [440, 0], {
-    method: 'POST', url: 'https://www.googleapis.com/calendar/v3/freeBusy', ...gcalAuth,
-    sendBody: true, specifyBody: 'json',
-    jsonBody: "={{ JSON.stringify({ timeMin: $json.timeMin, timeMax: $json.timeMax, timeZone: 'America/Cuiaba', items: [{ id: $env.GOOGLE_CALENDAR_ID }] }) }}",
-    options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  // agendamentos futuros desta cliente: o telefone dela está na descrição dos eventos criados pela IA
-  node('Google: agendamentos da cliente', 'n8n-nodes-base.httpRequest', 4.2, [550, 160], {
-    method: 'GET', url: GCAL_EVENTS, ...gcalAuth,
-    sendQuery: true,
-    queryParameters: { parameters: [
-      { name: 'q', value: "={{ $('Preparar').item.json.telefone || 'sem-telefone' }}" },
-      { name: 'timeMin', value: "={{ $('Preparar').item.json.agoraUtc }}" },
-      { name: 'singleEvents', value: 'true' },
-      { name: 'orderBy', value: 'startTime' },
-      { name: 'maxResults', value: '20' },
-    ] },
-    options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
   node('Calcular', 'n8n-nodes-base.code', 2, [660, 0], { jsCode: CALCULAR.trim() }),
   ifNode('Criar evento?', [880, 0], [
     cond('g1', '={{ $json.acao }}', { type: 'string', operation: 'equals' }, 'criar'),
     cond('g2', '={{ $json.ok }}', { type: 'boolean', operation: 'true', singleValue: true }),
   ]),
-  node('Google: criar evento', 'n8n-nodes-base.httpRequest', 4.2, [1100, -100], {
-    method: 'POST', url: '=https://www.googleapis.com/calendar/v3/calendars/{{ encodeURIComponent($env.GOOGLE_CALENDAR_ID) }}/events', ...gcalAuth,
-    sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.evento) }}',
-    options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  node('Resposta (agendado)', 'n8n-nodes-base.set', 3.4, [1320, -100], {
-    assignments: { assignments: [
-      str('resposta', "={{ $json.id ? 'AGENDADO com sucesso na agenda do salão: ' + $('Calcular').item.json.quando + '. Agora confirme para a cliente o serviço, o dia e a hora.' : 'NÃO AGENDADO: a agenda falhou ao gravar. Peça desculpas e use transferir_para_humano para a equipe marcar.' }}"),
-    ] },
-    options: {},
-  }),
   ifNode('Cancelar evento?', [1100, 120], [
     cond('x1', '={{ $json.acao }}', { type: 'string', operation: 'equals' }, 'cancelar'),
     cond('x2', '={{ $json.ok }}', { type: 'boolean', operation: 'true', singleValue: true }),
   ]),
-  node('Google: cancelar evento', 'n8n-nodes-base.httpRequest', 4.2, [1320, 40], {
-    method: 'DELETE', url: GCAL_EVENTS.slice(0) + '/{{ $json.eventId }}', ...gcalAuth, options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  node('Resposta (cancelado)', 'n8n-nodes-base.set', 3.4, [1540, 40], {
-    assignments: { assignments: [
-      str('resposta', "={{ $json.error ? 'NÃO CANCELADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' : 'CANCELADO com sucesso: o agendamento de ' + $('Calcular').item.json.de + ' foi removido da agenda. Confirme para a cliente.' }}"),
-    ] },
-    options: {},
-  }),
   ifNode('Remarcar evento?', [1320, 220], [
     cond('r1', '={{ $json.acao }}', { type: 'string', operation: 'equals' }, 'remarcar'),
     cond('r2', '={{ $json.ok }}', { type: 'boolean', operation: 'true', singleValue: true }),
   ]),
-  node('Google: remarcar evento', 'n8n-nodes-base.httpRequest', 4.2, [1540, 160], {
-    method: 'PATCH', url: GCAL_EVENTS + '/{{ $json.eventId }}', ...gcalAuth,
-    sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify($json.patch) }}', options: {},
-  }, { credentials: GCAL, onError: 'continueRegularOutput' }),
-  node('Resposta (remarcado)', 'n8n-nodes-base.set', 3.4, [1760, 160], {
-    assignments: { assignments: [
-      str('resposta', "={{ $json.id ? 'REMARCADO com sucesso: o agendamento saiu de ' + $('Calcular').item.json.de + ' para ' + $('Calcular').item.json.quando + ' (é o MESMO agendamento, o horário antigo não existe mais). Confirme para a cliente.' : 'NÃO REMARCADO: a agenda falhou. Peça desculpas e use transferir_para_humano.' }}"),
-    ] },
+  // o texto de sucesso/falha de cada ação é preenchido pelo supabase-workflows.js (depende da gravação no app)
+  ...['Resposta (agendado)', 'Resposta (cancelado)', 'Resposta (remarcado)'].map((nome) => node(nome, 'n8n-nodes-base.set', 3.4, [0, 0], {
+    assignments: { assignments: [str('resposta', '')] },
     options: {},
-  }),
+  })),
   node('Resposta', 'n8n-nodes-base.set', 3.4, [1540, 300], {
     assignments: { assignments: [str('resposta', '={{ $json.resposta }}')] },
     options: {},
@@ -124,16 +79,11 @@ const agendaWorkflow = {
   nodes: agendaNodes,
   connections: {
     'Recebe pedido do agente': main('Preparar'),
-    'Preparar': main('Google: horários ocupados'),
-    'Google: horários ocupados': main('Google: agendamentos da cliente'),
-    'Google: agendamentos da cliente': main('Calcular'),
+    'Preparar': main('Calcular'),
     'Calcular': main('Criar evento?'),
-    'Criar evento?': { main: [[{ node: 'Google: criar evento', type: 'main', index: 0 }], [{ node: 'Cancelar evento?', type: 'main', index: 0 }]] },
-    'Google: criar evento': main('Resposta (agendado)'),
-    'Cancelar evento?': { main: [[{ node: 'Google: cancelar evento', type: 'main', index: 0 }], [{ node: 'Remarcar evento?', type: 'main', index: 0 }]] },
-    'Google: cancelar evento': main('Resposta (cancelado)'),
-    'Remarcar evento?': { main: [[{ node: 'Google: remarcar evento', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
-    'Google: remarcar evento': main('Resposta (remarcado)'),
+    'Criar evento?': { main: [[{ node: 'Resposta (agendado)', type: 'main', index: 0 }], [{ node: 'Cancelar evento?', type: 'main', index: 0 }]] },
+    'Cancelar evento?': { main: [[{ node: 'Resposta (cancelado)', type: 'main', index: 0 }], [{ node: 'Remarcar evento?', type: 'main', index: 0 }]] },
+    'Remarcar evento?': { main: [[{ node: 'Resposta (remarcado)', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
   },
   settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', callerPolicy: 'workflowsFromSameOwner' },
 };

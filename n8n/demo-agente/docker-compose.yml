@@ -108,7 +108,6 @@ services:
       SUPABASE_URL: ${SUPABASE_URL:-}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
       EMPRESA_ID: ${EMPRESA_ID:-}
-      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
     volumes:
       - n8n_data:/home/node/.n8n
     networks: [salao]
