@@ -2,6 +2,8 @@
 
 Roda 100% local: **n8n + Evolution API v2 + Postgres + Redis** no Docker Desktop.
 
+> **Computador novo / perdeu os volumes do Docker?** Siga [`RECUPERACAO.md`](RECUPERACAO.md) e rode `bash recuperar.sh`.
+
 | Serviço   | Endereço no seu PC              | Endereço dentro do Docker |
 |-----------|----------------------------------|---------------------------|
 | n8n       | http://localhost:5678            | http://n8n:5678           |
@@ -198,6 +200,7 @@ docker exec demo-salao-redis-1 redis-cli --scan --pattern 'pausa:*'
 | `workflow-crm-salao.json` | Subworkflow do CRM |
 | `layout-n8n.js` | Posições dos nós e notas coloridas no n8n |
 | `vigia.sh` | Vigia: reabre Docker/containers/WhatsApp se caírem |
+| `recuperar.sh`, `RECUPERACAO.md` | Reconstrói o ambiente num PC novo (containers, banco, instância, credenciais e workflows) |
 
 Importando à mão (sem a API): importe primeiro os dois subworkflows, ative-os, depois importe o
 principal e, nos nós `consultar_horarios_livres`, `criar_agendamento` e `transferir_para_humano`,
