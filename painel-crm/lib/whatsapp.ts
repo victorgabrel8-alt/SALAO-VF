@@ -7,11 +7,12 @@ type TipoLink = "wa.me" | "esquema";
 export const TIPO_LINK: TipoLink = "wa.me";
 
 export function linkWhatsApp(telefone: string, texto?: string, tipo: TipoLink = TIPO_LINK): string {
+  telefone = telefone.replace(/\D/g, "");
   const mensagem = texto ? encodeURIComponent(texto) : "";
   if (tipo === "esquema") return `whatsapp://send?phone=${telefone}${mensagem ? `&text=${mensagem}` : ""}`;
   return `https://wa.me/${telefone}${mensagem ? `?text=${mensagem}` : ""}`;
 }
 
 export function abrirWhatsApp(telefone: string, texto?: string) {
-  window.open(linkWhatsApp(telefone, texto), "_blank");
+  window.open(linkWhatsApp(telefone, texto), "_blank", "noopener,noreferrer");
 }
