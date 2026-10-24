@@ -157,34 +157,45 @@ carregar
 
 echo "3/7 Containers"
 if [ "$MODO" = vps ]; then
-  amb=easypanel-environment.txt
-  { for k in POSTGRES_USER POSTGRES_PASSWORD EVOLUTION_API_KEY EVOLUTION_INSTANCE N8N_ENCRYPTION_KEY MEU_NUMERO \
-      NUMEROS_PERMITIDOS ASSISTENTE_NUMEROS SUPABASE_URL SUPABASE_SERVICE_KEY EMPRESA_ID DOMINIO_N8N DOMINIO_EVO; do
-      echo "$k=${!k:-}"; done; } > "$amb"
-  if ! curl -sf -m 10 "$N8N/rest/settings" | grep -q userManagement; then
-    clip < "$amb" 2>/dev/null && copiado=" (já está copiado: é só colar com Ctrl+V)" || copiado=""
+  # O Easypanel não repassa a aba Ambiente para o compose (tudo chegava vazio). Então o compose vai
+  # para o Easypanel já com os valores: Fonte → aba "docker-compose.yml" → colar.
+  cmp=easypanel-compose.yml
+  node -e "const fs=require('fs');const v=(k,pad)=>process.env[k]!==undefined&&process.env[k]!==''?process.env[k]:(pad||'');
+    const s=fs.readFileSync('../../docker-compose.easypanel.yml','utf8').split('\n').map(l=>{
+      const m=l.match(/^(\s*[A-Za-z0-9_]+:\s*)\\$\{([A-Z0-9_]+)(?::-([^}]*))?\}\s*$/);
+      if(m)return m[1]+JSON.stringify(v(m[2],m[3]));
+      return l.replace(/\\$\{([A-Z0-9_]+)(?::-([^}]*))?\}/g,(_,k,pad)=>v(k,pad));
+    }).join('\n');
+    if(/\\$\{/.test(s))throw new Error('sobrou variável sem valor');fs.writeFileSync(process.argv[1],s)" "$cmp"
+  # n8n certo = já responde pelo domínio (um n8n subido sem as variáveis responde com localhost)
+  n8n_certo() { curl -sf -m 10 "$N8N/rest/settings" | grep -q "https://$DOMINIO_N8N"; }
+  if ! n8n_certo; then
+    clip < "$cmp" 2>/dev/null && copiado=" (já está copiado: é só colar com Ctrl+V)" || copiado=""
     echo
-    info "No Easypanel (Hostinger → Gerenciar painel):"
-    info "  1. No projeto 'salao-vf' → + Serviço → Compose → nome 'ia'."
-    info "  2. Fonte → Git:  URL https://github.com/victorgabrel8-alt/SALAO-VF.git"
-    info "     Ramo claude/gracious-ptolemy-2w5gr1 · Caminho de Build /"
-    info "     Arquivo do Docker Compose: docker-compose.easypanel.yml → Salvar"
-    info "  3. Ambiente (Environment): cole o conteúdo de $amb$copiado → Salvar."
-    info "  4. Domínios → Adicionar Domínio (HTTPS ligado):"
-    info "       $DOMINIO_N8N  → serviço n8n,       porta 5678, HTTPS ligado"
-    info "       $DOMINIO_EVO  → serviço evolution, porta 8080, HTTPS ligado"
-    info "  5. Implantar."
-    abrir "$amb"
+    info "No Easypanel (Hostinger → Gerenciar painel), serviço 'ia' do projeto 'salao-vf'"
+    info "  (se ainda não existe: + Serviço → Compose → nome 'ia'):"
+    info "  1. Fonte → aba 'docker-compose.yml' (não a aba Git): apague o que tiver e cole"
+    info "     o conteúdo de $cmp$copiado → Salvar."
+    info "  2. Domínios (HTTPS ligado):"
+    info "       $DOMINIO_N8N  → serviço n8n,       porta 5678"
+    info "       $DOMINIO_EVO  → serviço evolution, porta 8080"
+    info "  3. Implantar. No log deve aparecer 'database system is ready' e 'Editor is now accessible'."
+    info "  O arquivo tem suas senhas: não mande print dele."
+    abrir "$cmp"
     read -rp "  Aperte Enter depois do Deploy... " _
   fi
   info "esperando $N8N e $EVO_URL responderem..."
   for i in $(seq 1 100); do
-    curl -sf -m 5 "$EVO_URL" >/dev/null && curl -sf -m 5 "$N8N/rest/settings" | grep -q userManagement && break
+    curl -sf -m 5 "$EVO_URL" >/dev/null && n8n_certo && break
     sleep 6
   done
-  curl -sf -m 5 "$N8N/rest/settings" | grep -q userManagement || erro "$N8N não respondeu. Confira no Easypanel os logs do serviço n8n e os domínios (DNS apontando para o VPS)."
+  if ! n8n_certo; then
+    curl -sf -m 5 "$N8N/rest/settings" >/dev/null \
+      && erro "O n8n responde, mas sem o domínio: o compose colado não tem os valores. Rode de novo e cole o $cmp na aba 'docker-compose.yml'." \
+      || erro "$N8N não respondeu. Confira no Easypanel os logs do serviço ia (n8n) e os domínios."
+  fi
   curl -sf -m 5 "$EVO_URL" >/dev/null || erro "$EVO_URL não respondeu. Confira no Easypanel o domínio da Evolution."
-  rm -f "$amb"
+  rm -f "$cmp" easypanel-environment.txt
   ok "n8n e Evolution no ar no VPS"
 else
 docker info >/dev/null 2>&1 || erro "O Docker não está rodando. Abra o Docker Desktop e espere 'Engine running'."

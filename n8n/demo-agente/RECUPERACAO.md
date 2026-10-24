@@ -97,14 +97,16 @@ bloco `text` do `prompt-agente.md` e rode `node montar-workflow.js --enviar --at
 ## VPS com Easypanel (Hostinger)
 
 Mesmo script, rodando do seu PC: `bash recuperar.sh` → responda **2 = VPS**. Ele pede os dois domínios,
-gera o bloco de variáveis para o Easypanel (já copiado), espera o deploy e configura o n8n e a Evolution
-do servidor pelos domínios, com HTTPS.
+monta o compose **já com os valores** (`easypanel-compose.yml`, copiado para colar), espera o deploy e
+configura o n8n e a Evolution do servidor pelos domínios, com HTTPS.
 
 1. **DNS:** registro **A** de `n8n.seudominio` e `evo.seudominio` → IP do VPS.
-2. **Easypanel** (`http://IP-DO-VPS:3000`): projeto `salao` → *+ Service* → **Compose** → `ia`.
-   - Source: GitHub `victorgabrel8-alt/SALAO-VF`, branch `claude/gracious-ptolemy-2w5gr1`,
-     arquivo `docker-compose.easypanel.yml` (na raiz: o Easypanel grava o `.env` da aba Ambiente na raiz).
-   - *Environment*: cole o que o script copiou. *Domains*: n8n → porta 5678; evolution → porta 8080. *Deploy*.
+2. **Easypanel:** projeto `salao-vf` → *+ Serviço* → **Compose** → `ia`.
+   - *Fonte* → aba **docker-compose.yml** (não a aba Git): cole o que o script copiou → Salvar.
+     A aba *Ambiente* não é usada: o Easypanel não repassava essas variáveis ao compose (tudo chegava vazio).
+   - *Domínios*: n8n → porta 5678; evolution → porta 8080 (HTTPS ligado). *Implantar*.
 3. Volte ao terminal e aperte Enter: o resto (conta do n8n, credenciais, workflows, QR code) é igual ao PC.
 
+O modelo é o `docker-compose.easypanel.yml` da raiz. Para mudar uma variável depois (ex.: `NUMEROS_PERMITIDOS`),
+edite o compose na aba *Fonte* do Easypanel e clique em *Implantar*.
 O Postgres e o Redis não ficam expostos na internet; o banco `crm` é criado na primeira subida.
