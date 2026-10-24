@@ -1,0 +1,140 @@
+# Produção no VPS (Easypanel → serviço "Compose"). Mesmo conjunto do ../docker-compose.yml, mas:
+#  - sem "ports": o Easypanel publica n8n e Evolution com HTTPS pelos domínios (aba Domains);
+#  - endereços públicos vêm de DOMINIO_N8N e DOMINIO_EVO (aba Environment);
+#  - o banco "crm" é criado sozinho na primeira subida do Postgres.
+# Passo a passo: ../RECUPERACAO.md, seção "VPS com Easypanel".
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: evolution
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    configs:
+      - source: crm_init
+        target: /docker-entrypoint-initdb.d/crm.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d evolution"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  evolution:
+    image: evoapicloud/evolution-api:v2.3.7
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    environment:
+      SERVER_URL: https://${DOMINIO_EVO}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+      LANGUAGE: pt-BR
+      DEL_INSTANCE: "false"
+      # Banco
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/evolution?schema=public
+      DATABASE_CONNECTION_CLIENT_NAME: evolution_salao
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      # Cache (Redis db 6, separado do n8n que usa db 0)
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/6
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      # Webhook é configurado por instância (ver README), não global
+      WEBHOOK_GLOBAL_ENABLED: "false"
+      QRCODE_LIMIT: "30"
+      # Como o aparelho aparece em "Dispositivos conectados" no celular
+      CONFIG_SESSION_PHONE_CLIENT: Toda Bonita
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      LOG_LEVEL: ERROR,WARN,INFO
+      TZ: America/Cuiaba
+    volumes:
+      - evolution_instances:/evolution/instances
+
+  n8n:
+    image: n8nio/n8n:2.43.7
+    restart: unless-stopped
+    depends_on:
+      redis: { condition: service_healthy }
+    environment:
+      N8N_HOST: ${DOMINIO_N8N}
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: https
+      WEBHOOK_URL: https://${DOMINIO_N8N}/
+      N8N_EDITOR_BASE_URL: https://${DOMINIO_N8N}/
+      N8N_PROXY_HOPS: "1"
+      N8N_LISTEN_ADDRESS: 0.0.0.0
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
+      GENERIC_TIMEZONE: America/Cuiaba
+      TZ: America/Cuiaba
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_RUNNERS_ENABLED: "true"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      # Usados dentro do workflow via {{ $env.* }}
+      EVOLUTION_URL: http://evolution:8080
+      EVOLUTION_API_KEY: ${EVOLUTION_API_KEY}
+      EVOLUTION_INSTANCE: ${EVOLUTION_INSTANCE}
+      MEU_NUMERO: ${MEU_NUMERO}
+      NUMEROS_PERMITIDOS: ${NUMEROS_PERMITIDOS:-}
+      # Números que falam com a assistente da Gleide em vez do atendimento (ver assistente-workflows.js)
+      ASSISTENTE_NUMEROS: ${ASSISTENTE_NUMEROS:-}
+      # Supabase (banco do CRM): a IA grava mensagens, pausa e agenda lá (ver supabase-workflows.js)
+      SUPABASE_URL: ${SUPABASE_URL:-}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY:-}
+      EMPRESA_ID: ${EMPRESA_ID:-}
+      GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-primary}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  postgres_data:
+  redis_data:
+  evolution_instances:
+  n8n_data:
+
+configs:
+  crm_init:
+    content: |
+        CREATE DATABASE crm;
+        \connect crm
+        -- CRM da demo (banco "crm" no Postgres do docker-compose)
+        CREATE TABLE IF NOT EXISTS clientes (
+          telefone         text PRIMARY KEY,
+          nome             text,
+          etapa            text NOT NULL DEFAULT 'novo',   -- novo | conversa | agendado | humano | atendido | perdido
+          interesse        text,                            -- o que a cliente quer (resumo curto, preenchido pela IA)
+          resumo           text,                            -- resumo da conversa (IA)
+          agendamento      timestamptz,                     -- próximo horário marcado
+          servico_agendado text,
+          observacoes      text,                            -- anotações da Gleide no painel
+          origem           text DEFAULT 'WhatsApp',
+          total_mensagens  int  NOT NULL DEFAULT 0,
+          primeiro_contato timestamptz NOT NULL DEFAULT now(),
+          ultimo_contato   timestamptz NOT NULL DEFAULT now(),
+          atualizado_em    timestamptz NOT NULL DEFAULT now()
+        );
+        CREATE INDEX IF NOT EXISTS clientes_etapa_idx ON clientes (etapa);

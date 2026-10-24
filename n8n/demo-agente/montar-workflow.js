@@ -618,7 +618,7 @@ fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.f
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 if (process.argv.includes('--enviar')) {
-  const base = 'http://localhost:5678/api/v1/workflows';
+  const base = `${env.N8N_URL || 'http://localhost:5678'}/api/v1/workflows`;
   const headers = { 'X-N8N-API-KEY': env.N8N_API_KEY, 'Content-Type': 'application/json' };
   const upsert = async (wf, idFile) => {
     const id = fs.existsSync(idFile) ? fs.readFileSync(idFile, 'utf8').trim() : '';

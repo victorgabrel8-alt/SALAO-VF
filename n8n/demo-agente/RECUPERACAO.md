@@ -97,3 +97,19 @@ bloco `text` do `prompt-agente.md` e rode `node montar-workflow.js --enviar --at
 - Opcional: backup do volume do n8n de vez em quando:
   `docker run --rm -v demo-salao_n8n_data:/d -v "$PWD":/b alpine tar czf /b/n8n_data.tgz -C /d .`
   (guarde o `.tgz` junto com o `.env`; sem a mesma `N8N_ENCRYPTION_KEY` as credenciais dele não abrem).
+
+## VPS com Easypanel (Hostinger)
+
+Mesmo script, rodando do seu PC: `bash recuperar.sh` → responda **2 = VPS**. Ele pede os dois domínios,
+gera o bloco de variáveis para o Easypanel (já copiado), espera o deploy e configura o n8n e a Evolution
+do servidor pelos domínios, com HTTPS.
+
+1. **DNS:** registro **A** de `n8n.seudominio` e `evo.seudominio` → IP do VPS.
+2. **Easypanel** (`http://IP-DO-VPS:3000`): projeto `salao` → *+ Service* → **Compose** → `ia`.
+   - Source: GitHub `victorgabrel8-alt/SALAO-VF`, branch `claude/gracious-ptolemy-2w5gr1`,
+     arquivo `n8n/demo-agente/easypanel/docker-compose.yml`.
+   - *Environment*: cole o que o script copiou. *Domains*: n8n → porta 5678; evolution → porta 8080. *Deploy*.
+3. **Google Cloud:** no cliente OAuth, adicione a URI `https://n8n.seudominio/rest/oauth2-credential/callback`.
+4. Volte ao terminal e aperte Enter: o resto (conta do n8n, credenciais, workflows, QR code) é igual ao PC.
+
+O Postgres e o Redis não ficam expostos na internet; o banco `crm` é criado na primeira subida.
