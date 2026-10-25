@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Cabecalho, EmBreve } from "@/components/Cabecalho";
+import { Cabecalho } from "@/components/Cabecalho";
 import { lerAlmoco } from "@/lib/almoco";
 import { BotaoSair, useEmpresa } from "@/lib/empresa";
 import { formatarTelefone, normalizarTelefone, telefoneValido } from "@/lib/formato";
@@ -34,13 +34,6 @@ export default function ConfiguracoesPage() {
             <path d="m9 18 6-6-6-6" />
           </svg>
         </Link>
-        <EmBreve
-          titulo="Próximas novidades"
-          itens={[
-            "Mensagens: mudar pelo app os textos que a IA manda sozinha (alô de falta, aviso de vaga)",
-            "Profissionais: cadastrar mais alguém além da Gleide",
-          ]}
-        />
         <div className="px-4">
           <BotaoSair />
         </div>
