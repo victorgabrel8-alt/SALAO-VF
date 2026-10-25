@@ -46,7 +46,7 @@ module.exports = (principal, agenda, pausa) => {
     // Supabase (banco do CRM)
     'Supabase: ficha da cliente': [300, 980], 'Supabase: histórico da cliente': [300, 1180], 'Sobre esta cliente': [420, 980],
     'Supabase: áudios do salão': [420, 1180], 'Supabase: áudios já enviados': [540, 1180], 'Áudios disponíveis': [540, 980], 'enviar_audio': [1360, 1100], 'perguntar_para_gleide': [1500, 1100],
-    'Pedido: procurar': [220, -900], 'É resposta da Gleide?': [440, -900], 'Pedido: preparar': [660, -1060], 'Pedido: escrever (Gemini)': [880, -1060],
+    'Pedido: procurar': [220, -900], 'É resposta da Gleide?': [440, -900], 'Pedido: seguir normal': [660, -900], 'Pedido: preparar': [660, -1060], 'Pedido: escrever (Gemini)': [880, -1060],
     'Pedido: texto': [1100, -1060], 'Pedido: enviar à cliente': [1320, -1060], 'Pedido: registrar saída': [1540, -1060],
     'Pedido: memória (resposta da Gleide)': [1760, -1060], 'Pedido: memória (mensagem enviada)': [1980, -1060], 'Pedido: apagar': [2200, -1060], 'Pedido: confirmar à Gleide': [2420, -1060],
     'Supabase: registrar entrada': [2060, 220], 'Pausa: alinhar com o CRM': [2280, 220], 'Supabase: registrar saída': [2540, 940],
