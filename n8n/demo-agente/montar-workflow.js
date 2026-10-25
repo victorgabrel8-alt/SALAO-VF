@@ -142,9 +142,13 @@ Leia tudo como uma conversa só e responda numa ÚNICA mensagem, cobrindo todas 
 Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.`;
 
 const nodes = [
+  // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
+  // quem chega sem ele (403). Sem isso, qualquer um que soubesse o endereço mandava "mensagem de cliente" falsa.
+  // A senha fica na credencial do n8n (N8N_WEBHOOK_CRED_ID), não no Git. Ver RECUPERACAO.md.
   node('Webhook Evolution', 'n8n-nodes-base.webhook', 2, [0, 0],
-    { httpMethod: 'POST', path: 'whatsapp-salao', options: {} },
-    { webhookId: '7d1f3c2a-9b8e-4c6d-a5f4-3e2d1c0b9a87' }),
+    { httpMethod: 'POST', path: 'whatsapp-salao', authentication: 'headerAuth', options: {} },
+    { webhookId: '7d1f3c2a-9b8e-4c6d-a5f4-3e2d1c0b9a87',
+      credentials: { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } } }),
 
   node('Extrair dados', 'n8n-nodes-base.set', 3.4, [220, 0], {
     assignments: { assignments: [
