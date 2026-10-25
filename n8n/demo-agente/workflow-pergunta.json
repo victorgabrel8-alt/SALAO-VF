@@ -1,0 +1,198 @@
+{
+  "name": "Perguntar para a Gleide",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-8000-000000000165",
+      "name": "Recebe pergunta da IA",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "jid"
+            },
+            {
+              "name": "nome"
+            },
+            {
+              "name": "pergunta"
+            },
+            {
+              "name": "contexto"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000166",
+      "name": "Supabase: número de alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ $env.EMPRESA_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000167",
+      "name": "Enviar pergunta à Gleide",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '❓ Pergunta da ' + ($('Recebe pergunta da IA').first().json.nome || 'cliente') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n(' + $('Recebe pergunta da IA').first().json.contexto + ')' : '') +\n        '\\n\\nSegure esta mensagem, toque em *Responder* e escreva o que posso dizer a ela. Eu passo pra ela e sigo o atendimento.' }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000168",
+      "name": "Guardar pedido",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        660,
+        0
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=pedido:{{ $json.key?.id || 'falhou' }}",
+        "expire": true,
+        "ttl": 259200,
+        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "FMNURJ61oUMdpv2C",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000169",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $('Enviar pergunta à Gleide').first().json.key?.id ? 'PERGUNTADO: a Gleide recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Gleide e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Gleide responder, a resposta chega à cliente automaticamente.' : 'NÃO PERGUNTADO: não consegui mandar a pergunta agora. Diga com gentileza que não conseguiu confirmar isso agora e não invente a regra. Se a cliente precisar resolver já, use transferir_para_humano.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Recebe pergunta da IA": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: número de alerta": {
+      "main": [
+        [
+          {
+            "node": "Enviar pergunta à Gleide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar pergunta à Gleide": {
+      "main": [
+        [
+          {
+            "node": "Guardar pedido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar pedido": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "WLbjR5DvKLRVPVX8"
+  }
+}
