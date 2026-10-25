@@ -76,7 +76,7 @@ module.exports = (principal, agenda, pausa) => {
     nota(1280, -340, 1820, 900, 4, '## 2. Executa a ação no app\n**criar** → novo horário (origem IA) · **cancelar** → status cancelado · **remarcar** → move o MESMO horário\nConsultar/ver → só devolve o texto (Resposta).'),
   ]);
 
-  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0], 'Resposta': [880, 0] }, [
-    nota(-60, -180, 920, 360, 3, '## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.'),
+  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0], 'Supabase: número de alerta': [880, 0], 'Avisar a Gleide (WhatsApp)': [1100, 0], 'Resposta': [1320, 0] }, [
+    nota(-60, -180, 1440, 360, 3, '## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h, salva o resumo na ficha e avisa a Gleide no WhatsApp (config.whatsapp_alerta) com o link da conversa. Mande `#ia` na conversa para devolver à IA.'),
   ]);
 };

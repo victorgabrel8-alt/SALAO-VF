@@ -219,12 +219,29 @@ Use a ficha como quem já conhece a cliente:
   workflow.connections['É o alô do CRM?'] = { main: [[{ node: 'Supabase: registrar alô', type: 'main', index: 0 }], naoEhAlo] };
 
   // ---------- Pausa: transferir_para_humano ----------
-  const P = "$('Recebe pedido do agente').item.json";
+  const P = "$('Recebe pedido do agente').first().json";
   const motivoPausa = `(/reclam/i.test(${P}.motivo || '') ? 'reclamacao' : 'pediu_humano')`;
   const ultimoPausa = Object.keys(pausaWorkflow.connections).find((k) => pausaWorkflow.connections[k].main[0][0].node === 'Resposta');
   entre(pausaWorkflow, ultimoPausa, supa('Supabase: pausar IA', 'PATCH',
     `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${P}.telefone`)} }}`,
-    `{ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: ${motivoPausa} }`), 'Resposta');
+    `{ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: ${motivoPausa}, resumo_ia_em: $now.toISO(),
+       resumo_ia: ['Motivo: ' + (${P}.motivo || 'pediu atendimento'), ${P}.resumo || '', ${P}.o_que_precisa ? 'Precisa de você: ' + ${P}.o_que_precisa : ''].filter(Boolean).join('\\n') }`), 'Resposta');
+  // Aviso no WhatsApp da dona (empresas.config.whatsapp_alerta): resumo curto + link da conversa no app.
+  // Sai pelo número do salão, então o número de alerta tem de ser outro (o WhatsApp não manda para ele mesmo).
+  entre(pausaWorkflow, 'Supabase: pausar IA', supa('Supabase: número de alerta', 'GET',
+    `empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }), 'Resposta');
+  const CLI = "$('Supabase: pausar IA').first().json";
+  const FONE = `String(${CLI}.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3')`;
+  entre(pausaWorkflow, 'Supabase: número de alerta', node('Avisar a Gleide (WhatsApp)', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
+    method: 'POST', url: '={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}',
+    sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
+    sendBody: true, specifyBody: 'json',
+    jsonBody: `={{ JSON.stringify({ number: $json.alerta, text: '🔔 Cliente precisa de você\\n' + (${CLI}.nome || 'Cliente') + ' · ' + ${FONE} +
+      '\\n' + (${P}.motivo || 'pediu atendimento') + (${P}.resumo ? '\\n\\n' + ${P}.resumo : '') +
+      (${P}.o_que_precisa ? '\\n\\nPrecisa de você: ' + ${P}.o_que_precisa : '') +
+      '\\n\\nVer e responder: ' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + ${CLI}.id }) }}`,
+    options: {},
+  }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput', executeOnce: true }), 'Resposta');
 
   const Pr = "$('Preparar').item.json";
   const C = "$('Calcular').item.json";
