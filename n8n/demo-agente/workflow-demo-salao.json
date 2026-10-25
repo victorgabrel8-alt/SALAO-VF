@@ -125,9 +125,16 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "whatsapp-salao",
+        "authentication": "headerAuth",
         "options": {}
       },
-      "webhookId": "7d1f3c2a-9b8e-4c6d-a5f4-3e2d1c0b9a87"
+      "webhookId": "7d1f3c2a-9b8e-4c6d-a5f4-3e2d1c0b9a87",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000015",
