@@ -133,7 +133,7 @@ const pausaWorkflow = {
 };
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
 const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
-// Várias mensagens seguidas chegam numeradas; a resposta é uma mensagem só (o Quebrar mensagens junta tudo)
+// Várias mensagens seguidas chegam numeradas; a resposta vem um parágrafo por assunto e o Quebrar mensagens manda até 4 balões curtos
 const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
@@ -352,9 +352,28 @@ const nodes = [
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
       "const falhou = !paragrafos.length; // o alerta-workflows.js avisa o Victor",
       "if (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
-      "// Uma mensagem só (pedido do Victor): a IA lê a rajada inteira e responde num balão, com os parágrafos",
-      "// separados por linha em branco",
-      "const baloes = [{ t: paragrafos.map(p => p.t).join('\\n\\n'), ref: 0 }];",
+      "// Balões como gente manda no WhatsApp (pedido do Victor, 25/10): resposta curta sai num balão só; resposta",
+      "// longa vira até 4 balões, um por assunto (parágrafo). Parágrafo grande (> 220 letras) é cortado entre frases;",
+      "// pedaço pequeno (< 60 letras, ex.: 'Boa tarde, Maria!') gruda no vizinho para não sobrar balão solto.",
+      "const juntos = paragrafos.map(p => p.t).join('\\n\\n');",
+      "let baloes;",
+      "if (juntos.length <= 160) baloes = [{ t: juntos, ref: 0 }];",
+      "else {",
+      "  const pedacos = [];",
+      "  for (const p of paragrafos) {",
+      "    if (p.t.length <= 220) { pedacos.push(p.t); continue; }",
+      "    let atual = '';",
+      "    for (const f of p.t.split(FRASES)) { if (atual && (atual + ' ' + f).length > 200) { pedacos.push(atual); atual = f; } else atual = atual ? atual + ' ' + f : f; }",
+      "    if (atual) pedacos.push(atual);",
+      "  }",
+      "  baloes = [];",
+      "  for (const t of pedacos) {",
+      "    const ult = baloes[baloes.length - 1];",
+      "    if (ult && (t.length < 60 || ult.t.length < 60) && (ult.t + ' ' + t).length <= 260) ult.t += (ult.t.length < 60 ? ' ' : '\\n\\n') + t;",
+      "    else baloes.push({ t, ref: 0 });",
+      "  }",
+      "  if (baloes.length > 4) baloes = [baloes[0], baloes[1], baloes[2], { t: baloes.slice(3).map(b => b.t).join('\\n\\n'), ref: 0 }];",
+      "}",
       "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
       "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
