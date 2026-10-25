@@ -2739,7 +2739,7 @@
         "description": "Pergunta à Gleide uma dúvida simples que só ela pode responder (regra do salão não cadastrada: levar pet, criança ou acompanhante, estacionamento, comida etc.) SEM pausar o atendimento. Ela responde pelo WhatsApp e a resposta chega à cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para avaliação à distância, reclamação, dor, negociação ou pedido de falar com ela, use transferir_para_humano.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_PERGUNTA",
+          "value": "W4IS9O3RFG6geDTG",
           "mode": "id"
         },
         "workflowInputs": {
