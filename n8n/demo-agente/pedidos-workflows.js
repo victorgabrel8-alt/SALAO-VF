@@ -57,8 +57,9 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
 
   // ---------- Ferramenta no agente ----------
   workflow.nodes.push(toolSub('perguntar_para_gleide', [3360, 200],
-    'Pergunta à Gleide uma dúvida simples que só ela pode responder (regra do salão não cadastrada: levar pet, criança ou ' +
-    'acompanhante, estacionamento, comida etc.) SEM pausar o atendimento. Ela responde pelo WhatsApp e a resposta chega à ' +
+    'Pergunta à Gleide uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança ' +
+    'sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Coisas de bom senso (levar o ' +
+    'filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à ' +
     'cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para avaliação à distância, reclamação, dor, ' +
     'negociação ou pedido de falar com ela, use transferir_para_humano.',
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto'],
