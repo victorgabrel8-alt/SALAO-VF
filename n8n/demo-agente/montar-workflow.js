@@ -118,13 +118,13 @@ const pausaWorkflow = {
   name: 'Pausar IA (transferir para humano)',
   nodes: [
     node('Recebe pedido do agente', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
-      workflowInputs: { values: [{ name: 'telefone' }, { name: 'motivo' }] },
+      workflowInputs: { values: [{ name: 'telefone' }, { name: 'motivo' }, { name: 'resumo' }, { name: 'o_que_precisa' }] },
     }),
     node('Gravar pausa (12h)', 'n8n-nodes-base.redis', 1, [220, 0], {
       operation: 'set', key: '=pausa:{{ $json.telefone }}', value: "={{ 'agente: ' + ($json.motivo || 'transferido') }}", expire: true, ttl: PAUSA_TTL,
     }, { credentials: REDIS }),
     node('Resposta', 'n8n-nodes-base.set', 3.4, [440, 0], {
-      assignments: { assignments: [str('resposta', 'TRANSFERIDO: a equipe vai assumir esta conversa e você (IA) fica pausada para esta cliente por 12h. Responda agora apenas: "Vou chamar alguém da equipe pra te ajudar 😊"')] },
+      assignments: { assignments: [str('resposta', 'TRANSFERIDO: a Gleide recebeu o resumo e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora apenas: "Vou passar sua conversa pra Gleide, ela te chama por aqui 😊"')] },
       options: {},
     }),
   ],
@@ -415,11 +415,13 @@ const nodes = [
     ]),
 
   toolSub('transferir_para_humano', [3200, 200],
-    'Transfere a conversa para a equipe humana e PAUSA a IA para esta cliente por 12h. Use quando a cliente pedir para falar com ' +
-    'uma pessoa (Gleide, dona, atendente), reclamar, ou pedir algo fora do atendimento do salão.',
-    lerPausaId, ['telefone', 'motivo'],
+    'Passa a conversa para a Gleide e PAUSA a IA para esta cliente por 12h. A Gleide recebe no WhatsApp o resumo e o link ' +
+    'da conversa no app, para não precisar ler tudo. Use nos casos da seção 12 do prompt.',
+    lerPausaId, ['telefone', 'motivo', 'resumo', 'o_que_precisa'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
-    [['motivo', 'Motivo curto da transferência (ex.: pediu para falar com a dona, reclamação)', 'string']]),
+    [['motivo', 'Motivo curto, até 12 palavras (ex.: quer avaliação à distância, mora longe)', 'string'],
+      ['resumo', 'Resumo para a Gleide em 2 a 4 frases curtas: quem é (nova ou já cliente), o que quer, o que você já explicou ou enviou (áudio, preço) e as fotos que ela mandou. Sem diagnóstico.', 'string'],
+      ['o_que_precisa', 'O que a Gleide precisa decidir ou responder, numa frase (ex.: dizer se dá para orientar por foto ou vídeo)', 'string']]),
 
   // Só áudio nesta resposta ([SEM TEXTO]): não manda balão, só libera a trava
   ifNode('Tem texto pra enviar?', [0, 0], [
