@@ -401,14 +401,16 @@ const nodes = [
       "try { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}",
       "const esperou = $('Aguardar 3s (IA respondendo)').isExecuted;",
       "const citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');",
-      "// Ritmo de gente: antes do 1º balão 'lê' a mensagem dela (quanto maior, mais tempo); entre balões, um",
-      "// respiro. 'Digita' 60-90 ms por letra, entre 3 s e 10 s: com a espera de 20 s para juntar a rajada, mais que",
-      "// isso deixa a cliente quase 1 minuto sem resposta",
+      "// Ritmo de gente (pedido do Victor, 25/10): o tempo depende do tamanho do texto.",
+      "// pausa = 'lendo e pensando' antes do 'digitando…': 1º balão 1,5-3 s + 20 ms por letra da mensagem dela (até 8 s);",
+      "//         balões seguintes 1-2,5 s (respiro entre uma mensagem e outra).",
+      "// delay = tempo de 'digitando…': 65-90 ms por letra (uns 12 caracteres por segundo, alguém rápido no celular),",
+      "//         no mínimo 2,5 s e no máximo 22 s. Ex.: 40 letras ≈ 3 s; 120 ≈ 9 s; 250 ≈ 19 s.",
       "const ale = (a, b) => a + Math.random() * (b - a);",
       "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
       "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, citar: citarDe({ ref }, i),",
-      "  pausa: Math.round((i === 0 ? Math.min(5, ale(0.8, 2) + lida * 0.02) : ale(1.5, 3)) * 10) / 10,",
-      "  delay: Math.round(Math.min(10000, Math.max(3000, texto.length * ale(60, 90)))) } }));",
+      "  pausa: Math.round((i === 0 ? Math.min(8, ale(1.5, 3) + lida * 0.02) : ale(1, 2.5)) * 10) / 10,",
+      "  delay: Math.round(Math.min(22000, Math.max(2500, texto.length * ale(65, 90)))) } }));",
     ].join('\n'),
   }),
 
@@ -475,12 +477,14 @@ const nodes = [
   node('Pausa (lendo/respirando)', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: '={{ $json.pausa }}', unit: 'seconds' },
     { webhookId: '3d4e5f60-7182-493a-9b2c-e3f405162738' }),
 
-  // O WhatsApp apaga o "digitando…" em ~10 s se ninguém renova: divide o tempo em blocos de até 8 s
-  // e manda um "digitando" a cada 7,5 s (batching com intervalo)
+  // O WhatsApp apaga o "digitando…" em ~10 s se ninguém renova: divide o tempo em blocos de até 7,5 s
   node('Digitando (blocos de 8s)', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
+    "// o tempo de 'digitando…' em blocos iguais de até 7,5 s: cada chamada da Evolution dura o delay do bloco e o",
+    "// próximo bloco começa um bloco depois (batchInterval = delay), então o tempo total é o delay calculado",
     "const b = $input.first().json;",
-    "const n = Math.max(1, Math.round(b.delay / 7500));",
-    "return Array.from({ length: n }, () => ({ json: { jid: b.jid, delay: 7500 }, pairedItem: 0 }));",
+    "const n = Math.max(1, Math.ceil(b.delay / 7500));",
+    "const delay = Math.round(b.delay / n);",
+    "return Array.from({ length: n }, () => ({ json: { jid: b.jid, delay }, pairedItem: 0 }));",
   ].join('\n') }),
 
   node('Digitando...', 'n8n-nodes-base.httpRequest', 4.2, [3400, 80], {
@@ -489,8 +493,8 @@ const nodes = [
     sendHeaders: true, headerParameters: apikeyHeader,
     sendBody: true, specifyBody: 'json',
     jsonBody: "={{ JSON.stringify({ number: $json.jid, presence: 'composing', delay: $json.delay }) }}",
-    // um bloco a cada 7,5 s (o n8n não espera a resposta entre lotes: sem o intervalo saíam todos juntos)
-    options: { batching: { batch: { batchSize: 1, batchInterval: 7500 } } },
+    // um bloco por vez: o n8n não espera a resposta entre lotes, então o intervalo é o próprio tamanho do bloco
+    options: { batching: { batch: { batchSize: 1, batchInterval: '={{ $json.delay }}' } } },
   }, { onError: 'continueRegularOutput' }),
 
   node('Enviar mensagem', 'n8n-nodes-base.httpRequest', 4.2, [3620, 80], {
