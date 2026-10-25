@@ -133,13 +133,25 @@ const pausaWorkflow = {
 };
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
 const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
-// Várias mensagens seguidas chegam numeradas; a resposta vem um parágrafo por assunto e o Quebrar mensagens manda até 4 balões curtos
+// Várias mensagens seguidas chegam numeradas; a IA marca com --- onde quer outra mensagem e o Quebrar mensagens manda até 3 balões
 const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
 Quando a mensagem da cliente vier em linhas numeradas ([1], [2], [3]...), são mensagens separadas que ela mandou em sequência.
-Leia tudo como uma conversa só e responda numa ÚNICA mensagem, cobrindo todas as perguntas na ordem (um parágrafo curto por assunto).
-Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.`;
+Leia tudo como uma conversa só e responda uma vez, cobrindo todas as perguntas na ordem (um parágrafo curto por assunto).
+Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.
+
+COMO A RESPOSTA CHEGA NO WHATSAPP (você decide)
+Pense em como uma atendente de verdade mandaria pelo celular. Resposta curta ou de um assunto só: uma mensagem.
+Quando ela naturalmente mandaria em partes, separe as partes com uma linha contendo só ---
+Bons motivos para separar: assuntos diferentes (ex.: o preço e depois o endereço); uma informação e, em seguida, a pergunta
+para a cliente; um cumprimento caloroso antes de um assunto mais longo.
+No máximo 3 partes. Cada parte precisa fazer sentido sozinha. Nunca separe frase por frase, nunca no meio de uma ideia,
+e não separe à toa: duas frases curtas sobre a mesma coisa ficam juntas.
+Exemplo:
+A manutenção da tela adesiva fica R$ 300 e leva uns 90 minutos.
+---
+Quer que eu veja um horário pra você?`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
@@ -328,6 +340,8 @@ const nodes = [
       "const semTexto = /\\[SEM TEXTO\\]/i.test(t);",
       "t = t.replace(/\\[SEM TEXTO\\]/gi, '').trim();",
       "if ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];",
+      "// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)",
+      "t = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');",
       "// sem negrito/markdown: mensagem de gente não tem *asterisco*",
       "t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');",
       "// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)",
@@ -350,30 +364,27 @@ const nodes = [
       "const limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);",
       "if (limpos.length) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
-      "const falhou = !paragrafos.length; // o alerta-workflows.js avisa o Victor",
+      "const falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor",
       "if (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
-      "// Balões como gente manda no WhatsApp (pedido do Victor, 25/10): resposta curta sai num balão só; resposta",
-      "// longa vira até 4 balões, um por assunto (parágrafo). Parágrafo grande (> 220 letras) é cortado entre frases;",
-      "// pedaço pequeno (< 60 letras, ex.: 'Boa tarde, Maria!') gruda no vizinho para não sobrar balão solto.",
-      "const juntos = paragrafos.map(p => p.t).join('\\n\\n');",
-      "let baloes;",
-      "if (juntos.length <= 160) baloes = [{ t: juntos, ref: 0 }];",
-      "else {",
-      "  const pedacos = [];",
-      "  for (const p of paragrafos) {",
-      "    if (p.t.length <= 220) { pedacos.push(p.t); continue; }",
-      "    let atual = '';",
-      "    for (const f of p.t.split(FRASES)) { if (atual && (atual + ' ' + f).length > 200) { pedacos.push(atual); atual = f; } else atual = atual ? atual + ' ' + f : f; }",
-      "    if (atual) pedacos.push(atual);",
-      "  }",
-      "  baloes = [];",
-      "  for (const t of pedacos) {",
-      "    const ult = baloes[baloes.length - 1];",
-      "    if (ult && (t.length < 60 || ult.t.length < 60) && (ult.t + ' ' + t).length <= 260) ult.t += (ult.t.length < 60 ? ' ' : '\\n\\n') + t;",
-      "    else baloes.push({ t, ref: 0 });",
-      "  }",
-      "  if (baloes.length > 4) baloes = [baloes[0], baloes[1], baloes[2], { t: baloes.slice(3).map(b => b.t).join('\\n\\n'), ref: 0 }];",
+      "// Balões: quem decide é a IA, marcando --- onde uma pessoa mandaria outra mensagem (pedido do Victor, 25/10:",
+      "// cortar por tamanho picava demais). Rede de segurança: se ela esquecer e mandar um bloco grande, divide em",
+      "// 2 entre parágrafos. No máximo 3 balões.",
+      "let baloes = [{ t: '', ref: 0 }];",
+      "for (const p of paragrafos) {",
+      "  if (p.t === '§§') { if (baloes[baloes.length - 1].t) baloes.push({ t: '', ref: 0 }); continue; }",
+      "  const b = baloes[baloes.length - 1];",
+      "  b.t = b.t ? b.t + '\\n\\n' + p.t : p.t;",
       "}",
+      "baloes = baloes.filter(b => b.t);",
+      "if (baloes.length === 1 && baloes[0].t.length > 420) {",
+      "  const ps = baloes[0].t.split('\\n\\n');",
+      "  if (ps.length > 1) {",
+      "    let corte = 1, soma = ps[0].length;",
+      "    while (corte < ps.length - 1 && soma + ps[corte].length < baloes[0].t.length / 2) soma += ps[corte++].length;",
+      "    baloes = [{ t: ps.slice(0, corte).join('\\n\\n'), ref: 0 }, { t: ps.slice(corte).join('\\n\\n'), ref: 0 }];",
+      "  }",
+      "}",
+      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], { t: baloes.slice(2).map(b => b.t).join('\\n\\n'), ref: 0 }];",
       "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
       "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
