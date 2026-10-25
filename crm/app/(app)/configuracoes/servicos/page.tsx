@@ -10,7 +10,8 @@ import { supabase } from "@/lib/supabase/client";
 // Serviços e preços: a Gleide muda valor, duração e retorno sem depender da gente. A IA lê esta
 // tabela a cada conversa (preço que ela fala e duração que ela reserva na agenda) e o retorno
 // previsto de cada cliente sai de dias_retorno. Serviço que sai de linha é desativado, não apagado:
-// os atendimentos antigos continuam apontando para ele.
+// os atendimentos antigos continuam apontando para ele. a_partir_de (ligado por padrão): o preço é o
+// menor e o final depende do cabelo, a Gleide confirma olhando; a IA fala "a partir de".
 
 type Servico = {
   id: string;
@@ -20,6 +21,7 @@ type Servico = {
   duracao_min: number;
   dias_retorno: number | null;
   ativo: boolean;
+  a_partir_de: boolean;
 };
 
 const CATEGORIAS: { id: string; nome: string }[] = [
@@ -32,10 +34,11 @@ const CATEGORIAS: { id: string; nome: string }[] = [
   { id: "outro", nome: "Outros" },
 ];
 
-function preco(valor: number | null): string {
+function preco(valor: number | null, aPartirDe = false): string {
   if (valor === null) return "sem preço";
   if (valor === 0) return "gratuito";
-  return `R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: valor % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+  const reais = `R$ ${valor.toLocaleString("pt-BR", { minimumFractionDigits: valor % 1 ? 2 : 0, maximumFractionDigits: 2 })}`;
+  return aPartirDe ? `a partir de ${reais}` : reais;
 }
 
 function duracao(min: number): string {
@@ -46,13 +49,13 @@ function duracao(min: number): string {
 }
 
 function resumo(s: Servico): string {
-  return [preco(s.preco), duracao(s.duracao_min), s.dias_retorno ? `volta em ${s.dias_retorno} dias` : null].filter(Boolean).join(" · ");
+  return [preco(s.preco, s.a_partir_de), duracao(s.duracao_min), s.dias_retorno ? `volta em ${s.dias_retorno} dias` : null].filter(Boolean).join(" · ");
 }
 
 async function buscarServicos(empresaId: string): Promise<{ servicos: Servico[] } | { erro: string }> {
   const { data, error } = await supabase()
     .from("servicos")
-    .select("id, nome, categoria, preco, duracao_min, dias_retorno, ativo")
+    .select("id, nome, categoria, preco, duracao_min, dias_retorno, ativo, a_partir_de")
     .eq("empresa_id", empresaId)
     .order("nome");
   if (error) return { erro: error.message };
@@ -179,6 +182,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
   const [valor, setValor] = useState(servico?.preco === null || servico?.preco === undefined ? "" : String(servico.preco).replace(".", ","));
   const [minutos, setMinutos] = useState(String(servico?.duracao_min ?? 60));
   const [retorno, setRetorno] = useState(servico?.dias_retorno ? String(servico.dias_retorno) : "");
+  const [aPartirDe, setAPartirDe] = useState(servico?.a_partir_de ?? true);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -201,7 +205,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
     if (p !== null && (!Number.isFinite(p) || p < 0)) return setErro("Preço inválido. Use só números, ex.: 150 ou 89,90.");
     if (!Number.isInteger(d) || d < 15 || d > 600) return setErro("A duração precisa ser entre 15 e 600 minutos.");
     if (r !== null && (!Number.isInteger(r) || r < 1 || r > 365)) return setErro("O retorno precisa ser entre 1 e 365 dias (ou vazio).");
-    gravar({ nome: n, categoria, preco: p, duracao_min: d, dias_retorno: r });
+    gravar({ nome: n, categoria, preco: p, duracao_min: d, dias_retorno: r, a_partir_de: aPartirDe });
   }
 
   async function trocarAtivo() {
@@ -254,9 +258,29 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
           </label>
         </div>
         <p className="-mt-2 text-[13px] text-texto-2">
-          {valor.trim() === "" ? "Sem preço: a IA não fala valor." : `A IA fala ${preco(Number(valor.replace(/\./g, "").replace(",", ".")) || 0)}.`}{" "}
+          {valor.trim() === "" ? "Sem preço: a IA não fala valor." : `A IA fala ${preco(Number(valor.replace(/\./g, "").replace(",", ".")) || 0, aPartirDe)}.`}{" "}
           {Number(minutos) >= 15 ? `Reserva ${duracao(Number(minutos))} na agenda.` : ""}
         </p>
+
+        <div className="flex items-start justify-between gap-3 rounded-[22px] bg-card p-3.5 borda-suave">
+          <span className="flex flex-col">
+            <span className="text-[16px] font-semibold">Preço a partir de</span>
+            <span className="text-[13px] text-texto-2">
+              {aPartirDe
+                ? "Coloque o menor valor. A IA fala \"a partir de\" e explica que o final depende do comprimento e do volume do cabelo."
+                : "Preço fechado: a IA fala o valor exato."}
+            </span>
+          </span>
+          <button
+            onClick={() => setAPartirDe(!aPartirDe)}
+            role="switch"
+            aria-checked={aPartirDe}
+            aria-label="Preço a partir de"
+            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${aPartirDe ? "bg-grafite" : "bg-neutral-300"}`}
+          >
+            <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${aPartirDe ? "left-7" : "left-1"}`} />
+          </button>
+        </div>
 
         <label className="flex flex-col gap-1.5">
           <span className="rotulo text-texto-2">Voltar depois de quantos dias</span>
