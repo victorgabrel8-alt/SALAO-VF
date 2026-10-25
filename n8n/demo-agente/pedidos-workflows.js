@@ -127,10 +127,14 @@ return [{ json: { ...p, texto: t } }];
     enviar('Pedido: confirmar à Gleide', [2530, -900], `${E}.jid`,
       `'Avisei ' + (${PD}.nome ? 'a ' + ${PD}.nome : 'a cliente') + ' ✓\\n' + $('Pedido: texto').first().json.texto`),
   );
+  // o Redis devolve só o campo pedido: o resto do fluxo precisa do item de Extrair dados de volta
+  workflow.nodes.push(node('Pedido: seguir normal', 'n8n-nodes-base.code', 2, [660, -760], {
+    jsCode: "return [{ json: $('Extrair dados').first().json }];" }));
   const depois = workflow.connections['Extrair dados'].main[0][0].node;
   workflow.connections['Extrair dados'] = main('Pedido: procurar');
   workflow.connections['Pedido: procurar'] = main('É resposta da Gleide?');
-  workflow.connections['É resposta da Gleide?'] = { main: [[{ node: 'Pedido: preparar', type: 'main', index: 0 }], [{ node: depois, type: 'main', index: 0 }]] };
+  workflow.connections['É resposta da Gleide?'] = { main: [[{ node: 'Pedido: preparar', type: 'main', index: 0 }], [{ node: 'Pedido: seguir normal', type: 'main', index: 0 }]] };
+  workflow.connections['Pedido: seguir normal'] = main(depois);
   workflow.connections['Pedido: preparar'] = main('Pedido: escrever (Gemini)');
   workflow.connections['Pedido: escrever (Gemini)'] = main('Pedido: texto');
   workflow.connections['Pedido: texto'] = main('Pedido: enviar à cliente');

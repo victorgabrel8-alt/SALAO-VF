@@ -3087,7 +3087,20 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000185",
+      "id": "00000000-0000-4000-8000-000000000182",
+      "name": "Pedido: seguir normal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -900
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Extrair dados').first().json }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000186",
       "name": "IA falhou? (alerta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3121,7 +3134,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000186",
+      "id": "00000000-0000-4000-8000-000000000187",
       "name": "Avisar Victor (IA falhou)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3153,7 +3166,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000187",
+      "id": "00000000-0000-4000-8000-000000000188",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3177,7 +3190,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000188",
+      "id": "00000000-0000-4000-8000-000000000189",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3190,7 +3203,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000189",
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3224,7 +3237,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000190",
+      "id": "00000000-0000-4000-8000-000000000191",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3244,7 +3257,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000191",
+      "id": "00000000-0000-4000-8000-000000000192",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3257,7 +3270,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000192",
+      "id": "00000000-0000-4000-8000-000000000193",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3279,7 +3292,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000193",
+      "id": "00000000-0000-4000-8000-000000000194",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4069,6 +4082,17 @@
             "index": 0
           }
         ],
+        [
+          {
+            "node": "Pedido: seguir normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: seguir normal": {
+      "main": [
         [
           {
             "node": "É a Gleide (assistente)?",
