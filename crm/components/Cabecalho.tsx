@@ -9,14 +9,20 @@ export function Cabecalho({ titulo, acao }: { titulo: string; acao?: ReactNode }
   );
 }
 
-// Aviso usado nas abas que ainda serão feitas nas próximas fases.
-export function EmBreve({ fase, oQue }: { fase: number; oQue: string }) {
+// Lista do que ainda vai entrar no app (sem falar em "fase": quem lê é a dona do salão)
+export function EmBreve({ titulo, itens }: { titulo: string; itens: string[] }) {
   return (
-    <div className="m-4 rounded-2xl border-2 border-dashed border-neutral-300 p-6 text-center">
-      <p className="text-lg font-semibold">Em construção</p>
-      <p className="mt-1 text-neutral-600">
-        {oQue} chega na fase {fase}.
-      </p>
-    </div>
+    <section className="mx-4 rounded-2xl border border-dashed border-neutral-300 bg-white/60 p-4">
+      <h2 className="text-lg font-semibold">{titulo}</h2>
+      <p className="text-neutral-600">Estamos preparando:</p>
+      <ul className="mt-2 space-y-2">
+        {itens.map((item) => (
+          <li key={item} className="flex gap-2 text-neutral-700">
+            <span aria-hidden className="mt-2 h-2 w-2 shrink-0 rounded-full bg-neutral-400" />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
