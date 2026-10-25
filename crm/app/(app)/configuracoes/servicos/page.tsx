@@ -48,9 +48,15 @@ function duracao(min: number): string {
   return m ? `${h}h${String(m).padStart(2, "0")}` : `${h}h`;
 }
 
-function resumo(s: Servico): string {
-  return [preco(s.preco, s.a_partir_de), duracao(s.duracao_min), s.dias_retorno ? `volta em ${s.dias_retorno} dias` : null].filter(Boolean).join(" · ");
+// Na lista, o título da seção já diz a categoria: "Manutenção – queratina" aparece como "Queratina"
+function nomeCurto(nome: string, categoria: string): string {
+  const c = CATEGORIAS.find((x) => x.id === categoria)?.nome ?? "";
+  const resto = c && nome.toLowerCase().startsWith(c.toLowerCase()) ? nome.slice(c.length).replace(/^\s*[–—-]\s*/, "") : "";
+  return resto ? resto[0].toUpperCase() + resto.slice(1) : nome;
 }
+
+// Durações de 30 em 30 min (até 8h); a atual entra na lista se for diferente
+const DURACOES = Array.from({ length: 16 }, (_, i) => (i + 1) * 30);
 
 async function buscarServicos(empresaId: string): Promise<{ servicos: Servico[] } | { erro: string }> {
   const { data, error } = await supabase()
@@ -98,7 +104,7 @@ export default function ServicosPage() {
         </Link>
         <div>
           <h1 className="font-serif text-[34px] leading-tight font-semibold">Serviços e preços</h1>
-          <p className="text-sm text-texto-2">A IA usa estes valores e durações quando conversa e quando marca horário.</p>
+          <p className="text-sm text-texto-2">A IA usa estes preços nas conversas. Toque num serviço para mudar.</p>
         </div>
       </header>
 
@@ -160,8 +166,12 @@ function Lista({ servicos, aoTocar }: { servicos: Servico[]; aoTocar: (s: Servic
         <li key={s.id} className={i > 0 ? "border-t border-borda" : ""}>
           <button onClick={() => aoTocar(s)} className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-campo">
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className={`truncate text-[16px] font-semibold ${s.ativo ? "" : "text-texto-2 line-through"}`}>{s.nome}</span>
-              <span className="truncate text-[13px] text-texto-2">{resumo(s)}</span>
+              <span className={`text-[16px] leading-snug font-semibold ${s.ativo ? "" : "text-texto-2 line-through"}`}>{nomeCurto(s.nome, s.categoria)}</span>
+              <span className="text-[13px] text-texto-2">{duracao(s.duracao_min)}</span>
+            </span>
+            <span className="flex shrink-0 flex-col items-end">
+              {s.a_partir_de && !!s.preco && <span className="text-[11px] text-texto-2">a partir de</span>}
+              <span className="text-[16px] font-semibold">{preco(s.preco)}</span>
             </span>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-texto-2" aria-hidden>
               <path d="m9 18 6-6-6-6" />
@@ -178,11 +188,13 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
   const empresa = useEmpresa();
   const { dialogo, perguntar } = useDialogo();
   const [nome, setNome] = useState(servico?.nome ?? "");
-  const [categoria, setCategoria] = useState(servico?.categoria ?? "quimica");
+  const [categoria, setCategoria] = useState(servico?.categoria ?? "outro");
   const [valor, setValor] = useState(servico?.preco === null || servico?.preco === undefined ? "" : String(servico.preco).replace(".", ","));
   const [minutos, setMinutos] = useState(String(servico?.duracao_min ?? 60));
   const [retorno, setRetorno] = useState(servico?.dias_retorno ? String(servico.dias_retorno) : "");
   const [aPartirDe, setAPartirDe] = useState(servico?.a_partir_de ?? true);
+  // Tipo e retorno quase nunca mudam: ficam escondidos em "Mais opções" (no serviço novo, aparecem)
+  const [maisOpcoes, setMaisOpcoes] = useState(!servico);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
 
@@ -203,7 +215,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
     const r = retorno.trim() === "" ? null : Number(retorno);
     if (!n) return setErro("Escreva o nome do serviço.");
     if (p !== null && (!Number.isFinite(p) || p < 0)) return setErro("Preço inválido. Use só números, ex.: 150 ou 89,90.");
-    if (!Number.isInteger(d) || d < 15 || d > 600) return setErro("A duração precisa ser entre 15 e 600 minutos.");
+    if (!Number.isInteger(d) || d < 15 || d > 600) return setErro("Escolha a duração.");
     if (r !== null && (!Number.isInteger(r) || r < 1 || r > 365)) return setErro("O retorno precisa ser entre 1 e 365 dias (ou vazio).");
     gravar({ nome: n, categoria, preco: p, duracao_min: d, dias_retorno: r, a_partir_de: aPartirDe });
   }
@@ -231,62 +243,77 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
           <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Selagem" className={campo} />
         </label>
 
-        <div className="flex flex-col gap-2">
-          <span className="rotulo text-texto-2">Tipo</span>
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIAS.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setCategoria(c.id)}
-                aria-pressed={categoria === c.id}
-                className={`h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${categoria === c.id ? "chip-ativo" : "bg-card text-texto borda-suave"}`}
-              >
-                {c.nome}
-              </button>
-            ))}
-          </div>
-        </div>
-
         <div className="grid grid-cols-2 gap-2.5">
           <label className="flex flex-col gap-1.5">
             <span className="rotulo text-texto-2">Preço (R$)</span>
-            <input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0 = gratuito" className={campo} />
+            <input inputMode="decimal" value={valor} onChange={(e) => setValor(e.target.value)} placeholder="0 = grátis" className={campo} />
           </label>
           <label className="flex flex-col gap-1.5">
-            <span className="rotulo text-texto-2">Duração (min)</span>
-            <input inputMode="numeric" value={minutos} onChange={(e) => setMinutos(e.target.value.replace(/\D/g, ""))} className={campo} />
+            <span className="rotulo text-texto-2">Duração</span>
+            <select value={minutos} onChange={(e) => setMinutos(e.target.value)} className={campo}>
+              {[...new Set([...DURACOES, Number(minutos)])]
+                .filter((m) => m >= 15)
+                .sort((a, b) => a - b)
+                .map((m) => (
+                  <option key={m} value={String(m)}>
+                    {duracao(m)}
+                  </option>
+                ))}
+            </select>
           </label>
         </div>
-        <p className="-mt-2 text-[13px] text-texto-2">
-          {valor.trim() === "" ? "Sem preço: a IA não fala valor." : `A IA fala ${preco(Number(valor.replace(/\./g, "").replace(",", ".")) || 0, aPartirDe)}.`}{" "}
-          {Number(minutos) >= 15 ? `Reserva ${duracao(Number(minutos))} na agenda.` : ""}
+
+        <button
+          onClick={() => setAPartirDe(!aPartirDe)}
+          role="switch"
+          aria-checked={aPartirDe}
+          className="flex items-center justify-between gap-3 rounded-full bg-card py-2.5 pr-2.5 pl-4 text-left borda-suave"
+        >
+          <span className="flex flex-col">
+            <span className="text-[16px] font-semibold">Preço &quot;a partir de&quot;</span>
+            <span className="text-[13px] text-texto-2">{aPartirDe ? "Use o menor valor que você cobra" : "Preço fixo, a IA fala o valor exato"}</span>
+          </span>
+          <span aria-hidden className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${aPartirDe ? "bg-grafite" : "bg-neutral-300"}`}>
+            <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${aPartirDe ? "left-7" : "left-1"}`} />
+          </span>
+        </button>
+
+        <p className="-mt-1 rounded-2xl bg-campo px-4 py-3 text-[14px] text-texto-2">
+          A IA fala:{" "}
+          <span className="font-semibold text-texto">
+            {valor.trim() === "" ? "sem preço (não informa valor)" : preco(Number(valor.replace(/\./g, "").replace(",", ".")) || 0, aPartirDe)}
+          </span>{" "}
+          · reserva {duracao(Number(minutos))} na agenda
         </p>
 
-        <div className="flex items-start justify-between gap-3 rounded-[22px] bg-card p-3.5 borda-suave">
-          <span className="flex flex-col">
-            <span className="text-[16px] font-semibold">Preço a partir de</span>
-            <span className="text-[13px] text-texto-2">
-              {aPartirDe
-                ? "Coloque o menor valor. A IA fala \"a partir de\" e explica que o final depende do comprimento e do volume do cabelo."
-                : "Preço fechado: a IA fala o valor exato."}
-            </span>
-          </span>
-          <button
-            onClick={() => setAPartirDe(!aPartirDe)}
-            role="switch"
-            aria-checked={aPartirDe}
-            aria-label="Preço a partir de"
-            className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${aPartirDe ? "bg-grafite" : "bg-neutral-300"}`}
-          >
-            <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${aPartirDe ? "left-7" : "left-1"}`} />
+        {!maisOpcoes && (
+          <button onClick={() => setMaisOpcoes(true)} className="h-10 w-fit text-[15px] font-semibold text-texto-2 underline underline-offset-4">
+            Mais opções
           </button>
-        </div>
-
-        <label className="flex flex-col gap-1.5">
-          <span className="rotulo text-texto-2">Voltar depois de quantos dias</span>
-          <input inputMode="numeric" value={retorno} onChange={(e) => setRetorno(e.target.value.replace(/\D/g, ""))} placeholder="Vazio = não tem retorno" className={campo} />
-        </label>
-        <p className="-mt-2 text-[13px] text-texto-2">É o que faz a cliente aparecer em &quot;retorno chegando&quot; e a IA lembrar dela na hora certa.</p>
+        )}
+        {maisOpcoes && (
+          <>
+            <div className="flex flex-col gap-2">
+              <span className="rotulo text-texto-2">Tipo</span>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIAS.map((c) => (
+                  <button
+                    key={c.id}
+                    onClick={() => setCategoria(c.id)}
+                    aria-pressed={categoria === c.id}
+                    className={`h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${categoria === c.id ? "chip-ativo" : "bg-card text-texto borda-suave"}`}
+                  >
+                    {c.nome}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="flex flex-col gap-1.5">
+              <span className="rotulo text-texto-2">Cliente volta depois de quantos dias</span>
+              <input inputMode="numeric" value={retorno} onChange={(e) => setRetorno(e.target.value.replace(/\D/g, ""))} placeholder="Vazio = não tem retorno" className={campo} />
+            </label>
+          </>
+        )}
 
         {erro && <p className="rounded-2xl bg-rose p-3 text-rose-texto">{erro}</p>}
         <button
@@ -297,7 +324,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
           {salvando ? "Salvando…" : servico ? "Salvar" : "Criar serviço"}
         </button>
         {servico && (
-          <button onClick={trocarAtivo} disabled={salvando} className="h-12 rounded-full bg-campo text-[15px] font-semibold text-texto disabled:opacity-50">
+          <button onClick={trocarAtivo} disabled={salvando} className={`h-11 text-[15px] font-semibold disabled:opacity-50 ${servico.ativo ? "text-rose-texto" : "text-texto"}`}>
             {servico.ativo ? "Desativar serviço" : "Reativar serviço"}
           </button>
         )}
