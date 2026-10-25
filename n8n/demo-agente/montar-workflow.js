@@ -124,7 +124,7 @@ const pausaWorkflow = {
       operation: 'set', key: '=pausa:{{ $json.telefone }}', value: "={{ 'agente: ' + ($json.motivo || 'transferido') }}", expire: true, ttl: PAUSA_TTL,
     }, { credentials: REDIS }),
     node('Resposta', 'n8n-nodes-base.set', 3.4, [440, 0], {
-      assignments: { assignments: [str('resposta', 'TRANSFERIDO: a Gleide recebeu o resumo e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora apenas: "Vou passar sua conversa pra Gleide, ela te chama por aqui 😊"')] },
+      assignments: { assignments: [str('resposta', 'TRANSFERIDO: a Gleide recebeu o resumo no WhatsApp e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora numa frase gentil que passou o assunto pra Gleide e que ela responde por aqui (ex.: "Vou confirmar com a Gleide se pode trazer seu cachorro, ela te responde por aqui, tá?" ou "Vou passar sua conversa pra Gleide, ela te chama por aqui 😊"), sem prometer prazo e sem falar em equipe.')] },
       options: {},
     }),
   ],
