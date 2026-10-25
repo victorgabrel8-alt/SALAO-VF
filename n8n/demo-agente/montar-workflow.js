@@ -576,6 +576,9 @@ memoriaJanela(assistente.assistenteWorkflow, 'Agente assistente', REDIS);
 // posições dos nós e notas coloridas por etapa (só visual)
 require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
 
+// errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
+if (fs.existsSync(alerta.idFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, workflow], fs.readFileSync(alerta.idFile, 'utf8').trim());
 fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
