@@ -151,9 +151,18 @@ return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
     "&criado_em=gte.{{ $now.minus(12, 'hours').toUTC().toISO() }}", null, { executeOnce: true }));
   workflow.connections['Supabase: histórico da cliente'] = main('Supabase: último alô');
   workflow.connections['Supabase: último alô'] = main('Supabase: últimas mensagens');
-  workflow.connections['Supabase: últimas mensagens'] = main('Sobre esta cliente');
+  // Tabela de serviços que a Gleide edita no app (Configurações › Serviços e preços): vale mais que a seção 09
+  workflow.nodes.push(supa('Supabase: tabela de serviços', 'GET',
+    `servicos?select=nome,categoria,preco,duracao_min&ativo=eq.true&order=categoria,nome&empresa_id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }));
+  workflow.connections['Supabase: últimas mensagens'] = main('Supabase: tabela de serviços');
+  workflow.connections['Supabase: tabela de serviços'] = main('Sobre esta cliente');
   workflow.connections['Sobre esta cliente'] = main('Agente IA');
   const agente = achar(workflow, 'Agente IA').parameters.options;
+  agente.systemMessage += `
+
+SERVIÇOS E PREÇOS (do app, atualizados agora pela Gleide; se algum valor ou duração for diferente da seção 09, vale ESTA lista)
+{{ $('Supabase: tabela de serviços').all().map((i) => i.json).filter((s) => s.nome).map((s) => '- ' + s.nome + ': ' + (s.preco === null || s.preco === undefined ? 'sem preço cadastrado (não informe valor)' : Number(s.preco) === 0 ? 'gratuito' : 'R$ ' + Number(s.preco).toLocaleString('pt-BR')) + ', ' + s.duracao_min + ' min').join('\\n') || '(sem lista: use a seção 09)' }}
+Serviço desativado no app não está nesta lista e não deve ser oferecido. Cabelo humano (fios) continua pela seção 09.`;
   // o prompt do Victor já traz a ficha na seção 22: só acrescenta se ele não tiver
   if (!agente.systemMessage.includes("$('Sobre esta cliente')")) agente.systemMessage += `
 
