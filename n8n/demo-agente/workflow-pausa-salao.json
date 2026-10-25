@@ -11,8 +11,8 @@
         -180
       ],
       "parameters": {
-        "content": "## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h. Mande `#ia` na conversa para devolver à IA.",
-        "width": 920,
+        "content": "## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h, salva o resumo na ficha e avisa a Gleide no WhatsApp (config.whatsapp_alerta) com o link da conversa. Mande `#ia` na conversa para devolver à IA.",
+        "width": 1440,
         "height": 360,
         "color": 3
       }
@@ -34,6 +34,12 @@
             },
             {
               "name": "motivo"
+            },
+            {
+              "name": "resumo"
+            },
+            {
+              "name": "o_que_precisa"
             }
           ]
         }
@@ -68,7 +74,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        880,
+        1320,
         0
       ],
       "parameters": {
@@ -77,7 +83,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "TRANSFERIDO: a equipe vai assumir esta conversa e você (IA) fica pausada para esta cliente por 12h. Responda agora apenas: \"Vou chamar alguém da equipe pra te ajudar 😊\"",
+              "value": "TRANSFERIDO: a Gleide recebeu o resumo e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora apenas: \"Vou passar sua conversa pra Gleide, ela te chama por aqui 😊\"",
               "type": "string"
             }
           ]
@@ -120,7 +126,7 @@
       ],
       "parameters": {
         "method": "PATCH",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ $env.EMPRESA_ID }}&telefone=eq.{{ (() => { const d = String($('Recebe pedido do agente').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ $env.EMPRESA_ID }}&telefone=eq.{{ (() => { const d = String($('Recebe pedido do agente').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -140,11 +146,78 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam/i.test($('Recebe pedido do agente').item.json.motivo || '') ? 'reclamacao' : 'pediu_humano') }) }}",
+        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam/i.test($('Recebe pedido do agente').first().json.motivo || '') ? 'reclamacao' : 'pediu_humano'), resumo_ia_em: $now.toISO(),\n       resumo_ia: ['Motivo: ' + ($('Recebe pedido do agente').first().json.motivo || 'pediu atendimento'), $('Recebe pedido do agente').first().json.resumo || '', $('Recebe pedido do agente').first().json.o_que_precisa ? 'Precisa de você: ' + $('Recebe pedido do agente').first().json.o_que_precisa : ''].filter(Boolean).join('\\n') }) }}",
         "options": {}
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000080",
+      "name": "Supabase: número de alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ $env.EMPRESA_ID }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000081",
+      "name": "Avisar a Gleide (WhatsApp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '🔔 Cliente precisa de você\\n' + ($('Supabase: pausar IA').first().json.nome || 'Cliente') + ' · ' + String($('Supabase: pausar IA').first().json.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') +\n      '\\n' + ($('Recebe pedido do agente').first().json.motivo || 'pediu atendimento') + ($('Recebe pedido do agente').first().json.resumo ? '\\n\\n' + $('Recebe pedido do agente').first().json.resumo : '') +\n      ($('Recebe pedido do agente').first().json.o_que_precisa ? '\\n\\nPrecisa de você: ' + $('Recebe pedido do agente').first().json.o_que_precisa : '') +\n      '\\n\\nVer e responder: ' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + $('Supabase: pausar IA').first().json.id }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
     }
   ],
   "connections": {
@@ -182,6 +255,28 @@
       ]
     },
     "Supabase: pausar IA": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: número de alerta": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Gleide (WhatsApp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a Gleide (WhatsApp)": {
       "main": [
         [
           {

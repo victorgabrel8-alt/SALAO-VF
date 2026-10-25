@@ -2,7 +2,7 @@
   "name": "Assistente da Gleide",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000118",
+      "id": "00000000-0000-4000-8000-000000000120",
       "name": "Webhook assistente",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -18,7 +18,7 @@
       "webhookId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a80"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000119",
+      "id": "00000000-0000-4000-8000-000000000121",
       "name": "Extrair dados",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -83,7 +83,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000120",
+      "id": "00000000-0000-4000-8000-000000000122",
       "name": "Filtro",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -137,7 +137,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000121",
+      "id": "00000000-0000-4000-8000-000000000123",
       "name": "É áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -171,7 +171,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000122",
+      "id": "00000000-0000-4000-8000-000000000124",
       "name": "Baixar áudio (Evolution)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -199,7 +199,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000123",
+      "id": "00000000-0000-4000-8000-000000000125",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -226,7 +226,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000124",
+      "id": "00000000-0000-4000-8000-000000000126",
       "name": "Texto da mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -249,7 +249,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000125",
+      "id": "00000000-0000-4000-8000-000000000127",
       "name": "Ler pendências",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -289,7 +289,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000126",
+      "id": "00000000-0000-4000-8000-000000000128",
       "name": "Agente assistente",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
@@ -306,7 +306,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000127",
+      "id": "00000000-0000-4000-8000-000000000129",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
@@ -328,7 +328,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000128",
+      "id": "00000000-0000-4000-8000-000000000130",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
@@ -350,7 +350,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000129",
+      "id": "00000000-0000-4000-8000-000000000131",
       "name": "buscar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -601,7 +601,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000130",
+      "id": "00000000-0000-4000-8000-000000000132",
       "name": "agenda_do_dia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -852,7 +852,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000131",
+      "id": "00000000-0000-4000-8000-000000000133",
       "name": "resultado_avaliacao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1113,7 +1113,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000132",
+      "id": "00000000-0000-4000-8000-000000000134",
       "name": "status_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1366,7 +1366,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000133",
+      "id": "00000000-0000-4000-8000-000000000135",
       "name": "registrar_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1622,7 +1622,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000134",
+      "id": "00000000-0000-4000-8000-000000000136",
       "name": "anotar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1874,7 +1874,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000135",
+      "id": "00000000-0000-4000-8000-000000000137",
       "name": "Responder a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1905,7 +1905,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000174",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1929,7 +1929,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000175",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1942,7 +1942,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000176",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1976,7 +1976,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000177",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1996,7 +1996,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000178",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2009,7 +2009,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000179",
+      "id": "00000000-0000-4000-8000-000000000181",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2031,7 +2031,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000180",
+      "id": "00000000-0000-4000-8000-000000000182",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
