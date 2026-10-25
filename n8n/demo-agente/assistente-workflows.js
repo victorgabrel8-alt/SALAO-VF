@@ -4,7 +4,7 @@
 //   - "Assistente da Gleide"         agente que conversa com a Gleide e grava no banco do 004
 //   - "Assistente - Ferramentas"     subworkflow das tools (SQL nas funções n8n_assistente_*)
 //   - "Assistente - Pendências"      a cada 15 min (8h–20h) pergunta à Gleide o que falta no CRM
-//                                    (GET /webhook/assistente-pendencias dispara na hora, para testar)
+//                                    (GET /webhook/assistente-pendencias dispara na hora, para testar, com o header x-webhook-token)
 //
 // Banco: o Supabase de verdade (o mesmo do app e do CRM), pela API com a chave de serviço, chamando as funções
 // n8n_assistente_* de supabase/004 e 006. (Antes era o "salao_teste" local, credencial "Salão teste (004)".)
@@ -294,7 +294,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('A cada 15 min', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 0], { rule: { interval: [{ field: 'minutes', minutesInterval: 15 }] } }),
       ifNode('Horário do salão?', [220, 0], [cond('h1', "={{ $now.setZone('America/Cuiaba').hour >= 8 && $now.setZone('America/Cuiaba').hour < 20 }}")]),
       node('Disparar agora (teste)', 'n8n-nodes-base.webhook', 2, [0, 200],
-        { httpMethod: 'GET', path: 'assistente-pendencias', responseMode: 'lastNode', options: {} }, { webhookId: '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91' }),
+        { httpMethod: 'GET', path: 'assistente-pendencias', authentication: 'headerAuth', responseMode: 'lastNode', options: {} },
+        // mesma senha do webhook do WhatsApp (header x-webhook-token): sem ela, ninguém dispara de fora
+        { webhookId: '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91', credentials: { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } } }),
       // não pergunta de novo sobre a mesma pendência por 3h
       // não pergunta de novo sobre a mesma pendência por 3h (a função já filtra)
       rpc('Pendências novas', [440, 100], 'n8n_assistente_pendencias_novas', `{ p_empresa_id: ${EMPRESA} }`, { onError: 'continueRegularOutput' }),

@@ -7,7 +7,7 @@
 //   C) vaga que abriu (horário cancelado/remarcado, ver supabase/010_vagas_adiantar.sql) -> oferece
 //      para a cliente com o próximo horário depois dela; se ela topar, o agente lê o "ALÔ DE VAGA"
 //      na ficha e remarca o horário dela para a vaga. A Gleide recebe "adiantou" pelo aviso B
-// GET /webhook/faltas-avisos dispara na hora, para testar.
+// GET /webhook/faltas-avisos dispara na hora, para testar (com o header x-webhook-token).
 // Ligar no salão: empresas.config.faltas = {"chamar": true, "so_para": [...]} (só_para vazio = todas).
 //                 empresas.config.vagas = {"oferecer": true, "so_para": [...]} (idem, para as vagas).
 
@@ -102,7 +102,9 @@ module.exports = ({ env, node, main }) => {
         options: {},
       }),
       node('Disparar agora (teste)', 'n8n-nodes-base.webhook', 2, [0, 220],
-        { httpMethod: 'GET', path: 'faltas-avisos', responseMode: 'lastNode', options: {} }, { webhookId: '8a9b0c1d-2e3f-4a5b-8c6d-7e8f9a0b1c2d' }),
+        { httpMethod: 'GET', path: 'faltas-avisos', authentication: 'headerAuth', responseMode: 'lastNode', options: {} },
+        // mesma senha do webhook do WhatsApp (header x-webhook-token): sem ela, ninguém dispara de fora
+        { webhookId: '8a9b0c1d-2e3f-4a5b-8c6d-7e8f9a0b1c2d', credentials: { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } } }),
 
       // A) chamar quem faltou
       rpc('Faltas para chamar', [440, -100], 'n8n_faltas_para_chamar', `{ p_empresa_id: ${EMPRESA} }`),
