@@ -91,7 +91,7 @@ if [ -z "${MODO:-}" ]; then
     1) gravar MODO pc ;;
     *) gravar MODO vps
        # IDs de uma tentativa anterior neste PC não valem no n8n do VPS
-       for k in N8N_API_KEY N8N_REDIS_CRED_ID N8N_GEMINI_CRED_ID N8N_CRM_CRED_ID; do gravar "$k" ""; done ;;
+       for k in N8N_API_KEY N8N_REDIS_CRED_ID N8N_GEMINI_CRED_ID N8N_CRM_CRED_ID N8N_WEBHOOK_CRED_ID; do gravar "$k" ""; done ;;
   esac
   carregar
 fi
@@ -267,6 +267,10 @@ criar_credencial N8N_CRM_CRED_ID "CRM Postgres" postgres \
   "{\"host\":\"postgres\",\"port\":5432,\"database\":\"crm\",\"user\":\"$POSTGRES_USER\",\"password\":\"$POSTGRES_PASSWORD\",\"ssl\":\"disable\",\"allowUnauthorizedCerts\":false,\"sshTunnel\":false}"
 criar_credencial N8N_GEMINI_CRED_ID "Google Gemini(PaLM) Api account" googlePalmApi \
   "{\"host\":\"https://generativelanguage.googleapis.com\",\"apiKey\":\"$GEMINI_API_KEY\"}"
+# senha do webhook do WhatsApp: a Evolution manda no cabeçalho x-webhook-token e o n8n recusa quem vem sem ela
+[ -n "${WEBHOOK_SEGREDO:-}" ] || { gravar WEBHOOK_SEGREDO "$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")"; gravar N8N_WEBHOOK_CRED_ID ""; carregar; }
+criar_credencial N8N_WEBHOOK_CRED_ID "Webhook WhatsApp (senha da Evolution)" httpHeaderAuth \
+  "{\"name\":\"x-webhook-token\",\"value\":\"$WEBHOOK_SEGREDO\"}"
 carregar
 node montar-workflow.js --enviar --ativar | grep -E 'erro|Criado|Atualizado' || true
 # app do CRM e painel: mesma URL e anon key do Supabase
@@ -283,6 +287,9 @@ if ! curl -s $EVO_URL/instance/fetchInstances "${EVO[@]}" | grep -q "\"name\":\"
   curl -s -X POST $EVO_URL/instance/create "${EVO[@]}" -d "{\"instanceName\":\"$EVOLUTION_INSTANCE\",\"integration\":\"WHATSAPP-BAILEYS\",\"qrcode\":true,\"groupsIgnore\":true,
     \"webhook\":{\"url\":\"http://n8n:5678/webhook/whatsapp-salao\",\"byEvents\":false,\"base64\":true,\"events\":[\"MESSAGES_UPSERT\"]}}" >/dev/null
 fi
+# sempre (instância nova ou antiga): webhook com a senha que o n8n exige
+curl -s -X POST "$EVO_URL/webhook/set/$EVOLUTION_INSTANCE" "${EVO[@]}" -d "{\"webhook\":{\"enabled\":true,\"url\":\"http://n8n:5678/webhook/whatsapp-salao\",
+  \"headers\":{\"x-webhook-token\":\"$WEBHOOK_SEGREDO\"},\"byEvents\":false,\"base64\":true,\"events\":[\"MESSAGES_UPSERT\"]}}" >/dev/null
 estado() { curl -s "$EVO_URL/instance/connectionState/$EVOLUTION_INSTANCE" "${EVO[@]}" | grep -oE '"state":"[a-z]+"' | cut -d'"' -f4 || true; }
 if [ "$(estado)" != "open" ]; then
   echo
