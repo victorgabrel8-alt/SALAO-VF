@@ -34,7 +34,13 @@ export default function ConfiguracoesPage() {
             <path d="m9 18 6-6-6-6" />
           </svg>
         </Link>
-        <EmBreve fase={5} oQue="Profissionais e mensagens" />
+        <EmBreve
+          titulo="Próximas novidades"
+          itens={[
+            "Mensagens: mudar pelo app os textos que a IA manda sozinha (alô de falta, aviso de vaga)",
+            "Profissionais: cadastrar mais alguém além da Gleide",
+          ]}
+        />
         <div className="px-4">
           <BotaoSair />
         </div>
@@ -161,7 +167,8 @@ function AlertaWhatsApp() {
       <div>
         <h2 className="text-lg font-semibold">WhatsApp para alertas</h2>
         <p className="text-neutral-600">
-          Quando uma cliente pedir para falar com alguém, a IA avisa neste número com o nome e o telefone dela.
+          A IA manda para este número o resumo de quem pediu para falar com você e as perguntas rápidas que ela não
+          sabe responder. Para responder uma pergunta, toque em Responder na mensagem dela.
         </p>
       </div>
       <input
