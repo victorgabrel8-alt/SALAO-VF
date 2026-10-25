@@ -22,7 +22,19 @@ export default function ConfiguracoesPage() {
       <div className="space-y-4">
         <AlertaWhatsApp />
         <HorarioAlmoco />
-        <EmBreve fase={5} oQue="Serviços, profissionais e mensagens" />
+        <Link
+          href="/configuracoes/servicos"
+          className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm active:bg-neutral-50"
+        >
+          <span>
+            <span className="block text-lg font-semibold">Serviços e preços</span>
+            <span className="block text-neutral-600">Valores, duração e retorno de cada serviço. A IA usa o que estiver aqui.</span>
+          </span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500" aria-hidden>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </Link>
+        <EmBreve fase={5} oQue="Profissionais e mensagens" />
         <div className="px-4">
           <BotaoSair />
         </div>
