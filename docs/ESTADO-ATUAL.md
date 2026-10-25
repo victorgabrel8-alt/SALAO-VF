@@ -1,5 +1,7 @@
 # Estado atual do projeto SALAO-VF (oistudio)
 
+> Plano para organizar pastas, banco e segurança: [PLANO-REESTRUTURACAO.md](PLANO-REESTRUTURACAO.md).
+
 Atualizado em 24/10/2026. Este arquivo não tem senhas nem chaves; elas ficam só no `.env` do PC.
 
 ## O que é
