@@ -172,6 +172,9 @@ const nodes = [
       str('nome', "={{ $json.body.data.pushName || '' }}"),
       str('tipo', '={{ $json.body.data.messageType }}'),
       str('texto', "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || $json.body.data.message?.imageMessage?.caption || '' }}"),
+      // id da mensagem que ela respondeu citando ("Responder" do WhatsApp): é assim que a Gleide responde a uma
+      // pergunta da IA (ver pedidos-workflows.js)
+      str('citado', "={{ $json.body.data.contextInfo?.stanzaId || $json.body.data.message?.extendedTextMessage?.contextInfo?.stanzaId || '' }}"),
       // Trava de segurança da demo: se NUMEROS_PERMITIDOS estiver preenchido, só esses números recebem resposta.
       bool('permitido', "={{ !$env.NUMEROS_PERMITIDOS || $env.NUMEROS_PERMITIDOS.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) }}"),
     ] },
@@ -449,7 +452,8 @@ const nodes = [
 
   toolSub('transferir_para_humano', [3200, 200],
     'Passa a conversa para a Gleide e PAUSA a IA para esta cliente por 12h. A Gleide recebe no WhatsApp o resumo e o link ' +
-    'da conversa no app, para não precisar ler tudo. Use nos casos da seção 12 do prompt.',
+    'da conversa no app, para não precisar ler tudo. Use nos casos do bloco QUANDO PRECISA DA GLEIDE (passar a conversa). ' +
+    'Dúvida simples que só a Gleide sabe (regra do salão) é perguntar_para_gleide, que não pausa.',
     lerPausaId, ['telefone', 'motivo', 'resumo', 'o_que_precisa'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [['motivo', 'Motivo curto, até 12 palavras (ex.: quer avaliação à distância, mora longe)', 'string'],
@@ -568,6 +572,11 @@ const assistente = require('./assistente-workflows.js')({ env, node, str, main, 
 // Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
 const faltas = require('./faltas-workflows.js')({ env, node, main });
 
+// Pergunta rápida para a Gleide: a IA pergunta, a Gleide responde citando e a IA repassa (ver pedidos-workflows.js)
+const perguntaIdFile = path.join(dir, '.workflow-pergunta-id');
+const lerPerguntaId = () => (fs.existsSync(perguntaIdFile) ? fs.readFileSync(perguntaIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_PERGUNTA');
+const pedidos = require('./pedidos-workflows.js')({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPerguntaId });
+
 // Alerta de erro no WhatsApp do Victor (ver alerta-workflows.js)
 const alerta = require('./alerta-workflows.js')({ env, node, main, workflow });
 
@@ -581,7 +590,7 @@ require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
 
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 if (fs.existsSync(alerta.idFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, workflow], fs.readFileSync(alerta.idFile, 'utf8').trim());
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alerta.idFile, 'utf8').trim());
 fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
@@ -593,6 +602,7 @@ fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(a
 fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 // Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
@@ -637,7 +647,7 @@ if (process.argv.includes('--enviar')) {
     const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
     await ativar(alertaId); // o n8n só aceita errorWorkflow publicado
     alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, workflow], alertaId);
+      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
     // n8n 2.x: subworkflow também precisa estar publicado (ativo) para ser chamado
     if (process.argv.includes('--ativar')) await ativar(agendaId);
@@ -662,7 +672,9 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(transcreverId);
     const faltasId = await upsert(faltas.faltasWorkflow, faltas.idFile);
     if (process.argv.includes('--ativar')) await ativar(faltasId);
-    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId };
+    const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
+    if (process.argv.includes('--ativar')) await ativar(perguntaId);
+    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, perguntar_para_gleide: perguntaId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
     const id = await upsert(workflow, path.join(dir, '.workflow-id'));
