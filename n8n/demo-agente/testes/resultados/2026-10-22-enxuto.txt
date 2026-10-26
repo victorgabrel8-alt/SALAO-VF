@@ -1,0 +1,65 @@
+Bateria IA — enxuto — 22/10/2026, 00:47:33
+
+=== c1 — Saudação + indecisa ===
+> boa tarde, tudo bem?
+IA: Boa tarde! Tudo bem por aqui e com você?
+> queria colocar mega mas não sei como funciona
+IA: A Gleide trabalha com várias técnicas, como a queratina, a tela adesiva e o ponto americano. Cada uma é indicada para um tipo de fio e objetivo.
+  tokens: 3 chamadas, 26279 de entrada
+✅ passou
+
+=== c2 — Preço total + parcelamento + endereço ===
+> quanto custa colocar mega? vocês parcelam? e onde fica?
+IA: Oi! Sou a assistente da Gleide 😊 O valor depende do tipo de cabelo e da quantidade, por isso a Gleide passa o orçamento na avaliação gratuita, sem compromisso.
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 18261 de entrada
+✅ passou
+
+=== c3 — Preço de cabelo sem gramas ===
+> quanto é o cabelo brasileiro?
+IA: O brasileiro de 50 cm sai a partir de R$ 1.300 os 100 g. A cor pode mudar o valor, tá? Qual cor você está procurando? 😊
+  tokens: 2 chamadas, 17426 de entrada
+✅ passou
+
+=== c4 — Química com mega ===
+> tenho mega de queratina, posso fazer progressiva?
+IA: Oi! Sou a assistente da Gleide. Como você já usa o mega de queratina, ela precisa fazer uma avaliação presencial antes da progressiva, só pra garantir que tá tudo certo com os fios e as junções.
+  tokens: 2 chamadas, 17960 de entrada
+✅ passou
+
+=== c5 — Manutenção direta ===
+> quero marcar manutenção da tela adesiva sábado, quanto fica?
+IA: A manutenção da tela adesiva fica R$ 300.
+  [agenda] consultar 90 min
+  tokens: 2 chamadas, 17901 de entrada
+✅ passou
+
+=== c6 — Encerrando ===
+> mega estraga o cabelo?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊
+> obrigada, vou pensar
+IA: Claro! Quando quiser, é só me chamar 😊
+  tokens: 3 chamadas, 26283 de entrada
+✅ passou
+
+=== c7 — Dor após procedimento ===
+> coloquei mega semana passada e tá ardendo muito o couro cabeludo
+IA: Sinto muito que você esteja passando por esse desconforto. É importante não ignorar essa ardência e, se estiver muito forte, recomendo procurar um médico ou dermatologista, tá?
+  [transferiu para humano]
+  tokens: 2 chamadas, 17897 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ c1
+✅ c2
+✅ c3
+✅ c4
+✅ c5
+✅ c6
+✅ c7
+
+7/7 passaram
+Tokens: 9 mensagens · 16 chamadas ao Gemini (1.8 por mensagem)
+  entrada: 142007 no total · 15779 por mensagem · 8875 por chamada
+  saída:   1081 no total · 120 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

@@ -1,0 +1,59 @@
+Bateria IA — ferramentas-3 — 23/10/2026, 01:31:51
+
+=== dia-fechado — consultar: pede domingo às 16h (fecha às 14h) e recebe horário possível ===
+> tem horário domingo às 16h pra manutenção?
+IA: Oi! Pra eu conferir a disponibilidade certinha, qual técnica de mega hair você usa? No domingo a Gleide atende até as 14h, então às 16h o salão já está fechado. Sabendo a técnica, eu vejo um horário mais cedo ou no sábado pra você.
+  tokens: 1 chamadas, 10008 de entrada
+❌ FALHOU: devia usar a ferramenta "consultar"
+
+=== remarcar-nao-cria-outro — remarcar: muda o mesmo horário (ou o mais perto possível), sem criar um segundo ===
+> preciso mudar meu horário pro dia 29/10 de manhã
+IA: Pra quinta, dia 29, eu tenho o horário das 09h disponível na parte da manhã. Posso mudar sua manutenção de queratina pra esse horário?
+> pode ser o primeiro horário que você falou
+IA: Remarcado com sucesso! Seu horário agora é na quinta-feira, dia 29, às 09h. Até lá! 😊
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 4 chamadas, 41085 de entrada
+❌ FALHOU: não devia dizer /REMARCADO/
+
+=== resposta-ao-atraso — remarcar: atrasada responde que não vem (ALÔ DE ATRASO; precisa do 011) ===
+> oi, desculpa, não vou conseguir ir hoje. pode ser no dia 25/10 de manhã?
+IA: Imagina, sem problemas! Acontece 😊 No domingo, dia 25, a Gleide tem horário começando entre 8h e 9h da manhã. Algum desses fica bom pra você?
+> pode ser o primeiro horário que você falou
+IA: Certinho! Seria a manutenção de queratina que estava marcada para hoje, né? Só pra eu confirmar aqui e já deixar tudo certo para domingo às 8h.
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  [agenda] remarcar 60 min
+  [agenda] listar 60 min
+  [agenda] remarcar 60 min
+  tokens: 8 chamadas, 87784 de entrada
+✅ passou
+
+=== reclamacao-pausa — transferir: reclamação pausa a IA (motivo no CRM) e ela não responde mais ===
+> fiquei muito chateada, fiz a manutenção aí com vocês semana passada e a mega já caiu toda
+IA: Sinto muito por isso estar acontecendo. Vou encaminhar sua conversa agora mesmo para a Gleide ver o que houve e te ajudar, tá? Ela já te responde.
+> oi? alguém?
+IA: null
+  [transferiu para humano]
+  tokens: 2 chamadas, 20493 de entrada
+❌ FALHOU: motivo da pausa devia ser /reclama/ (é "pediu_humano")
+
+=== audio-nao-repete — áudio: já recebeu o áudio e pergunta de novo, responde em texto ===
+> mas fica natural mesmo? dá pra perceber?
+IA: Oi! Aqui é a assistente da Gleide 😊 Pra ficar bem natural, a cor e a textura do mega precisam combinar com o seu cabelo. A Gleide avalia isso certinho pra não dar pra perceber. Você está pensando em colocar pra dar mais comprimento ou só volume mesmo?
+  tokens: 1 chamadas, 10022 de entrada
+✅ passou
+
+=== RESUMO ===
+❌ dia-fechado
+❌ remarcar-nao-cria-outro
+✅ resposta-ao-atraso
+❌ reclamacao-pausa
+✅ audio-nao-repete
+
+2/5 passaram
+Tokens: 8 mensagens · 16 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 169392 no total · 21174 por mensagem · 10587 por chamada
+  saída:   732 no total · 92 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

@@ -1,0 +1,51 @@
+Bateria IA — ferramentas-4 — 23/10/2026, 01:42:24
+
+=== dia-fechado — consultar: pede domingo às 16h (fecha às 14h) e a IA explica o horário, sem oferecer depois das 14h ===
+> tem horário domingo às 16h pra manutenção?
+IA: No domingo a Gleide atende até as 14h, então às 16h não conseguimos. Para esse domingo, tenho horários de manhã, entre 8h e 10h. Qual técnica você usa? 😉
+  [agenda] consultar 120 min
+  tokens: 2 chamadas, 20843 de entrada
+✅ passou
+
+=== remarcar-nao-cria-outro — remarcar: muda o mesmo horário (ou o mais perto possível), sem criar um segundo ===
+> preciso mudar meu horário pro dia 29/10 de manhã
+IA: Na quinta, dia 29/10, eu tenho disponível às 09h. Posso remarcar sua manutenção de queratina pra esse horário?
+> pode ser o primeiro horário que você falou
+IA: Remarcado! Seu horário agora é na quinta, dia 29/10, às 09h. Até lá! 😊
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 4 chamadas, 41363 de entrada
+✅ passou
+
+=== resposta-ao-atraso — remarcar: atrasada responde que não vem (ALÔ DE ATRASO; precisa do 011) ===
+> oi, desculpa, não vou conseguir ir hoje. pode ser no dia 25/10 de manhã?
+IA: Oi Teste! Imagina, sem problemas 😊 Pra domingo, dia 25, a Gleide tem horário começando entre 8h e 9h da manhã. Qual fica melhor pra você?
+> pode ser o primeiro horário que você falou
+IA: Remarquei aqui pra você! Ficou para domingo, dia 25, às 8h. Até lá! 😊
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  [crm] manutenção (remarcada) | Atrasou no dia 23/10 e remarcou para domingo, 25/10 às 08:00.
+  tokens: 5 chamadas, 52895 de entrada
+✅ passou
+
+=== reclamacao-pausa — transferir: reclamação pausa a IA (motivo no CRM) e ela não responde mais ===
+> fiquei muito chateada, fiz a manutenção aí com vocês semana passada e a mega já caiu toda
+IA: Sinto muito por isso, de verdade. Vou encaminhar sua conversa agora mesmo para a Gleide ver o que aconteceu e resolver isso para você, tá?
+> oi? alguém?
+IA: null
+  [transferiu para humano]
+  tokens: 2 chamadas, 20482 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ dia-fechado
+✅ remarcar-nao-cria-outro
+✅ resposta-ao-atraso
+✅ reclamacao-pausa
+
+4/4 passaram
+Tokens: 7 mensagens · 13 chamadas ao Gemini (1.9 por mensagem)
+  entrada: 135583 no total · 19369 por mensagem · 10429 por chamada
+  saída:   619 no total · 88 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

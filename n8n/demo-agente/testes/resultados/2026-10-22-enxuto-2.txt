@@ -1,0 +1,65 @@
+Bateria IA — enxuto-2 — 22/10/2026, 00:59:01
+
+=== c1 — Saudação + indecisa ===
+> boa tarde, tudo bem?
+IA: Boa tarde! Tudo ótimo por aqui. Sou a assistente da Gleide, da Toda Bonita Mega Hair. O que você está pensando em fazer no cabelo? 😊
+> queria colocar mega mas não sei como funciona
+IA: A Gleide trabalha com técnicas como a queratina, que é feita mecha por mecha, e a tela adesiva, que são faixas bem fininhas e rápidas de aplicar.
+  tokens: 3 chamadas, 26883 de entrada
+✅ passou
+
+=== c2 — Preço total + parcelamento + endereço ===
+> quanto custa colocar mega? vocês parcelam? e onde fica?
+IA: Oi! Sou a assistente da Gleide 😊 O valor total depende da quantidade e do tipo de cabelo que você escolher. A Gleide monta o orçamento certinho na avaliação gratuita.
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 18790 de entrada
+✅ passou
+
+=== c3 — Preço de cabelo sem gramas ===
+> quanto é o cabelo brasileiro?
+IA: O valor do cabelo brasileiro depende de quantas gramas você precisa. Você já tem uma ideia de quantidade? 😊
+  tokens: 2 chamadas, 17916 de entrada
+✅ passou
+
+=== c4 — Química com mega ===
+> tenho mega de queratina, posso fazer progressiva?
+IA: Boa noite! Sou a assistente da Gleide 😊
+  tokens: 2 chamadas, 17987 de entrada
+✅ passou
+
+=== c5 — Manutenção direta ===
+> quero marcar manutenção da tela adesiva sábado, quanto fica?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊
+  [agenda] consultar 90 min
+  tokens: 2 chamadas, 18374 de entrada
+✅ passou
+
+=== c6 — Encerrando ===
+> mega estraga o cabelo?
+IA: Boa noite! Aqui é a assistente da Gleide 😊
+> obrigada, vou pensar
+IA: Claro! Quando quiser, é só me chamar 😊
+  tokens: 3 chamadas, 27231 de entrada
+✅ passou
+
+=== c7 — Dor após procedimento ===
+> coloquei mega semana passada e tá ardendo muito o couro cabeludo
+IA: Sinto muito que você esteja passando por esse desconforto. É importante observar se há vermelhidão ou feridas e, se estiver muito forte, procurar um médico, tá?
+  [transferiu para humano]
+  tokens: 2 chamadas, 17739 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ c1
+✅ c2
+✅ c3
+✅ c4
+✅ c5
+✅ c6
+✅ c7
+
+7/7 passaram
+Tokens: 9 mensagens · 16 chamadas ao Gemini (1.8 por mensagem)
+  entrada: 144920 no total · 16102 por mensagem · 9058 por chamada
+  saída:   930 no total · 103 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

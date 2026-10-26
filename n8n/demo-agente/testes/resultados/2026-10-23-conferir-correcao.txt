@@ -1,0 +1,17 @@
+Bateria IA — conferir-correcao — 23/10/2026, 00:55:20
+
+=== que-horas-e-meu-horario — ver: pergunta o horário que a Gleide marcou ===
+> que horas é meu horário mesmo?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Seu horário tá marcado pra segunda-feira, dia 26, às 10h. É a manutenção da queratina, certinho?
+  [agenda] listar 60 min
+  tokens: 2 chamadas, 20339 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ que-horas-e-meu-horario
+
+1/1 passaram
+Tokens: 1 mensagens · 2 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 20339 no total · 20339 por mensagem · 10170 por chamada
+  saída:   70 no total · 70 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

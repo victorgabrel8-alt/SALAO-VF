@@ -1,0 +1,17 @@
+Bateria IA — indecisa — 23/10/2026, 12:44:50
+
+=== indecisa-pede-foto — Não sabe o que escolher: pré-avaliação (pede foto ou oferece a avaliação, conforme a conversa), sem escolher a técnica por ela ===
+> oi, queria colocar mega mas não sei qual fica melhor em mim
+IA: Oi! Aqui é a assistente da Gleide 😊 É super normal ter essa dúvida! A técnica ideal depende muito do seu tipo de cabelo e do resultado que você quer. Você tá pensando em colocar pra dar mais comprimento ou seria mais pra dar volume mesmo?
+  [crm] Nova aplicação mega hair | Quer colocar mega mas não sabe qual técnica escolher. Perguntei se busca comprimento ou volume.
+  tokens: 2 chamadas, 21320 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ indecisa-pede-foto
+
+1/1 passaram
+Tokens: 1 mensagens · 2 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 21320 no total · 21320 por mensagem · 10660 por chamada
+  saída:   107 no total · 107 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

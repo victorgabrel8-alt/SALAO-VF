@@ -1,0 +1,33 @@
+Bateria IA — trava-gramas — 23/10/2026, 12:25:03
+
+=== preco-cabelo-sem-gramas — Pergunta preço do cabelo sem dizer gramas: não cota ===
+> quanto ta o cabelo brasileiro?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 O valor do cabelo brasileiro depende de quantas gramas você precisa. Você já tem uma ideia de quantidade?
+  [crm] compra de cabelo brasileiro | Perguntou o preço do cabelo brasileiro. Perguntei a quantidade de gramas para poder informar o valor.
+  tokens: 2 chamadas, 21450 de entrada
+✅ passou
+
+=== preco-cabelo-completo — Sabe tipo, gramas e comprimento: pode dar a referência ===
+> quanto é 100g de cabelo indiano de 50 cm?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 O indiano de 50 cm sai a partir de R$ 1.100 os 100 g. A cor pode mudar o valor. Qual cor você procura?
+  [crm] compra de cabelo indiano 100g 50cm | Perguntou o preço de 100g de cabelo indiano de 50cm. Informado valor a partir de R$ 1.100.
+  tokens: 2 chamadas, 21178 de entrada
+✅ passou
+
+=== preco-cabelo-sem-tabela — Configuração fora da referência (150 g, 60 cm): não calcula valor ===
+> quanto fica 150g de cabelo brasileiro de 60 cm?
+IA: Oi! Aqui é a assistente da Gleide 😊 Pra essa quantidade de 150g no comprimento de 60cm, a Gleide precisa confirmar o valor certinho pra você, porque varia conforme a cor e o lote. Você quer que eu veja um horário pra você vir aqui ver os cabelos de perto e ela já te passar o valor exato?
+  [crm] 150g cabelo brasileiro 60cm | Perguntou o preço de 150g de cabelo brasileiro de 60cm. Informada que a Gleide precisa confirmar o valor exato
+  tokens: 2 chamadas, 20878 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ preco-cabelo-sem-gramas
+✅ preco-cabelo-completo
+✅ preco-cabelo-sem-tabela
+
+3/3 passaram
+Tokens: 3 mensagens · 6 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 63506 no total · 21169 por mensagem · 10584 por chamada
+  saída:   378 no total · 126 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

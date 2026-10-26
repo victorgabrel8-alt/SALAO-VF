@@ -1,0 +1,37 @@
+Bateria IA — multiplas — 22/10/2026, 00:12:11
+
+=== m1 — Três perguntas juntas ===
+> quanto custa colocar mega? vocês parcelam? e onde fica?
+IA: O valor completo depende muito do tipo de cabelo e da forma de aplicação, viu? A Gleide define isso na avaliação gratuita e te passa o orçamento certinho antes de você decidir.
+  tokens: 2 chamadas, 31603 de entrada
+✅ passou
+
+=== m2 — Rajada com preço de manutenção ===
+> oi
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 Você já usa mega hair ou está pensando em colocar?
+> quanto é a manutenção da tela adesiva?
+IA: A manutenção da tela adesiva fica R$ 300. Quer que eu veja um horário pra você?
+> tem horário sábado?
+IA: Para este sábado, dia 24, a Gleide tem horários disponíveis entre 08h e 10h30.
+  [agenda] consultar 90 min
+  tokens: 5 chamadas, 77877 de entrada
+✅ passou
+
+=== m3 — Pesquisando e encerrando ===
+> mega fica natural?
+IA: Fica sim! O segredo pra ficar bem natural é a Gleide escolher um cabelo com a mesma cor e textura do seu, pra misturar bem. 😊
+> obrigada, vou pensar
+IA: Com certeza! Fica à vontade para pensar. Quando quiser tirar mais alguma dúvida ou decidir marcar, é só me chamar por aqui. 😊
+  tokens: 3 chamadas, 47174 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ m1
+✅ m2
+✅ m3
+
+3/3 passaram
+Tokens: 6 mensagens · 10 chamadas ao Gemini (1.7 por mensagem)
+  entrada: 156654 no total · 26109 por mensagem · 15665 por chamada
+  saída:   485 no total · 81 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

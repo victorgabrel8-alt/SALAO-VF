@@ -1,0 +1,25 @@
+Bateria IA — verbatim — 22/10/2026, 00:17:12
+
+=== m1 — Três perguntas juntas ===
+> quanto custa colocar mega? vocês parcelam? e onde fica?
+IA: O valor completo depende muito do tipo de cabelo que você escolher e da técnica de aplicação. A Gleide passa o orçamento certinho na avaliação gratuita, sem compromisso, depois de ver seu cabelo.
+  tokens: 2 chamadas, 31651 de entrada
+✅ passou
+
+=== m3 — Pesquisando e encerrando ===
+> mega fica natural?
+IA: Oi! Aqui é a assistente da Gleide 😊 Fica muito natural, sim! O segredo é escolher um cabelo que tenha a mesma textura e cor do seu, além de colocar a quantidade certinha pra não dar "degrau".
+> obrigada, vou pensar
+IA: De nada! Fique à vontade para pensar com calma.
+  tokens: 2 chamadas, 30251 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ m1
+✅ m3
+
+2/2 passaram
+Tokens: 3 mensagens · 4 chamadas ao Gemini (1.3 por mensagem)
+  entrada: 61902 no total · 20634 por mensagem · 15476 por chamada
+  saída:   267 no total · 89 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

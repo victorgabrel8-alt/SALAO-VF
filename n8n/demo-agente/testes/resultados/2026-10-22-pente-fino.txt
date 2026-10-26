@@ -1,0 +1,48 @@
+Bateria IA — pente-fino — 22/10/2026, 17:00:27
+
+=== falar-com-a-gleide — Pede para falar com a Gleide ===
+> quero falar com a Gleide por favor
+IA: Vou chamar a Gleide pra te ajudar com isso, tá? 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 19575 de entrada
+✅ passou
+
+=== cliente-que-ja-veio — Cliente que fez mega hair pergunta da manutenção (usa a ficha) ===
+> quando eu preciso voltar pra fazer a manutenção?
+IA: Oi, Teste! Aqui é a assistente da Gleide 😊 Geralmente a manutenção é feita a cada 2 ou 3 meses, pra manter o seu cabelo saudável e a fixação em dia. Como você colocou a queratina no fim de setembro, o ideal seria voltar ali pelo começo de dezembro. Quer que eu já deixe um horário reservado pra você?
+  tokens: 1 chamadas, 9743 de entrada
+✅ passou
+
+=== horario-do-crm — Vê e remarca um horário que a Gleide marcou no CRM ===
+> que dia é meu horário mesmo?
+IA: Seu horário tá marcado pra quinta-feira, dia 29, às 9h, pra manutenção da queratina 😊
+> quero passar para o dia 30/10 às 9h
+IA: Consigo passar pra esse horário sim! Posso confirmar a mudança da sua manutenção para sexta-feira, dia 30, às 9h?
+> sim
+IA: Remarcado! Passei seu horário para sexta-feira, dia 30, às 9h. Até lá! 😊
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 6 chamadas, 60411 de entrada
+✅ passou
+
+=== resposta-ao-alo — Responde ao alô de retorno do CRM: já oferece horário da manutenção ===
+> quero sim
+IA: Que bom! Pra sua manutenção da queratina, eu tenho amanhã à tarde, entre 13h e 15h. Ou no sábado de manhã, entre 8h e 9h. Algum desses horários fica bom pra você?
+  [agenda] consultar 180 min
+  [agenda] consultar 180 min
+  [agenda] consultar 180 min
+  tokens: 4 chamadas, 41954 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ falar-com-a-gleide
+✅ cliente-que-ja-veio
+✅ horario-do-crm
+✅ resposta-ao-alo
+
+4/4 passaram
+Tokens: 6 mensagens · 13 chamadas ao Gemini (2.2 por mensagem)
+  entrada: 131683 no total · 21947 por mensagem · 10129 por chamada
+  saída:   683 no total · 114 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

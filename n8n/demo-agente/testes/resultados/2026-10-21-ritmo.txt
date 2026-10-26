@@ -1,0 +1,17 @@
+Bateria IA — ritmo — 21/10/2026, 23:48:24
+
+=== a-cabelos — Diferença dos cabelos ===
+> qual a diferença do cabelo brasileiro pro indiano e o vietnamita?
+IA: A diferença principal entre eles é a espessura do fio e o movimento. O brasileiro costuma ser mais fininho e leve, com um movimento bem suave. O indiano é um meio-termo, nem tão fino nem tão grosso. Já o vietnamita tem o fio mais grosso e é excelente pra quem busca bastante volume. Você está pensando em colocar pra ganhar mais comprimento ou quer deixar o cabelo mais cheio?
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que a Gleide explica aqui, se
+  tokens: 2 chamadas, 26766 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ a-cabelos
+
+1/1 passaram
+Tokens: 1 mensagens · 2 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 26766 no total · 26766 por mensagem · 13383 por chamada
+  saída:   112 no total · 112 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

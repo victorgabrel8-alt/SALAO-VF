@@ -1,0 +1,28 @@
+Bateria IA — cancelar — 23/10/2026, 09:21:44
+
+=== cancelar-confirmado — cancelar: pede, confirma e o horário fica cancelado no CRM ===
+> quero cancelar meu horário
+IA: Tudo bem, Teste. Você quer cancelar o seu horário de manutenção na terça, dia 27, às 10h? Só pra eu confirmar certinho.
+> sim, pode cancelar
+IA: Certo, Teste. Cancelei seu horário de terça-feira, dia 27, às 10h. Se quiser marcar pra um outro dia, é só me avisar que eu vejo os horários pra você 😊
+  [agenda] listar 60 min
+  [agenda] cancelar 60 min
+  tokens: 4 chamadas, 41753 de entrada
+✅ passou
+
+=== cancelar-sem-confirmar — cancelar: só fala que talvez cancele, nada é cancelado ===
+> acho que vou ter que cancelar meu horário...
+IA: Poxa, entendi. Você quer que eu cancele esse horário de terça-feira, às 10h, ou prefere que eu veja outro dia pra gente remarcar?
+  [agenda] listar 60 min
+  tokens: 2 chamadas, 20939 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ cancelar-confirmado
+✅ cancelar-sem-confirmar
+
+2/2 passaram
+Tokens: 3 mensagens · 6 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 62692 no total · 20897 por mensagem · 10449 por chamada
+  saída:   203 no total · 68 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

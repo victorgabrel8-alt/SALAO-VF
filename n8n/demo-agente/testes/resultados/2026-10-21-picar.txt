@@ -1,0 +1,30 @@
+Bateria IA — picar — 21/10/2026, 23:56:54
+
+=== p1 — Diferença de técnicas ===
+> qual a diferença da queratina pra tela adesiva? qual dura mais?
+IA: Oi! Aqui é a assistente da Gleide 😊 A queratina é colocada em mechas bem fininhas, o que dá muita liberdade pra prender o cabelo. Já a tela adesiva são faixas presas perto da raiz e a aplicação é super rápida.
+  tokens: 2 chamadas, 26874 de entrada
+✅ passou
+
+=== p2 — Saudação ===
+> boa tarde, tudo bem?
+IA: Boa tarde! Tudo bem por aqui, e com você? 😊
+  tokens: 1 chamadas, 13175 de entrada
+✅ passou
+
+=== p3 — Química com mega ===
+> tenho mega de queratina e queria fazer uma progressiva, pode?
+IA: Pra fazer química usando mega hair, a Gleide precisa dar uma olhadinha no seu cabelo e na fixação antes, pra garantir que vai ficar tudo certinho e não prejudicar as extensões.
+  tokens: 1 chamadas, 13184 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ p1
+✅ p2
+✅ p3
+
+3/3 passaram
+Tokens: 3 mensagens · 4 chamadas ao Gemini (1.3 por mensagem)
+  entrada: 53233 no total · 17744 por mensagem · 13308 por chamada
+  saída:   263 no total · 88 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

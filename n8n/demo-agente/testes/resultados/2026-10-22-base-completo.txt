@@ -1,0 +1,65 @@
+Bateria IA — base-completo — 22/10/2026, 00:35:56
+
+=== c1 — Saudação + indecisa ===
+> boa tarde, tudo bem?
+IA: Boa tarde! Tudo ótimo por aqui, e com você? 😊
+> queria colocar mega mas não sei como funciona
+IA: É super tranquilo! O primeiro passo é uma avaliação gratuita com a Gleide aqui no salão.
+  tokens: 2 chamadas, 30432 de entrada
+✅ passou
+
+=== c2 — Preço total + parcelamento + endereço ===
+> quanto custa colocar mega? vocês parcelam? e onde fica?
+IA: Oi, Teste! O valor completo depende muito do tipo de cabelo e da quantidade que você vai precisar, por isso a Gleide faz uma avaliação gratuita pra te passar o orçamento certinho.
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 31878 de entrada
+✅ passou
+
+=== c3 — Preço de cabelo sem gramas ===
+> quanto é o cabelo brasileiro?
+IA: anotar_no_crm(interesse="compra de cabelo brasileiro",nome="Teste",resumo="Perguntou o preço do cabelo brasileiro. Informei o valor de referência e perguntei o comprimento desejado.") Oi! Aqui é a assistente da Gleide 😊
+  tokens: 1 chamadas, 15190 de entrada
+✅ passou
+
+=== c4 — Química com mega ===
+> tenho mega de queratina, posso fazer progressiva?
+IA: Pra fazer progressiva usando mega, a Gleide precisa dar uma olhadinha no seu cabelo e na fixação da queratina antes, pra garantir que vai ficar tudo certinho.
+  tokens: 1 chamadas, 15196 de entrada
+✅ passou
+
+=== c5 — Manutenção direta ===
+> quero marcar manutenção da tela adesiva sábado, quanto fica?
+IA: A manutenção da tela adesiva fica R$ 300.
+  [agenda] consultar 90 min
+  tokens: 2 chamadas, 31218 de entrada
+✅ passou
+
+=== c6 — Encerrando ===
+> mega estraga o cabelo?
+IA: Olha, se o mega for bem aplicado e você seguir as manutenções no tempo certinho, ele não estraga o cabelo, viu? 😊
+> obrigada, vou pensar
+IA: Claro! Quando quiser tirar mais alguma dúvida ou decidir marcar uma avaliação, é só me chamar. 😊
+  tokens: 2 chamadas, 30461 de entrada
+✅ passou
+
+=== c7 — Dor após procedimento ===
+> coloquei mega semana passada e tá ardendo muito o couro cabeludo
+IA: Sinto muito que você esteja passando por isso. Ardência intensa não é normal e precisa de atenção.
+  [transferiu para humano]
+  tokens: 2 chamadas, 31139 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ c1
+✅ c2
+✅ c3
+✅ c4
+✅ c5
+✅ c6
+✅ c7
+
+7/7 passaram
+Tokens: 9 mensagens · 12 chamadas ao Gemini (1.3 por mensagem)
+  entrada: 185514 no total · 20613 por mensagem · 15460 por chamada
+  saída:   867 no total · 96 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

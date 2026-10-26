@@ -1,0 +1,40 @@
+Bateria IA — audios-novos — 21/10/2026, 23:19:08
+
+=== a-preco — Quanto custa colocar ===
+> oi, quanto custa pra colocar mega hair?
+IA: Oi! Aqui é a assistente da Gleide 😊 O valor completo depende muito do tipo de cabelo e da técnica que a gente usar. A Gleide prefere passar o orçamento certinho na avaliação gratuita, pra não te dar um valor que mude depois. Você está buscando mais comprimento ou mais volume no seu cabelo?
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, eu entendo vo
+  tokens: 2 chamadas, 27215 de entrada
+✅ passou
+
+=== a-cabelos — Diferença dos cabelos ===
+> qual a diferença do cabelo brasileiro pro indiano e o vietnamita?
+IA: A diferença principal é a espessura e o movimento do fio. O brasileiro é mais fino e leve, o indiano é intermediário e o vietnamita é mais grosso e volumoso. Tudo depende do resultado que você quer e de como é o seu cabelo natural. Você está buscando mais comprimento ou mais volume? 😊
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Olha, a diferença é
+  tokens: 2 chamadas, 26525 de entrada
+✅ passou
+
+=== a-natural — Fica natural? ===
+> mega hair fica natural? tenho medo de aparecer
+IA: Fica super natural sim! O segredo é combinar a cor, a textura e a quantidade de cabelo com o seu fio natural. A Gleide avalia tudo isso pra que o acabamento fique imperceptível. Você tá pensando em colocar pra ganhar mais comprimento ou seria mais pra dar volume? 😊
+  [áudio] "mega hair fica natural" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto, com base nisto que a Gleide explica: Dá pra buscar um re
+  tokens: 2 chamadas, 26835 de entrada
+✅ passou
+
+=== a-manutencao — Manutenção: não deve mandar áudio ===
+> quanto é a manutenção da tela adesiva?
+IA: A manutenção da tela adesiva fica R$ 300. Quer que eu veja um horário pra você?
+  tokens: 2 chamadas, 26919 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ a-preco
+✅ a-cabelos
+✅ a-natural
+✅ a-manutencao
+
+4/4 passaram
+Tokens: 4 mensagens · 8 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 107494 no total · 26874 por mensagem · 13437 por chamada
+  saída:   473 no total · 118 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

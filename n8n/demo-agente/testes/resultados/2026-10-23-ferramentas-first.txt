@@ -1,0 +1,46 @@
+Bateria IA — ferramentas-first — 23/10/2026, 14:29:11
+
+=== anota-interesse — anotar: interesse e orçamento vão para a ficha, sem falar disso ===
+> quero colocar mega hair, meu cabelo é curto e bem fino, tenho até uns 3 mil pra gastar
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 Como cada cabelo precisa de uma quantidade e técnica diferente, a Gleide faz uma avaliação gratuita pra te mostrar as opções e passar o orçamento certinho antes de você decidir. Quer que eu veja um horário pra você vir aqui no salão fazer essa avaliação sem compromisso?
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair, cabelo curto e fino, orçamento 3k | Quer colocar mega hair pela primeira vez. Cabelo curto e fino. Tem orçamento de 3 mil reais. 
+  tokens: 2 chamadas, 21668 de entrada
+✅ passou
+
+=== anota-objecao — anotar: achou caro e vai pensar entra no resumo ===
+> quanto fica a manutenção da queratina?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 A manutenção da queratina fica R$ 450. Quer que eu veja um horário pra você?
+> nossa, achei caro, vou pensar
+IA: Entendo! A gente parcela em até 6x sem juros no cartão, se ajudar. Quando quiser, é só me chamar 😊
+  [crm] manutenção queratina | Perguntou o preço da manutenção de queratina. Cliente nova.
+  tokens: 3 chamadas, 31101 de entrada
+✅ passou
+
+=== audio-tema-certo — áudio: pergunta a diferença dos cabelos e recebe o áudio desse tema ===
+> qual a diferença entre os tipos de cabelo?
+IA: A diferença principal é a espessura e o caimento. O brasileiro é mais fininho e leve, o indiano é um meio-termo e o vietnamita tem o fio mais grosso e com bastante volume. O ideal é escolher o que mais combina com o seu fio natural. Você já tem uma ideia de qual prefere?
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] diferença entre os tipos de cabelo | Cliente nova perguntando sobre as diferenças entre os tipos de cabelo (brasileiro, indiano e vietnamita
+  tokens: 2 chamadas, 20987 de entrada
+✅ passou
+
+=== um-audio-por-resposta — áudio: duas dúvidas com áudio na mesma mensagem, no máximo 1 áudio ===
+> mega hair fica natural? e qual a diferença entre os tipos de cabelo?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 Dá pra buscar um resultado bem natural sim. O segredo é combinar a cor, a textura e a quantidade do mega com o seu cabelo natural. Sobre os fios, o brasileiro é mais fininho e leve, o indiano é macio e intermediário, e o vietnamita é mais grosso e liso. Você já usa mega ou seria a primeira vez?
+  [áudio] "mega hair fica natural" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair, dúvida sobre naturalidade e tipos de cabelo | Primeiro contato. Perguntou sobre naturalidade e tipos de fios. Ainda não informou 
+  tokens: 3 chamadas, 33337 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ anota-interesse
+✅ anota-objecao
+✅ audio-tema-certo
+✅ um-audio-por-resposta
+
+4/4 passaram
+Tokens: 5 mensagens · 10 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 107093 no total · 21419 por mensagem · 10709 por chamada
+  saída:   604 no total · 121 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

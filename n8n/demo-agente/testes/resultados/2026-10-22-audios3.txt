@@ -1,0 +1,40 @@
+Bateria IA — audios3 — 22/10/2026, 00:20:56
+
+=== x1 — Só preço ===
+> oi, quanto custa colocar mega hair?
+IA: O valor total depende muito do tipo de cabelo e da quantidade que você vai precisar.
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 30823 de entrada
+✅ passou
+
+=== x2 — Preço + parcelamento + endereço ===
+> quanto custa colocar mega? vocês parcelam? e onde fica?
+IA: O valor completo depende muito do tipo de cabelo e da quantidade que você vai precisar, por isso a Gleide monta o orçamento certinho na avaliação gratuita, sem compromisso.
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 31659 de entrada
+✅ passou
+
+=== x3 — Diferença dos cabelos ===
+> qual a diferença do cabelo brasileiro pro indiano e o vietnamita?
+IA: Oi, Teste! Aqui é a assistente da Gleide. 😊
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 32140 de entrada
+✅ passou
+
+=== x4 — Manutenção (sem áudio) ===
+> quanto é a manutenção da tela adesiva?
+IA: A manutenção da tela adesiva fica R$ 300 😊 Quer que eu veja um horário pra você?
+  tokens: 2 chamadas, 30921 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ x1
+✅ x2
+✅ x3
+✅ x4
+
+4/4 passaram
+Tokens: 4 mensagens · 8 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 125543 no total · 31386 por mensagem · 15693 por chamada
+  saída:   457 no total · 114 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

@@ -1,0 +1,34 @@
+Bateria IA — remarcar-2 — 23/10/2026, 09:15:00
+
+=== remarcar-nao-cria-outro — remarcar: muda o mesmo horário (ou o mais perto possível), sem criar um segundo ===
+> preciso mudar meu horário pro dia 29/10 de manhã
+IA: Para a quinta-feira, dia 29, eu tenho o horário das 09h disponível na parte da manhã. Posso mudar sua manutenção de queratina para esse horário?
+> pode ser o primeiro horário que você falou
+IA: Remarcado com sucesso! Passei seu horário para quinta-feira, dia 29, às 09h. Até lá! 😊
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 4 chamadas, 41514 de entrada
+✅ passou
+
+=== resposta-ao-atraso — remarcar: atrasada responde que não vem (ALÔ DE ATRASO; precisa do 011) ===
+> oi, desculpa, não vou conseguir ir hoje. pode ser no dia 25/10 de manhã?
+IA: Tudo bem, Teste! Sem problemas. Para domingo agora, dia 25, a agenda da Gleide já está lotada. O horário mais próximo que eu tenho para a sua manutenção de queratina é na segunda-feira, dia 26, às 9h. Fica bom para você?
+> pode ser o primeiro horário que você falou
+IA: Remarcado, Teste! Ficou para segunda-feira, dia 26, às 9h. Até lá! 😊
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  [crm] manutenção queratina | Não pôde vir no dia 23/10; remarcado para segunda, 26/10 às 9h.
+  tokens: 6 chamadas, 64463 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ remarcar-nao-cria-outro
+✅ resposta-ao-atraso
+
+2/2 passaram
+Tokens: 4 mensagens · 10 chamadas ao Gemini (2.5 por mensagem)
+  entrada: 105977 no total · 26494 por mensagem · 10598 por chamada
+  saída:   539 no total · 135 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

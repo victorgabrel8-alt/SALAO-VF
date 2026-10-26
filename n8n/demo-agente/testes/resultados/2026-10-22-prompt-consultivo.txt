@@ -1,0 +1,27 @@
+Bateria IA — prompt-consultivo — 22/10/2026, 16:27:43
+
+=== pergunta_ou_age — Período vago: age direto, sem perguntar e responder na mesma mensagem ===
+> oi, queria marcar uma hidratação
+IA: Oi! Aqui é a assistente da Gleide 😊 Pra hoje ela já está com a agenda cheia, mas amanhã, sexta, tenho horários à tarde entre 13h e 17h. Qual fica melhor pra você?
+> mais pro começo do mês que vem
+IA: Entendi! No começo de novembro, na segunda dia 02, tenho horários de manhã entre 9h e 11h, e à tarde das 13h às 17h.
+  [agenda] consultar 60 min
+  [agenda] consultar 60 min
+  tokens: 4 chamadas, 40528 de entrada
+✅ passou
+
+=== sem_dinheiro — Consultiva: "tô sem dinheiro" acolhe e oferece mais pra frente, sem empurrar ===
+> oi, queria ver a manutenção da queratina mas tô sem dinheiro esse mês
+IA: Oi! Aqui é a assistente da Gleide 😊 Entendo perfeitamente, as coisas apertam às vezes mesmo.
+  tokens: 2 chamadas, 20394 de entrada
+❌ FALHOU: devia dizer /(6x|parcel|mais pra frente|fim do m[eê]s|quando ficar melhor|m[eê]s que vem)/
+
+=== RESUMO ===
+✅ pergunta_ou_age
+❌ sem_dinheiro
+
+1/2 passaram
+Tokens: 3 mensagens · 6 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 60922 no total · 20307 por mensagem · 10154 por chamada
+  saída:   418 no total · 139 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

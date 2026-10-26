@@ -1,0 +1,24 @@
+Bateria IA — etapa-3-ver — 23/10/2026, 08:58:47
+
+=== que-horas-e-meu-horario — ver: pergunta o horário que a Gleide marcou ===
+> que horas é meu horário mesmo?
+IA: Seu horário tá marcado pra segunda-feira, dia 26, às 10h, pra manutenção da queratina. 😊
+  tokens: 1 chamadas, 10042 de entrada
+❌ FALHOU: devia usar a ferramenta "listar"; devia dizer /26\/10/
+
+=== sem-horario-marcado — ver: não tem horário e a IA não inventa ===
+> que dia eu marquei mesmo?
+IA: Não encontrei nenhum horário marcado aqui no seu nome, Teste. Você lembra se chegou a marcar por outro número ou com outro nome? Se quiser, posso te encaminhar pra Gleide dar uma olhadinha pra você.
+  [agenda] listar 60 min
+  tokens: 2 chamadas, 20263 de entrada
+✅ passou
+
+=== RESUMO ===
+❌ que-horas-e-meu-horario
+✅ sem-horario-marcado
+
+1/2 passaram
+Tokens: 2 mensagens · 3 chamadas ao Gemini (1.5 por mensagem)
+  entrada: 30305 no total · 15153 por mensagem · 10102 por chamada
+  saída:   103 no total · 52 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

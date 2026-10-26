@@ -1,0 +1,24 @@
+Bateria IA — tempo — 22/10/2026, 00:29:58
+
+=== x3 — Diferença dos cabelos ===
+> qual a diferença do cabelo brasileiro pro indiano e o vietnamita?
+IA: A diferença principal está na espessura e no movimento dos fios. O brasileiro é mais fininho e leve, com movimento bem suave, enquanto o indiano é um meio-termo, nem tão fino nem tão grosso.
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 30880 de entrada
+✅ passou
+
+=== x4 — Manutenção (sem áudio) ===
+> quanto é a manutenção da tela adesiva?
+IA: A manutenção da tela adesiva fica R$ 300.
+  tokens: 2 chamadas, 30766 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ x3
+✅ x4
+
+2/2 passaram
+Tokens: 2 mensagens · 4 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 61646 no total · 30823 por mensagem · 15412 por chamada
+  saída:   192 no total · 96 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

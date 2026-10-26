@@ -1,0 +1,34 @@
+Bateria IA — spin — 22/10/2026, 00:02:00
+
+=== s1 — Preço (áudio) ===
+> oi, quanto custa pra colocar mega hair?
+IA: Oi, Teste! Entendo você querer saber o valor antes de vir. 😊
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  tokens: 2 chamadas, 29895 de entrada
+✅ passou
+
+=== s2 — Pesquisando / encerrando ===
+> qual a diferença da queratina pra tela adesiva?
+IA: Oi! Aqui é a assistente da Gleide 😊 A queratina é colocada em mechinhas bem finas, o que deixa o movimento bem natural e é ótimo pra quem gosta de prender muito o cabelo.
+> entendi, vou pensar e depois te chamo
+IA: Claro! Quando quiser, é só me chamar 😊
+  tokens: 2 chamadas, 28962 de entrada
+✅ passou
+
+=== s3 — Pronta pra agendar ===
+> já fiz avaliação, ela falou tela adesiva. tem horário sábado?
+IA: Que bom que você já passou pela avaliação com a Gleide! Para a aplicação da tela adesiva no sábado, tenho horário começando às 08h ou às 09h30. Algum desses fica bom para você?
+  [agenda] consultar 120 min
+  tokens: 3 chamadas, 44280 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ s1
+✅ s2
+✅ s3
+
+3/3 passaram
+Tokens: 4 mensagens · 7 chamadas ao Gemini (1.8 por mensagem)
+  entrada: 103137 no total · 25784 por mensagem · 14734 por chamada
+  saída:   459 no total · 115 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

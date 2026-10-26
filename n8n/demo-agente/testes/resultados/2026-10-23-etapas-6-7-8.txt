@@ -1,0 +1,96 @@
+Bateria IA — etapas-6-7-8 — 23/10/2026, 09:27:27
+
+=== falar-com-a-gleide — Pede para falar com a Gleide ===
+> quero falar com a Gleide por favor
+IA: Vou chamar alguém da equipe pra te ajudar 😊
+  [transferiu para humano]
+  tokens: 2 chamadas, 20329 de entrada
+✅ passou
+
+=== dor-reacao — Dor ou ferida depois do procedimento: acolhe e transfere ===
+> coloquei mega semana passada e meu couro cabeludo tá ardendo e com uma ferida
+IA: Sinto muito por esse desconforto! Como você mencionou uma ferida, se estiver incomodando muito, o ideal é procurar um médico ou dermatologista pra avaliar, tá? Vou encaminhar sua conversa agora mesmo pra Gleide te ajudar com isso.
+  [transferiu para humano]
+  [crm] problema pós-procedimento | Relatou ardência e ferida no couro cabeludo uma semana após colocar o mega hair. Recomendei orientação médica e 
+  tokens: 2 chamadas, 21008 de entrada
+✅ passou
+
+=== audio-estraga — Pergunta se mega estraga: usa o áudio da Gleide ===
+> mega hair estraga o cabelo?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 Não dá pra garantir risco zero, viu? Depende muito do estado do seu cabelo, da técnica usada e de fazer a manutenção no prazo certinho. A Gleide avalia tudo isso pra garantir que a técnica seja segura pro seu fio. Você já usa mega ou tá pensando em colocar?
+  [crm] mega hair, preocupação com dano ao cabelo | Cliente nova perguntando se mega hair estraga o cabelo. Demonstrou preocupação com a saúde dos f
+  tokens: 2 chamadas, 20861 de entrada
+❌ FALHOU: devia usar enviar_audio; devia escolher o áudio /prejudica/
+
+=== audio-por-escrito — Pede por escrito: não manda áudio ===
+> mega hair estraga o cabelo? manda por escrito que tô no trabalho e não posso ouvir
+IA: Oi! Aqui é a assistente da Gleide. Pode deixar, respondo por escrito sim 😊 Olha, não dá pra garantir risco zero, viu? Depende muito da saúde do seu fio, da técnica escolhida e, principalmente, de fazer a manutenção certinho no prazo. Seguindo as orientações da Gleide, o mega hair é bem seguro. Você já usa ou está pensando em colocar pela primeira vez?
+  tokens: 1 chamadas, 10074 de entrada
+✅ passou
+
+=== reclamacao-pausa — transferir: reclamação pausa a IA (motivo no CRM) e ela não responde mais ===
+> fiquei muito chateada, fiz a manutenção aí com vocês semana passada e a mega já caiu toda
+IA: Sinto muito por isso, entendo sua chateação. Vou encaminhar sua conversa agora mesmo para a Gleide ver o que aconteceu e te ajudar com isso, tá? 😊
+> oi? alguém?
+IA: null
+  [transferiu para humano]
+  tokens: 2 chamadas, 20615 de entrada
+✅ passou
+
+=== anota-interesse — anotar: interesse e orçamento vão para a ficha, sem falar disso ===
+> quero colocar mega hair, meu cabelo é curto e bem fino, tenho até uns 3 mil pra gastar
+IA: Bom dia! Aqui é a assistente da Gleide 😊 Cabelo curto e fino pede um cuidado especial na escolha da técnica pra não pesar. O valor total muda conforme o tipo de cabelo e a técnica. A Gleide monta esse orçamento certinho na avaliação gratuita, sem compromisso. Quer que eu veja um horário pra você vir aqui?
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair, cabelo curto e fino | Tem orçamento de 3k. Cabelo curto e fino. Sugerida avaliação gratuita.
+  tokens: 2 chamadas, 21772 de entrada
+✅ passou
+
+=== anota-objecao — anotar: achou caro e vai pensar entra no resumo ===
+> quanto fica a manutenção da queratina?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 A manutenção da queratina fica R$ 450. Quer que eu veja um horário pra você fazer a sua?
+> nossa, achei caro, vou pensar
+IA: Entendo, é um investimento mesmo. Se ajudar, a gente parcela em até 6x sem juros no cartão. Quando quiser, é só me chamar 😊
+  [crm] manutenção queratina | Perguntou o valor da manutenção de queratina (R$ 450). Cliente nova.
+  tokens: 3 chamadas, 31390 de entrada
+✅ passou
+
+=== audio-tema-certo — áudio: pergunta a diferença dos cabelos e recebe o áudio desse tema ===
+> qual a diferença entre os tipos de cabelo?
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 A diferença principal é a textura: o brasileiro é mais fininho e leve, o indiano é intermediário e o vietnamita tem o fio mais grosso e volumoso. A escolha depende muito do visual que você procura. Você já tem uma ideia de qual prefere?
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] diferença entre tipos de cabelo | Primeiro contato, perguntou sobre as diferenças entre os tipos de cabelo (brasileiro, indiano e vietnamita
+  tokens: 2 chamadas, 21219 de entrada
+✅ passou
+
+=== audio-nao-repete — áudio: já recebeu o áudio e pergunta de novo, responde em texto ===
+> mas fica natural mesmo? dá pra perceber?
+IA: Fica bem discreto sim! O segredo é escolher a cor, a textura e a quantidade que combinem certinho com o seu fio, e a Gleide cuida de todos esses detalhes. Você já usa mega ou seria a primeira vez? 😊
+  [crm] mega hair - busca naturalidade | Preocupada se o mega hair fica natural. Nunca usou ou não informou ainda.
+  tokens: 2 chamadas, 20620 de entrada
+✅ passou
+
+=== um-audio-por-resposta — áudio: duas dúvidas com áudio na mesma mensagem, no máximo 1 áudio ===
+> mega hair fica natural? e qual a diferença entre os tipos de cabelo?
+IA: Oi! Aqui é a assistente da Gleide 😊 O mega fica bem natural, sim! A Gleide avalia a cor, a textura e a quantidade certinha pra misturar com o seu cabelo e não aparecer. A diferença é que o brasileiro é mais fininho e leve, o indiano fica no meio termo e o vietnamita tem o fio mais grosso e volumoso. Você quer mais comprimento ou só volume?
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair, tipos de cabelo | Primeiro contato. Perguntou se fica natural e a diferença entre os tipos de cabelo.
+  tokens: 2 chamadas, 22244 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ falar-com-a-gleide
+✅ dor-reacao
+❌ audio-estraga
+✅ audio-por-escrito
+✅ reclamacao-pausa
+✅ anota-interesse
+✅ anota-objecao
+✅ audio-tema-certo
+✅ audio-nao-repete
+✅ um-audio-por-resposta
+
+9/10 passaram
+Tokens: 12 mensagens · 20 chamadas ao Gemini (1.7 por mensagem)
+  entrada: 210132 no total · 17511 por mensagem · 10507 por chamada
+  saída:   1201 no total · 100 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

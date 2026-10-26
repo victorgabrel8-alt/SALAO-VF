@@ -1,0 +1,16 @@
+Bateria IA — sem-audio — 22/10/2026, 00:06:22
+
+=== s1 — Preço (áudio) ===
+> oi, quanto custa pra colocar mega hair?
+IA: Oi! Aqui é a assistente da Gleide 😊 O valor total depende muito do tipo de cabelo que você escolher e da técnica de aplicação, por isso muda de pessoa pra pessoa.
+  tokens: 1 chamadas, 14334 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ s1
+
+1/1 passaram
+Tokens: 1 mensagens · 1 chamadas ao Gemini (1.0 por mensagem)
+  entrada: 14334 no total · 14334 por mensagem · 14334 por chamada
+  saída:   81 no total · 81 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

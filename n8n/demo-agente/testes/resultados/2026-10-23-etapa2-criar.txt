@@ -1,0 +1,54 @@
+Bateria IA — etapa2-criar — 23/10/2026, 08:55:25
+
+=== marcar-completo — criar: escolhe horário, dá o nome e fica marcado no CRM ===
+> quero marcar a manutenção da queratina pra amanhã ou depois
+IA: Pra amanhã a Gleide já está com a agenda cheia, mas no domingo tenho horário de manhã, entre 8h e 9h. Algum desses fica bom pra você?
+> pode ser o primeiro horário que você falou
+IA: Combinado! Posso marcar sua manutenção de queratina domingo, dia 25, às 8h? E qual o seu nome pra eu registrar aqui na agenda?
+> meu nome é Ana Teste
+IA: Marquei aqui, Ana! Domingo, dia 25, às 8h. Ficamos na Rua das Papoulas, 443, no Jardim Paraíso. Até lá! 😊
+> sim, pode marcar
+IA: Tudo certinho, Ana! Já deixei agendado aqui. Domingo, dia 25, às 8h a Gleide te espera. Até lá! 😊
+  [agenda] consultar 180 min
+  [agenda] consultar 180 min
+  [agenda] criar 180 min "Manutenção de queratina" -> AGENDADO com sucesso na agenda do salão: domingo, 25/10 às 08:00. Agor
+  [agenda] listar 60 min
+  [crm] manutenção queratina | Quer marcar manutenção de queratina para amanhã ou domingo. Valor de R$ 450 informado.
+  tokens: 6 chamadas, 64111 de entrada
+✅ passou
+
+=== nao-cria-sem-confirmar — criar: só pergunta se tem horário, não marca nada ===
+> tem horário amanhã pra manutenção da queratina?
+IA: Pra amanhã a agenda já tá lotada, mas na segunda, dia 26, a Gleide tem horários à tarde, entre 13h e 15h. Algum desses horários fica bom pra você? 😊
+  [agenda] consultar 180 min
+  [agenda] listar 60 min
+  tokens: 2 chamadas, 20514 de entrada
+✅ passou
+
+=== horario-ocupado-na-hora — criar: outra cliente pega o horário antes do sim; não diz que marcou e oferece outro ===
+> quero marcar a manutenção da queratina dia 26/10 às 9h, tem?
+IA: Segunda-feira, dia 26, já está com a agenda cheia. Na terça, dia 27, a Gleide tem um horário às 15h. Esse horário ficaria bom pra você?
+  (outra cliente ocupou 26/10 09:00)
+> sim, pode marcar no nome de Ana Teste
+IA: Marquei aqui, Ana! Terça-feira, dia 27, às 15h. O endereço é Rua das Papoulas, 443, Jardim Paraíso. Até lá! 😊
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] consultar 180 min
+  [agenda] listar 60 min
+  [agenda] listar 60 min
+  [agenda] criar 180 min "Manutenção de queratina" -> AGENDADO com sucesso na agenda do salão: terça-feira, 27/10 às 15:00. 
+  [transferiu para humano]
+  [crm] manutenção queratina | Marcou manutenção de queratina para terça, 27/10, às 15h. Valor R$ 450.
+  tokens: 5 chamadas, 52083 de entrada
+❌ FALHOU: criar_agendamento devia marcar 0x, marcou 1x; no CRM devia ter 0 horário(s) marcado(s), tem 1; não devia transferir para humano
+
+=== RESUMO ===
+✅ marcar-completo
+✅ nao-cria-sem-confirmar
+❌ horario-ocupado-na-hora
+
+2/3 passaram
+Tokens: 7 mensagens · 13 chamadas ao Gemini (1.9 por mensagem)
+  entrada: 136708 no total · 19530 por mensagem · 10516 por chamada
+  saída:   875 no total · 125 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

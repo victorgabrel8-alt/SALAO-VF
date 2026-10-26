@@ -1,0 +1,172 @@
+Bateria IA — ferramentas — 23/10/2026, 00:34:20
+
+=== dia-fechado — consultar: pede domingo às 16h (fecha às 14h) e recebe horário possível ===
+> tem horário domingo às 16h pra manutenção?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] consultar 120 min
+  tokens: 1 chamadas, 10008 de entrada
+✅ passou
+
+=== nao-oferece-sem-consultar — consultar: nunca oferece horário sem olhar a agenda ===
+> tem horário amanhã de manhã pra manutenção da queratina?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] consultar 180 min
+  tokens: 1 chamadas, 10010 de entrada
+✅ passou
+
+=== marcar-completo — criar: escolhe horário, dá o nome e fica marcado no CRM ===
+> quero marcar a manutenção da queratina pra amanhã ou depois
+IA: null
+> pode ser o primeiro horário que você falou
+IA: Boa noite! Aqui é a assistente da Gleide 😊 Como é nossa primeira conversa por aqui, eu ainda não cheguei a te passar os horários disponíveis. O que você está pensando em fazer no cabelo? Assim eu já vejo o tempo que precisamos e te mostro as opções.
+> meu nome é Ana Teste
+IA: Prazer, Ana! Pra eu conseguir olhar os horários pra você, o que você gostaria de fazer no cabelo? Seria pra colocar mega ou alguma manutenção?
+> sim, pode marcar
+IA: Para eu marcar certinho, Ana, você quer fazer a avaliação gratuita para colocar o mega pela primeira vez? Ou você já usa e quer fazer a manutenção?
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] consultar 180 min
+  tokens: 4 chamadas, 40212 de entrada
+❌ FALHOU: devia usar a ferramenta "criar"; no CRM devia ter 1 horário(s) marcado(s), tem 0; devia dizer /(marquei|marcad|agendad|confirmad)/
+
+=== nao-cria-sem-confirmar — criar: só pergunta se tem horário, não marca nada ===
+> tem horário amanhã pra manutenção da queratina?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] consultar 180 min
+  tokens: 1 chamadas, 10008 de entrada
+✅ passou
+
+=== que-horas-e-meu-horario — ver: pergunta o horário que a Gleide marcou ===
+> que horas é meu horário mesmo?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] listar 60 min
+  tokens: 1 chamadas, 10017 de entrada
+❌ FALHOU: devia dizer /10(h|:00)/
+
+=== sem-horario-marcado — ver: não tem horário e a IA não inventa ===
+> que dia eu marquei mesmo?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] listar 60 min
+  tokens: 1 chamadas, 10004 de entrada
+❌ FALHOU: devia dizer /(não (encontrei|achei|vi|tem)|nenhum)/
+
+=== remarcar-nao-cria-outro — remarcar: muda o mesmo horário, sem criar um segundo ===
+> preciso mudar meu horário pro dia 29/10 às 10h
+IA: null
+> sim
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] consultar 180 min
+  [agenda] listar 60 min
+  tokens: 2 chamadas, 20047 de entrada
+❌ FALHOU: devia usar a ferramenta "remarcar"; no CRM devia ter horário em 29/10 10:00
+
+=== resposta-ao-atraso — remarcar: atrasada responde que não vem (ALÔ DE ATRASO; precisa do 011) ===
+ERRO ao preparar: Supabase POST contatos: 400 {"code":"23514","details":"Failing row contains (42938723-4ca6-479d-a47f-292c210d0f9c, 00000000-0000-0000-0000-000000000001, 777576bd-c306-4a87-b363-6925715a3bbc, atraso, ia, pendente, Oi Teste! Seu horário aqui no salão era agora há pouco 💛 E..., null, 2026-10-23 04:18:35.586+00, 79ebfd25-9b0f-4109-911b-d83411db3b69, 2026-10-23 04:13:35.155+00, null).","hint":null,"message":"new row for relation \"contatos\" violates check constraint \"contatos_tipo_check\""}
+
+=== chegando-atrasada — remarcar: atrasada diz que está chegando e nada muda (precisa do 011) ===
+ERRO ao preparar: Supabase POST contatos: 400 {"code":"23514","details":"Failing row contains (a92dc9e5-d8d6-46f1-bfb6-a43f0ccde5a2, 00000000-0000-0000-0000-000000000001, fbb77528-0158-4db5-b194-6b7126f6444c, atraso, ia, pendente, Oi Teste! Seu horário aqui no salão era agora há pouco 💛 E..., null, 2026-10-23 04:28:36.431+00, a0e00728-14ae-455a-a9b9-3b1e1637a8ae, 2026-10-23 04:23:36.218+00, null).","hint":null,"message":"new row for relation \"contatos\" violates check constraint \"contatos_tipo_check\""}
+
+=== cancelar-confirmado — cancelar: pede, confirma e o horário fica cancelado no CRM ===
+> quero cancelar meu horário
+IA: Vi aqui que você tem uma manutenção de queratina marcada para terça-feira, dia 27, às 10h. É esse horário mesmo que você deseja cancelar?
+> sim, pode cancelar
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [agenda] cancelar 60 min
+  tokens: 2 chamadas, 20074 de entrada
+✅ passou
+
+=== cancelar-sem-confirmar — cancelar: só fala que talvez cancele, nada é cancelado ===
+> acho que vou ter que cancelar meu horário...
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [crm] manutenção queratina | Mencionou que talvez precise cancelar o horário de terça, dia 27/10 às 10h.
+  tokens: 1 chamadas, 10020 de entrada
+✅ passou
+
+=== reclamacao-pausa — transferir: reclamação pausa a IA (motivo no CRM) e ela não responde mais ===
+> fiquei muito chateada, minha mega ficou mal feita e caiu tudo
+IA: null
+> oi? alguém?
+IA: Oi! Aqui é a assistente da Gleide 😊 O que você está pensando em fazer no seu cabelo?
+  erros no n8n: Agente IA: No prompt specified
+  [crm] Avaliação mega hair - experiência ruim anterior | Cliente relatou que o mega anterior (feito em outro lugar) caiu e está chateada. Ofereci a
+  tokens: 2 chamadas, 20014 de entrada
+❌ FALHOU: devia transferir para humano; no CRM a IA devia estar pausada; devia ficar sem resposta (IA pausada)
+
+=== anota-interesse — anotar: interesse e orçamento vão para a ficha, sem falar disso ===
+> quero colocar mega hair, meu cabelo é curto e bem fino, tenho até uns 3 mil pra gastar
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [áudio] "quanto custa colocar mega hair" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair, cabelo curto e fino | Tem 3k de orçamento. Cabelo curto e fino, quer colocar mega pela primeira vez.
+  tokens: 1 chamadas, 10019 de entrada
+✅ passou
+
+=== anota-objecao — anotar: achou caro e vai pensar entra no resumo ===
+> quanto fica a manutenção da queratina?
+IA: null
+> nossa, achei caro, vou pensar
+IA: Entendo perfeitamente, é um investimento mesmo. Por isso a Gleide faz a avaliação gratuita, pra você ver as opções e o orçamento certinho antes de decidir. Lembrando que a gente parcela em até 6x sem juros no cartão, o que ajuda bastante. Qualquer coisa, é só me chamar, tá? 😊
+  erros no n8n: Agente IA: No prompt specified
+  [crm] manutenção queratina | Perguntou o valor da manutenção de queratina. Primeira conversa.
+  tokens: 2 chamadas, 20011 de entrada
+✅ passou
+
+=== audio-tema-certo — áudio: pergunta a diferença dos cabelos e recebe o áudio desse tema ===
+> qual a diferença entre os tipos de cabelo?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [áudio] "diferença entre os tipos de cabelo" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] diferença entre os tipos de cabelo | Primeiro contato, quer saber a diferença entre os tipos de cabelo. Áudio explicativo enviado.
+  tokens: 1 chamadas, 10006 de entrada
+✅ passou
+
+=== audio-nao-repete — áudio: já recebeu o áudio e pergunta de novo, responde em texto ===
+> mas fica natural mesmo? dá pra perceber?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [áudio] "mega hair fica natural" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair | Primeiro contato. Perguntou se o mega hair fica natural e se dá pra perceber.
+  tokens: 1 chamadas, 10006 de entrada
+❌ FALHOU: não devia mandar áudio; devia dizer /\w/
+
+=== um-audio-por-resposta — áudio: duas dúvidas com áudio na mesma mensagem, no máximo 1 áudio ===
+> mega hair fica natural? e qual a diferença entre os tipos de cabelo?
+IA: null
+  erros no n8n: Agente IA: No prompt specified
+  [áudio] "mega hair fica natural" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem d
+  [crm] mega hair, naturalidade e tipos de fios | Perguntou se o mega fica natural e a diferença entre os cabelos brasileiro, indiano e vietnamita. 
+  tokens: 1 chamadas, 10012 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ dia-fechado
+✅ nao-oferece-sem-consultar
+❌ marcar-completo
+✅ nao-cria-sem-confirmar
+❌ que-horas-e-meu-horario
+❌ sem-horario-marcado
+❌ remarcar-nao-cria-outro
+❌ resposta-ao-atraso
+❌ chegando-atrasada
+✅ cancelar-confirmado
+✅ cancelar-sem-confirmar
+❌ reclamacao-pausa
+✅ anota-interesse
+✅ anota-objecao
+✅ audio-tema-certo
+❌ audio-nao-repete
+✅ um-audio-por-resposta
+
+9/17 passaram
+Tokens: 22 mensagens · 22 chamadas ao Gemini (1.0 por mensagem)
+  entrada: 220468 no total · 10021 por mensagem · 10021 por chamada
+  saída:   1122 no total · 51 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

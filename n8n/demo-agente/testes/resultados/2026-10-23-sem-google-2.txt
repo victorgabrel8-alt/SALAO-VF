@@ -1,0 +1,70 @@
+Bateria IA — sem-google-2 — 23/10/2026, 09:48:25
+
+=== decidida-manutencao — Decidida: vai direto aos horários, sem explicar técnica nem oferecer avaliação ===
+> quero marcar uma manutenção de ponto americano pra sábado
+IA: Boa tarde! Aqui é a assistente da Gleide 😊 Pra amanhã, sábado, a agenda já está lotada. No domingo, a Gleide tem horário de manhã, entre 8h e 10h. Algum desses fica bom pra você?
+  [agenda] consultar 120 min
+  [crm] manutenção ponto americano | Quer marcar manutenção de ponto americano para este sábado. Valor informado: R$ 350.
+  tokens: 2 chamadas, 20883 de entrada
+✅ passou
+
+=== horario-ocupado-na-hora — criar: outra cliente pega o horário oferecido antes do sim; não diz que marcou e oferece outro ===
+> quero marcar a manutenção da queratina, qual o primeiro horário que você tem essa semana?
+IA: Pra hoje ainda tenho horário à tarde, entre 13h e 15h. Algum desses fica bom pra você? 😊
+  (outra cliente ocupou 23/10/2026, 13:00)
+> sim, pode marcar esse no nome de Ana Teste
+IA: Puxa, aquele horário das 13h acabou de ser preenchido. Para hoje não tenho mais vaga, mas no domingo tenho às 8h ou 8h30. Algum desses dá certo pra você? 😊
+  [agenda] consultar 180 min
+  [agenda] criar 180 min "Manutenção Queratina" -> Esse horário acabou de ser ocupado. Consulte os horários livres de nov
+  [agenda] consultar 180 min
+  [crm] manutenção mega hair queratina | Quer marcar manutenção de queratina para esta semana. Informada sobre o valor de R$ 450.
+  tokens: 5 chamadas, 53239 de entrada
+✅ passou
+
+=== resposta-ao-atraso — remarcar: atrasada responde que não vem (ALÔ DE ATRASO; precisa do 011) ===
+> oi, desculpa, não vou conseguir ir hoje. pode ser no dia 25/10 de manhã?
+IA: Imagina, sem problemas! Imprevistos acontecem 😊 Para domingo, dia 25, eu tenho horário de manhã às 08h, 08h30 ou 09h. Algum desses fica bom pra você?
+> pode ser o primeiro horário que você falou
+IA: Remarcado! Troquei seu horário para domingo, dia 25, às 08h. Até lá! 😊
+  [agenda] listar 60 min
+  [agenda] consultar 180 min
+  [agenda] remarcar 60 min
+  tokens: 5 chamadas, 53214 de entrada
+✅ passou
+
+=== chegando-atrasada — remarcar: atrasada diz que está chegando e nada muda (precisa do 011) ===
+> to chegando, 5 minutinhos
+IA: Tudo bem, Teste! A Gleide está aqui te esperando. Pode vir tranquila! 😊
+  tokens: 1 chamadas, 10167 de entrada
+✅ passou
+
+=== cancelar-confirmado — cancelar: pede, confirma e o horário fica cancelado no CRM ===
+> quero cancelar meu horário
+IA: Você quer cancelar o seu horário de manutenção na terça-feira, dia 27, às 10h? Só pra eu confirmar certinho aqui com você.
+> sim, pode cancelar
+IA: Cancelei seu horário de terça-feira, dia 27, às 10h, conforme você pediu. Se quiser marcar para um outro dia, é só me avisar! 😊
+  [agenda] listar 60 min
+  [agenda] cancelar 60 min
+  tokens: 4 chamadas, 41498 de entrada
+✅ passou
+
+=== cancelar-sem-confirmar — cancelar: só fala que talvez cancele, nada é cancelado ===
+> acho que vou ter que cancelar meu horário...
+IA: Oi, Teste! Aqui é a assistente da Gleide. Poxa, sem problemas! Você quer que eu já veja um outro dia pra gente remarcar ou prefere só cancelar esse horário de terça às 10h por enquanto?
+  [crm] cancelamento manutenção | Disse que talvez precise cancelar o horário de terça (27/10). Perguntei se quer remarcar ou só cancelar.
+  tokens: 2 chamadas, 21079 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ decidida-manutencao
+✅ horario-ocupado-na-hora
+✅ resposta-ao-atraso
+✅ chegando-atrasada
+✅ cancelar-confirmado
+✅ cancelar-sem-confirmar
+
+6/6 passaram
+Tokens: 9 mensagens · 19 chamadas ao Gemini (2.1 por mensagem)
+  entrada: 200080 no total · 22231 por mensagem · 10531 por chamada
+  saída:   979 no total · 109 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

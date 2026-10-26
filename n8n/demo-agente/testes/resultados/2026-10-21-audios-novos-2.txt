@@ -1,0 +1,17 @@
+Bateria IA — audios-novos-2 — 21/10/2026, 23:22:03
+
+=== a-natural — Fica natural? ===
+> mega hair fica natural? tenho medo de aparecer
+IA: Oi! Sou a assistente da Gleide. Dá pra buscar um resultado bem natural, sim, porque o segredo é o cabelo novo combinar com a cor e a textura do seu. A Gleide avalia cada caso pra garantir que a aplicação fique bem discreta. Você tá querendo mais comprimento ou só preencher o volume?
+  [áudio] "mega hair fica natural" -> ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que a Gleide explica aqui, se
+  tokens: 2 chamadas, 26715 de entrada
+✅ passou
+
+=== RESUMO ===
+✅ a-natural
+
+1/1 passaram
+Tokens: 1 mensagens · 2 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 26715 no total · 26715 por mensagem · 13358 por chamada
+  saída:   90 no total · 90 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)

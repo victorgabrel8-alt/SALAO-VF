@@ -1,0 +1,16 @@
+Bateria IA — prompt-consultivo-2 — 22/10/2026, 16:32:14
+
+=== sem_dinheiro — Consultiva: "tô sem dinheiro" acolhe e oferece mais pra frente, sem empurrar ===
+> oi, queria ver a manutenção da queratina mas tô sem dinheiro esse mês
+IA: Oi! Tudo bem? Aqui é a assistente da Gleide 😊 A gente parcela em até 6x sem juros no cartão, se ajudar você. Se preferir, posso ver um horário mais pro começo do mês que vem. O que acha?
+  tokens: 2 chamadas, 20380 de entrada
+❌ FALHOU: não devia dizer /[?][^?]*[?]/
+
+=== RESUMO ===
+❌ sem_dinheiro
+
+0/1 passaram
+Tokens: 1 mensagens · 2 chamadas ao Gemini (2.0 por mensagem)
+  entrada: 20380 no total · 20380 por mensagem · 10190 por chamada
+  saída:   129 no total · 129 por mensagem
+  (o n8n não mostra quanto veio do cache do Gemini)
