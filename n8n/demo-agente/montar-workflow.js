@@ -142,9 +142,9 @@ Leia tudo como uma conversa só e responda uma vez, cobrindo todas na ordem em q
 Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.
 
 COMO A RESPOSTA CHEGA NO WHATSAPP
-A resposta inteira chega numa mensagem só. Separe os assuntos em parágrafos curtos (linha em branco entre eles),
-com a pergunta no fim. Não use ---. Só uma resposta longa (mais de umas 6 linhas) o sistema divide em duas.
-Exemplo:
+Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda.
+De 1 a 3 parágrafos curtos, uma ideia em cada, com a pergunta no fim. Resposta simples: um parágrafo só. Não use ---.
+Exemplo (duas mensagens):
 A manutenção da tela adesiva fica a partir de R$ 300 e leva uns 90 minutos.
 
 Quer que eu veja um horário pra você?`;
@@ -386,31 +386,28 @@ const nodes = [
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
       "const falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor",
       "if (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
-      "// Uma mensagem só, com parágrafos curtos dentro (pedido do Victor, 26/10: 4 balões para uma resposta",
-      "// era demais). Só resposta longa (mais de 450 letras) vira duas, cortada no meio: no --- da IA, senão",
-      "// entre parágrafos, senão entre frases. Nunca mais de duas.",
+      "// Como gente manda no WhatsApp (pedido do Victor, 26/10): um balão por parágrafo, na ordem, no máximo 3.",
+      "// Parágrafo minúsculo (menos de 25 letras, ex.: 'Oi, Maria!') gruda no seguinte; parágrafo enorme (mais de",
+      "// 300 letras) é cortado entre frases; se passar de 3, os do fim se juntam no 3º. O --- da IA conta como parágrafo.",
       "const ps = paragrafos.filter(p => p.t !== '§§').map(p => p.t);",
-      "const tudo = ps.join('\\n\\n');",
-      "let baloes = [{ t: tudo, ref: 0 }];",
-      "if (tudo.length > 450) {",
-      "  const meio = tudo.length / 2;",
-      "  const marcas = [], quebras = [];",
-      "  let pos = 0, n = 0;",
-      "  for (const p of paragrafos) {",
-      "    if (p.t === '§§') { if (n) marcas.push(n); continue; }",
-      "    pos += (n ? 2 : 0) + p.t.length; n++;",
-      "    quebras.push({ n, pos });",
-      "  }",
-      "  const perto = (lista) => lista.filter(q => q.n < ps.length).sort((a, b) => Math.abs(a.pos - meio) - Math.abs(b.pos - meio))[0];",
-      "  const corte = perto(quebras.filter(q => marcas.includes(q.n))) || perto(quebras);",
-      "  if (corte) baloes = [{ t: ps.slice(0, corte.n).join('\\n\\n'), ref: 0 }, { t: ps.slice(corte.n).join('\\n\\n'), ref: 0 }];",
-      "  else {",
-      "    const fs = tudo.split(FRASES);",
-      "    let a = '', k = 0;",
-      "    while (k < fs.length - 1 && (a + ' ' + fs[k]).trim().length < meio) a = (a + ' ' + fs[k++]).trim();",
-      "    if (a && k < fs.length) baloes = [{ t: a, ref: 0 }, { t: fs.slice(k).join(' ').trim(), ref: 0 }];",
-      "  }",
+      "let baloes = [];",
+      "let junto = '';",
+      "for (const p of ps) {",
+      "  junto = junto ? junto + '\\n\\n' + p : p;",
+      "  if (junto.length >= 25) { baloes.push({ t: junto, ref: 0 }); junto = ''; }",
       "}",
+      "if (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }",
+      "const cortar = (t) => {",
+      "  if (t.length <= 300) return [t];",
+      "  const fs = t.split(FRASES);",
+      "  if (fs.length < 2) return [t];",
+      "  let a = '', i = 0;",
+      "  while (i < fs.length - 1 && (a + ' ' + fs[i]).trim().length < t.length / 2) a = (a + ' ' + fs[i++]).trim();",
+      "  if (!a) a = fs[i++];",
+      "  return [a, fs.slice(i).join(' ').trim()].filter(Boolean);",
+      "};",
+      "baloes = baloes.flatMap((b) => cortar(b.t).map((t) => ({ t, ref: 0 })));",
+      "if (baloes.length > 3) baloes = [baloes[0], baloes[1], { t: baloes.slice(2).map(b => b.t).join('\\n\\n'), ref: 0 }];",
       "baloes = baloes.filter(b => b.t);",
       "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
       "// depois de outra e ficaria solta): cita a última mensagem do bloco",
