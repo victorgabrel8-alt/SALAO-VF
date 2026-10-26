@@ -1,8 +1,8 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { Suspense, useEffect, useState, type ReactNode } from "react";
-import { diasEntre, formatarData, formatarHora, formatarTelefone, hojeNoSalao, prazo } from "@/lib/formato";
+import { Suspense, useEffect, useState, type MouseEvent, type ReactNode } from "react";
+import { dataNoSalao, diasEntre, formatarData, formatarHora, formatarTelefone, hojeNoSalao, prazo } from "@/lib/formato";
 import { useDialogo } from "@/components/Dialogo";
 import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
 import { etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem } from "@/lib/origem";
@@ -87,7 +87,7 @@ function FichaCliente() {
   const [resultado, setResultado] = useState<Ficha | { erro: string } | null>(null);
   // Muda a cada salvamento para buscar a ficha de novo
   const [versao, setVersao] = useState(0);
-  // O lápis do topo abre a edição (nome, observações, etiquetas e excluir)
+  // Tocar no cartão Preferências abre a edição (nome, observações, etiquetas e excluir)
   const [editando, setEditando] = useState(false);
   const recarregar = () => setVersao((v) => v + 1);
 
@@ -107,17 +107,21 @@ function FichaCliente() {
 
   return (
     <div className="pb-4">
-      <Topo cliente={ficha.cliente} editando={editando} aoEditar={() => setEditando((e) => !e)} />
+      <Topo cliente={ficha.cliente} />
       <Contato cliente={ficha.cliente} />
 
       <div className="flex flex-col gap-4 px-5 pt-5">
-        {editando && (
-          <>
-            {/* key: se uma etiqueta for tirada, o formulário recomeça com as etiquetas certas */}
-            <Dados key={ficha.cliente.etiquetas.join("|")} cliente={ficha.cliente} aoSalvar={recarregar} />
-            <Exclusao cliente={ficha.cliente} aoMudar={recarregar} />
-          </>
-        )}
+        {/* A edição abre e fecha deslizando; salvou, ela se recolhe sozinha */}
+        <Recolhivel aberto={editando}>
+          {/* key: se uma etiqueta for tirada, o formulário recomeça com as etiquetas certas */}
+          <Dados
+            key={ficha.cliente.etiquetas.join("|")}
+            cliente={ficha.cliente}
+            aoSalvar={recarregar}
+            aoConcluir={() => setEditando(false)}
+          />
+          <Exclusao cliente={ficha.cliente} aoMudar={recarregar} />
+        </Recolhivel>
         {ficha.proximo && <ProximoHorario horario={ficha.proximo} />}
         {ficha.avaliacao && <OQueEla avaliacao={ficha.avaliacao} />}
         <Preferencias cliente={ficha.cliente} aoMudar={recarregar} aoEditar={() => setEditando(true)} />
@@ -166,6 +170,45 @@ function OQueEla({ avaliacao: a }: { avaliacao: Avaliacao }) {
   );
 }
 
+// Abre crescendo e fecha encolhendo (a altura anima pelo grid 0fr -> 1fr), e o que vem abaixo
+// desliza junto em vez de pular. Fechado, sai da página depois da animação.
+function Recolhivel({ aberto, children }: { aberto: boolean; children: ReactNode }) {
+  const [montado, setMontado] = useState(aberto);
+  const [visivel, setVisivel] = useState(aberto);
+  // Abriu: monta já (fechado), e o efeito abaixo abre no quadro seguinte
+  if (aberto && !montado) setMontado(true);
+
+  useEffect(() => {
+    if (aberto) {
+      const abrir = setTimeout(() => setVisivel(true), 20);
+      return () => clearTimeout(abrir);
+    }
+    const fechar = setTimeout(() => setVisivel(false), 0);
+    const fim = setTimeout(() => setMontado(false), 450);
+    return () => {
+      clearTimeout(fechar);
+      clearTimeout(fim);
+    };
+  }, [aberto]);
+
+  if (!montado) return null;
+  return (
+    <div
+      className={`grid transition-[grid-template-rows,opacity] duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+        visivel ? "grid-rows-[1fr] opacity-100" : "-mb-4 grid-rows-[0fr] opacity-0"
+      }`}
+    >
+      <div
+        className={`flex min-h-0 flex-col gap-4 overflow-hidden transition-transform duration-[420ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none ${
+          visivel ? "translate-y-0 scale-100" : "-translate-y-3 scale-[0.98]"
+        }`}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 function Cartao({ titulo, children }: { titulo?: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3 rounded-[22px] bg-card p-[18px]">
@@ -175,51 +218,52 @@ function Cartao({ titulo, children }: { titulo?: string; children: ReactNode }) 
   );
 }
 
-// Topo grafite: voltar, editar, iniciais, nome e "cliente desde"
+// Topo grafite compacto: voltar em cima; iniciais ao lado do nome, "cliente desde" e a situação
+// (como o cartão de contato do iPhone, sem ocupar meia tela). Editar é tocando em Preferências.
 // Sem "Pausar IA" aqui: cuidar da IA não é tarefa da dona (fica no CRM da agência)
-function Topo({ cliente, editando, aoEditar }: { cliente: ClienteStatus; editando: boolean; aoEditar: () => void }) {
+function Topo({ cliente }: { cliente: ClienteStatus }) {
   const router = useRouter();
-  const desde = new Date(cliente.criado_em);
+  // Mês e ano no fuso do salão (no fuso do aparelho, quem chegou no dia 1º às 23h podia virar o mês anterior)
+  const [anoDesde, mesDesde] = dataNoSalao(cliente.criado_em).split("-").map(Number);
   const status = STATUS[cliente.status];
-  const botao = "flex h-11 w-11 items-center justify-center rounded-[14px]";
 
   return (
-    <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col items-center gap-2.5 overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(52px+env(safe-area-inset-top))] pb-16">
-      <span aria-hidden="true" className="absolute -top-[70px] -left-[50px] h-40 w-40 rounded-full border-[1.5px] border-bronze/55" />
-      <span aria-hidden="true" className="absolute -right-[70px] -bottom-[110px] h-[220px] w-[220px] rounded-full bg-white/[0.08]" />
-      <div className="relative flex self-stretch justify-between">
-        {/* Sem aba de clientes neste app: a ficha abre pela Agenda, Início ou Conversas */}
-        <button onClick={() => router.back()} aria-label="Voltar" className={`${botao} bg-white/[0.16]`}>
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-        <button onClick={aoEditar} aria-label={editando ? "Fechar edição" : "Editar cliente"} aria-pressed={editando} className={`${botao} ${editando ? "bg-bronze" : "bg-white/[0.16]"}`}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={editando ? "#1C1B1F" : "#FFFFFF"} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-          </svg>
-        </button>
-      </div>
-      <div className="relative flex h-[88px] w-[88px] items-center justify-center rounded-[28px] bg-card font-serif text-[32px] font-semibold text-taupe-texto shadow-[0_12px_30px_rgba(30,23,20,0.25)]">
-        {iniciais(cliente.nome)}
-      </div>
-      <h1 className="relative mt-1 text-center font-serif text-[28px] leading-tight font-semibold text-white">{cliente.nome ?? "Sem nome"}</h1>
-      <span className="relative text-center text-sm text-areia">
-        Cliente desde {MESES_CURTOS[desde.getMonth()]}/{desde.getFullYear()} · {cliente.total_visitas}{" "}
-        {cliente.total_visitas === 1 ? "visita" : "visitas"}
-      </span>
-      <div className="relative flex flex-wrap justify-center gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[13px] font-medium text-perola">
-          <PontoStatus cor={status.ponto} />
-          {status.rotulo}
-        </span>
-        {cliente.ia_pausada && (
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[13px] font-medium text-perola">
-            <PontoStatus cor="bg-bronze" />
-            IA pausada
+    <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-4 overflow-clip rounded-b-[32px] bg-grafite px-5 pt-[calc(16px+env(safe-area-inset-top))] pb-[60px]">
+      <span aria-hidden="true" className="pointer-events-none absolute -top-24 -right-16 h-[200px] w-[200px] rounded-full bg-[radial-gradient(circle,rgb(168_138_104/0.24),transparent_68%)]" />
+      <span aria-hidden="true" className="pointer-events-none absolute -top-[70px] -right-[40px] h-40 w-40 rounded-full border border-bronze/35" />
+      {/* Sem aba de clientes neste app: a ficha abre pela Agenda, Início ou Conversas */}
+      <button
+        onClick={() => router.back()}
+        aria-label="Voltar"
+        className="relative flex h-10 w-10 items-center justify-center rounded-[14px] bg-white/[0.16] active:scale-95"
+      >
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <div className="relative flex items-center gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] bg-card font-serif text-[26px] font-semibold text-taupe-texto shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+          {iniciais(cliente.nome)}
+        </div>
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="truncate font-serif text-[26px] leading-tight font-semibold text-white">{cliente.nome ?? "Sem nome"}</h1>
+          <span className="text-[13px] text-areia">
+            Cliente desde {MESES_CURTOS[mesDesde - 1]}/{anoDesde} · {cliente.total_visitas}{" "}
+            {cliente.total_visitas === 1 ? "visita" : "visitas"}
           </span>
-        )}
+          <div className="flex flex-wrap gap-1.5">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[12px] font-medium text-perola">
+              <PontoStatus cor={status.ponto} />
+              {status.rotulo}
+            </span>
+            {cliente.ia_pausada && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[12px] font-medium text-perola">
+                <PontoStatus cor="bg-bronze" />
+                IA pausada
+              </span>
+            )}
+          </div>
+        </div>
       </div>
     </header>
   );
@@ -282,17 +326,37 @@ function Preferencias({ cliente, aoMudar, aoEditar }: { cliente: ClienteStatus; 
   }
 
   const temEtiqueta = etiquetasVisiveis(cliente.etiquetas).length > 0;
+  // O cartão inteiro abre a edição (nome, observações, etiquetas). O × das etiquetas continua
+  // tirando só a etiqueta, sem abrir nada.
+  function tocar(e: MouseEvent<HTMLElement>) {
+    if ((e.target as HTMLElement).closest("button")) return;
+    aoEditar();
+  }
   return (
-    <Cartao titulo="Preferências">
+    <section
+      role="button"
+      tabIndex={0}
+      onClick={tocar}
+      onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && e.target === e.currentTarget && aoEditar()}
+      aria-label="Editar preferências"
+      className="flex cursor-pointer flex-col gap-3 rounded-[22px] bg-card p-[18px] transition-transform duration-150 active:scale-[0.99] active:bg-campo/60"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-serif text-[21px] font-semibold">Preferências</h2>
+        <span className="flex items-center gap-0.5 text-sm font-semibold text-bronze-escuro">
+          Editar
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </span>
+      </div>
       <Etiquetas etiquetas={cliente.etiquetas} aoRemover={removerEtiqueta} className="" />
       {cliente.observacoes ? (
         <p className="text-sm leading-normal whitespace-pre-line text-rotulo">{cliente.observacoes}</p>
       ) : (
-        <button onClick={aoEditar} className="self-start text-left text-sm font-semibold text-bronze-escuro">
-          {temEtiqueta ? "Escrever observações" : "Sem preferências anotadas. Toque para escrever."}
-        </button>
+        <p className="text-sm text-texto-2">{temEtiqueta ? "Toque para escrever observações." : "Sem preferências anotadas. Toque para escrever."}</p>
       )}
-    </Cartao>
+    </section>
   );
 }
 
@@ -357,7 +421,7 @@ function Historico({ historico }: { historico: Horario[] }) {
   );
 }
 
-function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => void }) {
+function Dados({ cliente, aoSalvar, aoConcluir }: { cliente: ClienteStatus; aoSalvar: () => void; aoConcluir: () => void }) {
   const [nome, setNome] = useState(cliente.nome ?? "");
   const [observacoes, setObservacoes] = useState(cliente.observacoes ?? "");
   // A origem não aparece aqui (é do CRM), mas continua guardada ao salvar
@@ -366,6 +430,7 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
   const [novaEtiqueta, setNovaEtiqueta] = useState("");
   const [aviso, setAviso] = useState("");
   const [salvando, setSalvando] = useState(false);
+  const [salvo, setSalvo] = useState(false);
 
   function alternarEtiqueta(etiqueta: string) {
     setEtiquetas((atuais) => (atuais.includes(etiqueta) ? atuais.filter((e) => e !== etiqueta) : [...atuais, etiqueta]));
@@ -393,8 +458,11 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
       return;
     }
     setNovaEtiqueta("");
-    setAviso("Salvo ✓");
+    // O botão fica verde com o ✓ se desenhando e, em seguida, a edição se recolhe
+    setSalvo(true);
+    navigator.vibrate?.(35);
     aoSalvar();
+    setTimeout(aoConcluir, 900);
   }
   const campo = "h-[52px] w-full rounded-2xl bg-campo px-4 text-base outline-none focus:ring-2 focus:ring-bronze";
 
@@ -442,10 +510,34 @@ function Dados({ cliente, aoSalvar }: { cliente: ClienteStatus; aoSalvar: () => 
         />
       </div>
 
-      <button onClick={salvar} disabled={salvando} className="h-14 w-full rounded-[18px] bg-grafite text-[17px] font-bold text-white disabled:opacity-50">
-        {salvando ? "Salvando…" : "Salvar"}
+      <button
+        onClick={salvar}
+        disabled={salvando || salvo}
+        className={`flex h-14 w-full items-center justify-center gap-2 rounded-[18px] text-[17px] font-bold text-white transition-colors duration-300 active:scale-[0.98] ${
+          salvo ? "bg-[#5E7A50]" : "bg-grafite disabled:opacity-50"
+        }`}
+      >
+        {salvo ? (
+          <>
+            <span className="selo-pop flex">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path className="check-desenhar" d="m5 12 5 5L20 7" />
+              </svg>
+            </span>
+            Salvo
+          </>
+        ) : salvando ? (
+          "Salvando…"
+        ) : (
+          "Salvar"
+        )}
       </button>
       {aviso && <p className="text-center font-medium">{aviso}</p>}
+      {!salvo && (
+        <button onClick={aoConcluir} disabled={salvando} className="-mt-1 h-11 text-[16px] font-semibold text-texto-2 active:opacity-60">
+          Cancelar
+        </button>
+      )}
     </Cartao>
   );
 }

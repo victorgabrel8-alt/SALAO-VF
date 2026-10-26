@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Recria o banco local "salao_teste" (Postgres do docker-compose) com 001 + 003 + 002 + 004,
-# carrega o cenário da assistente e roda os testes das funções do 004.
+# Recria o banco local "salao_teste" (Postgres do docker-compose) com 001 a 013,
+# carrega o cenário da assistente e roda os testes do 004, do 011 (cliente atrasada) e do 013 (agenda pelo WhatsApp).
 # Uso (Git Bash, nesta pasta, com o docker compose no ar):  ./recriar-banco-teste.sh  [pasta do supabase/]
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -21,10 +21,12 @@ do $$ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role')  then create role service_role nologin bypassrls; end if;
 end $$;
 SQL
-for f in 001_schema.sql 003_minhas_empresas_privado.sql 002_seed_dev.sql 004_avaliacoes_ia.sql 005_pedido_remarcacao.sql 006_assistente_no_supabase.sql 007_ia_chama_faltas.sql 008_avisos_sem_falso_remarcou.sql 009_indices_e_rls.sql 010_retorno_por_linha_e_varios_servicos.sql; do
+for f in 001_schema.sql 003_minhas_empresas_privado.sql 002_seed_dev.sql 004_avaliacoes_ia.sql 005_pedido_remarcacao.sql 006_assistente_no_supabase.sql 007_ia_chama_faltas.sql 008_avisos_sem_falso_remarcou.sql 009_indices_e_rls.sql 010_retorno_por_linha_e_varios_servicos.sql 010_vagas_adiantar.sql 011_atrasos_e_cobranca.sql 012_chegou.sql 013_vaga_pelo_app.sql 013_assistente_faz_tudo.sql 011_preco_a_partir_de.sql 012_search_path_funcoes_assistente.sql; do
   echo "== $f"; $P -d salao_teste < "$SUPA/$f" 2>&1 | grep -v NOTICE || true
 done
 GLEIDE="${ASSISTENTE_NUMEROS%%,*}"; GLEIDE="${GLEIDE:-5566900000000}"
 $P -v empresa_id=00000000-0000-0000-0000-000000000001 -d salao_teste < "$SUPA/manual/servicos_toda_bonita_RASCUNHO.sql"
 echo "== cenário"; $P -v gleide="$GLEIDE" -d salao_teste < teste-assistente.sql
 echo "== testes";  $P -v gleide="$GLEIDE" -d salao_teste < teste-004-funcoes.sql 2>&1
+echo "== testes do 011 (atraso)"; $P -v gleide="$GLEIDE" -d salao_teste < teste-011-atrasos.sql 2>&1
+echo "== testes do 013 (agenda pelo WhatsApp)"; $P -v gleide="$GLEIDE" -d salao_teste < teste-013-assistente.sql 2>&1

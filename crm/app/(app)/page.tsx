@@ -10,7 +10,9 @@ import { Intencao } from "@/components/Intencao";
 import { LinhaDeslizante, type AcaoDeslizante } from "@/components/LinhaDeslizante";
 import {
   buscarAtendimentosDoDia,
+  buscarPendentesAnteriores,
   confirmarAtendimento,
+  marcarChegou,
   mudarStatus,
   naoAtendida,
   reagendar,
@@ -20,7 +22,18 @@ import {
 import { confirmarAvaliacao, useIntencoes } from "@/lib/avaliacoes";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
-import { agoraNoSalao, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, inicioDoDia, primeiroNome, somarDias } from "@/lib/formato";
+import {
+  agoraNoSalao,
+  dataNoSalao,
+  formatarData,
+  formatarDiaLongo,
+  formatarHora,
+  formatarTelefone,
+  hojeNoSalao,
+  inicioDoDia,
+  primeiroNome,
+  somarDias,
+} from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 import { useAgora } from "@/lib/relogio";
 import { useTempoReal } from "@/lib/tempoReal";
@@ -43,6 +56,8 @@ type Resumo = {
   // Todos os horários de hoje e de amanhã, sem os cancelados
   hoje: Atendimento[];
   amanha: Atendimento[];
+  // De dias anteriores e ainda sem conclusão (ver buscarPendentesAnteriores)
+  pendentes: Atendimento[];
   iaConversou: number;
   iaMarcou: number;
   aniversariantes: Aniversariante[];
@@ -64,7 +79,7 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   const hoje = hojeNoSalao();
   const desde = inicioDoDia(hoje);
   // Leve: não baixa a lista de clientes, só quem precisa da dona agora
-  const [clientes, atendimentos, deAmanha, mensagensIa, marcadosIa, comAniversario] = await Promise.all([
+  const [clientes, atendimentos, deAmanha, anteriores, mensagensIa, marcadosIa, comAniversario] = await Promise.all([
     db
       .from("clientes_status")
       .select("id, nome, telefone, motivo_pausa, etiquetas")
@@ -73,6 +88,7 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
       .in("motivo_pausa", Object.keys(MOTIVOS)),
     buscarAtendimentosDoDia(empresaId, hoje),
     buscarAtendimentosDoDia(empresaId, somarDias(hoje, 1)),
+    buscarPendentesAnteriores(empresaId, hoje),
     db.from("mensagens").select("cliente_id").eq("empresa_id", empresaId).eq("autor", "ia").gte("criado_em", desde),
     db
       .from("agendamentos")
@@ -86,11 +102,13 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   if (erro) return { erro: erro.message };
   if (atendimentos.erro) return { erro: atendimentos.erro };
   if (deAmanha.erro) return { erro: deAmanha.erro };
+  if (anteriores.erro) return { erro: anteriores.erro };
 
   return {
     precisam: (clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas)) as Precisa[],
     hoje: atendimentos.atendimentos.filter((a) => a.status !== "cancelado"),
     amanha: deAmanha.atendimentos.filter((a) => a.status !== "cancelado"),
+    pendentes: anteriores.atendimentos,
     iaConversou: new Set((mensagensIa.data ?? []).map((m) => m.cliente_id)).size,
     iaMarcou: marcadosIa.count ?? 0,
     aniversariantes: aniversariantesDaSemana((comAniversario.data ?? []).filter((c) => !estaExcluida(c.etiquetas))),
@@ -135,6 +153,7 @@ function proximaCliente(hoje: Atendimento[]): Atendimento | null {
 function selo(a: Atendimento): { rotulo: string; classe: string } {
   if (a.status === "realizado") return { rotulo: "Concluído", classe: "bg-salvia text-salvia-texto" };
   if (a.status === "faltou") return { rotulo: "Faltou", classe: "bg-rose text-rose-texto" };
+  if (a.chegou_em) return { rotulo: "Chegou", classe: "bg-ouro text-ouro-texto" };
   if (naoAtendida(a)) return { rotulo: "Não atendida", classe: "bg-rose text-rose-texto" };
   if (emAndamento(a)) return { rotulo: "Agora", classe: "bg-grafite text-perola" };
   return { rotulo: "A atender", classe: "bg-taupe text-taupe-texto" };
@@ -167,6 +186,10 @@ export default function InicioPage() {
   const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
   const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
   const { puxado, atualizando } = usePuxarParaAtualizar(async () => setResumo(await buscarResumo(empresa.id)));
+  // O relógio anda a cada minuto; quando vira o dia (app aberto de um dia para o outro), o
+  // resumo é buscado de novo: "hoje" passa a ser o dia novo e o de ontem vai para os pendentes
+  const agora = useAgora();
+  const diaAtual = hojeNoSalao();
 
   // Para a folha "Foi isso / Fez outra coisa" (a mesma do ✓ da Agenda)
   useEffect(() => {
@@ -187,21 +210,27 @@ export default function InicioPage() {
     return () => {
       ativo = false;
     };
-  }, [empresa.id, versao]);
+  }, [empresa.id, versao, diaAtual]);
 
   // A IA grava sozinha: quando chega mensagem ou horário novo, a tela se atualiza
   useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, recarregar);
 
   const ok = resumo && !("erro" in resumo) ? resumo : null;
   const proxima = ok ? proximaCliente(ok.hoje) : null;
-  // Passou 1 h do horário e ninguém confirmou: sai da lista de hoje e vai para "Não atendidas"
-  const agora = useAgora();
+  // Passou 1 h do horário e ninguém confirmou: sai da lista de hoje e vai para "Não atendidas",
+  // junto com as de dias anteriores que ficaram sem conclusão
   const [verNaoAtendidas, setVerNaoAtendidas] = useState(false);
-  const naoAtendidas = ok ? ok.hoje.filter((a) => naoAtendida(a, agora)) : [];
+  const naoAtendidas = ok ? [...ok.pendentes, ...ok.hoje.filter((a) => naoAtendida(a, agora))] : [];
   const hojeNaLista = ok ? ok.hoje.filter((a) => !naoAtendida(a, agora)) : [];
   const paraAtender = hojeNaLista.filter((a) => a.status === "agendado").length;
   // O que a IA anotou das clientes de hoje (pré-avaliação)
   const intencoes = useIntencoes(ok ? ok.hoje.flatMap((a) => (a.clientes ? [a.clientes.id] : [])) : [], versao);
+  // "Chegou" (ou desfazer): grava e atualiza a tela
+  const chegou = async (a: Atendimento, sim = true) => {
+    const erro = await marcarChegou(a.id, sim);
+    if (erro) alert(`Não consegui marcar: ${erro}`);
+    else recarregar();
+  };
 
   return (
     <>
@@ -220,6 +249,33 @@ export default function InicioPage() {
         <div className="flex flex-col gap-[22px] px-5 pt-4">
           {/* O mais urgente primeiro, empilhado como as notificações do iPhone */}
           {ok.precisam.length > 0 && <PilhaPrecisam precisam={ok.precisam} />}
+
+          {/* Não atendidas (de hoje e de dias anteriores): recolhidas numa linha rosé, também em dia
+              livre; tocar mostra quem é, e o ✓ de cada uma resolve */}
+          {naoAtendidas.length > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <button
+                onClick={() => setVerNaoAtendidas((v) => !v)}
+                aria-expanded={verNaoAtendidas}
+                className="flex items-center gap-2.5 rounded-[18px] border border-rose-texto/30 bg-rose/60 px-3.5 py-2.5 text-left active:scale-[0.99]"
+              >
+                <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
+                  {verNaoAtendidas ? "Esconder" : naoAtendidas.length === 1 ? "1 não atendida" : `${naoAtendidas.length} não atendidas`}
+                </span>
+                <Seta pequena />
+              </button>
+              {verNaoAtendidas && (
+                <ListaHorarios
+                  atendimentos={naoAtendidas}
+                  linhaAberta={linhaAberta}
+                  aoAbrirLinha={setLinhaAberta}
+                  aoConcluir={setConfirmando}
+                  comSelo
+                />
+              )}
+            </div>
+          )}
 
           {ok.hoje.length === 0 ? (
             <>
@@ -284,44 +340,27 @@ export default function InicioPage() {
                     </div>
                   )}
                 </Link>
+                {/* Um toque quando ela entra no salão: a IA para de cobrar atraso. Aparece a partir de
+                    1 h antes do horário (fora do cartão, que é um link para a ficha) */}
+                {proxima && Date.parse(proxima.inicio) - agora < 60 * 60_000 && (
+                  <BotaoChegou atendimento={proxima} aoMarcar={(sim) => chegou(proxima, sim)} />
+                )}
                 <NumerosDoDia paraAtender={paraAtender} iaConversou={ok.iaConversou} iaMarcou={ok.iaMarcou} />
               </div>
 
               {/* A lista do dia, com a situação de cada horário e amanhã no rodapé */}
               <Secao titulo="Hoje" extra={<LinkAgenda />}>
-                {hojeNaLista.length > 0 && (
+                {hojeNaLista.length > 0 ? (
                   <ListaHorarios
                     atendimentos={hojeNaLista}
                     linhaAberta={linhaAberta}
                     aoAbrirLinha={setLinhaAberta}
                     aoConcluir={setConfirmando}
+                    aoChegou={(a) => chegou(a)}
                     comSelo
                   />
-                )}
-                {/* Não atendidas: recolhidas numa linha rosé; tocar mostra quem é, e o ✓ de cada uma resolve */}
-                {naoAtendidas.length > 0 && (
-                  <>
-                    <button
-                      onClick={() => setVerNaoAtendidas((v) => !v)}
-                      aria-expanded={verNaoAtendidas}
-                      className="flex items-center gap-2.5 rounded-[18px] border border-rose-texto/30 bg-rose/60 px-3.5 py-2.5 text-left active:scale-[0.99]"
-                    >
-                      <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
-                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
-                        {verNaoAtendidas ? "Esconder" : naoAtendidas.length === 1 ? "1 não atendida" : `${naoAtendidas.length} não atendidas`}
-                      </span>
-                      <Seta pequena />
-                    </button>
-                    {verNaoAtendidas && (
-                      <ListaHorarios
-                        atendimentos={naoAtendidas}
-                        linhaAberta={linhaAberta}
-                        aoAbrirLinha={setLinhaAberta}
-                        aoConcluir={setConfirmando}
-                        comSelo
-                      />
-                    )}
-                  </>
+                ) : (
+                  <p className="rounded-[22px] bg-card borda-suave p-4 text-[15px] text-texto-2">Os horários de hoje já passaram. Veja as não atendidas acima.</p>
                 )}
               </Secao>
             </>
@@ -367,10 +406,47 @@ export default function InicioPage() {
             if (!erro) recarregar();
             return erro;
           }}
+          aoCancelar={async () => {
+            const erro = await mudarStatus(confirmando.id, "cancelado");
+            if (!erro) recarregar();
+            return erro;
+          }}
           aoFechar={() => setConfirmando(null)}
         />
       )}
     </>
+  );
+}
+
+// Logo abaixo do cartão da próxima cliente: "Chegou" num toque; depois, a hora e o desfazer
+function BotaoChegou({ atendimento, aoMarcar }: { atendimento: Atendimento; aoMarcar: (sim: boolean) => Promise<void> }) {
+  const [salvando, setSalvando] = useState(false);
+  const marcar = async (sim: boolean) => {
+    setSalvando(true);
+    await aoMarcar(sim);
+    setSalvando(false);
+  };
+  if (atendimento.chegou_em) {
+    return (
+      <div className="flex items-center justify-between gap-3 rounded-[18px] bg-ouro px-4 py-2.5 text-sm text-ouro-texto">
+        <span className="font-semibold">Chegou às {formatarHora(atendimento.chegou_em)}</span>
+        <button onClick={() => marcar(false)} disabled={salvando} className="text-[13px] font-semibold underline underline-offset-2 disabled:opacity-50">
+          Desfazer
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={() => marcar(true)}
+      disabled={salvando}
+      className="flex items-center justify-center gap-2 rounded-[18px] bg-grafite px-4 py-3 text-[15px] font-semibold text-perola active:scale-[0.99] disabled:opacity-50"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="m5 12 5 5L20 7" />
+      </svg>
+      {salvando ? "Marcando…" : `${nomeDe(atendimento.clientes).split(" ")[0]} chegou`}
+    </button>
   );
 }
 
@@ -394,29 +470,37 @@ function ListaHorarios({
   linhaAberta,
   aoAbrirLinha,
   aoConcluir,
+  aoChegou,
   comSelo,
 }: {
   atendimentos: Atendimento[];
   linhaAberta: string | null;
   aoAbrirLinha: (id: string | null) => void;
   aoConcluir?: (a: Atendimento) => void;
+  aoChegou?: (a: Atendimento) => void;
   comSelo?: boolean;
 }) {
   const router = useRouter();
+  const hoje = hojeNoSalao();
   return (
     <ul className="overflow-hidden rounded-[22px] bg-card borda-suave">
       {atendimentos.map((a, i) => {
         const s = selo(a);
+        // Pendente de um dia anterior: a data aparece em cima da hora
+        const diaAnterior = dataNoSalao(a.inicio) < hoje;
         return (
           <li key={a.id} className={i > 0 ? "border-t border-borda" : ""}>
             <LinhaDeslizante
               aberta={linhaAberta === a.id}
               aoAbrir={(sim) => aoAbrirLinha(sim ? a.id : null)}
               aoTocar={() => router.push(a.clientes ? `/clientes/${a.clientes.id}` : "/agenda")}
-              acoes={acoesDoHorario(a, aoConcluir && (() => aoConcluir(a)))}
+              acoes={acoesDoHorario(a, aoConcluir && (() => aoConcluir(a)), aoChegou && (() => aoChegou(a)))}
               className="gap-3 bg-card px-3.5 py-3 active:bg-campo"
             >
-              <span className="w-11 shrink-0 text-sm font-bold text-rotulo">{formatarHora(a.inicio)}</span>
+              <span className="flex w-11 shrink-0 flex-col text-sm font-bold text-rotulo">
+                {diaAnterior && <span className="text-[11px] font-semibold text-rose-texto">{formatarData(a.inicio).slice(0, 5)}</span>}
+                {formatarHora(a.inicio)}
+              </span>
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate font-semibold">{nomeDe(a.clientes)}</span>
                 <span className="truncate text-[13px] text-texto-2">{resumoDosServicos(a)}</span>
@@ -449,8 +533,21 @@ function NumerosDoDia({ paraAtender, iaConversou, iaMarcou }: { paraAtender: num
 }
 
 // Atalhos atrás de um horário da lista
-function acoesDoHorario(a: Atendimento, aoConcluir?: () => void): AcaoDeslizante[] {
+function acoesDoHorario(a: Atendimento, aoConcluir?: () => void, aoChegou?: () => void): AcaoDeslizante[] {
   const acoes: AcaoDeslizante[] = [];
+  // Chegou: só hoje, para quem ainda não chegou nem foi concluída
+  if (aoChegou && a.status === "agendado" && !a.chegou_em) {
+    acoes.push({
+      rotulo: "Chegou",
+      cor: "bg-ouro-texto",
+      aoTocar: aoChegou,
+      icone: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M9 21V9l6-4v16M5 21h14M12 13h.01" />
+        </svg>
+      ),
+    });
+  }
   if (aoConcluir && a.status === "agendado") {
     acoes.push({
       rotulo: "Concluído",

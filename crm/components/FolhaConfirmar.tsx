@@ -38,6 +38,7 @@ export function FolhaConfirmar({
   aoResultado,
   aoFaltou,
   aoRemarcar,
+  aoCancelar,
   aoFechar,
 }: {
   atendimento: Atendimento;
@@ -47,6 +48,8 @@ export function FolhaConfirmar({
   aoResultado?: (resultado: ResultadoAvaliacao) => Promise<string | undefined>;
   aoFaltou?: () => Promise<string | undefined>;
   aoRemarcar?: (novoInicio: string) => Promise<string | undefined>;
+  // Ela desmarcou (ligou, mandou mensagem): o horário sai da agenda e a vaga fica livre para a IA
+  aoCancelar?: () => Promise<string | undefined>;
   aoFechar: () => void;
 }) {
   const [tela, setTela] = useState<Tela>("pergunta");
@@ -81,10 +84,15 @@ export function FolhaConfirmar({
   const concluido = { titulo: "Atendimento concluído", texto: `${nome} · ${formatarHora(a.inicio)} foi para os concluídos`, cor: "bg-[#5E7A50]" };
 
   function salvar(escolha: string[]) {
-    // Vários serviços: o de retorno mais curto fica como o principal do horário. É dele o retorno
-    // da cliente (mega hair + pintura -> volta pela pintura), já antes do 007 rodar no banco.
+    // Vários serviços: o que estava marcado continua o principal do horário (o cartão mostra o que
+    // ela veio fazer) e os outros entram como serviços a mais. O retorno de cada um quem calcula é o
+    // banco (supabase/010: a cliente volta pelo mais próximo). Se a Gleide desmarcou o que estava
+    // marcado, o de retorno mais curto fica como principal.
     const retorno = (id: string) => servicos.find((s) => s.id === id)?.dias_retorno ?? Infinity;
-    const ids = escolha.length > 1 ? [...escolha].sort((x, y) => retorno(x) - retorno(y)) : escolha;
+    const porRetorno = [...escolha].sort((x, y) => retorno(x) - retorno(y));
+    const ids = a.servico_id && escolha.includes(a.servico_id)
+      ? [a.servico_id, ...porRetorno.filter((id) => id !== a.servico_id)]
+      : porRetorno;
     gravar(() => aoConfirmar(ids), concluido, aoFechar);
   }
 
@@ -97,13 +105,13 @@ export function FolhaConfirmar({
     </button>
   );
 
-  const botaoFaltou = (aoFaltou || aoRemarcar) && (
+  const botaoFaltou = (aoFaltou || aoRemarcar || aoCancelar) && (
     <button
       onClick={() => setTela("faltou")}
       disabled={salvando}
       className="h-13 min-h-[52px] rounded-full bg-card text-[16px] font-semibold text-rose-texto borda-suave active:bg-campo"
     >
-      Faltou ou remarcou
+      {aoCancelar ? "Faltou, remarcou ou desmarcou" : "Faltou ou remarcou"}
     </button>
   );
 
@@ -261,6 +269,18 @@ export function FolhaConfirmar({
                   className="h-14 rounded-full bg-card text-[17px] font-bold borda-suave active:bg-campo"
                 >
                   Remarcou para outro dia
+                </button>
+              )}
+              {aoCancelar && (
+                <button
+                  onClick={() =>
+                    // Cancelado (não falta): a IA não cobra atraso, não chama para remarcar e a vaga volta a ser oferecida
+                    gravar(aoCancelar, { titulo: "Horário cancelado", texto: `${nome} · ${formatarHora(a.inicio)} saiu da agenda. A vaga ficou livre.`, cor: "bg-grafite" }, aoFechar)
+                  }
+                  disabled={salvando}
+                  className="h-14 rounded-full bg-card text-[17px] font-bold text-texto-2 borda-suave active:bg-campo"
+                >
+                  Desmarcou (cancelar horário)
                 </button>
               )}
             </div>

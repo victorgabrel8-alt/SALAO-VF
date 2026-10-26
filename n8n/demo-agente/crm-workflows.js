@@ -14,7 +14,7 @@ module.exports = ({ env, node, str, main, D, toolSub, workflow, pausaWorkflow, l
   }, { credentials: PG, onError: 'continueRegularOutput', ...extra });
   const ligar = (wf, de, para) => { wf.connections[de] = main(para); };
   const inserirEntre = (wf, de, novo, para) => { wf.nodes.push(novo); wf.connections[de] = main(novo.name); wf.connections[novo.name] = main(para); };
-  
+
   // ---------- 1. Principal: cada conversa cria/atualiza a ficha ----------
   workflow.nodes.push(sql('CRM: registrar contato',
     `INSERT INTO clientes (telefone, nome, etapa, total_mensagens) VALUES ($1, NULLIF($2, ''), 'novo', 1)
@@ -31,6 +31,8 @@ ON CONFLICT (telefone) DO UPDATE SET
     'Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse ' +
     'dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente.',
     lerCrmId, ['telefone', 'nome', 'interesse', 'resumo'],
+    // .first(): o .item perdia o fio até "Montar entrada" (ex.: mensagem que esperou a IA terminar outra)
+    // e a anotação chegava sem telefone, sem ir para lugar nenhum
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "progressiva")', 'string'],
