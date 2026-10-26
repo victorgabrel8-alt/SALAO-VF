@@ -138,19 +138,15 @@ const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
 Quando a mensagem da cliente vier em linhas numeradas ([1], [2], [3]...), são mensagens separadas que ela mandou em sequência.
-Leia tudo como uma conversa só e responda uma vez, cobrindo todas as perguntas na ordem (um parágrafo curto por assunto).
+Leia tudo como uma conversa só e responda uma vez, cobrindo todas na ordem em que ela mandou, começando pela [1] (um parágrafo curto por assunto).
 Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.
 
-COMO A RESPOSTA CHEGA NO WHATSAPP (você decide)
-Pense em como uma atendente de verdade mandaria pelo celular. Resposta curta ou de um assunto só: uma mensagem.
-Quando ela naturalmente mandaria em partes, separe as partes com uma linha contendo só ---
-Bons motivos para separar: assuntos diferentes (ex.: o preço e depois o endereço); uma informação e, em seguida, a pergunta
-para a cliente; um cumprimento caloroso antes de um assunto mais longo.
-No máximo 3 partes. Cada parte precisa fazer sentido sozinha. Nunca separe frase por frase, nunca no meio de uma ideia,
-e não separe à toa: duas frases curtas sobre a mesma coisa ficam juntas.
+COMO A RESPOSTA CHEGA NO WHATSAPP
+A resposta inteira chega numa mensagem só. Separe os assuntos em parágrafos curtos (linha em branco entre eles),
+com a pergunta no fim. Não use ---. Só uma resposta longa (mais de umas 6 linhas) o sistema divide em duas.
 Exemplo:
-A manutenção da tela adesiva fica R$ 300 e leva uns 90 minutos.
----
+A manutenção da tela adesiva fica a partir de R$ 300 e leva uns 90 minutos.
+
 Quer que eu veja um horário pra você?`;
 
 const nodes = [
@@ -390,40 +386,32 @@ const nodes = [
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
       "const falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor",
       "if (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
-      "// Balões como gente manda no WhatsApp (pedido do Victor, 25/10). Se a IA marcou --- , vale a divisão dela.",
-      "// Se não marcou: resposta curta (até 120 letras) vai num balão só; maior vira um balão por parágrafo, e",
-      "// parágrafo muito pequeno (menos de 25 letras, ex.: 'Oi, Maria!') gruda no seguinte. No máximo 3.",
-      "const marcou = paragrafos.some(p => p.t === '§§');",
-      "let baloes = [{ t: '', ref: 0 }];",
-      "for (const p of paragrafos) {",
-      "  if (p.t === '§§') { if (baloes[baloes.length - 1].t) baloes.push({ t: '', ref: 0 }); continue; }",
-      "  const b = baloes[baloes.length - 1];",
-      "  b.t = b.t ? b.t + '\\n\\n' + p.t : p.t;",
+      "// Uma mensagem só, com parágrafos curtos dentro (pedido do Victor, 26/10: 4 balões para uma resposta",
+      "// era demais). Só resposta longa (mais de 450 letras) vira duas, cortada no meio: no --- da IA, senão",
+      "// entre parágrafos, senão entre frases. Nunca mais de duas.",
+      "const ps = paragrafos.filter(p => p.t !== '§§').map(p => p.t);",
+      "const tudo = ps.join('\\n\\n');",
+      "let baloes = [{ t: tudo, ref: 0 }];",
+      "if (tudo.length > 450) {",
+      "  const meio = tudo.length / 2;",
+      "  const marcas = [], quebras = [];",
+      "  let pos = 0, n = 0;",
+      "  for (const p of paragrafos) {",
+      "    if (p.t === '§§') { if (n) marcas.push(n); continue; }",
+      "    pos += (n ? 2 : 0) + p.t.length; n++;",
+      "    quebras.push({ n, pos });",
+      "  }",
+      "  const perto = (lista) => lista.filter(q => q.n < ps.length).sort((a, b) => Math.abs(a.pos - meio) - Math.abs(b.pos - meio))[0];",
+      "  const corte = perto(quebras.filter(q => marcas.includes(q.n))) || perto(quebras);",
+      "  if (corte) baloes = [{ t: ps.slice(0, corte.n).join('\\n\\n'), ref: 0 }, { t: ps.slice(corte.n).join('\\n\\n'), ref: 0 }];",
+      "  else {",
+      "    const fs = tudo.split(FRASES);",
+      "    let a = '', k = 0;",
+      "    while (k < fs.length - 1 && (a + ' ' + fs[k]).trim().length < meio) a = (a + ' ' + fs[k++]).trim();",
+      "    if (a && k < fs.length) baloes = [{ t: a, ref: 0 }, { t: fs.slice(k).join(' ').trim(), ref: 0 }];",
+      "  }",
       "}",
       "baloes = baloes.filter(b => b.t);",
-      "if (!marcou && baloes.length === 1 && baloes[0].t.length > 120) {",
-      "  const ps = baloes[0].t.split('\\n\\n');",
-      "  baloes = [];",
-      "  let junto = '';",
-      "  for (const p of ps) {",
-      "    junto = junto ? junto + '\\n\\n' + p : p;",
-      "    if (junto.length >= 25) { baloes.push({ t: junto, ref: 0 }); junto = ''; }",
-      "  }",
-      "  if (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }",
-      "}",
-      "// balão grande (mais de 170 letras) com duas frases ou mais vira dois, cortado entre frases no meio (25/10: balão",
-      "// de 207 letras ainda parecia textão)",
-      "const cortar = (t) => {",
-      "  if (t.length <= 170) return [t];",
-      "  const fs = t.split(FRASES);",
-      "  if (fs.length < 2) return [t];",
-      "  let a = '', i = 0;",
-      "  while (i < fs.length - 1 && (a + ' ' + fs[i]).trim().length < t.length / 2) a = (a + ' ' + fs[i++]).trim();",
-      "  if (!a) a = fs[i++];",
-      "  return [a, fs.slice(i).join(' ').trim()].filter(Boolean);",
-      "};",
-      "baloes = baloes.flatMap((b) => cortar(b.t).map((t) => ({ t, ref: 0 })));",
-      "if (baloes.length > 4) baloes = [baloes[0], baloes[1], baloes[2], { t: baloes.slice(3).map(b => b.t).join('\\n\\n'), ref: 0 }];",
       "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
       "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
