@@ -2,7 +2,7 @@
   "name": "Áudios prontos - Transcrever",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000108",
+      "id": "00000000-0000-4000-8000-000000000109",
       "name": "Recebe áudio",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -19,7 +19,7 @@
       "webhookId": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c02"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000109",
+      "id": "00000000-0000-4000-8000-000000000110",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -37,15 +37,10 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: 'Transcreva este áudio em português do Brasil, exatamente como foi falado, com pontuação. Responda só com a transcrição.' }, { inline_data: { mime_type: $json.body.mime || 'audio/mpeg', data: $json.body.base64 } } ] }] }) }}",
         "options": {}
       },
-      "credentials": {
-        "googlePalmApi": {
-          "id": "LAK6FIw68X0BIcHa",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
+      "credentials": {}
     },
     {
-      "id": "00000000-0000-4000-8000-000000000110",
+      "id": "00000000-0000-4000-8000-000000000111",
       "name": "Transcrição",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -96,7 +91,6 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true,
-    "errorWorkflow": "WLbjR5DvKLRVPVX8"
+    "saveManualExecutions": true
   }
 }

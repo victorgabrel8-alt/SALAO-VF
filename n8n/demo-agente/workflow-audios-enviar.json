@@ -2,7 +2,7 @@
   "name": "Áudios prontos - Enviar",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000094",
+      "id": "00000000-0000-4000-8000-000000000095",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -30,7 +30,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000095",
+      "id": "00000000-0000-4000-8000-000000000096",
       "name": "Catálogo de áudios",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -54,13 +54,18 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000096",
+      "id": "00000000-0000-4000-8000-000000000097",
       "name": "Já enviados a ela",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -84,13 +89,18 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
-      "alwaysOutputData": true
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000097",
+      "id": "00000000-0000-4000-8000-000000000098",
       "name": "Achar áudio",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -103,7 +113,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000098",
+      "id": "00000000-0000-4000-8000-000000000099",
       "name": "Tem áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -137,7 +147,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000099",
+      "id": "00000000-0000-4000-8000-000000000100",
       "name": "Baixar do Storage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -172,7 +182,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000100",
+      "id": "00000000-0000-4000-8000-000000000101",
       "name": "Para base64",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
@@ -187,7 +197,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000101",
+      "id": "00000000-0000-4000-8000-000000000102",
       "name": "Gravando (blocos de 8s)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -200,7 +210,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000102",
+      "id": "00000000-0000-4000-8000-000000000103",
       "name": "Gravando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -235,7 +245,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000103",
+      "id": "00000000-0000-4000-8000-000000000104",
       "name": "Enviar áudio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -267,7 +277,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000104",
+      "id": "00000000-0000-4000-8000-000000000105",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -301,7 +311,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000105",
+      "id": "00000000-0000-4000-8000-000000000106",
       "name": "Registrar no CRM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -328,13 +338,15 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Recebe pedido da IA').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(),\n           p_conteudo: '🎤 Áudio pronto ' + '[áudio pronto: ' + $('Achar áudio').item.json.tema + ']' + ': ' + $('Achar áudio').item.json.transcricao,\n           p_autor: 'ia', p_tipo: 'audio', p_wa_message_id: $('Enviar áudio').item.json.key?.id || null }) }}",
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000106",
+      "id": "00000000-0000-4000-8000-000000000107",
       "name": "Resposta (enviado)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -357,7 +369,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000107",
+      "id": "00000000-0000-4000-8000-000000000108",
       "name": "Resposta (sem áudio)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -533,7 +545,6 @@
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": "WLbjR5DvKLRVPVX8"
+    "callerPolicy": "workflowsFromSameOwner"
   }
 }

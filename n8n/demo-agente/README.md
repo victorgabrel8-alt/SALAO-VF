@@ -265,6 +265,27 @@ Plano: `docs/PLANO-IA-ALIMENTA-CRM.md` (Camada 2). Banco: `supabase/004_avaliaco
 > No teste a assistente fala pelo **mesmo número da IA de atendimento**. Na produção ela precisa de um número
 > próprio, porque a Gleide usa o WhatsApp Business do salão (ver o plano).
 
+### O que a Gleide faz pelo WhatsApp (supabase/013)
+
+Tudo o que ela faz no app, conversando com a assistente (texto ou áudio). Mesmas regras de horário do app
+(expediente, almoço, dias sem atender, sem encavalar); se der problema, a assistente conta o motivo e só passa por
+cima (`forcar`) se a Gleide mandar.
+
+| Ela diz | Ferramenta |
+|---|---|
+| "passa a das 14:00 pra 14:40, atrasei" | `reagendar` (direto, sem pedir confirmação) → "Aviso ela?" → `avisar_cliente` |
+| "atrasei 30 min, empurra todo mundo" | `atrasar_agenda` (mostra a lista antes) → "Aviso elas?" |
+| "marca a Carla sexta 9h pra selagem" / "tem horário amanhã à tarde?" | `marcar_horario` / `horarios_livres` |
+| "cancela a Ana" / "apaga esse horário, lancei errado" | `status_atendimento` cancelado / `excluir_horario` |
+| "a Ana chegou" / "terminei a Ana, fez selagem também, 250" | `chegou` / `concluir` (serviço a mais no mesmo horário) |
+| "não vou atender a Bia amanhã, pede pra remarcar" | `avisar_cliente` tipo remarcacao (a IA de atendimento remarca quando ela responder) |
+| "dia 10 a 15 não atendo, viagem" | `bloquear_dias` (avisa quem já está marcada nesses dias) / `desbloquear_dias` |
+| "pausa a IA da Joana" / "aniversário da Joana é 20/05" | `pausar_ia` / `editar_cliente` |
+
+`avisar_cliente` grava o contato (`aviso` ou `remarcacao`) **antes** de enviar pela Evolution: o eco da mensagem bate
+com ele em "É o alô do CRM?" e não pausa a IA da cliente; se ela responder, a IA de atendimento lê o aviso na ficha.
+Testes: `teste-013-assistente.sql` (o `recriar-banco-teste.sh` já roda).
+
 ---
 
 ## Bateria de testes da IA (`testes/`)

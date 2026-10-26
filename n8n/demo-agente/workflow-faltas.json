@@ -2,7 +2,7 @@
   "name": "IA - Faltas e avisos",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000147",
+      "id": "00000000-0000-4000-8000-000000000167",
       "name": "A cada 5 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -22,7 +22,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000148",
+      "id": "00000000-0000-4000-8000-000000000168",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -56,7 +56,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000149",
+      "id": "00000000-0000-4000-8000-000000000169",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -67,13 +67,20 @@
       "parameters": {
         "httpMethod": "GET",
         "path": "faltas-avisos",
+        "authentication": "headerAuth",
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "8a9b0c1d-2e3f-4a5b-8c6d-7e8f9a0b1c2d"
+      "webhookId": "8a9b0c1d-2e3f-4a5b-8c6d-7e8f9a0b1c2d",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000150",
+      "id": "00000000-0000-4000-8000-000000000170",
       "name": "Faltas para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -105,7 +112,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000151",
+      "id": "00000000-0000-4000-8000-000000000171",
       "name": "Mensagem da falta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -118,7 +125,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000152",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -149,7 +156,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000153",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -183,7 +190,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000154",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "Registrar chamada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -215,7 +222,408 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000155",
+      "id": "00000000-0000-4000-8000-000000000175",
+      "name": "Atrasos para chamar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000176",
+      "name": "Mensagem do atraso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -540
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((a) => a.agendamento_id).map((a) => {\n  const nome = primeiro(a.nome);\n  const texto = a.etapa === 1\n    ? 'Oi' + (nome ? ' ' + nome : '') + '! Seu horário aqui no salão era ' + quando(a.inicio) + ' 💛 Está a caminho?'\n    : (nome ? nome + ', c' : 'C') + 'onseguiu vir? Se hoje não der, me avisa que eu vejo outro horário pra você, sem problema 💛';\n  return { json: { ...a, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000177",
+      "name": "Chamar a atrasada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000178",
+      "name": "Chamou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        -540
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000179",
+      "name": "Registrar chamada do atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_chamada_atraso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_agendamento_id: $('Mensagem do atraso').item.json.agendamento_id, p_mensagem: $('Mensagem do atraso').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000180",
+      "name": "Atrasos para confirmar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -760
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_confirmar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000181",
+      "name": "Mensagem veio ou libera",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -760
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000182",
+      "name": "Perguntar à Gleide (atraso)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -760
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000183",
+      "name": "Guardar pergunta do atraso",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -760
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
+        "messageData": "={{ $('Mensagem veio ou libera').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000184",
+      "name": "Marcar atraso perguntado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -760
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000185",
+      "name": "Conflitos de atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        -980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_conflitos_atraso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000186",
+      "name": "Mensagem do conflito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        -980
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst cs = $input.all().map((i) => i.json).filter((c) => c.contato_id);\nif (!cs.length) return [];\nconst n = (s) => '*' + (s || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\nconst texto = cs.map((c) => '⚠️ ' + n(c.nome_atrasada) + ' (' + quando(c.horario_atrasada) + ') apareceu, mas ' + n(c.nome_adiantou) +\n  ' já adiantou para ' + quando(c.novo_horario) + '. As duas estão no mesmo horário: como quer resolver?').join('\\n');\nconst itens = cs.map((c) => ({ id: c.contato_id, situacao: 'conflito' }));\nconst numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000187",
+      "name": "Avisar a Gleide (conflito)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        -980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000188",
+      "name": "Guardar aviso do conflito",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1100,
+        -980
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=assistente:{{ $('Mensagem do conflito').item.json.tel }}",
+        "messageData": "={{ $('Mensagem do conflito').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000189",
+      "name": "Marcar conflito avisado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_avisado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_itens: $('Mensagem do conflito').item.json.itens }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "Vagas para oferecer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -247,7 +655,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000156",
+      "id": "00000000-0000-4000-8000-000000000191",
       "name": "Mensagem da vaga",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -260,7 +668,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000157",
+      "id": "00000000-0000-4000-8000-000000000192",
       "name": "Oferecer para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -291,7 +699,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000158",
+      "id": "00000000-0000-4000-8000-000000000193",
       "name": "Ofereceu?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -325,7 +733,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000159",
+      "id": "00000000-0000-4000-8000-000000000194",
       "name": "Registrar oferta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -357,7 +765,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000160",
+      "id": "00000000-0000-4000-8000-000000000195",
       "name": "Avisos para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -389,7 +797,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000161",
+      "id": "00000000-0000-4000-8000-000000000196",
       "name": "Mensagem do aviso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -402,7 +810,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000162",
+      "id": "00000000-0000-4000-8000-000000000197",
       "name": "Mandar para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -432,7 +840,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000163",
+      "id": "00000000-0000-4000-8000-000000000198",
       "name": "Guardar na memória da assistente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -448,13 +856,13 @@
       },
       "credentials": {
         "redis": {
-          "id": "FMNURJ61oUMdpv2C",
+          "id": "",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000164",
+      "id": "00000000-0000-4000-8000-000000000199",
       "name": "Marcar avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -503,6 +911,21 @@
       "main": [
         [
           {
+            "node": "Atrasos para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para confirmar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Conflitos de atraso",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "Faltas para chamar",
             "type": "main",
             "index": 0
@@ -524,6 +947,21 @@
       "main": [
         [
           {
+            "node": "Atrasos para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para confirmar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Conflitos de atraso",
+            "type": "main",
+            "index": 0
+          },
+          {
             "node": "Faltas para chamar",
             "type": "main",
             "index": 0
@@ -535,6 +973,138 @@
           },
           {
             "node": "Avisos para a Gleide",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atrasos para chamar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do atraso": {
+      "main": [
+        [
+          {
+            "node": "Chamar a atrasada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar a atrasada": {
+      "main": [
+        [
+          {
+            "node": "Chamou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar chamada do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atrasos para confirmar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem veio ou libera",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem veio ou libera": {
+      "main": [
+        [
+          {
+            "node": "Perguntar à Gleide (atraso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perguntar à Gleide (atraso)": {
+      "main": [
+        [
+          {
+            "node": "Guardar pergunta do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar pergunta do atraso": {
+      "main": [
+        [
+          {
+            "node": "Marcar atraso perguntado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conflitos de atraso": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do conflito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do conflito": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Gleide (conflito)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a Gleide (conflito)": {
+      "main": [
+        [
+          {
+            "node": "Guardar aviso do conflito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar aviso do conflito": {
+      "main": [
+        [
+          {
+            "node": "Marcar conflito avisado",
             "type": "main",
             "index": 0
           }
@@ -678,7 +1248,6 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true,
-    "errorWorkflow": "WLbjR5DvKLRVPVX8"
+    "saveManualExecutions": true
   }
 }

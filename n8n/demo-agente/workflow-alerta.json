@@ -2,7 +2,7 @@
   "name": "Alerta de erro",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000183",
+      "id": "00000000-0000-4000-8000-000000000218",
       "name": "Execução falhou",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -13,7 +13,7 @@
       "parameters": {}
     },
     {
-      "id": "00000000-0000-4000-8000-000000000184",
+      "id": "00000000-0000-4000-8000-000000000219",
       "name": "Montar alerta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -26,7 +26,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000185",
+      "id": "00000000-0000-4000-8000-000000000220",
       "name": "Avisar no WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

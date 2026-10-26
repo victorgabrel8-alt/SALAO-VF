@@ -63,7 +63,7 @@
       },
       "credentials": {
         "redis": {
-          "id": "FMNURJ61oUMdpv2C",
+          "id": "",
           "name": "Redis local"
         }
       }
@@ -109,7 +109,7 @@
       },
       "credentials": {
         "postgres": {
-          "id": "M7tUBvIcepziMPbo",
+          "id": "",
           "name": "CRM Postgres"
         }
       },
@@ -146,8 +146,10 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam/i.test($('Recebe pedido do agente').first().json.motivo || '') ? 'reclamacao' : 'pediu_humano'), resumo_ia_em: $now.toISO(),\n       resumo_ia: ['Motivo: ' + ($('Recebe pedido do agente').first().json.motivo || 'pediu atendimento'), $('Recebe pedido do agente').first().json.resumo || '', $('Recebe pedido do agente').first().json.o_que_precisa ? 'Precisa de você: ' + $('Recebe pedido do agente').first().json.o_que_precisa : ''].filter(Boolean).join('\\n') }) }}",
-        "options": {}
+        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam|insatisf|chatead|chate|frustr|caiu|mal feit|ruim|estrag|defeito|problema com o servi/i.test($('Recebe pedido do agente').first().json.motivo || '') ? 'reclamacao' : 'pediu_humano'), resumo_ia_em: $now.toISO(),\n       resumo_ia: ['Motivo: ' + ($('Recebe pedido do agente').first().json.motivo || 'pediu atendimento'), $('Recebe pedido do agente').first().json.resumo || '', $('Recebe pedido do agente').first().json.o_que_precisa ? 'Precisa de você: ' + $('Recebe pedido do agente').first().json.o_que_precisa : ''].filter(Boolean).join('\\n') }) }}",
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
@@ -181,10 +183,15 @@
             }
           ]
         },
-        "options": {}
+        "options": {
+          "timeout": 15000
+        }
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
       "executeOnce": true
     },
     {
@@ -292,7 +299,6 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "callerPolicy": "workflowsFromSameOwner",
-    "errorWorkflow": "WLbjR5DvKLRVPVX8"
+    "callerPolicy": "workflowsFromSameOwner"
   }
 }

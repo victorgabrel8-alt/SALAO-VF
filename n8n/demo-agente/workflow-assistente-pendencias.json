@@ -2,8 +2,8 @@
   "name": "Assistente - Pendências",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000139",
-      "name": "A cada 15 min",
+      "id": "00000000-0000-4000-8000-000000000159",
+      "name": "A cada 1 h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -14,15 +14,16 @@
         "rule": {
           "interval": [
             {
-              "field": "minutes",
-              "minutesInterval": 15
+              "field": "hours",
+              "hoursInterval": 1,
+              "triggerAtMinute": 0
             }
           ]
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000140",
+      "id": "00000000-0000-4000-8000-000000000160",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -56,7 +57,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000141",
+      "id": "00000000-0000-4000-8000-000000000161",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -67,13 +68,20 @@
       "parameters": {
         "httpMethod": "GET",
         "path": "assistente-pendencias",
+        "authentication": "headerAuth",
         "responseMode": "lastNode",
         "options": {}
       },
-      "webhookId": "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91"
+      "webhookId": "6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000142",
+      "id": "00000000-0000-4000-8000-000000000162",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -105,7 +113,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000143",
+      "id": "00000000-0000-4000-8000-000000000163",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -114,11 +122,11 @@
         100
       ],
       "parameters": {
-        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\nconst nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = 'Oi, Gleide! Pra deixar o CRM em dia:\\n' + ps.map(linha).join('\\n') + '\\n\\nPode responder em áudio, do seu jeito 🙂';\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\nconst nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = 'Oi, Gleide! Pra deixar o CRM em dia:\\n' + ps.map(linha).join('\\n') + '\\n\\nPode responder em áudio, do seu jeito 🙂';\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000144",
+      "id": "00000000-0000-4000-8000-000000000164",
       "name": "Mandar para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -148,7 +156,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000145",
+      "id": "00000000-0000-4000-8000-000000000165",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -164,13 +172,13 @@
       },
       "credentials": {
         "redis": {
-          "id": "FMNURJ61oUMdpv2C",
+          "id": "",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000146",
+      "id": "00000000-0000-4000-8000-000000000166",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -202,7 +210,7 @@
     }
   ],
   "connections": {
-    "A cada 15 min": {
+    "A cada 1 h": {
       "main": [
         [
           {
@@ -284,7 +292,6 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true,
-    "errorWorkflow": "WLbjR5DvKLRVPVX8"
+    "saveManualExecutions": true
   }
 }
