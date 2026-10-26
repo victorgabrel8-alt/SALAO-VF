@@ -14,18 +14,22 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 const TIPO = (t) => `({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[${t}] || 'outro'`;
 const EMPRESA = '$env.EMPRESA_ID';
 
-module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow }) => {
+module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow }) => {
   const headers = { parameters: [
     { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
     { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
     { name: 'Prefer', value: 'return=representation' },
   ] };
+  // Supabase oscilando (502 do Cloudflare, "socket hang up" depois de 2,5 min): no máximo 15 s por chamada,
+  // e leitura (GET) tenta de novo até 3x antes de a IA dizer que a agenda está fora do ar. Gravação não
+  // repete sozinha, para não duplicar horário ou mensagem.
   const supa = (name, method, rota, body, extra = {}) => node(name, 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
     method, url: `={{ $env.SUPABASE_URL }}/rest/v1/${rota}`,
     sendHeaders: true, headerParameters: headers,
     ...(body ? { sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}` } : {}),
-    options: {},
-  }, { onError: 'continueRegularOutput', alwaysOutputData: true, ...extra });
+    options: { timeout: 15000 },
+  }, { onError: 'continueRegularOutput', alwaysOutputData: true,
+    ...(method === 'GET' ? { retryOnFail: true, maxTries: 3, waitBetweenTries: 1000 } : {}), ...extra });
   const entre = (wf, de, novo, para, saida = 0) => {
     wf.nodes.push(novo);
     wf.connections[de].main[saida] = [{ node: novo.name, type: 'main', index: 0 }];
@@ -123,12 +127,19 @@ const alo = $('Supabase: último alô').first().json;
 if (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +
   (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'antes') +
   ' e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');
+// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)
+else if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +
+  (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : 'hoje') +
+  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +
+  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));
 // vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)
 else if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'agora') +
   ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : '?') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +
-  (alo.vagas && alo.vagas.status !== 'aberta' ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));
+  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)
+  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))
+    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));
 else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'ela') +
   ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');
@@ -141,7 +152,8 @@ return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
+    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status)' +
+    '&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
   // últimas mensagens (12 h, mais nova primeiro) para achar as que ficaram sem resposta
@@ -183,14 +195,23 @@ Use a ficha como quem já conhece a cliente:
 - Se a ficha tiver "ALÔ DE REMARCAÇÃO", a Gleide teve um imprevisto e pediu para remarcar aquele horário.
   É remarcar, não marcar outro: use ver_agendamentos, consultar_horarios_livres para o mesmo serviço
   (perto do dia que ela preferir) e, com o "sim" dela, remarcar_agendamento. Nunca use criar_agendamento.
+- Se a ficha tiver "ALÔ DE ATRASO", passou do horário dela e você perguntou se está a caminho. Chegando ou já
+  no salão: responda curto, sem cobrar. Não vem hoje: acolha, consulte horários do mesmo serviço e, com o "sim",
+  use remarcar_agendamento com o data_hora_inicio da ficha (se a ficha disser que já ficou como falta, criar_agendamento).
 - Se a ficha tiver "ALÔ DE FALTA", ela não veio ao horário e você a chamou. Acolha sem cobrar nem julgar
   (imprevisto acontece; o horário já passou, então não fale em desmarcar nem em multa). Se ela quiser,
   consulte horários do mesmo serviço e, com o "sim", use
   criar_agendamento (o horário antigo já ficou como falta: é um horário novo). Se não quiser agora, encerre com carinho.
 - Nunca leia a ficha para ela nem diga "no sistema consta". Observações da Gleide (alergias, preferências) são para você levar em conta, não para repetir.`;
+  // .first(), não .item: quando a mensagem esperou a IA terminar outra resposta ("Aguardar 3s"), o n8n
+  // perdia o fio do .item até "Extrair dados", a expressão quebrava ("JSON Body não é JSON válido") e o
+  // balão não ia para o app. Cada execução é de uma mensagem só e o loop manda um balão por vez.
   entre(workflow, 'Enviar mensagem', supa('Supabase: registrar saída', 'POST', 'rpc/n8n_registrar_saida',
-    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${D}.telefone`)}, p_conteudo: $('Um balão por vez').item.json.texto,
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR("$('Extrair dados').first().json.telefone")}, p_conteudo: $('Um balão por vez').first().json.texto,
        p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }`), 'Um balão por vez');
+  // só grava o balão que o WhatsApp aceitou: o app não mostra como enviada a mensagem que não chegou
+  achar(workflow, 'Supabase: registrar saída').parameters.url =
+    "={{ $env.SUPABASE_URL }}/rest/v1/{{ $json.key?.id ? 'rpc/n8n_registrar_saida' : 'nao_gravar' }}";
 
   // ---------- Principal: a dona respondeu pelo celular / "#ia" ----------
   workflow.nodes.push(supa('Supabase: dona respondeu', 'POST', 'rpc/n8n_registrar_saida',
@@ -229,7 +250,8 @@ Use a ficha como quem já conhece a cliente:
 
   // ---------- Pausa: transferir_para_humano ----------
   const P = "$('Recebe pedido do agente').first().json";
-  const motivoPausa = `(/reclam/i.test(${P}.motivo || '') ? 'reclamacao' : 'pediu_humano')`;
+  // a IA escreve o motivo com as palavras dela ("insatisfeita, a mega caiu"): não só "reclamação"
+  const motivoPausa = `(/reclam|insatisf|chatead|chate|frustr|caiu|mal feit|ruim|estrag|defeito|problema com o servi/i.test(${P}.motivo || '') ? 'reclamacao' : 'pediu_humano')`;
   const ultimoPausa = Object.keys(pausaWorkflow.connections).find((k) => pausaWorkflow.connections[k].main[0][0].node === 'Resposta');
   entre(pausaWorkflow, ultimoPausa, supa('Supabase: pausar IA', 'PATCH',
     `clientes?empresa_id=eq.{{ ${EMPRESA} }}&telefone=eq.{{ ${TEL_BR(`${P}.telefone`)} }}`,
@@ -252,6 +274,16 @@ Use a ficha como quem já conhece a cliente:
     options: {},
   }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput', executeOnce: true }), 'Resposta');
 
+  // ---------- CRM: anotar_no_crm também no Supabase ----------
+  // O que a IA anota (interesse, orçamento, objeção) vira a pré-avaliação da cliente (supabase/004):
+  // o app mostra o pre_resumo com o selo "IA" na Agenda, no Início, no ✓ e na ficha. A ficha antiga
+  // (Postgres do PC) continua recebendo também. Pré-avaliação sem horário ligado não vira pendência
+  // da assistente (pendencias_gleide só cobra avaliação com agendamento).
+  const A = "$('Recebe pedido do agente').first().json";
+  entre(crmWorkflow, 'Anotar na ficha', supa('Supabase: pré-avaliação', 'POST', 'rpc/n8n_salvar_pre_avaliacao',
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${A}.telefone`)},
+       p_dados: { resumo: (${A}.resumo || ${A}.interesse || '').trim(), tecnica_interesse: (${A}.interesse || '').trim() } }`), 'Resposta');
+
   const Pr = "$('Preparar').item.json";
   const C = "$('Calcular').item.json";
   const se = (wf, de, saida, para) => { wf.connections[de].main[saida] = [{ node: para, type: 'main', index: 0 }]; };
@@ -259,17 +291,19 @@ Use a ficha como quem já conhece a cliente:
     achar(agendaWorkflow, nome).parameters.assignments.assignments[0].value = `={{ $('${gravou}').item.json.id ? ${ok} : ${falha} }}`;
   };
 
-  // ---------- Agenda: lê o app (horários ocupados, horário do salão, horários da cliente) ----------
+  // ---------- Agenda: o que já está marcado no CRM ocupa horário (é a única agenda) ----------
   // inicio desde 12 h antes da janela, para pegar atendimento longo que começou antes e ainda não acabou
   agendaWorkflow.nodes.push(supa('Supabase: horários ocupados', 'GET',
-    `agendamentos?select=inicio,fim&empresa_id=eq.{{ ${EMPRESA} }}&status=in.(agendado,realizado)` +
+    // faltou também vem: o Calcular não conta esse horário como ocupado (vaga de atraso, 011)
+    `agendamentos?select=inicio,fim,status&empresa_id=eq.{{ ${EMPRESA} }}&status=in.(agendado,realizado,faltou)` +
     `&inicio=gte.{{ DateTime.fromISO(${Pr}.timeMin || $now.toISO()).minus({ hours: 12 }).toUTC().toISO() }}` +
     `&inicio=lt.{{ ${Pr}.timeMax || $now.plus({ days: 8 }).toUTC().toISO() }}`, null));
   agendaWorkflow.nodes.push(
     supa('Supabase: config do salão', 'GET', `empresas?select=config&id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }),
     supa('Supabase: agendamentos da cliente', 'GET',
       'agendamentos?select=id,inicio,fim,observacoes,servicos(nome),clientes!inner(telefone)' +
-      `&empresa_id=eq.{{ ${EMPRESA} }}&status=eq.agendado&inicio=gt.{{ $now.toUTC().toISO() }}` +
+      // desde 1 h atrás: a cliente atrasada (011) ainda consegue remarcar o horário que acabou de passar
+      `&empresa_id=eq.{{ ${EMPRESA} }}&status=eq.agendado&inicio=gt.{{ $now.minus(1, 'hour').toUTC().toISO() }}` +
       `&clientes.telefone=eq.{{ ${TEL_BR(`${Pr}.telefone`)} }}&order=inicio`, null),
   );
   agendaWorkflow.connections['Preparar'] = main('Supabase: horários ocupados');
@@ -298,6 +332,9 @@ const cliente = $('Supabase: cliente e serviços').first().json;
 const servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);
 const prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);
 const alvo = palavras(pedido.servico);
+// A IA às vezes manda só "Queratina" e deixa o "manutenção" no motivo ("manutenção queratina"):
+// sem isso virava a aplicação (240 min, outro preço e outro retorno)
+if (!alvo.includes('manutencao') && palavras(pedido.motivo).includes('manutencao')) alvo.push('manutencao');
 let melhor = null, nota = 0;
 // Manutenção só se o pedido falar em manutenção ("Tela adesiva" é aplicação). E precisa de pelo menos
 // uma palavra em comum que não seja genérica ("Corte de cabelo" não vira "Visita para escolher cabelo").
@@ -360,6 +397,7 @@ return [{ json: { pular: false, corpo: {
 
   // a ferramenta de ver horários agora enxerga também o que a Gleide marcou no CRM
   achar(workflow, 'ver_agendamentos').parameters.description =
-    'Lista os horários futuros desta cliente (marcados pela IA ou pela Gleide). Use quando ela perguntar o horário ' +
-    'dela, ou antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.';
+    'Lista os horários futuros desta cliente (marcados pela IA ou pela Gleide). SEMPRE use quando ela perguntar o horário ' +
+    'dela ("que horas é meu horário?", "que dia marquei?"), mesmo se a ficha já mostrar um: a ficha pode estar desatualizada. ' +
+    'Use também antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.';
 };

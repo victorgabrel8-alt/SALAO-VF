@@ -362,13 +362,22 @@ const nodes = [
       "// sobras de chatbot no fim (humanizer §22): fecho automático que não diz nada; só sai se sobrar texto",
       "const semFecho = t.replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').trim();",
       "if (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';",
+      "// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente",
+      "t = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));",
       "// regra da Gleide: valor só quando a cliente pergunta preço. Se ela não perguntou, tira as frases com R$",
       "// ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô",
       "const pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test($('Montar entrada').first().json.texto_cliente || '');",
       "const FRASES = /(?<=[.!?😊😉🥰])\\s+/u;",
+      "const QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;",
       "const limpar = (p) => {",
       "  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));",
-      "  if (!pediuPreco) fs = fs.filter(f => !/R\\$\\s?\\d|\\bvalor\\b[^.?!]*\\bdepende/i.test(f));",
+      "  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a",
+      "  // cliente recebe \"algum desses horários?\" sem horário nenhum",
+      "  if (!pediuPreco) fs = fs.map(f => {",
+      "    if (!/R\\$\\s?\\d/.test(f)) return f;",
+      "    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?/gi, '').replace(/\\s+,/g, ',').trim();",
+      "    return !/R\\$/.test(s) && QUANDO.test(s) ? s : '';",
+      "  }).filter(f => f && !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));",
       "  return fs.join(' ').trim();",
       "};",
       "// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;",
@@ -450,7 +459,7 @@ const nodes = [
     { acao: 'listar', telefone: "={{ $('Montar entrada').first().json.telefone }}" }, []),
 
   toolAgenda('remarcar_agendamento', [3040, 360],
-    'MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo evento passa para o novo horário). Use sempre que ela quiser ' +
+    'MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo agendamento passa para o novo horário). Use sempre que ela quiser ' +
     'remarcar/trocar/mudar/adiantar/atrasar o horário. NUNCA use criar_agendamento para remarcar. Só diga que remarcou se a resposta começar com REMARCADO.',
     { acao: 'remarcar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
@@ -470,7 +479,7 @@ const nodes = [
     { acao: 'criar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['nome', 'Nome da cliente', 'string'],
-      ['servico', 'Nome do serviço, como na lista (ex.: Mega hair com queratina)', 'string'],
+      ['servico', 'Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: "Manutenção – queratina", "Aplicação de mega hair – tela adesiva", "Selagem")', 'string'],
       ['motivo', 'Resumo curto (até ~60 caracteres) do que a cliente quer e do que ela contou na conversa, para a Gleide ler na agenda. Ex.: "comprar cabelo vietnamita 60 cm", "selagem - cabelo ressecado", "manutenção tela adesiva colocada em agosto", "avaliar técnica, cabelo curto"', 'string'],
       ['data_hora_inicio', 'Início no formato AAAA-MM-DDTHH:mm, exatamente como veio em consultar_horarios_livres', 'string'],
       ['duracao_minutos', 'Duração do serviço em minutos', 'number'],
@@ -589,7 +598,7 @@ const lerCrmId = () => (fs.existsSync(crmIdFile) ? fs.readFileSync(crmIdFile, 'u
 const { crmWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
 
 // Supabase (banco do CRM): mensagens, pausa e agenda passam a ser gravadas lá (ver supabase-workflows.js)
-require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow });
+require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow });
 
 // Áudios prontos da Gleide: tool enviar_audio + catálogo no fim do prompt (ver audios-workflows.js)
 const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });

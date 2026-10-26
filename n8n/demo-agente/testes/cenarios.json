@@ -650,5 +650,502 @@
         "nao_deve": "(fica|custa|é|sai|valor final|fechado)( de)? R\\$ ?\\d"
       }
     ]
+  },
+  {
+    "id": "dia-fechado",
+    "nome": "consultar: pede domingo às 16h (fecha às 14h) e a IA explica o horário, sem oferecer depois das 14h",
+    "telefone": "556690000148",
+    "mensagens": [
+      "tem horário domingo às 16h pra manutenção?"
+    ],
+    "espera": [
+      {
+        "deve": "(14h|14:00)"
+      },
+      {
+        "nao_deve": "(tenho|livre|dispon[ií]ve[li]s?|consigo)[^.?!]{0,30}\\b1[4-9](h|:\\d\\d)"
+      },
+      {
+        "sem_ferramenta": "criar"
+      }
+    ]
+  },
+  {
+    "id": "nao-oferece-sem-consultar",
+    "nome": "consultar: nunca oferece horário sem olhar a agenda",
+    "telefone": "556690000149",
+    "mensagens": [
+      "tem horário amanhã de manhã pra manutenção da queratina?"
+    ],
+    "espera": [
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "sem_ferramenta": "criar"
+      }
+    ]
+  },
+  {
+    "id": "marcar-completo",
+    "nome": "criar: escolhe horário, dá o nome e fica marcado no CRM",
+    "telefone": "556690000150",
+    "mensagens": [
+      "quero marcar a manutenção da queratina pra amanhã ou depois",
+      "pode ser o primeiro horário que você falou",
+      "meu nome é Ana Teste",
+      "sim, pode marcar"
+    ],
+    "espera": [
+      {
+        "ferramenta": "criar"
+      },
+      {
+        "criar_ok": 1
+      },
+      {
+        "marcado_so_com_agendado": true
+      },
+      {
+        "banco_qtd": 1
+      },
+      {
+        "banco_origem": "ia"
+      },
+      {
+        "hora_bate": true
+      },
+      {
+        "deve": "(marquei|marcad|agendad|confirmad)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "nao-cria-sem-confirmar",
+    "nome": "criar: só pergunta se tem horário, não marca nada",
+    "telefone": "556690000151",
+    "mensagens": [
+      "tem horário amanhã pra manutenção da queratina?"
+    ],
+    "espera": [
+      {
+        "ferramenta": "consultar"
+      },
+      {
+        "sem_ferramenta": "criar"
+      },
+      {
+        "banco_qtd": 0
+      },
+      {
+        "marcado_so_com_agendado": true
+      }
+    ]
+  },
+  {
+    "id": "horario-ocupado-na-hora",
+    "nome": "criar: outra cliente pega o horário oferecido antes do sim; não diz que marcou e oferece outro",
+    "telefone": "556690000165",
+    "ocupar": {
+      "antes_da_mensagem": 1,
+      "telefone": "556690000166",
+      "quando": "oferecido",
+      "fim_min": 180,
+      "servico": "Manutenção – queratina"
+    },
+    "mensagens": [
+      "quero marcar a manutenção da queratina, qual o primeiro horário que você tem essa semana?",
+      "sim, pode marcar esse no nome de Ana Teste"
+    ],
+    "espera": [
+      {
+        "ferramenta": "criar"
+      },
+      {
+        "criar_ok": 0
+      },
+      {
+        "marcado_so_com_agendado": true
+      },
+      {
+        "banco_qtd": 0
+      },
+      {
+        "deve": "\\b\\d{1,2}(h|:\\d\\d)",
+        "em": "ultima"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "que-horas-e-meu-horario",
+    "nome": "ver: pergunta o horário que a Gleide marcou",
+    "telefone": "556690000152",
+    "preparar": {
+      "nome": "Teste Ver",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "+3d 10:00",
+          "status": "agendado"
+        }
+      ]
+    },
+    "mensagens": [
+      "que horas é meu horário mesmo?"
+    ],
+    "espera": [
+      {
+        "ferramenta": "listar"
+      },
+      {
+        "deve": "10(h|:00)"
+      },
+      {
+        "deve": "({data:+3d 10:00}|dia {dia:+3d 10:00}\\b)"
+      },
+      {
+        "nao_deve": "não (encontrei|achei)"
+      },
+      {
+        "sem_ferramenta": "criar"
+      }
+    ]
+  },
+  {
+    "id": "sem-horario-marcado",
+    "nome": "ver: não tem horário e a IA não inventa",
+    "telefone": "556690000153",
+    "mensagens": [
+      "que dia eu marquei mesmo?"
+    ],
+    "espera": [
+      {
+        "ferramenta": "listar"
+      },
+      {
+        "deve": "(não (encontrei|achei|vi|tem)|nenhum)"
+      },
+      {
+        "nao_deve": "\\b\\d{1,2}(h|:\\d\\d)"
+      },
+      {
+        "sem_ferramenta": "criar"
+      }
+    ]
+  },
+  {
+    "id": "remarcar-nao-cria-outro",
+    "nome": "remarcar: muda o mesmo horário (ou o mais perto possível), sem criar um segundo",
+    "telefone": "556690000154",
+    "preparar": {
+      "nome": "Teste Remarcar 2",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "+5d 10:00",
+          "status": "agendado"
+        }
+      ]
+    },
+    "mensagens": [
+      "preciso mudar meu horário pro dia {data:+6d 10:00} de manhã",
+      "pode ser o primeiro horário que você falou"
+    ],
+    "espera": [
+      {
+        "ferramenta": "remarcar"
+      },
+      {
+        "sem_ferramenta": "criar"
+      },
+      {
+        "banco_qtd": 1
+      },
+      {
+        "deve": "(remar(c|qu)|mudei|troquei|alterad|passei)",
+        "em": "ultima"
+      },
+      {
+        "nao_deve": "\\bREMARCADO\\b",
+        "caixa": true
+      }
+    ]
+  },
+  {
+    "id": "resposta-ao-atraso",
+    "nome": "remarcar: atrasada responde que não vem (ALÔ DE ATRASO; precisa do 011)",
+    "telefone": "556690000155",
+    "preparar": {
+      "nome": "Teste Atraso",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "agora-30m",
+          "fim_min": 120,
+          "status": "agendado"
+        }
+      ],
+      "alo": {
+        "tipo": "atraso",
+        "canal": "ia",
+        "agendamento": 0,
+        "quando": "agora-25m",
+        "mensagem": "Oi Teste! Seu horário aqui no salão era agora há pouco 💛 Está a caminho?"
+      }
+    },
+    "mensagens": [
+      "oi, desculpa, não vou conseguir ir hoje. pode ser no dia {data:+2d 10:00} de manhã?",
+      "pode ser o primeiro horário que você falou"
+    ],
+    "espera": [
+      {
+        "ferramenta": "remarcar"
+      },
+      {
+        "sem_ferramenta": "criar"
+      },
+      {
+        "banco_qtd": 1
+      },
+      {
+        "banco_sem_passado": true
+      },
+      {
+        "deve": "(remar(c|qu)|mudei|troquei|alterad|passei|ficou)",
+        "em": "ultima"
+      },
+      {
+        "nao_deve": "(multa|taxa)"
+      }
+    ]
+  },
+  {
+    "id": "chegando-atrasada",
+    "nome": "remarcar: atrasada diz que está chegando e nada muda (precisa do 011)",
+    "telefone": "556690000156",
+    "preparar": {
+      "nome": "Teste Chegando",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "agora-20m",
+          "fim_min": 120,
+          "status": "agendado"
+        }
+      ],
+      "alo": {
+        "tipo": "atraso",
+        "canal": "ia",
+        "agendamento": 0,
+        "quando": "agora-15m",
+        "mensagem": "Oi Teste! Seu horário aqui no salão era agora há pouco 💛 Está a caminho?"
+      }
+    },
+    "mensagens": [
+      "to chegando, 5 minutinhos"
+    ],
+    "espera": [
+      {
+        "sem_ferramenta": "remarcar"
+      },
+      {
+        "sem_ferramenta": "criar"
+      },
+      {
+        "sem_ferramenta": "cancelar"
+      },
+      {
+        "transferiu": false
+      },
+      {
+        "nao_deve": "(multa|taxa)"
+      }
+    ]
+  },
+  {
+    "id": "cancelar-confirmado",
+    "nome": "cancelar: pede, confirma e o horário fica cancelado no CRM",
+    "telefone": "556690000157",
+    "preparar": {
+      "nome": "Teste Cancelar",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "+4d 10:00",
+          "status": "agendado"
+        }
+      ]
+    },
+    "mensagens": [
+      "quero cancelar meu horário",
+      "sim, pode cancelar"
+    ],
+    "espera": [
+      {
+        "ferramenta": "cancelar"
+      },
+      {
+        "banco_status": "cancelado"
+      },
+      {
+        "banco_qtd": 0
+      }
+    ]
+  },
+  {
+    "id": "cancelar-sem-confirmar",
+    "nome": "cancelar: só fala que talvez cancele, nada é cancelado",
+    "telefone": "556690000158",
+    "preparar": {
+      "nome": "Teste Talvez",
+      "agendamentos": [
+        {
+          "servico": "Manutenção – queratina",
+          "quando": "+4d 10:00",
+          "status": "agendado"
+        }
+      ]
+    },
+    "mensagens": [
+      "acho que vou ter que cancelar meu horário..."
+    ],
+    "espera": [
+      {
+        "sem_ferramenta": "cancelar"
+      },
+      {
+        "banco_qtd": 1
+      },
+      {
+        "deve": "(\\?|remar(c|qu)|outro (dia|horário)|mudar)"
+      },
+      {
+        "nao_deve": "cancel(ei|ado)"
+      }
+    ]
+  },
+  {
+    "id": "reclamacao-pausa",
+    "nome": "transferir: reclamação pausa a IA (motivo no CRM) e ela não responde mais",
+    "telefone": "556690000159",
+    "mensagens": [
+      "fiquei muito chateada, fiz a manutenção aí com vocês semana passada e a mega já caiu toda",
+      "oi? alguém?"
+    ],
+    "espera": [
+      {
+        "transferiu": true
+      },
+      {
+        "banco_pausa": "reclama"
+      },
+      {
+        "em": "ultima",
+        "sem_resposta": true
+      }
+    ]
+  },
+  {
+    "id": "anota-interesse",
+    "nome": "anotar: interesse e orçamento vão para a ficha, sem falar disso",
+    "telefone": "556690000160",
+    "mensagens": [
+      "quero colocar mega hair, meu cabelo é curto e bem fino, tenho até uns 3 mil pra gastar"
+    ],
+    "espera": [
+      {
+        "crm_anotou": "(curt|fin|3)"
+      },
+      {
+        "nao_deve": "anot(ei|ado|ando)"
+      }
+    ]
+  },
+  {
+    "id": "anota-objecao",
+    "nome": "anotar: achou caro e vai pensar entra no resumo",
+    "telefone": "556690000161",
+    "mensagens": [
+      "quanto fica a manutenção da queratina?",
+      "nossa, achei caro, vou pensar"
+    ],
+    "espera": [
+      {
+        "crm_anotou": "(caro|pens|pre[cç]o|valor)"
+      },
+      {
+        "transferiu": false
+      }
+    ]
+  },
+  {
+    "id": "audio-tema-certo",
+    "nome": "áudio: pergunta a diferença dos cabelos e recebe o áudio desse tema",
+    "telefone": "556690000162",
+    "mensagens": [
+      "qual a diferença entre os tipos de cabelo?"
+    ],
+    "espera": [
+      {
+        "audio": true
+      },
+      {
+        "audio_tema": "diferen"
+      },
+      {
+        "audios_max": 1
+      }
+    ]
+  },
+  {
+    "id": "audio-nao-repete",
+    "nome": "áudio: já recebeu o áudio e pergunta de novo, responde em texto",
+    "telefone": "556690000163",
+    "preparar": {
+      "nome": "Teste Audio",
+      "mensagens": [
+        {
+          "autor": "cliente",
+          "conteudo": "mega hair fica natural?",
+          "quando": "agora-90m"
+        },
+        {
+          "autor": "ia",
+          "conteudo": "🎤 Áudio da Gleide [áudio pronto: mega hair fica natural]: fica natural quando a aplicação é bem feita e o cabelo combina com o seu.",
+          "quando": "agora-89m",
+          "tipo": "audio"
+        }
+      ]
+    },
+    "mensagens": [
+      "mas fica natural mesmo? dá pra perceber?"
+    ],
+    "espera": [
+      {
+        "audio": false
+      },
+      {
+        "deve": "\\w"
+      }
+    ]
+  },
+  {
+    "id": "um-audio-por-resposta",
+    "nome": "áudio: duas dúvidas com áudio na mesma mensagem, no máximo 1 áudio",
+    "telefone": "556690000164",
+    "mensagens": [
+      "mega hair fica natural? e qual a diferença entre os tipos de cabelo?"
+    ],
+    "espera": [
+      {
+        "audios_max": 1
+      }
+    ]
   }
 ]

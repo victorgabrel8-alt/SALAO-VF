@@ -28,18 +28,54 @@ type Conversa = {
   ultima_mensagem_em: string;
 };
 
-async function buscarConversas(empresaId: string) {
-  const [conversas, excluidas] = await Promise.all([
-    supabase()
-      .from("conversas")
-      .select("cliente_id, nome, telefone, ia_pausada, motivo_pausa, ultimo_autor, ultima_mensagem, ultima_mensagem_em")
-      .eq("empresa_id", empresaId)
-      .order("ultima_mensagem_em", { ascending: false }),
-    buscarExcluidas(empresaId),
+const CAMPOS = "cliente_id, nome, telefone, ia_pausada, motivo_pausa, ultimo_autor, ultima_mensagem, ultima_mensagem_em";
+
+// A lista traz só as conversas mais recentes (com o salão crescendo, trazer todas pesaria no
+// celular a cada mensagem nova). As pausadas e as que precisam de você vêm sempre, mesmo
+// antigas; as outras a Gleide acha pela busca, que procura no banco.
+const LIMITE = 100;
+const LIMITE_BUSCA = 50;
+
+type Resultado = { conversas: Conversa[]; total: number; cortada: boolean } | { erro: string };
+
+const maisRecente = (a: Conversa, b: Conversa) => Date.parse(b.ultima_mensagem_em) - Date.parse(a.ultima_mensagem_em);
+
+// Conversas do salão sem as clientes excluídas (o filtro vai para o banco, para não gastar o limite)
+async function consultaConversas(empresaId: string) {
+  const { excluidas } = await buscarExcluidas(empresaId);
+  const ids = excluidas.map((c) => c.id);
+  return (select: string, opcoes?: { count: "exact"; head: true }) => {
+    const q = supabase().from("conversas").select(select, opcoes).eq("empresa_id", empresaId);
+    return ids.length ? q.not("cliente_id", "in", `(${ids.join(",")})`) : q;
+  };
+}
+
+async function buscarConversas(empresaId: string): Promise<Resultado> {
+  const conversas = await consultaConversas(empresaId);
+  const [recentes, pausadas, contagem] = await Promise.all([
+    conversas(CAMPOS).order("ultima_mensagem_em", { ascending: false }).limit(LIMITE),
+    conversas(CAMPOS).eq("ia_pausada", true),
+    conversas("cliente_id", { count: "exact", head: true }),
   ]);
-  if (conversas.error) return { erro: conversas.error.message };
-  const fora = new Set(excluidas.excluidas.map((c) => c.id));
-  return { conversas: (conversas.data as Conversa[]).filter((c) => !fora.has(c.cliente_id)) };
+  const erro = recentes.error ?? pausadas.error;
+  if (erro) return { erro: erro.message };
+  const maisNovas = (recentes.data ?? []) as unknown as Conversa[];
+  const porCliente = new Map<string, Conversa>();
+  for (const c of [...maisNovas, ...((pausadas.data ?? []) as unknown as Conversa[])]) porCliente.set(c.cliente_id, c);
+  const lista = [...porCliente.values()].sort(maisRecente);
+  return { conversas: lista, total: Math.max(contagem.count ?? 0, lista.length), cortada: maisNovas.length === LIMITE };
+}
+
+// Busca no banco pelo nome ou pelo telefone (com 3 dígitos ou mais), em todas as conversas
+async function procurarConversas(empresaId: string, texto: string): Promise<Conversa[] | { erro: string }> {
+  // vírgula, parênteses e curingas quebram o filtro "or" do Supabase
+  const termo = texto.replace(/[,()*%\\]/g, " ").trim();
+  const digitos = texto.replace(/\D/g, "");
+  const ou = [termo && `nome.ilike.*${termo}*`, digitos.length >= 3 && `telefone.like.*${digitos}*`].filter(Boolean).join(",");
+  if (!ou) return [];
+  const conversas = await consultaConversas(empresaId);
+  const { data, error } = await conversas(CAMPOS).or(ou).order("ultima_mensagem_em", { ascending: false }).limit(LIMITE_BUSCA);
+  return error ? { erro: error.message } : (data as unknown as Conversa[]);
 }
 
 // "14:35" se foi hoje, "Ontem", ou "18/10"
@@ -196,10 +232,12 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
 
 export default function ConversasPage() {
   const empresa = useEmpresa();
-  const [resultado, setResultado] = useState<{ conversas: Conversa[] } | { erro: string } | null>(null);
+  const [resultado, setResultado] = useState<Resultado | null>(null);
   const [versao, setVersao] = useState(0);
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [busca, setBusca] = useState("");
+  // Resultado da busca no banco, com o texto que foi procurado
+  const [achadas, setAchadas] = useState<{ texto: string; conversas: Conversa[] } | null>(null);
   // Só uma linha aberta (deslizada) por vez, como no iPhone
   const [aberta, setAberta] = useState<string | null>(null);
 
@@ -216,26 +254,42 @@ export default function ConversasPage() {
   // Mensagem nova ou IA pausada/reativada: a lista se atualiza sozinha
   useTempoReal(["mensagens", "clientes"], empresa.id, () => setVersao((v) => v + 1));
 
+  // Busca no banco depois de uma pausa na digitação (não a cada letra)
+  const texto = busca.trim();
+  useEffect(() => {
+    if (!texto) return;
+    let ativo = true;
+    const espera = setTimeout(() => {
+      procurarConversas(empresa.id, texto).then((r) => {
+        if (ativo && !("erro" in r)) setAchadas({ texto, conversas: r });
+      });
+    }, 300);
+    return () => {
+      ativo = false;
+      clearTimeout(espera);
+    };
+  }, [empresa.id, texto, versao]);
+
   const conversas = useMemo(() => (resultado && "conversas" in resultado ? resultado.conversas : []), [resultado]);
   const precisam = conversas.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "precisa");
   const total: Record<Filtro, number> = {
-    todas: conversas.length,
+    todas: resultado && "total" in resultado ? resultado.total : conversas.length,
     precisa: precisam.length,
     pausada: conversas.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "pausada").length,
   };
+  const cortada = Boolean(resultado && "cortada" in resultado && resultado.cortada);
 
   const lista = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    const digitos = busca.replace(/\D/g, "");
-    return conversas
-      .filter((c) => filtro === "todas" || situacaoIa(c.ia_pausada, c.motivo_pausa) === filtro)
-      .filter(
-        (c) =>
-          !termo ||
-          (c.nome ?? "").toLowerCase().includes(termo) ||
-          (digitos.length >= 3 && c.telefone.includes(digitos)),
-      );
-  }, [conversas, filtro, busca]);
+    // Com busca: o que o banco achou; enquanto ele não responde, filtra o que já está na tela
+    let base = conversas;
+    if (texto && achadas?.texto === texto) base = achadas.conversas;
+    else if (texto) {
+      const termo = texto.toLowerCase();
+      const digitos = texto.replace(/\D/g, "");
+      base = conversas.filter((c) => (c.nome ?? "").toLowerCase().includes(termo) || (digitos.length >= 3 && c.telefone.includes(digitos)));
+    }
+    return base.filter((c) => filtro === "todas" || situacaoIa(c.ia_pausada, c.motivo_pausa) === filtro);
+  }, [conversas, achadas, texto, filtro]);
 
   return (
     <>
@@ -333,6 +387,11 @@ export default function ConversasPage() {
             </ul>
           )}
           {lista.length > 0 && <p className="px-4 pt-3 text-center text-xs text-texto-2">Deslize uma conversa para o lado para ver Ficha e WhatsApp.</p>}
+          {cortada && !texto && filtro === "todas" && (
+            <p className="px-4 pt-1.5 pb-2 text-center text-xs text-texto-2">
+              Mostrando as {LIMITE} conversas mais recentes. Para achar uma mais antiga, use a busca.
+            </p>
+          )}
         </section>
       )}
     </>

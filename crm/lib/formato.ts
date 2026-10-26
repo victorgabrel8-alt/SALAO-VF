@@ -49,8 +49,19 @@ export function formatarData(valor: string): string {
   return `${dia}/${mes}/${ano}`;
 }
 
+// h23: meia-noite sai "00:00" (alguns navegadores escreviam "24:00", e as contas de horário
+// livre em minutos erravam)
 export function formatarHora(instante: string): string {
-  return new Date(instante).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit" });
+  return new Date(instante).toLocaleTimeString("pt-BR", { timeZone: FUSO, hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+}
+
+// Dia "AAAA-MM-DD" e hora "HH:MM" que dá para gravar (o campo de data ou hora pode vir vazio
+// quando a dona apaga no celular)
+export function dataValida(data: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(data) && !Number.isNaN(Date.parse(`${data}T12:00:00Z`));
+}
+export function horaValida(hora: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(hora.slice(0, 5));
 }
 
 // "hoje", "ontem", "há 47 dias"

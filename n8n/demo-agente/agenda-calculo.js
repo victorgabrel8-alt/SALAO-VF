@@ -16,6 +16,7 @@ let EXPEDIENTE = {
 };
 const PASSO_MIN = 30;        // grade de horários
 const ANTECEDENCIA_MIN = 60; // não oferece horário com menos de 1h
+const ANTECEDENCIA_REMARCAR_MIN = 30; // remarcar/adiantar para uma vaga que ela topou: basta 30 min
 const DIAS_BUSCA = 7;        // procura vagas até 7 dias à frente
 const fmt = (d) => d.setLocale('pt-BR').toFormat("cccc, dd/LL 'às' HH:mm");
 const iso = (d) => d.toFormat("yyyy-LL-dd'T'HH:mm");
@@ -108,12 +109,13 @@ try {
 
 if (p.erro) return saida({ resposta: p.erro });
 // A agenda é a do app (Supabase): o que a IA e a Gleide marcaram ocupa o horário. Sem fim gravado, conta 1 h.
-// Se o Supabase não respondeu, não dá para saber o que está livre: a IA passa para a equipe.
+// Falta (ex.: atrasou e não respondeu, supabase/011) libera o horário. Se o Supabase não respondeu, não dá
+// para saber o que está livre: a IA passa para a equipe.
 const falhou = (itens) => itens.some((x) => x.error || (x.code && x.message));
 const doCrm = $('Supabase: horários ocupados').all().map(i => i.json);
 if (falhou(doCrm)) return saida({ resposta: FORA });
 const ocupados = [];
-for (const a of doCrm.filter(a => a.inicio)) {
+for (const a of doCrm.filter(a => a.inicio && a.status !== 'faltou')) {
   const ini = DateTime.fromISO(a.inicio).setZone(TZ);
   ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);
 }
@@ -133,11 +135,12 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   // "HOJE"/"AMANHÃ" escrito na lista: a IA errava o dia relativo fazendo a conta de cabeça
   const relativo = (d) => { const n = Math.round(d.startOf('day').diff(agora.startOf('day'), 'days').days); return n === 0 ? 'HOJE, ' : n === 1 ? 'AMANHÃ, ' : ''; };
   const listaEvs = evs.map(x => '- ' + x.titulo + ': ' + relativo(x.ini) + fmt(x.ini) + ' (data_hora_inicio: ' + iso(x.ini) + ')').join('\\n');
-  if (!evs.length) return saida({ resposta: 'Não encontrei nenhum horário futuro marcado para esta cliente. Se ela diz que marcou, pode ter sido por outro número: use transferir_para_humano.' });
+  if (!evs.length) return saida({ resposta: 'Não encontrei nenhum horário futuro marcado para esta cliente. Diga isso a ela e pergunte se marcou por outro número ou nome; não invente horário. Só use transferir_para_humano se ela confirmar que marcou.' });
   if (p.acao === 'listar') return [{ json: { acao: 'listar', ok: true, resposta: 'Agendamentos futuros desta cliente:\\n' + listaEvs } }];
 
   let alvo = null;
-  if (p.inicio) alvo = evs.find(x => +x.ini === +DateTime.fromISO(p.inicio).setZone(TZ));
+  // compara até o minuto: a IA manda "HH:mm" e o horário gravado pode ter segundos
+  if (p.inicio) alvo = evs.find(x => +x.ini.startOf('minute') === +DateTime.fromISO(p.inicio).setZone(TZ).startOf('minute'));
   else if (evs.length === 1) alvo = evs[0];
   if (!alvo) return saida({ resposta: 'A cliente tem mais de um agendamento (ou o horário informado não bate). Agendamentos dela:\\n' + listaEvs + '\\nPergunte qual e chame de novo com o data_hora_inicio certo.' });
 
@@ -153,7 +156,7 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
     if (a < alvo.ini) semEle.push([a, alvo.ini]);
     if (b > alvo.fim) semEle.push([alvo.fim, b]);
   }
-  if (novo < agora.plus({ minutes: ANTECEDENCIA_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
+  if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
   // mesma anotação do CRM ("Reagendado de 20/10 às 13:00"): o app mostra o horário antigo
@@ -189,7 +192,8 @@ if (p.acao === 'consultar') {
   const quadro = (dia, v) => dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + ') — horários de INÍCIO livres para ' + p.dur +
     ' min, de 30 em 30 min: ' + faixas(v) + '. Qualquer horário dentro dessas faixas está livre; fora delas, não.';
   const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');
-  const fechado = !(EXPEDIENTE[pedido.weekday]);
+  // dia bloqueado no app (folga, viagem) também é "fechado": senão a IA dizia "não temos mais vaga"
+  const fechado = !(EXPEDIENTE[pedido.weekday]) || bloqueado(pedido);
 
   // Horário específico pedido pela cliente
   if (p.inicio && !fechado) {
