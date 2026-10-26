@@ -365,7 +365,9 @@ const nodes = [
       "const pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test($('Montar entrada').first().json.texto_cliente || '');",
       "const FRASES = /(?<=[.!?😊😉🥰])\\s+/u;",
       "const QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;",
-      "const limpar = (p) => {",
+      "// limpa linha por linha: o quadro da agenda vem uma linha por período e precisa chegar assim",
+      "const limpar = (p) => p.split('\\n').map(limparLinha).filter(Boolean).join('\\n');",
+      "const limparLinha = (p) => {",
       "  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));",
       "  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a",
       "  // cliente recebe \"algum desses horários?\" sem horário nenhum",
@@ -398,7 +400,7 @@ const nodes = [
       "}",
       "if (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }",
       "const cortar = (t) => {",
-      "  if (t.length <= 300) return [t];",
+      "  if (t.length <= 300 || t.includes('\\n')) return [t]; // quadro do dia (em linhas) vai inteiro",
       "  const fs = t.split(FRASES);",
       "  if (fs.length < 2) return [t];",
       "  let a = '', i = 0;",
@@ -429,7 +431,7 @@ const nodes = [
   }),
 
   toolAgenda('consultar_horarios_livres', [2880, 200],
-    'Consulta a agenda do salão e devolve até 3 horários livres (dentro do horário de funcionamento) para um serviço. ' +
+    'Consulta a agenda do salão e devolve o QUADRO DO DIA: manhã, almoço e tarde, o que está livre e o que já tem cliente marcada, e os inícios que cabem o serviço. ' +
     'Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.',
     { acao: 'consultar' },
     [
