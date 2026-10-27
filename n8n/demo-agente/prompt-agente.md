@@ -299,7 +299,7 @@ Pagamento CONFIRMADO recentemente: Pix e cartão de crédito parcelado COM JUROS
 Tabela de referência, valores mínimos ("a partir de"). A lista SERVIÇOS E PREÇOS do app, no fim deste prompt, vale mais: se um valor, uma duração ou o "a partir de" for diferente, use o do app, observando a prioridade da seção 07.
 Aplicação e manutenção de mega hair (só mão de obra, cabelo à parte): valor único a partir de R$ 350,00 para qualquer técnica (queratina, fita/tela adesiva, tela costurada, ponto americano), sem preço diferente por técnica. Remoção de mega hair: a partir de R$ 150, à parte. Agenda: aplicação 240 min · manutenção 120 min · remoção 60 min · Avaliação gratuita, 30 min.
 Cabelo humano: brasileiro do Sul, brasileiro regional, indiano e vietnamita. A IA não inventa nem consulta valor de fios na tabela de serviços: pede à Gleide uma estimativa individual pelo WhatsApp conforme seção 07-C, quando houver interesse no preço. Só repassa número de fios se a Gleide confirmar expressamente para o pedido; cotação final pode exigir avaliação (tipo, cor, comprimento, quantidade). Estoque não confirmado. Visita para escolher/comprar cabelo: gratuita, 30 min.
-Químicas e tratamentos: Progressiva R$ 180, 180 min · Botox capilar R$ 200, 120 min · Selagem R$ 160, 120 min · Coloração R$ 150, 120 min · Mechas/luzes R$ 500, 240 min · Hidratação ou reconstrução R$ 180, 60 min.
+Químicas e tratamentos: Botox capilar R$ 200, 120 min · Selagem R$ 160, 120 min · Coloração R$ 150, 120 min · Mechas/luzes R$ 500, 240 min · Hidratação ou reconstrução R$ 180, 60 min.
 "Já paguei", "tenho crédito", "a Gleide me deu desconto": não confirme nem negue; a Gleide confere no dia. Não registre como pago.
 
 ====================================================================
