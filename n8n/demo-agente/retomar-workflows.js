@@ -37,15 +37,16 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
     '- quem está devendo resposta é o salão (você disse que ia confirmar com a Gleide, ou a Gleide assumiu a conversa);',
     '- o horário já está marcado e não há nada pendente;',
     '- sua última mensagem não deixou nada em aberto e retomar seria só insistência.',
-    'Se fizer sentido, escreva UM alô curto, em português do Brasil, como a atendente que lembrou dela e voltou para ver se ficou alguma dúvida:',
-    '- parta do que ELA falou por último (o assunto dela: "como funciona", as fotos, o valor, o horário...), não da sua última mensagem;',
-    '- o alô é para saber se ficou alguma dúvida sobre esse assunto ou se ela quer ajuda com ele. Ex.: "Oi, Ana! Ficou alguma dúvida sobre como funciona o mega hair? Tô por aqui 😊" ou "Oi! Conseguiu ver as fotos dos cabelos? Se ficou alguma dúvida, me fala";',
-    '- NÃO repita nem reformule a pergunta que você já fez e ficou sem resposta, e não explique de novo o que já foi explicado;',
-    '- curta (1 ou 2 frases), leve, sem cobrança, sem culpa, sem urgência ou promoção inventada, sem "só passando pra lembrar";',
+    'Se fizer sentido, escreva a mensagem como uma pessoa de verdade que atende o WhatsApp do salão e lembrou dessa conversa:',
+    c.tentativa === 1
+      ? '- fale do assunto DELA, com o detalhe que ela trouxe (a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...), e pergunte de um jeito simples se ficou alguma dúvida sobre isso ou o que ela achou. O objetivo é só saber se ficou dúvida: não convide para agendar nem para a avaliação (a não ser que ela mesma já tenha falado em marcar) e não faça de novo a sua última pergunta com outras palavras; varie o começo (nem sempre "Oi, nome!": pode ir direto ao assunto);'
+      : '- você JÁ mandou um alô antes (é a sua última mensagem na conversa). NÃO repita nem reformule esse alô, não pergunte de novo se ficou dúvida e não cumprimente de novo. Escreva só uma frase curta e diferente da anterior, ligada ao assunto dela, deixando a porta aberta sem cobrar resposta (a ideia é "quando quiser ver isso, é só me chamar"; não copie essas palavras);',
+    '- NÃO repita nem reformule a pergunta que ficou sem resposta, e não explique de novo o que já foi explicado;',
+    '- nada de frase pronta de robô: "Se precisar de ajuda, estou por aqui", "Fico à disposição", "Qualquer dúvida estou à disposição", "Só passando pra lembrar", "Espero que esteja bem";',
+    '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop ("pra", "tá"), sem formalidade; sem cobrança, culpa, urgência ou promoção inventada;',
     '- não invente preço, valor, horário livre, estoque nem resultado; não diga que ela respondeu nem que você "viu" algo novo;',
-    '- sem negrito, sem lista, no máximo um emoji; use o primeiro nome no máximo uma vez, se souber;',
-    ultima ? '- como é a última tentativa, deixe a porta aberta sem pressão (ex.: "se não for o momento, tudo bem, é só me chamar quando quiser").'
-      : '- não fale de tempo sem resposta.',
+    '- sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez, se souber;',
+    '- não fale de tempo sem resposta.',
     'Responda só com a mensagem (ou com PULAR: motivo), sem aspas.',
   ].filter((l) => l !== null).join('\n');
   // memória da IA: a chave que já existe; sem ela, o formato do WhatsApp (sem o 9)
@@ -102,11 +103,12 @@ module.exports = ({ env, node, main, GEMINI }) => {
       node('Memórias', 'n8n-nodes-base.redis', 1, [660, 0], { operation: 'keys', keyPattern: 'memoria:*', getValues: false },
         { credentials: REDIS, executeOnce: true, alwaysOutputData: true }),
       node('Preparar', 'n8n-nodes-base.code', 2, [880, 0], { jsCode: PREPARAR }),
+      // alô curto não precisa de raciocínio longo: nível baixo (mais barato); temperatura alta para não sair sempre igual
       node('Escrever (Gemini)', 'n8n-nodes-base.httpRequest', 4.2, [1100, 0], {
         method: 'POST', url: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
         authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi',
         sendBody: true, specifyBody: 'json',
-        jsonBody: '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.instrucao }] }], generationConfig: { temperature: 0.6 } }) }}', options: {},
+        jsonBody: '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.instrucao }] }], generationConfig: { temperature: 0.9, thinkingConfig: { thinkingLevel: \'low\' } } }) }}', options: {},
       }, { credentials: GEMINI || {}, retryOnFail: true, maxTries: 2, waitBetweenTries: 2000, onError: 'continueRegularOutput' }),
       node('Decidir', 'n8n-nodes-base.code', 2, [1320, 0], { jsCode: DECIDIR }),
       se('Enviar?', [1540, -100], 'r1', "={{ $json.acao === 'enviar' }}"),
