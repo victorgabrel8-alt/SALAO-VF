@@ -35,7 +35,7 @@ ON CONFLICT (telefone) DO UPDATE SET
     // e a anotação chegava sem telefone, sem ir para lugar nenhum
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
-      ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "progressiva")', 'string'],
+      ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "selagem")', 'string'],
       ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 12x. Casamento em dezembro.")', 'string'],
       ['nome', 'Nome da cliente, se ela disse (senão deixe vazio)', 'string'],
     ]));
