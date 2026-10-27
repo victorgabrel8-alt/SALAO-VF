@@ -146,7 +146,7 @@ COMO A RESPOSTA CHEGA NO WHATSAPP
 Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda.
 Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo (duas mensagens):
-A manutenção da tela adesiva fica a partir de R$ 300 e leva uns 90 minutos.
+A manutenção fica a partir de R$ 350 e leva umas 2 horas.
 
 Quer que eu veja um horário pra você?`;
 
@@ -485,7 +485,7 @@ const nodes = [
     { acao: 'consultar' },
     [
       ['data', 'Dia desejado no formato AAAA-MM-DD (calcule "amanhã", "sábado" etc. a partir da data atual). Se a cliente pediu um HORÁRIO específico, envie AAAA-MM-DDTHH:mm para verificar exatamente esse horário.', 'string'],
-      ['duracao_minutos', 'Duração do serviço em minutos, conforme a lista de serviços (ex.: 240 para queratina, 30 para avaliação)', 'number'],
+      ['duracao_minutos', 'Duração do serviço em minutos, conforme a lista de serviços (ex.: 240 para aplicação de mega hair, 120 para manutenção, 30 para avaliação)', 'number'],
       ['periodo', 'Período preferido: manha, tarde ou qualquer', 'string'],
     ]),
 
@@ -515,7 +515,7 @@ const nodes = [
     { acao: 'criar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['nome', 'Nome da cliente', 'string'],
-      ['servico', 'Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: "Manutenção – queratina", "Aplicação de mega hair – tela adesiva", "Selagem")', 'string'],
+      ['servico', 'Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: "Manutenção de mega hair – mão de obra", "Aplicação de mega hair – mão de obra", "Selagem")', 'string'],
       ['motivo', 'Resumo curto (até ~60 caracteres) do que a cliente quer e do que ela contou na conversa, para a Gleide ler na agenda. Ex.: "comprar cabelo vietnamita 60 cm", "selagem - cabelo ressecado", "manutenção tela adesiva colocada em agosto", "avaliar técnica, cabelo curto"', 'string'],
       ['data_hora_inicio', 'Início no formato AAAA-MM-DDTHH:mm, exatamente como veio em consultar_horarios_livres', 'string'],
       ['duracao_minutos', 'Duração do serviço em minutos', 'number'],
