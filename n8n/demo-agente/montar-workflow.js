@@ -365,7 +365,8 @@ const nodes = [
   node('Quebrar mensagens', 'n8n-nodes-base.code', 2, [2960, -20], {
     jsCode: [
       "const jid = $('Montar entrada').first().json.jid;",
-      "let t = ($input.first().json.output || '').trim();",
+      "// caractere invisível (espaço de largura zero) não é texto: em 27/10 a IA respondeu só isso e saiu um balão em branco",
+      "let t = ($input.first().json.output || '').replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim();",
       "// Prompt: se o áudio respondeu tudo, a IA não escreve nada. Áudio enviado + resposta vazia = não manda balão",
       "// (sem isso cairia na mensagem de erro lá embaixo). [SEM TEXTO] também vale, se a IA usar.",
       "const passos = $input.first().json.intermediateSteps || [];",

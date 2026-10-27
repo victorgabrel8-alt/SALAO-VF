@@ -578,14 +578,15 @@
     "cor": "castanho",
     "comprimento_cm": 60,
     "textura": "ondulado",
-    "ativo": true,
+    "ativo": false,
     "legenda": "Castanho, ondulado, 60 cm",
     "fotos": [
       "cabelo-brasileiro/aplique-tic-tac-cabelo-brasileiro-castanho-60-cm/foto_01.jpg",
       "cabelo-brasileiro/aplique-tic-tac-cabelo-brasileiro-castanho-60-cm/foto_02.jpg",
       "cabelo-brasileiro/aplique-tic-tac-cabelo-brasileiro-castanho-60-cm/foto_03.jpg",
       "cabelo-brasileiro/aplique-tic-tac-cabelo-brasileiro-castanho-60-cm/foto_04.jpg"
-    ]
+    ],
+    "motivo_fora": "foto errada (apagada da pasta em 27/10)"
   },
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas",
