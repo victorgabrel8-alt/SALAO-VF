@@ -1,6 +1,6 @@
 [
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm",
     "titulo": "Cabelo Loiro Brasileiro na Fita Adesiva 65 CM",
     "tipo": "brasileiro",
     "cor": "loiro",
@@ -9,15 +9,15 @@
     "ativo": true,
     "legenda": "Loiro, liso, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_04.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm",
     "titulo": "Cabelo Loiro Vietnamita Na Fita Adesiva 55CM",
     "tipo": "vietnamita",
     "cor": "loiro",
@@ -26,13 +26,13 @@
     "ativo": true,
     "legenda": "Loiro, ondulado, 55 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm/foto_03.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-vietnamita-na-fita-adesiva-55cm/foto_03.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm",
     "titulo": "Cabelo Vietnamita Na Fita adesiva Loiro Mesclado 65 CM",
     "tipo": "vietnamita",
     "cor": "loiro mesclado",
@@ -41,14 +41,14 @@
     "ativo": true,
     "legenda": "Loiro mesclado, ondulado, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-65-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm",
     "titulo": "Cabelo Vietnamita Na Fita adesiva Loiro Mesclado 75 CM",
     "tipo": "vietnamita",
     "cor": "loiro mesclado",
@@ -57,14 +57,14 @@
     "ativo": true,
     "legenda": "Loiro mesclado, ondulado, 75 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-vietnamita-na-fita-adesiva-loiro-mesclado-75-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-55cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-55cm",
     "titulo": "Tela Adesiva Cabelo Vietnamita Castanho 55CM",
     "tipo": "vietnamita",
     "cor": "castanho",
@@ -73,12 +73,12 @@
     "ativo": true,
     "legenda": "Castanho, liso, 55 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-55cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-55cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-55cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-55cm/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm",
     "titulo": "Tela Adesiva Cabelo Vietnamita Castanho 65CM",
     "tipo": "vietnamita",
     "cor": "castanho",
@@ -87,14 +87,14 @@
     "ativo": true,
     "legenda": "Castanho, liso, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-65cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm",
     "titulo": "Tela Adesiva Cabelo Vietnamita Castanho 75CM",
     "tipo": "vietnamita",
     "cor": "castanho",
@@ -103,14 +103,14 @@
     "ativo": true,
     "legenda": "Castanho, liso, 75 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-adesiva-cabelo-vietnamita-castanho-75cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Castanho Liso 70 CM - 162 Gramas",
     "tipo": "brasileiro",
     "cor": "castanho",
@@ -119,14 +119,14 @@
     "ativo": true,
     "legenda": "Castanho, liso, 70 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-catanho-liso-70-cm-186-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-catanho-liso-70-cm-186-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Catanho Liso 70 CM - 186 Gramas",
     "tipo": "brasileiro",
     "cor": "castanho",
@@ -135,11 +135,11 @@
     "ativo": true,
     "legenda": "Castanho, liso, 70 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-catanho-liso-70-cm-186-gramas/foto_01.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-catanho-liso-70-cm-186-gramas/foto_01.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Ruivo 65 CM - 150 Gramas",
     "tipo": "brasileiro",
     "cor": "ruivo",
@@ -148,15 +148,15 @@
     "ativo": true,
     "legenda": "Ruivo, liso, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_04.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas",
     "titulo": "TELA Fita Adesiva - Cabelo Indiano Liso 45 CM - 100 Gramas",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -165,14 +165,14 @@
     "ativo": true,
     "legenda": "Castanho escuro, liso, 45 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_03.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-liso-45-cm-94-gramas/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-55cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-55cm",
     "titulo": "TELA FITA ADESIVA CABELO INDIANO PREMIUM LISO 55CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -181,12 +181,12 @@
     "ativo": true,
     "legenda": "Castanho escuro, liso, 55 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-55cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-55cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-55cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-55cm/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm",
     "titulo": "TELA FITA ADESIVA CABELO INDIANO PREMIUM LISO 75CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -195,13 +195,13 @@
     "ativo": true,
     "legenda": "Castanho escuro, liso, 75 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm/foto_02.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm/foto_03.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-liso-75cm/foto_03.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm",
     "titulo": "TELA FITA ADESIVA CABELO INDIANO PREMIUM ONDULADO 55CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -210,16 +210,16 @@
     "ativo": false,
     "legenda": "Castanho escuro, ondulado, 55 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_02.jpg"
     ],
     "fotos_fora": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-55cm/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm",
     "titulo": "TELA FITA ADESIVA CABELO INDIANO PREMIUM ONDULADO 65CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -228,16 +228,16 @@
     "ativo": false,
     "legenda": "Castanho escuro, ondulado, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_02.jpg"
     ],
     "fotos_fora": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-indiano-premium-ondulado-65cm/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-vietnamira-75-cm-176-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-vietnamira-75-cm-176-gramas",
     "titulo": "TELA Fita Adesiva - Cabelo VIETNAMITA 75 CM - 176 Gramas",
     "tipo": "vietnamita",
     "cor": "castanho escuro",
@@ -246,12 +246,12 @@
     "ativo": true,
     "legenda": "Castanho escuro, liso, 75 cm",
     "fotos": [
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-vietnamira-75-cm-176-gramas/foto_01.jpg",
-      "apliques/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-vietnamira-75-cm-176-gramas/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-vietnamira-75-cm-176-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-cabelo-vietnamira-75-cm-176-gramas/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm",
     "titulo": "Cabelo Cacheado Tipo 2 na Tela Metro 45 CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -260,14 +260,14 @@
     "ativo": true,
     "legenda": "Castanho escuro, cacheado tipo 2, 45 cm",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-45-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm",
     "titulo": "Cabelo Cacheado Tipo 2 na Tela Metro 55 CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -276,15 +276,15 @@
     "ativo": true,
     "legenda": "Castanho escuro, cacheado tipo 2, 55 cm",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_04.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-55-cm/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm",
     "titulo": "Cabelo Cacheado Tipo 2 na Tela Metro 65 CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -293,14 +293,14 @@
     "ativo": true,
     "legenda": "Castanho escuro, cacheado tipo 2, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-65-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm",
     "titulo": "Cabelo Cacheado Tipo 2 na Tela Metro 75 CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -309,14 +309,14 @@
     "ativo": true,
     "legenda": "Castanho escuro, cacheado tipo 2, 75 cm",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-2-na-tela-metro-75-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm",
     "titulo": "Cabelo Cacheado Tipo 3 na Tela Metro 65 CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -325,14 +325,14 @@
     "ativo": true,
     "legenda": "Castanho escuro, cacheado tipo 3, 65 cm",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-65-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm",
     "titulo": "Cabelo Cacheado Tipo 3 na Tela Metro 75 CM",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -341,14 +341,14 @@
     "ativo": true,
     "legenda": "Castanho escuro, cacheado tipo 3, 75 cm",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-cacheado-tipo-3-na-tela-metro-75-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama",
     "titulo": "Cabelo Humano Natural Liso na Tela Metro - 100 Gramas",
     "tipo": "vietnamita",
     "cor": "castanho escuro",
@@ -357,15 +357,15 @@
     "ativo": true,
     "legenda": "Castanho escuro, liso",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_02.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_03.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_04.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-liso-na-tela-metro-100-grama/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-ondulado-na-tela-metro-100-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-ondulado-na-tela-metro-100-gramas",
     "titulo": "Cabelo Humano Natural Ondulado na Tela Metro - 100 Gramas",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -374,12 +374,12 @@
     "ativo": true,
     "legenda": "Castanho escuro, ondulado",
     "fotos": [
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-ondulado-na-tela-metro-100-gramas/foto_01.jpg",
-      "apliques/cabelo-na-tela-costurada/cabelo-humano-natural-ondulado-na-tela-metro-100-gramas/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-ondulado-na-tela-metro-100-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/cabelo-na-tela-costurada/cabelo-humano-natural-ondulado-na-tela-metro-100-gramas/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas",
     "titulo": "03 Telas Cabelo Humano Levemente Ondulado Natural 65 CM 200 Gramas",
     "tipo": "brasileiro",
     "cor": "castanho escuro",
@@ -388,16 +388,16 @@
     "ativo": true,
     "legenda": "Castanho escuro, levemente ondulado, 65 cm",
     "fotos": [
-      "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_01.jpg",
-      "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_02.jpg",
-      "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_03.jpg",
-      "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_04.jpg",
-      "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_05.jpg",
-      "apliques/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_06.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_05.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas/foto_06.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas",
     "titulo": "Aplique 03 Telas Cabelo Humano Levemente Ondulado 65 CM 200 Gramas",
     "tipo": "indiano",
     "cor": "castanho escuro",
@@ -406,15 +406,15 @@
     "ativo": true,
     "legenda": "Castanho escuro, levemente ondulado, 65 cm",
     "fotos": [
-      "apliques/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_01.jpg",
-      "apliques/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_02.jpg",
-      "apliques/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_03.jpg",
-      "apliques/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_04.jpg",
-      "apliques/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/aplique-03-telas-cabelo-humano-levemente-ondulado-65-cm-200-gramas/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm",
     "titulo": "Cabelo Cacheado Grisalho na Tela de Ponto Americano 65 CM",
     "tipo": "brasileiro",
     "cor": "grisalho",
@@ -423,13 +423,13 @@
     "ativo": true,
     "legenda": "Grisalho, cacheado, 65 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm/foto_03.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm/foto_03.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm",
     "titulo": "Cabelo Loiro na Tela de Ponto Americano 65 CM",
     "tipo": "vietnamita",
     "cor": "loiro",
@@ -438,15 +438,15 @@
     "ativo": true,
     "legenda": "Loiro, liso, 65 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_04.jpg",
-      "apliques/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-loiro-na-tela-de-ponto-americano-65-cm/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm",
     "titulo": "Cabelo na Tela Cacheado Ponto Americano 75 CM",
     "tipo": "indiano",
     "cor": "morena iluminada",
@@ -455,13 +455,13 @@
     "ativo": true,
     "legenda": "Morena iluminada, cacheado, 75 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm/foto_03.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-cacheado-ponto-americano-75-cm/foto_03.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm",
     "titulo": "Cabelo na Tela de Ponto Americano 55 CM - Vietnamita Mesclado Levemente Ondulado",
     "tipo": "vietnamita",
     "cor": "loiro mesclado",
@@ -470,14 +470,14 @@
     "ativo": true,
     "legenda": "Loiro mesclado, levemente ondulado, 55 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado",
     "titulo": "Cabelo na Tela de Ponto Americano 65 CM -  Vietnamita Mesclado Levemente Ondulado",
     "tipo": "vietnamita",
     "cor": "loiro mesclado",
@@ -486,14 +486,14 @@
     "ativo": true,
     "legenda": "Loiro mesclado, levemente ondulado, 65 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-55-cm-vietnamita-mesclado-levemente-ondulado/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm",
     "titulo": "Cabelo na Tela de Ponto Americano 75 CM - Vietnamita Mesclado Levemente Ondulado",
     "tipo": "vietnamita",
     "cor": "loiro mesclado",
@@ -502,14 +502,14 @@
     "ativo": true,
     "legenda": "Loiro mesclado, levemente ondulado, 75 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-na-tela-de-ponto-americano-75-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-vietnamita-liso-natural-na-tela-de-ponto-americano-55-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-liso-natural-na-tela-de-ponto-americano-55-cm",
     "titulo": "Cabelo Vietnamita Liso Natural na Tela de Ponto Americano 55 CM",
     "tipo": "vietnamita",
     "cor": "loiro claro",
@@ -518,12 +518,12 @@
     "ativo": true,
     "legenda": "Loiro claro, liso, 55 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-vietnamita-liso-natural-na-tela-de-ponto-americano-55-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-liso-natural-na-tela-de-ponto-americano-55-cm/foto_02.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-liso-natural-na-tela-de-ponto-americano-55-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-liso-natural-na-tela-de-ponto-americano-55-cm/foto_02.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm",
     "titulo": "Cabelo Vietnamita Loiro Ondulado Natural na Tela de Ponto Americano 55 CM",
     "tipo": "vietnamita",
     "cor": "loiro",
@@ -532,15 +532,15 @@
     "ativo": true,
     "legenda": "Loiro, ondulado, 55 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_04.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_05.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_04.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-55-cm/foto_05.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm",
     "titulo": "Cabelo Vietnamita Loiro Ondulado Natural na Tela de Ponto Americano 65 CM",
     "tipo": "vietnamita",
     "cor": "loiro",
@@ -549,14 +549,14 @@
     "ativo": true,
     "legenda": "Loiro, ondulado, 65 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-65-cm/foto_04.jpg"
     ]
   },
   {
-    "grupo": "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm",
+    "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm",
     "titulo": "Cabelo Vietnamita Loiro Ondulado Natural na Tela de Ponto Americano 75 CM",
     "tipo": "vietnamita",
     "cor": "loiro",
@@ -565,10 +565,10 @@
     "ativo": true,
     "legenda": "Loiro, ondulado, 75 cm",
     "fotos": [
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_01.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_02.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_03.jpg",
-      "apliques/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_04.jpg"
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_01.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_02.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_03.jpg",
+      "TECNICAS-MEGAHAIR/ponto-americano/cabelo-vietnamita-loiro-ondulado-natural-na-tela-de-ponto-americano-75-cm/foto_04.jpg"
     ]
   },
   {
@@ -604,6 +604,11 @@
       "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas/foto_04.jpg",
       "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas/foto_05.jpg",
       "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas/foto_06.jpg"
+    ],
+    "fotos_fora": [
+      "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas/foto_04.jpg",
+      "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas/foto_05.jpg",
+      "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas/foto_06.jpg"
     ]
   },
   {
@@ -619,6 +624,9 @@
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-48-gramas/foto_01.jpg",
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-48-gramas/foto_02.jpg",
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-48-gramas/foto_03.jpg",
+      "cabelo-brasileiro/cabelo-brasileiro-50-cm-48-gramas/foto_04.jpg"
+    ],
+    "fotos_fora": [
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-48-gramas/foto_04.jpg"
     ]
   },
@@ -636,6 +644,9 @@
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-64-gramas/foto_02.jpg",
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-64-gramas/foto_03.jpg",
       "cabelo-brasileiro/cabelo-brasileiro-50-cm-64-gramas/foto_04.jpg"
+    ],
+    "fotos_fora": [
+      "cabelo-brasileiro/cabelo-brasileiro-50-cm-64-gramas/foto_01.jpg"
     ]
   },
   {
