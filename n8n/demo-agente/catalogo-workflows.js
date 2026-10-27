@@ -38,26 +38,43 @@ module.exports = ({ node, str, main, toolSub, workflow }) => {
     name: 'Catálogo - Enviar fotos',
     nodes: [
       node('Recebe pedido da IA', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
-        workflowInputs: { values: ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'telefone', 'jid'].map((name) => ({ name })) },
+        workflowInputs: { values: ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'citado', 'telefone', 'jid'].map((name) => ({ name })) },
       }),
       supa('Fotos do catálogo', 'GET', `catalogo?select=arquivo,grupo,tipo,cor,comprimento_cm,textura,legenda,ordem&ativo=eq.true&empresa_id=eq.{{ ${EMPRESA} }}&order=grupo,ordem`, null,
         { executeOnce: true }),
       supa('Já enviadas a ela', 'GET',
-        "mensagens?select=conteudo,clientes!inner(telefone)&autor=eq.ia&tipo=eq.imagem&clientes.telefone=eq.{{ " + TEL_BR(`${E}.telefone`) + " }}", null,
+        "mensagens?select=conteudo,wa_message_id,clientes!inner(telefone)&autor=eq.ia&tipo=eq.imagem&clientes.telefone=eq.{{ " + TEL_BR(`${E}.telefone`) + " }}&order=criado_em", null,
         { executeOnce: true }),
       node('Escolher fotos', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: String.raw`
 // O pedido da IA (tipo, cor, comprimento, textura, quantidade) -> 1 a 4 fotos que combinam, no máximo 1 por cabelo,
 // sem repetir foto que esta cliente já recebeu.
 const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-const pedido = $('Recebe pedido da IA').first().json;
+const pedido = { ...$('Recebe pedido da IA').first().json };
 const fotos = $('Fotos do catálogo').all().map((i) => i.json).filter((f) => f.arquivo);
 const enviados = $('Já enviadas a ela').all().map((i) => i.json.conteudo || '').join(' ');
 if (!fotos.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: o catálogo de fotos está vazio ou não carregou. Responda em texto, sem prometer foto.' } }];
 
+// foto do catálogo que ela respondeu citando ("Responder" do WhatsApp): o que ela não pediu para mudar continua igual
+const arqDe = (c) => (String(c || '').match(/\[foto do catálogo: ([^\]]+)\]/) || [])[1] || '';
+const doCrm = $('Já enviadas a ela').all().map((i) => i.json);
+const citada = pedido.citado ? fotos.find((f) => f.arquivo === arqDe((doCrm.find((m) => m.wa_message_id === pedido.citado) || {}).conteudo)) : null;
+if (citada) for (const k of ['tipo', 'cor', 'textura']) if (!pedido[k]) pedido[k] = citada[k];
+if (citada && !pedido.comprimento && citada.comprimento_cm) pedido.comprimento = String(citada.comprimento_cm);
 const tipo = sem(pedido.tipo); const cor = sem(pedido.cor); const textura = sem(pedido.textura);
 const cm = Number(String(pedido.comprimento || '').replace(/\D/g, '')) || 0;
 // quantas fotos (o prompt pede 1 por tipo como padrão); sem número = até 4
 const maximo = Math.min(4, Math.max(1, Number(String(pedido.quantidade || '').replace(/\D/g, '')) || 4));
+// "tem mais desse?": outras fotos (até 2) do MESMO cabelo, o citado ou o da última foto enviada, nunca outro no lugar
+if (/^s/.test(sem(pedido.mesmo_cabelo))) {
+  const ref = citada || fotos.find((f) => f.arquivo === arqDe((doCrm.filter((m) => arqDe(m.conteudo)).slice(-1)[0] || {}).conteudo));
+  if (!ref) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: não achei qual foto ela quer ver mais. Pergunte qual cabelo, em texto, curto.' } }];
+  const nome = ref.tipo + ', ' + (ref.legenda || ref.cor);
+  const mesmas = fotos.filter((f) => f.grupo === ref.grupo && !enviados.includes('[foto do catálogo: ' + f.arquivo + ']'))
+    .sort((a, b) => a.ordem - b.ordem).slice(0, Math.min(2, maximo));
+  if (!mesmas.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: não há outras fotos desse mesmo cabelo (' + nome + '); ela já viu todas. Diga isso em texto, curto, e não mande outro cabelo como se fosse o mesmo; se ela quiser, ofereça ver um parecido, avisando o que muda.' } }];
+  return mesmas.map((f, i) => ({ json: { ok: true, ...f, pedido: 'mais fotos do mesmo cabelo: ' + nome, total: mesmas.length, posicao: i + 1,
+    delay: 1200 + Math.floor(Math.random() * 1500) } }));
+}
 // cores parecidas contam como a mesma família (cliente fala "moreno", "escuro", "preto", "mel"...)
 const FAMILIA = [['loir', 'mel', 'dourad', 'platin', 'claro', 'ombre'], ['castanh', 'moren', 'escur', 'pret', 'chocolate', 'natural'],
   ['ruiv', 'acobread', 'cobre', 'ruiva', 'vermelh'], ['grisalh', 'cinza', 'branc'], ['iluminad', 'luzes', 'mechas']];
@@ -197,12 +214,15 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
     'Busca no catálogo autorizado do fornecedor e manda para a cliente FOTOS de cabelo que combinam com o pedido (tipo, cor, comprimento, textura), uma por vez, com legenda curta. ' +
     'Use quando ela pedir para ver os cabelos, as opções, as cores ou um tipo específico. Não reenvia fotos que ela já recebeu. ' +
     'A resposta diz se as fotos foram enviadas (FOTOS ENVIADAS / FOTOS NÃO ENVIADAS); nunca fale preço por causa delas.',
-    lerId, ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'telefone', 'jid'], { telefone: `={{ ${M}.telefone }}`, jid: `={{ ${M}.jid }}` },
+    lerId, ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'citado', 'telefone', 'jid'],
+    // citado: a mensagem que ela respondeu citando; se for foto do catálogo, a ferramenta sabe qual é
+    { telefone: `={{ ${M}.telefone }}`, jid: `={{ ${M}.jid }}`, citado: "={{ $('Extrair dados').first().json.citado || '' }}" },
     [['tipo', 'Tipo de cabelo pedido: brasileiro do Sul, brasileiro regional, indiano ou vietnamita. Vazio se ela não disse', 'string'],
       ['cor', 'Cor pedida, com as palavras dela (ex.: loiro, loiro mel, castanho, ruivo, morena iluminada). Vazio se não disse', 'string'],
       ['comprimento', 'Comprimento em cm se ela disse (ex.: 60). Vazio se não disse', 'string'],
       ['textura', 'Textura pedida: liso, ondulado ou cacheado. Vazio se não disse', 'string'],
-      ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido', 'string']]));
+      ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido', 'string'],
+      ['mesmo_cabelo', 'sim quando ela pedir MAIS FOTOS DO MESMO cabelo que já viu ("tem mais desse?", "mais fotos dele"): vale a foto que ela respondeu citando ou, sem citar, a última enviada. Vazio nos outros casos', 'string']]));
   workflow.connections.enviar_catalogo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
   return { enviarWorkflow, idFile };
