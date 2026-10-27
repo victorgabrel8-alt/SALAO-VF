@@ -1,7 +1,7 @@
 // Catálogo de fotos de cabelo (supabase/018, cadastrar-catalogo.js).
 // Chamado pelo montar-workflow.js. Devolve 1 workflow e encaixa a tool no principal:
 //   - "Catálogo - Enviar fotos"  subworkflow da tool enviar_catalogo: recebe o pedido (tipo, cor, comprimento,
-//                                 textura), escolhe 2 a 4 fotos que combinam (no máximo 1 por cabelo, sem repetir
+//                                 textura, quantidade), escolhe 1 a 4 fotos que combinam (no máximo 1 por cabelo, sem repetir
 //                                 as que a cliente já recebeu), gera URL assinada do Storage (bucket privado
 //                                 "catalogo") e manda pela Evolution uma por vez, com pausa de gente entre elas.
 //                                 A Evolution baixa a foto direto da URL (nada de base64 passando pelo n8n).
@@ -38,7 +38,7 @@ module.exports = ({ node, str, main, toolSub, workflow }) => {
     name: 'Catálogo - Enviar fotos',
     nodes: [
       node('Recebe pedido da IA', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
-        workflowInputs: { values: ['tipo', 'cor', 'comprimento', 'textura', 'telefone', 'jid'].map((name) => ({ name })) },
+        workflowInputs: { values: ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'telefone', 'jid'].map((name) => ({ name })) },
       }),
       supa('Fotos do catálogo', 'GET', `catalogo?select=arquivo,grupo,tipo,cor,comprimento_cm,textura,legenda,ordem&ativo=eq.true&empresa_id=eq.{{ ${EMPRESA} }}&order=grupo,ordem`, null,
         { executeOnce: true }),
@@ -46,7 +46,7 @@ module.exports = ({ node, str, main, toolSub, workflow }) => {
         "mensagens?select=conteudo,clientes!inner(telefone)&autor=eq.ia&tipo=eq.imagem&clientes.telefone=eq.{{ " + TEL_BR(`${E}.telefone`) + " }}", null,
         { executeOnce: true }),
       node('Escolher fotos', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: String.raw`
-// O pedido da IA (tipo, cor, comprimento, textura) -> 2 a 4 fotos que combinam, no máximo 1 por cabelo,
+// O pedido da IA (tipo, cor, comprimento, textura, quantidade) -> 1 a 4 fotos que combinam, no máximo 1 por cabelo,
 // sem repetir foto que esta cliente já recebeu.
 const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const pedido = $('Recebe pedido da IA').first().json;
@@ -56,6 +56,8 @@ if (!fotos.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: 
 
 const tipo = sem(pedido.tipo); const cor = sem(pedido.cor); const textura = sem(pedido.textura);
 const cm = Number(String(pedido.comprimento || '').replace(/\D/g, '')) || 0;
+// quantas fotos (o prompt pede 1 por tipo como padrão); sem número = até 4
+const maximo = Math.min(4, Math.max(1, Number(String(pedido.quantidade || '').replace(/\D/g, '')) || 4));
 // cores parecidas contam como a mesma família (cliente fala "moreno", "escuro", "preto", "mel"...)
 const FAMILIA = [['loir', 'mel', 'dourad', 'platin', 'claro', 'ombre', 'esfumad', 'mesclad'], ['castanh', 'moren', 'escur', 'pret', 'chocolate', 'natural'],
   ['ruiv', 'acobread', 'cobre', 'ruiva', 'vermelh'], ['grisalh', 'cinza', 'branc'], ['iluminad', 'luzes', 'mechas']];
@@ -104,7 +106,7 @@ const cara = (f) => [f.tipo, sem(f.cor), sem(f.textura), f.comprimento_cm].join(
 const melhor = lista.length ? lista[0].p : 0;
 for (const nivel of [0, 1]) {
   for (const x of lista) {
-    if (escolhidas.length >= 4) break;
+    if (escolhidas.length >= maximo) break;
     if (escolhidas.includes(x.f) || x.p < melhor - 1 && nivel === 0) continue;
     if (nivel === 0 && escolhidas.some((e) => cara(e) === cara(x.f) || (e.tipo === x.f.tipo && sem(e.cor) === sem(x.f.cor) && escolhidas.length < 2))) continue;
     escolhidas.push(x.f);
@@ -162,8 +164,8 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
   return 'FOTOS ENVIADAS: a cliente acabou de receber ' + f.length + ' foto(s) do catálogo (' + f[0].pedido + '): ' +
     f.map(x => x.tipo + ', ' + (x.legenda || x.cor)).join(' | ') + '. ' +
     (f.length < pedidas ? 'Outras ' + (pedidas - f.length) + ' não foram (falha no envio); não comente. ' : '') +
-    'As fotos já falam por si: NÃO descreva uma por uma e NÃO fale preço (preço do cabelo só pela Gleide, via perguntar_para_gleide). ' +
-    'Escreva no máximo uma frase curta e natural, por exemplo perguntando se alguma agradou ou qual comprimento ela imagina. Se a mensagem dela tiver outras perguntas, responda-as.'; })() }}`)] },
+    'São fotos do catálogo do fornecedor (não são estoque do salão nem resultado da Gleide). As fotos e legendas já respondem o pedido: NÃO escreva mensagem só para resumir, descrever ou elogiar as fotos, NÃO pergunte automaticamente de agendamento e NÃO fale preço (preço do cabelo só pela Gleide, via perguntar_para_gleide). ' +
+    'Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).'; })() }}`)] },
         options: {},
       }, { executeOnce: true }),
       node('Resposta (sem foto)', 'n8n-nodes-base.set', 3.4, [0, 0], {
@@ -192,14 +194,15 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
   const lerId = () => (fs.existsSync(idFile) ? fs.readFileSync(idFile, 'utf8').trim() : 'ID_DO_WORKFLOW_CATALOGO');
   const M = "$('Montar entrada').first().json";
   workflow.nodes.push(toolSub('enviar_catalogo', [0, 0],
-    'Manda para a cliente de 2 a 4 FOTOS do catálogo de cabelos que combinam com o pedido (tipo, cor, comprimento, textura). ' +
+    'Busca no catálogo autorizado do fornecedor e manda para a cliente FOTOS de cabelo que combinam com o pedido (tipo, cor, comprimento, textura), uma por vez, com legenda curta. ' +
     'Use quando ela pedir para ver os cabelos, as opções, as cores ou um tipo específico. Não reenvia fotos que ela já recebeu. ' +
-    'A resposta diz se as fotos foram enviadas; nunca fale preço por causa delas.',
-    lerId, ['tipo', 'cor', 'comprimento', 'textura', 'telefone', 'jid'], { telefone: `={{ ${M}.telefone }}`, jid: `={{ ${M}.jid }}` },
+    'A resposta diz se as fotos foram enviadas (FOTOS ENVIADAS / FOTOS NÃO ENVIADAS); nunca fale preço por causa delas.',
+    lerId, ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'telefone', 'jid'], { telefone: `={{ ${M}.telefone }}`, jid: `={{ ${M}.jid }}` },
     [['tipo', 'Tipo de cabelo pedido: brasileiro do Sul, brasileiro regional, indiano ou vietnamita. Vazio se ela não disse', 'string'],
       ['cor', 'Cor pedida, com as palavras dela (ex.: loiro, loiro mel, castanho, ruivo, morena iluminada). Vazio se não disse', 'string'],
       ['comprimento', 'Comprimento em cm se ela disse (ex.: 60). Vazio se não disse', 'string'],
-      ['textura', 'Textura pedida: liso, ondulado ou cacheado. Vazio se não disse', 'string']]));
+      ['textura', 'Textura pedida: liso, ondulado ou cacheado. Vazio se não disse', 'string'],
+      ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido', 'string']]));
   workflow.connections.enviar_catalogo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
   return { enviarWorkflow, idFile };
