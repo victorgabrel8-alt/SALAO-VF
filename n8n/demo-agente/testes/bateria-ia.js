@@ -173,7 +173,7 @@ async function ocupar(c, i, ultima) {
   const inicio = o.quando === 'oferecido' ? oferecido(ultima) : quando(o.quando);
   if (!inicio) throw new Error(`não achei dia e hora na resposta da IA para ocupar: "${ultima}"`);
   const [outra] = await supa('POST', 'clientes', { empresa_id: EMPRESA, telefone: telBanco(o.telefone), nome: 'Outra Cliente Teste' });
-  const [s] = await supa('GET', `servicos?select=id&empresa_id=eq.${EMPRESA}&nome=eq.${encodeURIComponent(o.servico || 'Manutenção de mega hair – mão de obra')}`);
+  const [s] = await supa('GET', `servicos?select=id&empresa_id=eq.${EMPRESA}&nome=eq.${encodeURIComponent(o.servico || 'Manutenção – mão de obra')}`);
   await supa('POST', 'agendamentos', { empresa_id: EMPRESA, cliente_id: outra.id, servico_id: s?.id ?? null, inicio,
     fim: new Date(Date.parse(inicio) + (o.fim_min || 60) * 60e3).toISOString(), status: 'agendado', origem: 'manual' });
   log(`  (outra cliente ocupou ${new Date(inicio).toLocaleString('pt-BR', { timeZone: 'America/Cuiaba', dateStyle: 'short', timeStyle: 'short' })})`);

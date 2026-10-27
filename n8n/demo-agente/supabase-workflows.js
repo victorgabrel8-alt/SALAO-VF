@@ -344,14 +344,23 @@ let melhor = null, nota = 0;
 // Manutenção só se o pedido falar em manutenção ("Tela adesiva" é aplicação). E precisa de pelo menos
 // uma palavra em comum que não seja genérica ("Corte de cabelo" não vira "Visita para escolher cabelo").
 const GENERICAS = ['cabelo', 'mega', 'hair'];
+// e o contrário: pediu manutenção, só serviço de manutenção ("Manutenção de mega hair – mão de obra" tem mais
+// palavras em comum com "Aplicação de mega hair – mão de obra" do que com "Manutenção – mão de obra")
+const temManutencao = servicos.some((s) => palavras(s.nome).includes('manutencao'));
 for (const s of servicos) {
   const ps = palavras(s.nome);
   if (ps.includes('manutencao') && !alvo.includes('manutencao')) continue;
+  if (!ps.includes('manutencao') && alvo.includes('manutencao') && temManutencao) continue;
   const comuns = ps.filter((p) => alvo.includes(p));
   if (!comuns.some((p) => !GENERICAS.includes(p))) continue;
   const n = comuns.length / new Set([...ps, ...alvo]).size;
   if (n > nota) { melhor = s; nota = n; }
 }
+// mão de obra é um serviço só para qualquer técnica (supabase/021): "Mega hair com queratina", "Fita adesiva"
+// sem nada parecido vira a aplicação (ou a manutenção, se pediu manutenção)
+const TECNICA = ['mega', 'hair', 'queratina', 'fita', 'tela', 'adesiva', 'costurada', 'ponto', 'americano', 'aplicacao'];
+if (!melhor && alvo.some((p) => TECNICA.includes(p)))
+  melhor = servicos.find((s) => palavras(s.nome).includes(alvo.includes('manutencao') ? 'manutencao' : 'aplicacao')) || null;
 // a ficha é criada na 1ª mensagem (n8n_registrar_entrada); sem ela não há onde marcar
 if (!cliente.id) return [{ json: { pular: true, motivo: 'cliente não está no Supabase' } }];
 const obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');
