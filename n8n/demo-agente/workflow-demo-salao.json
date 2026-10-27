@@ -2892,7 +2892,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000226",
+      "id": "00000000-0000-4000-8000-000000000242",
       "name": "perguntar_para_gleide",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2975,7 +2975,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000227",
+      "id": "00000000-0000-4000-8000-000000000243",
       "name": "Pedido: procurar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2999,7 +2999,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000228",
+      "id": "00000000-0000-4000-8000-000000000244",
       "name": "É resposta da Gleide?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3033,7 +3033,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000229",
+      "id": "00000000-0000-4000-8000-000000000245",
       "name": "Pedido: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3046,7 +3046,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000230",
+      "id": "00000000-0000-4000-8000-000000000246",
       "name": "Pedido: escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3076,7 +3076,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000231",
+      "id": "00000000-0000-4000-8000-000000000247",
       "name": "Pedido: texto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3089,7 +3089,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000232",
+      "id": "00000000-0000-4000-8000-000000000248",
       "name": "Pedido: enviar à cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3121,7 +3121,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000233",
+      "id": "00000000-0000-4000-8000-000000000249",
       "name": "Pedido: registrar saída",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3153,7 +3153,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000234",
+      "id": "00000000-0000-4000-8000-000000000250",
       "name": "Pedido: memória (resposta da Gleide)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3176,7 +3176,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000235",
+      "id": "00000000-0000-4000-8000-000000000251",
       "name": "Pedido: memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3199,7 +3199,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000236",
+      "id": "00000000-0000-4000-8000-000000000252",
       "name": "Pedido: apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3220,7 +3220,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000237",
+      "id": "00000000-0000-4000-8000-000000000253",
       "name": "Pedido: confirmar à Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3252,7 +3252,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000238",
+      "id": "00000000-0000-4000-8000-000000000254",
       "name": "Pedido: seguir normal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3265,7 +3265,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000242",
+      "id": "00000000-0000-4000-8000-000000000258",
       "name": "IA falhou? (alerta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3299,7 +3299,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000243",
+      "id": "00000000-0000-4000-8000-000000000259",
       "name": "Avisar Victor (IA falhou)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3331,7 +3331,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000244",
+      "id": "00000000-0000-4000-8000-000000000260",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3355,7 +3355,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000245",
+      "id": "00000000-0000-4000-8000-000000000261",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3368,7 +3368,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000246",
+      "id": "00000000-0000-4000-8000-000000000262",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3402,7 +3402,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000247",
+      "id": "00000000-0000-4000-8000-000000000263",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3422,7 +3422,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000248",
+      "id": "00000000-0000-4000-8000-000000000264",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3435,7 +3435,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000249",
+      "id": "00000000-0000-4000-8000-000000000265",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3457,7 +3457,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000250",
+      "id": "00000000-0000-4000-8000-000000000266",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
