@@ -11,7 +11,8 @@ const env = Object.fromEntries(
     .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]),
 );
 
-const md = fs.readFileSync(path.join(dir, 'prompt-agente.md'), 'utf8');
+// sem \r: no Windows o Git baixa o .md com CRLF e o prompt no n8n ficaria diferente do publicado pelo Linux
+const md = fs.readFileSync(path.join(dir, 'prompt-agente.md'), 'utf8').replace(/\r\n/g, '\n');
 const prompt = md.match(/```text\r?\n([\s\S]*?)```/)[1].trim();
 
 const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };

@@ -65,7 +65,8 @@ const pontos = (f) => {
   let p = 0;
   const ft = sem(f.tipo);
   if (tipo) {
-    if (tipo.includes('sul') || tipo.includes('regional')) p += ft === tipo ? 4 : ft.startsWith('brasileiro') ? 2 : -4;
+    // "brasileiro" sem Sul/regional ainda não foi separado: serve para os dois
+    if (tipo.includes('sul') || tipo.includes('regional')) p += ft === tipo || ft === 'brasileiro' ? 4 : ft.startsWith('brasileiro') ? 2 : -4;
     else if (tipo.includes('brasil')) p += ft.startsWith('brasileiro') ? 4 : -4;
     else p += ft.includes(tipo.slice(0, 5)) ? 4 : -4;
   }
@@ -78,9 +79,10 @@ const pontos = (f) => {
   }
   if (textura) {
     const a = famTex(textura); const b = famTex(sem(f.textura));
-    if (sem(f.textura) === textura) p += 3; else if (a && a === b) p += 2; else if (a && b) p -= 3;
+    // "ondulado" serve para "levemente ondulado" (e vice-versa): mesma família vale como acerto
+    if (sem(f.textura) === textura || (a && a === b)) p += 3; else if (a && b) p -= 3;
   }
-  if (cm && f.comprimento_cm) { const d = Math.abs(f.comprimento_cm - cm); p += d <= 5 ? 2 : d <= 10 ? 1 : d > 20 ? -2 : 0; }
+  if (cm && f.comprimento_cm) { const d = Math.abs(f.comprimento_cm - cm); p += d === 0 ? 3 : d <= 5 ? 2 : d <= 10 ? 1 : d > 20 ? -2 : 0; }
   return p;
 };
 const exigido = (tipo ? 4 : 0) + (cor ? 2 : 0);
@@ -96,7 +98,18 @@ for (const f of fotos) {
 // cabelo que já teve foto enviada vai para o fim da fila (variedade antes de repetir o mesmo cabelo)
 const jaViuGrupo = (g) => enviados.includes('[foto do catálogo: ' + g + '/');
 const lista = Object.values(porGrupo).sort((a, b) => (jaViuGrupo(a.f.grupo) - jaViuGrupo(b.f.grupo)) || b.p - a.p || a.f.grupo.localeCompare(b.f.grupo));
-const escolhidas = lista.slice(0, 4).map((x) => x.f);
+// variedade: entre as que combinam igual (até 1 ponto da melhor), prefere tipo/cor/comprimento que ainda não foi
+const escolhidas = [];
+const cara = (f) => [f.tipo, sem(f.cor), sem(f.textura), f.comprimento_cm].join('|');
+const melhor = lista.length ? lista[0].p : 0;
+for (const nivel of [0, 1]) {
+  for (const x of lista) {
+    if (escolhidas.length >= 4) break;
+    if (escolhidas.includes(x.f) || x.p < melhor - 1 && nivel === 0) continue;
+    if (nivel === 0 && escolhidas.some((e) => cara(e) === cara(x.f) || (e.tipo === x.f.tipo && sem(e.cor) === sem(x.f.cor) && escolhidas.length < 2))) continue;
+    escolhidas.push(x.f);
+  }
+}
 const pedidoTxt = [pedido.tipo, pedido.cor, pedido.textura, pedido.comprimento && (cm ? cm + ' cm' : pedido.comprimento)].filter(Boolean).join(', ') || 'sem filtro';
 if (!escolhidas.length) {
   const algumaJa = fotos.some((f) => enviados.includes('[foto do catálogo: ' + f.arquivo + ']') && pontos(f) >= exigido);
@@ -135,7 +148,7 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
       }, { onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 2000 }),
       // só vai para o CRM (e conta como "já enviada") a foto que a Evolution aceitou
       node('Enviadas', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
-        "const fotos = $('Gerou URL?').all();",
+        "const fotos = $('Montar envios').all().filter((i) => i.json.url);",
         "return $input.all().map((r, i) => ({ json: { ...fotos[i].json, wa_id: r.json.key?.id || null } })).filter((x) => x.json.wa_id);",
       ].join('\n') }, { alwaysOutputData: true }),
       ifNode('Enviou alguma?', '!!$json.wa_id'),

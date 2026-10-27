@@ -25,7 +25,7 @@ if (!pasta || !fs.existsSync(pasta)) {
 }
 const FICHAS = path.join(__dirname, 'catalogo-fichas.json');
 const H = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}` };
-const TIPOS = ['brasileiro do Sul', 'brasileiro regional', 'indiano', 'vietnamita'];
+const TIPOS = ['brasileiro', 'brasileiro do Sul', 'brasileiro regional', 'indiano', 'vietnamita'];
 const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const barra = (p) => p.split(path.sep).join('/');
 
@@ -55,7 +55,7 @@ function lerPasta() {
 function sugerirFicha({ grupo, info }) {
   const t = sem(`${info.titulo || ''} ${grupo.replace(/[-/]/g, ' ')}`);
   const tipo = /vietnamit|vietnamir/.test(t) ? 'vietnamita' : /indian/.test(t) ? 'indiano'
-    : /brasileir/.test(t) || info.origem === 'brasileiro' ? '' : (info.origem === 'indiano' || info.origem === 'vietnamita' ? info.origem : '');
+    : /brasileir/.test(t) || info.origem === 'brasileiro' ? 'brasileiro' : (info.origem === 'indiano' || info.origem === 'vietnamita' ? info.origem : '');
   const cor = (t.match(/loiro mel dourado|loiro medio dourado|loiro mel mesclado|loiro mel|loiro mesclado raiz esfumada|loiro raiz esfumada|loiro ondulado mesclado|loiro mesclado|loiro ombre|loiro|castanho|catanho|chocolate raiz esfumada|ruivo|morena iluminad[oa] mesclado|morena iluminad[oa]|grisalho|mesclado/) || [''])[0]
     .replace('catanho', 'castanho').replace(/morena iluminad[oa]/, 'morena iluminada').replace(/^mesclado$/, 'loiro mesclado')
     .replace('loiro medio', 'loiro médio').replace('loiro ombre', 'loiro ombré').replace('loiro ondulado mesclado', 'loiro mesclado');
@@ -146,7 +146,7 @@ function otimizar(arquivo) {
         enviadas++; bytes += dados.length;
         if (enviadas % 25 === 0) console.log(`  ${enviadas} foto(s) enviadas...`);
       }
-      linhas.push({ empresa_id: env.EMPRESA_ID, arquivo, grupo: f.grupo, tipo: TIPOS.includes(f.tipo) ? f.tipo : 'brasileiro regional',
+      linhas.push({ empresa_id: env.EMPRESA_ID, arquivo, grupo: f.grupo, tipo: TIPOS.includes(f.tipo) ? f.tipo : 'brasileiro',
         cor: f.cor || '', comprimento_cm: f.comprimento_cm || null, textura: f.textura || '', legenda: f.legenda || '',
         ativo, ordem: i + 1, atualizado_em: new Date().toISOString() });
     }
