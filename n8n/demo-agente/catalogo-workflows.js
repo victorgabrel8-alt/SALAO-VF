@@ -50,6 +50,8 @@ module.exports = ({ node, str, main, toolSub, workflow }) => {
 // sem repetir foto que esta cliente já recebeu.
 const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const pedido = { ...$('Recebe pedido da IA').first().json };
+// o Gemini às vezes deixa pedaço de chamada de ferramenta num campo ("}call:default_api:..."): vira vazio
+for (const k of ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo']) if (/call:|default_api|[{}]/.test(String(pedido[k] || ''))) pedido[k] = '';
 const fotos = $('Fotos do catálogo').all().map((i) => i.json).filter((f) => f.arquivo);
 const enviados = $('Já enviadas a ela').all().map((i) => i.json.conteudo || '').join(' ');
 if (!fotos.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: o catálogo de fotos está vazio ou não carregou. Responda em texto, sem prometer foto.' } }];
@@ -72,7 +74,7 @@ if (/^s/.test(sem(pedido.mesmo_cabelo))) {
   const mesmas = fotos.filter((f) => f.grupo === ref.grupo && !enviados.includes('[foto do catálogo: ' + f.arquivo + ']'))
     .sort((a, b) => a.ordem - b.ordem).slice(0, Math.min(2, maximo));
   if (!mesmas.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: não há outras fotos desse mesmo cabelo (' + nome + '); ela já viu todas. Diga isso em texto, curto, e não mande outro cabelo como se fosse o mesmo; se ela quiser, ofereça ver um parecido, avisando o que muda.' } }];
-  return mesmas.map((f, i) => ({ json: { ok: true, ...f, pedido: 'mais fotos do mesmo cabelo: ' + nome, total: mesmas.length, posicao: i + 1,
+  return mesmas.map((f, i) => ({ json: { ok: true, ...f, pedido: 'mais fotos do mesmo cabelo: ' + nome, total: mesmas.length, posicao: i + 1, sem_legenda: i > 0,
     delay: 1200 + Math.floor(Math.random() * 1500) } }));
 }
 // cores parecidas contam como a mesma família (cliente fala "moreno", "escuro", "preto", "mel"...)
@@ -162,7 +164,7 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
         method: 'POST', url: '={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ $env.EVOLUTION_INSTANCE }}',
         sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
         sendBody: true, specifyBody: 'json',
-        jsonBody: "={{ JSON.stringify({ number: $json.jid, mediatype: 'image', mimetype: 'image/jpeg', media: $json.url, fileName: 'cabelo-' + $json.posicao + '.jpg', caption: $json.total > 1 ? ($json.legenda || '') : '', delay: $json.delay }) }}",
+        jsonBody: "={{ JSON.stringify({ number: $json.jid, mediatype: 'image', mimetype: 'image/jpeg', media: $json.url, fileName: 'cabelo-' + $json.posicao + '.jpg', caption: $json.total > 1 && !$json.sem_legenda ? ($json.legenda || '') : '', delay: $json.delay }) }}",
         options: { batching: { batch: { batchSize: 1, batchInterval: 3500 } }, timeout: 60000 },
       }, { onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 2000 }),
       // só vai para o CRM (e conta como "já enviada") a foto que a Evolution aceitou
@@ -220,9 +222,9 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
     [['tipo', 'Tipo de cabelo pedido: brasileiro do Sul, brasileiro regional, indiano ou vietnamita. Vazio se ela não disse', 'string'],
       ['cor', 'Cor pedida, com as palavras dela (ex.: loiro, loiro mel, castanho, ruivo, morena iluminada). Vazio se não disse', 'string'],
       ['comprimento', 'Comprimento em cm se ela disse (ex.: 60). Vazio se não disse', 'string'],
-      ['textura', 'Textura pedida: liso, ondulado ou cacheado. Vazio se não disse', 'string'],
+      ['textura', 'Textura pedida: liso, ondulado ou cacheado. Cachos (abertos ou fechados) = cacheado; só ondas = ondulado. Vazio se não disse', 'string'],
       ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido', 'string'],
-      ['mesmo_cabelo', 'sim quando ela pedir MAIS FOTOS DO MESMO cabelo que já viu ("tem mais desse?", "mais fotos dele"): vale a foto que ela respondeu citando ou, sem citar, a última enviada. Vazio nos outros casos', 'string']]));
+      ['mesmo_cabelo', 'sim quando ela pedir MAIS FOTOS DO MESMO cabelo que já viu ("tem mais desse?", "mais fotos dele"): vale a foto que ela respondeu citando ou, sem citar, a última enviada. NÃO use se ela disse que a foto não é o que quer ("parece mais liso", "queria mais cacheado", "outra cor"): aí peça de novo com a textura/cor que ela quer. Vazio nos outros casos', 'string']]));
   workflow.connections.enviar_catalogo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
   return { enviarWorkflow, idFile };
