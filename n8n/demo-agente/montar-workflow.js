@@ -525,8 +525,8 @@ const nodes = [
     lerPausaId, ['telefone', 'motivo', 'resumo', 'o_que_precisa'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [['motivo', 'Motivo curto, até 12 palavras (ex.: quer avaliação à distância, mora longe)', 'string'],
-      ['resumo', 'Resumo para a Gleide em 2 a 4 frases curtas: quem é (nova ou já cliente), o que quer, o que você já explicou ou enviou (áudio, preço) e as fotos que ela mandou. Sem diagnóstico.', 'string'],
-      ['o_que_precisa', 'O que a Gleide precisa decidir ou responder, numa frase (ex.: dizer se dá para orientar por foto ou vídeo)', 'string']]),
+      ['resumo', 'Uma frase curta, até 20 palavras, só com o que a Gleide não sabe pelo pedido: nova ou já cliente, horário marcado, o que você já explicou ou enviou (áudio, preço, fotos). Não repita o pedido. Sem diagnóstico.', 'string'],
+      ['o_que_precisa', 'O que a Gleide precisa fazer, direto, até 15 palavras (ex.: Dizer se dá para orientar por foto)', 'string']]),
 
   // Só áudio nesta resposta ([SEM TEXTO]): não manda balão, só libera a trava
   ifNode('Tem texto pra enviar?', [0, 0], [

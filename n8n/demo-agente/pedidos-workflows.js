@@ -35,8 +35,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
         sendHeaders: true, headerParameters: supaHeaders, options: {},
       }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
       enviar('Enviar pergunta à Gleide', [440, 0], '$json.alerta',
-        `'❓ Pergunta da ' + (${P}.nome || 'cliente') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n(' + ${P}.contexto + ')' : '') +
-        '\\n\\nSegure esta mensagem, toque em *Responder* e escreva o que posso dizer a ela. Eu passo pra ela e sigo o atendimento.'`),
+        `'❓ ' + (${P}.nome || 'Cliente') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
+        '\\n\\n↩️ Toque em Responder e escreva a resposta.'`),
       node('Guardar pedido', 'n8n-nodes-base.redis', 1, [660, 0], {
         operation: 'set', key: "=pedido:{{ $json.key?.id || 'falhou' }}", expire: true, ttl: 259200,
         value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta }) }}`,
@@ -65,8 +65,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
       nome: "={{ $('Montar entrada').first().json.nome }}" },
-    [['pergunta', 'A pergunta para a Gleide, curta e direta, como a cliente quis saber (ex.: Pode trazer a cachorrinha no dia da avaliação? Ela não tem com quem deixar.)', 'string'],
-      ['contexto', 'Contexto útil em poucas palavras, se houver (ex.: avaliação quinta 29/10 às 9h). Pode ficar vazio.', 'string']]));
+    [['pergunta', 'A pergunta direta para a Gleide, até 15 palavras, sem "a cliente quer saber" nem o nome dela (ex.: Pode trazer cachorro de porte grande na avaliação?)', 'string'],
+      ['contexto', 'Só o que a Gleide precisa e não está na pergunta, até 8 palavras (ex.: avaliação qui 29/10 9h). Não repita a pergunta. Pode ficar vazio.', 'string']]));
   workflow.connections.perguntar_para_gleide = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
   // ---------- Principal: resposta da Gleide (mensagem citando a pergunta) ----------
