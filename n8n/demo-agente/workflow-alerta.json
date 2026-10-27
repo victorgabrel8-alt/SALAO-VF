@@ -2,7 +2,23 @@
   "name": "Alerta de erro",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000218",
+      "id": "00000000-0000-4000-9000-000000000012",
+      "name": "Nota 12",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Alerta de erro\nQuando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).",
+        "width": 900,
+        "height": 146,
+        "color": 3
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000239",
       "name": "Execução falhou",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -13,12 +29,12 @@
       "parameters": {}
     },
     {
-      "id": "00000000-0000-4000-8000-000000000219",
+      "id": "00000000-0000-4000-8000-000000000240",
       "name": "Montar alerta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        300,
         0
       ],
       "parameters": {
@@ -26,12 +42,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000220",
+      "id": "00000000-0000-4000-8000-000000000241",
       "name": "Avisar no WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
+        600,
         0
       ],
       "parameters": {

@@ -2,7 +2,23 @@
   "name": "Áudios prontos - Enviar",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000095",
+      "id": "00000000-0000-4000-9000-000000000008",
+      "name": "Nota 8",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Áudios prontos - Enviar\nChamado pelo agente (enviar_audio): acha o áudio do tema na lista do app, baixa do Storage e manda no WhatsApp da cliente.",
+        "width": 1400,
+        "height": 146,
+        "color": 2
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000100",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -30,12 +46,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000096",
+      "id": "00000000-0000-4000-8000-000000000101",
       "name": "Catálogo de áudios",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        300,
         0
       ],
       "parameters": {
@@ -65,12 +81,12 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000097",
+      "id": "00000000-0000-4000-8000-000000000102",
       "name": "Já enviados a ela",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        600,
         0
       ],
       "parameters": {
@@ -100,12 +116,12 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000098",
+      "id": "00000000-0000-4000-8000-000000000103",
       "name": "Achar áudio",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
+        900,
         0
       ],
       "parameters": {
@@ -113,12 +129,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000099",
+      "id": "00000000-0000-4000-8000-000000000104",
       "name": "Tem áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        0,
+        1200,
         0
       ],
       "parameters": {
@@ -147,12 +163,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000100",
+      "id": "00000000-0000-4000-8000-000000000105",
       "name": "Baixar do Storage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        1500,
         0
       ],
       "parameters": {
@@ -182,12 +198,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000101",
+      "id": "00000000-0000-4000-8000-000000000106",
       "name": "Para base64",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
       "position": [
-        0,
+        1800,
         0
       ],
       "parameters": {
@@ -197,12 +213,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000102",
+      "id": "00000000-0000-4000-8000-000000000107",
       "name": "Gravando (blocos de 8s)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
+        2100,
         0
       ],
       "parameters": {
@@ -210,12 +226,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000103",
+      "id": "00000000-0000-4000-8000-000000000108",
       "name": "Gravando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        2400,
         0
       ],
       "parameters": {
@@ -245,12 +261,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000104",
+      "id": "00000000-0000-4000-8000-000000000109",
       "name": "Enviar áudio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        2700,
         0
       ],
       "parameters": {
@@ -277,12 +293,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000105",
+      "id": "00000000-0000-4000-8000-000000000110",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        0,
+        3000,
         0
       ],
       "parameters": {
@@ -311,12 +327,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000106",
+      "id": "00000000-0000-4000-8000-000000000111",
       "name": "Registrar no CRM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        3300,
         0
       ],
       "parameters": {
@@ -346,12 +362,12 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000107",
+      "id": "00000000-0000-4000-8000-000000000112",
       "name": "Resposta (enviado)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        0,
+        3600,
         0
       ],
       "parameters": {
@@ -369,13 +385,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000108",
+      "id": "00000000-0000-4000-8000-000000000113",
       "name": "Resposta (sem áudio)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        0,
-        0
+        1500,
+        200
       ],
       "parameters": {
         "assignments": {
@@ -545,6 +561,7 @@
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "WLbjR5DvKLRVPVX8"
   }
 }

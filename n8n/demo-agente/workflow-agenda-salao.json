@@ -2,34 +2,18 @@
   "name": "Agenda Salão (ferramentas do agente)",
   "nodes": [
     {
-      "id": "00000000-0000-4000-9000-000000000008",
-      "name": "Nota 8",
+      "id": "00000000-0000-4000-9000-000000000002",
+      "name": "Nota 2",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
-        -60,
-        -160
+        -40,
+        -232
       ],
       "parameters": {
-        "content": "## 1. Lê a agenda do app\nChamado pelas ferramentas do agente.\nSupabase: horários ocupados (IA + Gleide) · horário do salão · horários desta cliente.\n**Calcular** = regras de `agenda-calculo.js` (expediente, almoço, bloqueios, faixas livres).",
-        "width": 1340,
-        "height": 360,
-        "color": 5
-      }
-    },
-    {
-      "id": "00000000-0000-4000-9000-000000000009",
-      "name": "Nota 9",
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        1280,
-        -340
-      ],
-      "parameters": {
-        "content": "## 2. Executa a ação no app\n**criar** → novo horário (origem IA) · **cancelar** → status cancelado · **remarcar** → move o MESMO horário\nConsultar/ver → só devolve o texto (Resposta).",
-        "width": 1820,
-        "height": 900,
+        "content": "## Agenda (ferramentas do agente)\nChamado pelo agente para consultar horários livres, ver, marcar, remarcar ou cancelar.\nLê a agenda do app (Supabase), aplica as regras do salão (expediente, almoço, dias bloqueados) e grava o resultado.",
+        "width": 1400,
+        "height": 172,
         "color": 4
       }
     },
@@ -86,7 +70,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        300,
         0
       ],
       "parameters": {
@@ -99,7 +83,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1100,
+        1500,
         0
       ],
       "parameters": {
@@ -112,7 +96,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1320,
+        1800,
         0
       ],
       "parameters": {
@@ -155,8 +139,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1540,
-        120
+        2100,
+        200
       ],
       "parameters": {
         "conditions": {
@@ -198,8 +182,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1760,
-        260
+        2400,
+        400
       ],
       "parameters": {
         "conditions": {
@@ -241,8 +225,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2860,
-        -180
+        3900,
+        0
       ],
       "parameters": {
         "assignments": {
@@ -264,8 +248,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1980,
-        40
+        2700,
+        200
       ],
       "parameters": {
         "assignments": {
@@ -287,8 +271,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2200,
-        200
+        3000,
+        400
       ],
       "parameters": {
         "assignments": {
@@ -310,8 +294,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1980,
-        400
+        2700,
+        600
       ],
       "parameters": {
         "assignments": {
@@ -328,12 +312,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000084",
+      "id": "00000000-0000-4000-8000-000000000089",
       "name": "Supabase: horários ocupados",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
+        600,
         0
       ],
       "parameters": {
@@ -367,12 +351,12 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000085",
+      "id": "00000000-0000-4000-8000-000000000090",
       "name": "Supabase: config do salão",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        660,
+        900,
         0
       ],
       "parameters": {
@@ -407,12 +391,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000086",
+      "id": "00000000-0000-4000-8000-000000000091",
       "name": "Supabase: agendamentos da cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
+        1200,
         0
       ],
       "parameters": {
@@ -446,13 +430,13 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000087",
+      "id": "00000000-0000-4000-8000-000000000092",
       "name": "Supabase: cliente e serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1540,
-        -180
+        2100,
+        0
       ],
       "parameters": {
         "method": "GET",
@@ -485,13 +469,13 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000088",
+      "id": "00000000-0000-4000-8000-000000000093",
       "name": "Supabase: serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1760,
-        -180
+        2400,
+        0
       ],
       "parameters": {
         "method": "GET",
@@ -525,13 +509,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000089",
+      "id": "00000000-0000-4000-8000-000000000094",
       "name": "Supabase: profissionais",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
-        -180
+        2700,
+        0
       ],
       "parameters": {
         "method": "GET",
@@ -565,26 +549,26 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000090",
+      "id": "00000000-0000-4000-8000-000000000095",
       "name": "Montar agendamento",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2200,
-        -180
+        3000,
+        0
       ],
       "parameters": {
         "jsCode": "\n// Serviço: o da lista do Supabase mais parecido com o que a IA escreveu, pela proporção de\n// palavras em comum (desempata nomes parecidos: \"Manutenção de queratina\" -> \"Manutenção – queratina\",\n// \"Mega hair com queratina\" -> \"Aplicação de mega hair – queratina\"). Sem nada parecido: fica sem\n// serviço e o nome vai nas observações (o CRM mostra; a Gleide ajusta no ✓).\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));\nconst pedido = $('Preparar').first().json;\nconst horario = $('Calcular').first().json.evento;\nconst cliente = $('Supabase: cliente e serviços').first().json;\nconst servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);\nconst prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);\nconst alvo = palavras(pedido.servico);\n// A IA às vezes manda só \"Queratina\" e deixa o \"manutenção\" no motivo (\"manutenção queratina\"):\n// sem isso virava a aplicação (240 min, outro preço e outro retorno)\nif (!alvo.includes('manutencao') && palavras(pedido.motivo).includes('manutencao')) alvo.push('manutencao');\nlet melhor = null, nota = 0;\n// Manutenção só se o pedido falar em manutenção (\"Tela adesiva\" é aplicação). E precisa de pelo menos\n// uma palavra em comum que não seja genérica (\"Corte de cabelo\" não vira \"Visita para escolher cabelo\").\nconst GENERICAS = ['cabelo', 'mega', 'hair'];\nfor (const s of servicos) {\n  const ps = palavras(s.nome);\n  if (ps.includes('manutencao') && !alvo.includes('manutencao')) continue;\n  const comuns = ps.filter((p) => alvo.includes(p));\n  if (!comuns.some((p) => !GENERICAS.includes(p))) continue;\n  const n = comuns.length / new Set([...ps, ...alvo]).size;\n  if (n > nota) { melhor = s; nota = n; }\n}\n// a ficha é criada na 1ª mensagem (n8n_registrar_entrada); sem ela não há onde marcar\nif (!cliente.id) return [{ json: { pular: true, motivo: 'cliente não está no Supabase' } }];\nconst obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');\nreturn [{ json: { pular: false, corpo: {\n  empresa_id: $env.EMPRESA_ID, cliente_id: cliente.id, servico_id: melhor ? melhor.id : null,\n  profissional_id: prof[0] ? prof[0].id : null,\n  inicio: horario.start.dateTime, fim: horario.end.dateTime,\n  status: 'agendado', origem: 'ia', observacoes: obs || null,\n} } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000091",
+      "id": "00000000-0000-4000-8000-000000000096",
       "name": "Supabase: gravar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2420,
-        -180
+        3300,
+        0
       ],
       "parameters": {
         "method": "POST",
@@ -617,13 +601,13 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000092",
+      "id": "00000000-0000-4000-8000-000000000097",
       "name": "Supabase: nome da cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2640,
-        -180
+        3600,
+        0
       ],
       "parameters": {
         "method": "PATCH",
@@ -656,13 +640,13 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000093",
+      "id": "00000000-0000-4000-8000-000000000098",
       "name": "Supabase: cancelar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1760,
-        40
+        2400,
+        200
       ],
       "parameters": {
         "method": "PATCH",
@@ -695,13 +679,13 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000094",
+      "id": "00000000-0000-4000-8000-000000000099",
       "name": "Supabase: remarcar agendamento",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
-        200
+        2700,
+        400
       ],
       "parameters": {
         "method": "PATCH",
@@ -948,6 +932,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "WLbjR5DvKLRVPVX8"
   }
 }
