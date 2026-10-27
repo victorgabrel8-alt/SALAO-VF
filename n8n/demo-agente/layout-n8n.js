@@ -1,85 +1,144 @@
-// Organização visual dos workflows no n8n: posição de cada nó + notas coloridas por etapa.
-// Chamado pelo montar-workflow.js antes de gravar/enviar. Nó novo sem posição aqui gera um aviso.
+// Organização visual dos workflows no n8n (só visual, não muda o que o fluxo faz).
+// Chamado pelo montar-workflow.js antes de gravar/enviar. Organiza TODOS os workflows sozinho, então nó novo
+// já entra no lugar certo sem precisar de posição escrita à mão:
+//   - o fluxo anda da esquerda para a direita, na ordem das ligações (cada coluna = um passo);
+//   - quando o fluxo se divide (sim/não), cada saída vai para uma linha diferente, de cima para baixo;
+//   - ferramentas, modelo e memória de um agente ficam numa grade logo abaixo dele;
+//   - uma nota no topo explica o que o workflow faz e quando ele roda.
 // Cores das notas no n8n: 1 amarelo, 2 laranja, 3 vermelho, 4 verde, 5 azul, 6 roxo, 7 cinza
+
+const COLUNA = 300; // distância entre um passo e o seguinte
+const LINHA = 200; // distância entre linhas (nós empilhados no mesmo passo)
+const SUB_X = 180; // grade das ferramentas do agente
+const SUB_Y = 160;
+const SUB_COLUNAS = 4;
+const POR_LINHA = 14; // passos por faixa: fluxo comprido quebra em faixas, uma embaixo da outra (como um texto)
+const ENTRE_FAIXAS = 260;
+const NOTA = 'n8n-nodes-base.stickyNote';
+const grade = (v) => Math.round(v / 20) * 20;
 
 let nNota = 0;
 const nota = (x, y, w, h, color, content) => ({
   id: `00000000-0000-4000-9000-${String(++nNota).padStart(12, '0')}`, name: `Nota ${nNota}`,
-  type: 'n8n-nodes-base.stickyNote', typeVersion: 1, position: [x, y], parameters: { content, width: w, height: h, color },
+  type: NOTA, typeVersion: 1, position: [x, y], parameters: { content, width: w, height: h, color },
 });
 
-const organizar = (wf, pos, notas) => {
-  for (const nd of wf.nodes) if (pos[nd.name]) nd.position = pos[nd.name];
-  const semPos = wf.nodes.filter((nd) => !pos[nd.name]).map((nd) => nd.name);
-  if (semPos.length) console.warn(`[layout] ${wf.name}: sem posição definida para ${semPos.join(', ')}`);
-  wf.nodes = [...notas, ...wf.nodes];
+const organizar = (wf, titulo, texto, cor = 7) => {
+  const nos = wf.nodes.filter((n) => n.type !== NOTA);
+  const porNome = Object.fromEntries(nos.map((n) => [n.name, n]));
+
+  // ligações: "main" é o caminho do fluxo; ai_tool/ai_memory/ai_languageModel ligam um sub-nó ao agente
+  const saidas = {}; const entradas = {}; const subs = {}; const temMain = new Set();
+  for (const [origem, porTipo] of Object.entries(wf.connections || {})) {
+    if (!porNome[origem]) continue;
+    for (const [tipo, listas] of Object.entries(porTipo)) {
+      (listas || []).forEach((lista, i) => (lista || []).forEach((l) => {
+        if (!porNome[l.node]) return;
+        if (tipo === 'main') {
+          (saidas[origem] ||= []).push({ no: l.node, saida: i });
+          (entradas[l.node] ||= []).push(origem);
+          temMain.add(origem); temMain.add(l.node);
+        } else if (!(subs[l.node] ||= []).includes(origem)) subs[l.node].push(origem);
+      }));
+    }
+  }
+  const eSub = new Set(Object.values(subs).flat().filter((n) => !temMain.has(n)));
+  const principais = nos.map((n) => n.name).filter((n) => !eSub.has(n));
+
+  // ligações que voltam para trás (laço de nova tentativa) não contam para a ordem das colunas
+  const volta = new Set(); const visto = new Set(); const naPilha = new Set();
+  const dfs = (n) => {
+    visto.add(n); naPilha.add(n);
+    for (const { no } of saidas[n] || []) {
+      if (naPilha.has(no)) volta.add(`${n}>${no}`);
+      else if (!visto.has(no)) dfs(no);
+    }
+    naPilha.delete(n);
+  };
+  for (const n of principais) if (!(entradas[n] || []).length && !visto.has(n)) dfs(n);
+  for (const n of principais) if (!visto.has(n)) dfs(n);
+  const antes = (n) => (entradas[n] || []).filter((o) => !volta.has(`${o}>${n}`));
+
+  // coluna = o caminho mais longo desde o começo do fluxo
+  const coluna = {};
+  const calcular = (n, seen = new Set()) => {
+    if (coluna[n] !== undefined) return coluna[n];
+    if (seen.has(n)) return 0;
+    seen.add(n);
+    const ps = antes(n);
+    coluna[n] = ps.length ? Math.max(...ps.map((p) => calcular(p, seen) + 1)) : 0;
+    return coluna[n];
+  };
+  principais.forEach((n) => calcular(n));
+
+  // largura de cada coluna e altura de cada nó (agente com ferramentas ocupa mais)
+  const nCol = Math.max(0, ...Object.values(coluna)) + 1;
+  const largura = Array(nCol).fill(COLUNA);
+  const altura = {};
+  for (const n of principais) {
+    const k = (subs[n] || []).filter((s) => eSub.has(s)).length;
+    const cols = Math.min(k, SUB_COLUNAS);
+    altura[n] = LINHA + (k ? Math.ceil(k / SUB_COLUNAS) * SUB_Y + 60 : 0);
+    if (k) largura[coluna[n]] = Math.max(largura[coluna[n]], (cols - 1) * SUB_X + COLUNA);
+  }
+  const xCol = []; largura.reduce((x, w, i) => { xCol[i] = x; return x + w; }, 0);
+
+  // linha: cada nó tenta ficar na altura de quem vem antes dele (a 2ª saída de um "sim/não" desce uma linha)
+  const y = {};
+  for (let c = 0; c < nCol; c++) {
+    const daColuna = principais.filter((n) => coluna[n] === c).map((n, i) => {
+      const desejos = antes(n).filter((p) => y[p] !== undefined).map((p) => {
+        const s = (saidas[p] || []).find((l) => l.no === n);
+        return y[p] + (s ? s.saida : 0) * LINHA;
+      });
+      return { n, desejo: desejos.length ? Math.min(...desejos) : Infinity, i };
+    }).sort((a, b) => a.desejo - b.desejo || a.i - b.i);
+    let cursor = -Infinity;
+    for (const { n, desejo } of daColuna) {
+      const alvo = desejo === Infinity ? (cursor === -Infinity ? 0 : cursor) : desejo;
+      y[n] = Math.max(alvo, cursor === -Infinity ? alvo : cursor);
+      cursor = y[n] + altura[n];
+    }
+  }
+
+  // faixas: a coluna 14 volta para a esquerda, embaixo de tudo o que veio antes
+  const faixa = (n) => Math.floor(coluna[n] / POR_LINHA);
+  const nFaixas = Math.max(0, ...principais.map(faixa)) + 1;
+  const topo = []; let base = 0;
+  for (let f = 0; f < nFaixas; f++) {
+    const da = principais.filter((n) => faixa(n) === f);
+    if (!da.length) { topo[f] = base; continue; }
+    const minY = Math.min(...da.map((n) => y[n]));
+    const maxY = Math.max(...da.map((n) => y[n] + altura[n]));
+    topo[f] = base - minY;
+    base += maxY - minY + ENTRE_FAIXAS;
+  }
+  for (const n of principais) {
+    const f = faixa(n);
+    porNome[n].position = [grade(xCol[coluna[n]] - xCol[f * POR_LINHA]), grade(y[n] + topo[f])];
+  }
+  // sub-nós (modelo, memória, ferramentas) numa grade embaixo do agente
+  for (const [alvo, lista] of Object.entries(subs)) {
+    if (!porNome[alvo] || !porNome[alvo].position) continue;
+    const [ax, ay] = porNome[alvo].position;
+    lista.filter((s) => eSub.has(s)).forEach((s, i) => {
+      porNome[s].position = [grade(ax + (i % SUB_COLUNAS) * SUB_X), grade(ay + LINHA - 20 + Math.floor(i / SUB_COLUNAS) * SUB_Y)];
+    });
+  }
+  // sub-nó solto (sem agente no fluxo) vai para o fim, para não cair em cima de ninguém
+  const soltos = nos.filter((n) => eSub.has(n.name) && !Object.entries(subs).some(([a, l]) => porNome[a] && porNome[a].position && l.includes(n.name)));
+  soltos.forEach((n, i) => { n.position = [grade(i * SUB_X), grade(base)]; });
+
+  const xs = nos.map((n) => n.position[0]);
+  const ys = nos.map((n) => n.position[1]);
+  const larguraTotal = Math.max(...xs) - Math.min(...xs) + COLUNA;
+  const linhas = texto.split('\n').length + (nFaixas > 1 ? 2 : 0);
+  const alturaNota = 120 + linhas * 26;
+  wf.nodes = [
+    nota(Math.min(...xs) - 40, Math.min(...ys) - alturaNota - 60, Math.max(520, Math.min(larguraTotal, 1400)), alturaNota, cor,
+      `## ${titulo}\n${texto}${nFaixas > 1 ? '\n\n➡️ O fluxo é lido da esquerda para a direita e continua na faixa de baixo.' : ''}`),
+    ...nos,
+  ];
 };
 
-module.exports = (principal, agenda, pausa) => {
-  organizar(principal, {
-    // 1. Entrada
-    'Webhook Evolution': [0, 0], 'Extrair dados': [220, 0], 'Minha resposta manual?': [440, 0],
-    // número da Gleide -> workflow "Assistente da Gleide"
-    'É a Gleide (assistente)?': [440, -620], 'Repassar para a assistente': [700, -700],
-    // sua resposta manual / #ia
-    'Comando #ia?': [700, -320], 'Pausa: remover': [940, -440], 'Pausa: humano assumiu (12h)': [940, -300],
-    // 2. Filtro e pausa
-    'Filtro': [700, 0], 'Pausa: verificar': [920, 0], 'IA ativa?': [1140, 0],
-    // 3. Áudio e fotos
-    'É áudio ou foto?': [1400, 0], 'Baixar mídia (Evolution)': [1620, -160], 'Entender mídia (Gemini)': [1840, -160], 'Texto da mensagem': [2060, 0],
-    // 4. Buffer
-    'Buffer: guardar msg': [2320, 0], 'Buffer: marcar última': [2540, 0], 'Aguardar (juntar mensagens)': [2760, 0], 'Buffer: ler última': [2980, 0],
-    'É a última msg?': [3200, 0], 'Pausa: verificar de novo': [3420, 0], 'Ainda ativa?': [3640, 0],
-    'Trava: ler': [3880, 0], 'Ninguém respondendo?': [4100, 0], 'Aguardar 3s (IA respondendo)': [4100, 200], 'Trava: marcar': [4320, 0],
-    'Buffer: ler mensagens': [4540, 0], 'Buffer: limpar': [4760, 0], 'Buffer: descartar (pausada)': [3880, 200],
-    // 5. Agente IA (linha de baixo)
-    'Montar entrada': [0, 800], 'Marcar como lida': [220, 800], 'Agente IA': [560, 800],
-    // memória sem começo quebrado (memoria-janela.js), logo antes do agente
-    'Memória: ler (Agente IA)': [560, 520], 'Memória: conferir (Agente IA)': [700, 520], 'Memória: cortar? (Agente IA)': [840, 520],
-    'Memória: apagar (Agente IA)': [980, 440], 'Memória: regravar itens (Agente IA)': [1120, 440], 'Memória: regravar (Agente IA)': [1260, 440],
-    'Memória: pronta (Agente IA)': [1260, 600],
-    'Gemini Flash': [100, 1100], 'Memória (Redis)': [240, 1100], 'consultar_horarios_livres': [380, 1100], 'ver_agendamentos': [520, 1100],
-    'criar_agendamento': [660, 1100], 'remarcar_agendamento': [800, 1100], 'cancelar_agendamento': [940, 1100], 'transferir_para_humano': [1080, 1100],
-    'anotar_no_crm': [1220, 1100], 'CRM: registrar contato': [0, 980],
-    // 6. Resposta humanizada
-    'Quebrar mensagens': [1440, 800], 'IA falhou? (alerta)': [1550, 560], 'Avisar Victor (IA falhou)': [1660, 560], 'Tem texto pra enviar?': [1550, 680], 'Um balão por vez': [1660, 800], 'Trava: liberar': [1880, 720], 'Pausa (lendo/respirando)': [1880, 940], 'Digitando (blocos de 8s)': [2100, 1060], 'Digitando...': [2100, 940], 'Enviar mensagem': [2320, 940],
-    // Supabase (banco do CRM)
-    'Supabase: ficha da cliente': [300, 980], 'Supabase: histórico da cliente': [300, 1180], 'Sobre esta cliente': [420, 980],
-    'Supabase: áudios do salão': [420, 1180], 'Supabase: áudios já enviados': [540, 1180], 'Áudios disponíveis': [540, 980], 'enviar_audio': [1360, 1100], 'perguntar_para_gleide': [1500, 1100],
-    'Pedido: procurar': [220, -900], 'É resposta da Gleide?': [440, -900], 'Pedido: seguir normal': [660, -900], 'Pedido: preparar': [660, -1060], 'Pedido: escrever (Gemini)': [880, -1060],
-    'Pedido: texto': [1100, -1060], 'Pedido: enviar à cliente': [1320, -1060], 'Pedido: registrar saída': [1540, -1060],
-    'Pedido: memória (resposta da Gleide)': [1760, -1060], 'Pedido: memória (mensagem enviada)': [1980, -1060], 'Pedido: apagar': [2200, -1060], 'Pedido: confirmar à Gleide': [2420, -1060],
-    'Supabase: registrar entrada': [2060, 220], 'Pausa: alinhar com o CRM': [2280, 220], 'Supabase: registrar saída': [2540, 940],
-    'Supabase: dona respondeu': [1160, -280], 'Supabase: reativar IA': [1160, -440],
-    'Supabase: alô recente': [940, -160], 'É o alô do CRM?': [1160, -160], 'Supabase: registrar alô': [1380, -160],
-    'Supabase: último alô': [300, 1380], 'Supabase: últimas mensagens': [300, 1580], 'Supabase: tabela de serviços': [300, 1780],
-  }, [
-    nota(-60, -140, 680, 320, 7, '## 1. Entrada\nMensagem do WhatsApp chega da Evolution.\nExtrai telefone, nome, tipo e texto.'),
-    nota(640, -520, 540, 340, 3, '## Sua resposta pelo celular\nMensagem SUA (fromMe) numa conversa → **pausa a IA 12 h** para esse número.\nMandou `#ia` → tira a pausa.'),
-    nota(640, -140, 680, 320, 4, '## 2. Filtro e pausa\nIgnora grupos, status e figurinhas.\nSe a cliente está pausada (pediu humano ou você respondeu), para aqui.'),
-    nota(1340, -320, 920, 500, 6, '## 3. Áudio e fotos\nBaixa a mídia pela Evolution.\nÁudio → Gemini **transcreve**. Foto → Gemini **descreve o cabelo**.\nTexto normal passa direto.'),
-    nota(2260, -140, 2740, 500, 2, '## 4. Buffer de 20 s + trava\nJunta mensagens seguidas da mesma pessoa (Redis).\nSó a ÚLTIMA mensagem da rajada segue, depois de 20 s sem novas.\nConfere a pausa de novo antes de responder.\n**Trava:** se a IA ainda está respondendo essa pessoa, espera terminar e lê tudo junto.\n\n➡️ continua na linha de baixo (Montar entrada)'),
-    nota(-60, 660, 1380, 600, 5, '## 5. Agente IA\nGemini + memória por telefone (Redis, 24 h) + ferramentas:\nagenda (consultar, criar, ver, remarcar, cancelar), transferir para humano e anotar no CRM.\nCRM: registrar contato = cria/atualiza a ficha da cliente a cada conversa.\nPrompt: `prompt-agente.md` · publicar: `node montar-workflow.js --enviar --ativar`'),
-    nota(1380, 660, 1180, 480, 4, '## 6. Resposta humanizada\nUma mensagem só, um parágrafo por assunto, sem negrito.\nPausa de leitura (1–5 s) → "digitando…" 60–90 ms por letra (3–10 s) → envia.\nTenta 3x se o WhatsApp oscilar.'),
-  ]);
-
-  organizar(agenda, {
-    'Recebe pedido do agente': [0, 0], 'Preparar': [220, 0],
-    'Supabase: horários ocupados': [440, 0], 'Supabase: config do salão': [660, 0], 'Supabase: agendamentos da cliente': [880, 0],
-    'Calcular': [1100, 0],
-    'Criar evento?': [1320, 0],
-    'Supabase: cliente e serviços': [1540, -180], 'Supabase: serviços': [1760, -180], 'Supabase: profissionais': [1980, -180],
-    'Montar agendamento': [2200, -180], 'Supabase: gravar agendamento': [2420, -180], 'Supabase: nome da cliente': [2640, -180],
-    'Resposta (agendado)': [2860, -180],
-    'Cancelar evento?': [1540, 120], 'Supabase: cancelar agendamento': [1760, 40], 'Resposta (cancelado)': [1980, 40],
-    'Remarcar evento?': [1760, 260], 'Supabase: remarcar agendamento': [1980, 200], 'Resposta (remarcado)': [2200, 200],
-    'Resposta': [1980, 400],
-  }, [
-    nota(-60, -160, 1340, 360, 5, '## 1. Lê a agenda do app\nChamado pelas ferramentas do agente.\nSupabase: horários ocupados (IA + Gleide) · horário do salão · horários desta cliente.\n**Calcular** = regras de `agenda-calculo.js` (expediente, almoço, bloqueios, faixas livres).'),
-    nota(1280, -340, 1820, 900, 4, '## 2. Executa a ação no app\n**criar** → novo horário (origem IA) · **cancelar** → status cancelado · **remarcar** → move o MESMO horário\nConsultar/ver → só devolve o texto (Resposta).'),
-  ]);
-
-  organizar(pausa, { 'Recebe pedido do agente': [0, 0], 'Gravar pausa (12h)': [220, 0], 'CRM: com humano': [440, 0], 'Supabase: pausar IA': [660, 0], 'Supabase: número de alerta': [880, 0], 'Avisar a Gleide (WhatsApp)': [1100, 0], 'Resposta': [1320, 0] }, [
-    nota(-60, -180, 1440, 360, 3, '## Transferir para humano\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou sai do escopo.\nGrava `pausa:{telefone}` no Redis por 12 h, salva o resumo na ficha e avisa a Gleide no WhatsApp (config.whatsapp_alerta) com o link da conversa. Mande `#ia` na conversa para devolver à IA.'),
-  ]);
-};
+module.exports = organizar;

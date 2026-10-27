@@ -623,8 +623,42 @@ const memoriaJanela = require('./memoria-janela.js')({ node, main });
 memoriaJanela(workflow, 'Agente IA', REDIS);
 memoriaJanela(assistente.assistenteWorkflow, 'Agente assistente', REDIS);
 
-// posições dos nós e notas coloridas por etapa (só visual)
-require('./layout-n8n.js')(workflow, agendaWorkflow, pausaWorkflow);
+// organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
+const organizar = require('./layout-n8n.js');
+organizar(workflow, 'Atendimento das clientes (WhatsApp)', [
+  'Roda a cada mensagem que chega no WhatsApp do salão (Evolution).',
+  '1. Entrada: separa telefone, nome e texto. Mensagem sua pelo celular pausa a IA 12 h para aquele número; #ia tira a pausa.',
+  '2. Resposta da Gleide a uma pergunta rápida (ela tocou em Responder): a IA repassa para a cliente.',
+  '3. Filtro e pausa: ignora grupos e status; cliente pausada para aqui. Áudio é transcrito e foto é descrita pelo Gemini.',
+  '4. Junta as mensagens seguidas (20 s) e só a última da rajada segue. A trava evita duas respostas ao mesmo tempo.',
+  '5. Agente IA: prompt-agente.md + ficha da cliente + memória (Redis) + ferramentas (agenda, Gleide, áudio, CRM).',
+  '6. Quebra a resposta em até 3 mensagens, mostra "digitando…" proporcional ao texto e envia.',
+  'Publicar mudanças: node montar-workflow.js --enviar --ativar (não edite aqui pela tela).',
+].join('\n'), 5);
+organizar(agendaWorkflow, 'Agenda (ferramentas do agente)', [
+  'Chamado pelo agente para consultar horários livres, ver, marcar, remarcar ou cancelar.',
+  'Lê a agenda do app (Supabase), aplica as regras do salão (expediente, almoço, dias bloqueados) e grava o resultado.',
+].join('\n'), 4);
+organizar(pausaWorkflow, 'Transferir para a Gleide', [
+  'Chamado pelo agente quando a cliente pede uma pessoa, reclama ou o assunto precisa da Gleide.',
+  'Pausa a IA 12 h para a cliente, salva o resumo na ficha e avisa a Gleide no WhatsApp (número de alerta do app).',
+  'Mande #ia na conversa para devolver à IA.',
+].join('\n'), 3);
+organizar(crmWorkflow, 'Anotações do agente (CRM)', 'Chamado pelo agente nos marcos da conversa: grava o interesse, a objeção ou o agendamento como pré-avaliação da cliente.', 7);
+organizar(assistente.assistenteWorkflow, 'Assistente da Gleide (WhatsApp)', [
+  'Roda quando a Gleide escreve para o número do salão (números da assistente).',
+  'Ela pede em linguagem normal e a assistente faz no app: agenda, fichas, bloqueios, pausar IA, avisar cliente (ferramentas embaixo do agente).',
+].join('\n'), 6);
+organizar(assistente.ferramentasWorkflow, 'Assistente - Ferramentas', 'Executa no banco o que a assistente da Gleide pediu (funções n8n_assistente_* do Supabase) e devolve o resultado.', 6);
+organizar(assistente.pendenciasWorkflow, 'Assistente - Pendências', 'A cada 15 min (8h–20h) pergunta à Gleide o que falta registrar no app (atendimento sem resultado, avaliação sem retorno).', 6);
+organizar(audios.enviarWorkflow, 'Áudios prontos - Enviar', 'Chamado pelo agente (enviar_audio): acha o áudio do tema na lista do app, baixa do Storage e manda no WhatsApp da cliente.', 2);
+organizar(audios.transcreverWorkflow, 'Áudios prontos - Transcrever', 'Transcreve um áudio novo cadastrado para a IA saber o que ele diz.', 2);
+organizar(faltas.faltasWorkflow, 'Faltas, atrasos e vagas', [
+  'A cada 5 min (8h–20h): chama quem faltou ou está atrasada, oferece vaga que abriu para quem tem horário depois,',
+  'e conta para a Gleide o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).',
+].join('\n'), 1);
+organizar(alerta.alertaWorkflow, 'Alerta de erro', 'Quando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).', 3);
+organizar(pedidos.perguntaWorkflow, 'Perguntar para a Gleide', 'Chamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Gleide e guarda para repassar a resposta quando ela tocar em Responder.', 1);
 
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 if (fs.existsSync(alerta.idFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
