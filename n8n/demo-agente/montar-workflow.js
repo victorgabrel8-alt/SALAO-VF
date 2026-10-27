@@ -271,7 +271,8 @@ const nodes = [
   ]),
   node('Aguardar 3s (IA respondendo)', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: 3, unit: 'seconds' }, { webhookId: '2c3d4e5f-6071-4829-8a1b-d2e3f4051627' }),
   node('Trava: marcar', 'n8n-nodes-base.redis', 1, [0, 0], {
-    operation: 'set', key: `=processando:{{ ${D}.telefone }}`, value: `={{ ${D}.msgId }}`, expire: true, ttl: 180,
+    // 300 s: a vitrine de fotos (~36 envios, um por vez) leva uns 2 min; a trava não pode vencer no meio
+    operation: 'set', key: `=processando:{{ ${D}.telefone }}`, value: `={{ ${D}.msgId }}`, expire: true, ttl: 300,
   }, { credentials: REDIS }),
   node('Trava: liberar', 'n8n-nodes-base.redis', 1, [0, 0], {
     operation: 'delete', key: `=processando:{{ ${D}.telefone }}`,

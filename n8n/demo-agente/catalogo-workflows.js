@@ -7,6 +7,7 @@
 //                                 A Evolution baixa a foto direto da URL (nada de base64 passando pelo n8n).
 //                                 Cada foto enviada vai para o CRM (mensagens, tipo imagem). Nunca manda preço.
 //                                 Se falhar, devolve texto para a IA responder sem foto.
+//                                 Vitrine (pedido geral de fotos): um título com o nome de cada tipo e ~8 fotos dele.
 //   - Principal: tool enviar_catalogo ligada ao Agente IA.
 
 const EMPRESA = '$env.EMPRESA_ID';
@@ -38,7 +39,7 @@ module.exports = ({ node, str, main, toolSub, workflow }) => {
     name: 'Catálogo - Enviar fotos',
     nodes: [
       node('Recebe pedido da IA', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
-        workflowInputs: { values: ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'citado', 'telefone', 'jid'].map((name) => ({ name })) },
+        workflowInputs: { values: ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'vitrine', 'citado', 'telefone', 'jid'].map((name) => ({ name })) },
       }),
       supa('Fotos do catálogo', 'GET', `catalogo?select=arquivo,grupo,tipo,cor,comprimento_cm,textura,legenda,ordem&ativo=eq.true&empresa_id=eq.{{ ${EMPRESA} }}&order=grupo,ordem`, null,
         { executeOnce: true }),
@@ -51,7 +52,7 @@ module.exports = ({ node, str, main, toolSub, workflow }) => {
 const sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 const pedido = { ...$('Recebe pedido da IA').first().json };
 // o Gemini às vezes deixa pedaço de chamada de ferramenta num campo ("}call:default_api:..."): vira vazio
-for (const k of ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo']) if (/call:|default_api|[{}]/.test(String(pedido[k] || ''))) pedido[k] = '';
+for (const k of ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'vitrine']) if (/call:|default_api|[{}]/.test(String(pedido[k] || ''))) pedido[k] = '';
 const fotos = $('Fotos do catálogo').all().map((i) => i.json).filter((f) => f.arquivo);
 const enviados = $('Já enviadas a ela').all().map((i) => i.json.conteudo || '').join(' ');
 if (!fotos.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: o catálogo de fotos está vazio ou não carregou. Responda em texto, sem prometer foto.' } }];
@@ -75,13 +76,48 @@ if (/^s/.test(sem(pedido.mesmo_cabelo))) {
     .sort((a, b) => a.ordem - b.ordem).slice(0, Math.min(2, maximo));
   if (!mesmas.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: não há outras fotos desse mesmo cabelo (' + nome + '); ela já viu todas. Diga isso em texto, curto, e não mande outro cabelo como se fosse o mesmo; se ela quiser, ofereça ver um parecido, avisando o que muda.' } }];
   return mesmas.map((f, i) => ({ json: { ok: true, ...f, pedido: 'mais fotos do mesmo cabelo: ' + nome, total: mesmas.length, posicao: i + 1, sem_legenda: i > 0,
-    delay: 1200 + Math.floor(Math.random() * 1500) } }));
+    delay: 3200 + Math.floor(Math.random() * 1500) } }));
 }
 // cores parecidas contam como a mesma família (cliente fala "moreno", "escuro", "preto", "mel"...)
 const FAMILIA = [['loir', 'mel', 'dourad', 'platin', 'claro', 'ombre'], ['castanh', 'moren', 'escur', 'pret', 'chocolate', 'natural'],
   ['ruiv', 'acobread', 'cobre', 'ruiva', 'vermelh'], ['grisalh', 'cinza', 'branc'], ['iluminad', 'luzes', 'mechas']];
 const familia = (s) => FAMILIA.findIndex((f) => f.some((p) => s.includes(p)));
 const famTex = (s) => /cache|cacho|caipira|crespo/.test(s) ? 'cacheado' : /ondul/.test(s) ? 'ondulado' : /liso/.test(s) ? 'liso' : '';
+// Vitrine: pedido geral ("tem fotos?", "me mostra os cabelos"). Para cada tipo (ou só o tipo que ela disse), um
+// título com o nome e até POR_TIPO fotos de cabelos diferentes, variando cor e comprimento. Fotos de técnica
+// (TECNICAS-MEGAHAIR) ficam de fora: a vitrine é dos fios. Não repete foto que ela já recebeu.
+if (/^s/.test(sem(pedido.vitrine))) {
+  const POR_TIPO = 8;
+  const TIPOS = [['brasileiro do Sul', 'Brasileiro do Sul'], ['brasileiro regional', 'Brasileiro regional'], ['indiano', 'Indiano'], ['vietnamita', 'Vietnamita']];
+  const brasilGeral = tipo.includes('brasil') && !tipo.includes('sul') && !tipo.includes('regional');
+  const daVez = TIPOS.filter(([t]) => !tipo || (brasilGeral ? t.startsWith('brasileiro') : sem(t).includes(tipo.slice(0, 6))));
+  const corFam = (f) => { const i = familia(sem(f.cor)); return i < 0 ? 9 : i; };
+  const itens = [];
+  const faltaram = [];
+  for (const [t, nome] of daVez) {
+    // a foto principal (menor ordem) de cada cabelo deste tipo que ela ainda não viu
+    const porCabelo = {};
+    for (const f of fotos) {
+      if (f.tipo !== t || f.arquivo.startsWith('TECNICAS-MEGAHAIR/') || enviados.includes('[foto do catálogo: ' + f.arquivo + ']')) continue;
+      if (!porCabelo[f.grupo] || f.ordem < porCabelo[f.grupo].ordem) porCabelo[f.grupo] = f;
+    }
+    // cabelo que ela nunca viu vem antes; depois ordena por cor e comprimento e pega espalhado (variedade)
+    const jaViu = (g) => enviados.includes('[foto do catálogo: ' + g + '/');
+    const novos = Object.values(porCabelo).filter((f) => !jaViu(f.grupo));
+    const base = (novos.length >= POR_TIPO ? novos : novos.concat(Object.values(porCabelo).filter((f) => jaViu(f.grupo))))
+      .sort((a, b) => corFam(a) - corFam(b) || (a.comprimento_cm || 0) - (b.comprimento_cm || 0) || a.grupo.localeCompare(b.grupo));
+    const n = Math.min(POR_TIPO, base.length);
+    if (!n) { faltaram.push(nome); continue; }
+    const escolhidos = Array.from({ length: n }, (_, i) => base[Math.floor(i * base.length / n)]);
+    itens.push({ titulo: true, texto: '*' + nome + '*', tipo: nome });
+    for (const f of escolhidos) itens.push({ ...f });
+  }
+  const fotosVitrine = itens.filter((i) => !i.titulo).length;
+  if (!fotosVitrine) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: ' + (faltaram.length ? 'ela já recebeu todas as fotos de ' + faltaram.join(', ') + '. ' : 'o catálogo não tem fotos desse tipo. ') + 'Responda em texto, curto; se ela quiser outra opção, pergunte cor, tipo ou comprimento.' } }];
+  // ritmo mais rápido que o normal (são muitas fotos), mas ainda uma por vez; o título sai logo antes das fotos dele
+  return itens.map((x, i) => ({ json: { ok: true, ...x, vitrine: true, pedido: 'vitrine' + (tipo ? ' de ' + pedido.tipo : ' de todos os tipos'),
+    total: fotosVitrine, posicao: i + 1, faltaram, delay: x.titulo ? 800 : 600 + Math.floor(Math.random() * 500) } }));
+}
 const pontos = (f) => {
   let p = 0;
   const ft = sem(f.tipo);
@@ -140,14 +176,14 @@ if (!escolhidas.length) {
 }
 // pausa de gente entre uma foto e a próxima (a 1ª sai logo)
 return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, total: escolhidas.length, posicao: i + 1,
-  delay: 1200 + Math.floor(Math.random() * 1500) } }));
+  delay: 3200 + Math.floor(Math.random() * 1500) } }));
 ` }),
       ifNode('Tem foto?', '$json.ok'),
       // URL assinada (1 h) para a Evolution baixar direto do Storage; as fotos de uma vez num pedido só
       node('URLs assinadas', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
         method: 'POST', url: '={{ $env.SUPABASE_URL }}/storage/v1/object/sign/catalogo',
         sendHeaders: true, headerParameters: SUPA_H, sendBody: true, specifyBody: 'json',
-        jsonBody: "={{ JSON.stringify({ expiresIn: 3600, paths: $('Escolher fotos').all().map(i => i.json.arquivo) }) }}",
+        jsonBody: "={{ JSON.stringify({ expiresIn: 3600, paths: $('Escolher fotos').all().filter(i => !i.json.titulo).map(i => i.json.arquivo) }) }}",
         options: { timeout: 15000 },
       }, { onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true, retryOnFail: true, maxTries: 2, waitBetweenTries: 1000 }),
       node('Montar envios', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
@@ -155,22 +191,25 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
         "const assinadas = $('URLs assinadas').all().flatMap((i) => Array.isArray(i.json) ? i.json : [i.json]);",
         "const url = Object.fromEntries(assinadas.filter((a) => a && a.signedURL).map((a) => [a.path, base + a.signedURL]));",
         `const jid = ${E}.jid;`,
-        "return $('Escolher fotos').all().filter((i) => url[i.json.arquivo]).map((i) => ({ json: { ...i.json, jid, url: url[i.json.arquivo] } }));",
+        "// título da vitrine (texto) passa junto, na ordem; foto sem URL fica de fora",
+        "return $('Escolher fotos').all().filter((i) => i.json.titulo || url[i.json.arquivo]).map((i) => ({ json: { ...i.json, jid, url: i.json.titulo ? '' : url[i.json.arquivo] } }));",
       ].join('\n') }, { alwaysOutputData: true }),
-      ifNode('Gerou URL?', '!!$json.url'),
-      // uma foto por vez: 1 envio a cada 3,5 s + "delay" da própria Evolution (1,2 a 2,7 s), como quem escolhe e manda.
+      ifNode('Gerou URL?', '!!$json.url || !!$json.titulo'),
+      // uma por vez, na ordem: 1 envio a cada 1,5 s + "delay" da própria Evolution (3,2 a 4,7 s no normal, como quem
+      // escolhe e manda; ~1 s na vitrine, que tem ~30 fotos). Título da vitrine vai como texto (sendText).
       // Legenda curta só quando ajuda a diferenciar (cor e comprimento); nunca preço.
       node('Enviar foto', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
-        method: 'POST', url: '={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ $env.EVOLUTION_INSTANCE }}',
+        method: 'POST', url: "={{ $env.EVOLUTION_URL }}/message/{{ $json.titulo ? 'sendText' : 'sendMedia' }}/{{ $env.EVOLUTION_INSTANCE }}",
         sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
         sendBody: true, specifyBody: 'json',
-        jsonBody: "={{ JSON.stringify({ number: $json.jid, mediatype: 'image', mimetype: 'image/jpeg', media: $json.url, fileName: 'cabelo-' + $json.posicao + '.jpg', caption: $json.total > 1 && !$json.sem_legenda ? ($json.legenda || '') : '', delay: $json.delay }) }}",
-        options: { batching: { batch: { batchSize: 1, batchInterval: 3500 } }, timeout: 60000 },
+        jsonBody: "={{ JSON.stringify($json.titulo ? { number: $json.jid, text: $json.texto, delay: $json.delay } : { number: $json.jid, mediatype: 'image', mimetype: 'image/jpeg', media: $json.url, fileName: 'cabelo-' + $json.posicao + '.jpg', caption: $json.total > 1 && !$json.sem_legenda ? ($json.legenda || '') : '', delay: $json.delay }) }}",
+        options: { batching: { batch: { batchSize: 1, batchInterval: 1500 } }, timeout: 60000 },
       }, { onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 2000 }),
       // só vai para o CRM (e conta como "já enviada") a foto que a Evolution aceitou
       node('Enviadas', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
-        "const fotos = $('Montar envios').all().filter((i) => i.json.url);",
-        "return $input.all().map((r, i) => ({ json: { ...fotos[i].json, wa_id: r.json.key?.id || null } })).filter((x) => x.json.wa_id);",
+        "// mesma ordem do que passou no 'Gerou URL?' (títulos da vitrine + fotos); para o CRM só vão as fotos",
+        "const itens = $('Montar envios').all().filter((i) => i.json.url || i.json.titulo);",
+        "return $input.all().map((r, i) => ({ json: { ...itens[i].json, wa_id: r.json.key?.id || null } })).filter((x) => x.json.wa_id && !x.json.titulo);",
       ].join('\n') }, { alwaysOutputData: true }),
       ifNode('Enviou alguma?', '!!$json.wa_id'),
       supa('Registrar no CRM', 'POST', 'rpc/n8n_registrar_saida',
@@ -179,9 +218,11 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
            p_autor: 'ia', p_tipo: 'imagem', p_wa_message_id: $json.wa_id }`),
       node('Resposta (enviadas)', 'n8n-nodes-base.set', 3.4, [0, 0], {
         assignments: { assignments: [str('resposta',
-          `={{ (() => { const f = $('Enviadas').all().map(i => i.json); const pedidas = $('Escolher fotos').all().length;
+          `={{ (() => { const f = $('Enviadas').all().map(i => i.json); const pedidas = $('Escolher fotos').all().filter(i => !i.json.titulo).length;
+  const tipos = [...new Set(f.map(x => x.tipo))];
   return 'FOTOS ENVIADAS: a cliente acabou de receber ' + f.length + ' foto(s) do catálogo (' + f[0].pedido + '): ' +
-    f.map(x => x.tipo + ', ' + (x.legenda || x.cor)).join(' | ') + '. ' +
+    (f[0].vitrine ? 'vitrine com um título por tipo e as fotos de cada um (' + tipos.join(', ') + ')' + ((f[0].faltaram || []).length ? '; de ' + f[0].faltaram.join(', ') + ' ela já tinha visto todas' : '') + '. Se ela gostar de alguma, ela vai responder citando a foto. '
+      : f.map(x => x.tipo + ', ' + (x.legenda || x.cor)).join(' | ') + '. ') +
     (f.length < pedidas ? 'Outras ' + (pedidas - f.length) + ' não foram (falha no envio); não comente. ' : '') +
     'São fotos do catálogo do fornecedor (não são estoque do salão nem resultado da Gleide). As fotos e legendas já respondem o pedido: NÃO escreva mensagem só para resumir, descrever ou elogiar as fotos, NÃO pergunte automaticamente de agendamento e NÃO fale preço (preço do cabelo só pela Gleide, via perguntar_para_gleide). ' +
     'Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).'; })() }}`)] },
@@ -214,16 +255,17 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
   const M = "$('Montar entrada').first().json";
   workflow.nodes.push(toolSub('enviar_catalogo', [0, 0],
     'Busca no catálogo autorizado do fornecedor e manda para a cliente FOTOS de cabelo que combinam com o pedido (tipo, cor, comprimento, textura), uma por vez, com legenda curta. ' +
-    'Use quando ela pedir para ver os cabelos, as opções, as cores ou um tipo específico. Não reenvia fotos que ela já recebeu. ' +
+    'Use quando ela pedir para ver os cabelos, as opções, as cores ou um tipo específico. Pedido geral de fotos = vitrine (vitrine = sim). Não reenvia fotos que ela já recebeu. ' +
     'A resposta diz se as fotos foram enviadas (FOTOS ENVIADAS / FOTOS NÃO ENVIADAS); nunca fale preço por causa delas.',
-    lerId, ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'citado', 'telefone', 'jid'],
+    lerId, ['tipo', 'cor', 'comprimento', 'textura', 'quantidade', 'mesmo_cabelo', 'vitrine', 'citado', 'telefone', 'jid'],
     // citado: a mensagem que ela respondeu citando; se for foto do catálogo, a ferramenta sabe qual é
     { telefone: `={{ ${M}.telefone }}`, jid: `={{ ${M}.jid }}`, citado: "={{ $('Extrair dados').first().json.citado || '' }}" },
     [['tipo', 'Tipo de cabelo pedido: brasileiro do Sul, brasileiro regional, indiano ou vietnamita. Vazio se ela não disse', 'string'],
       ['cor', 'Cor pedida, com as palavras dela (ex.: loiro, loiro mel, castanho, ruivo, morena iluminada). Vazio se não disse', 'string'],
       ['comprimento', 'Comprimento em cm se ela disse (ex.: 60). Vazio se não disse', 'string'],
       ['textura', 'Textura pedida: liso, ondulado ou cacheado. Cachos (abertos ou fechados) = cacheado; só ondas = ondulado. Vazio se não disse', 'string'],
-      ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido', 'string'],
+      ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido. Ignorado na vitrine', 'string'],
+      ['vitrine', 'sim quando ela pede fotos de forma GERAL, sem cor nem comprimento ("tem fotos?", "me mostra os cabelos", "quero ver as opções", "me manda o catálogo", "quero ver o vietnamita"): manda um título com o nome de cada tipo e umas 8 fotos dele (só do tipo, se ela disse um). Vazio quando ela pede algo específico (cor, comprimento, textura) ou mais fotos de um cabelo já visto', 'string'],
       ['mesmo_cabelo', 'sim quando ela pedir MAIS FOTOS DO MESMO cabelo que já viu ("tem mais desse?", "mais fotos dele"): vale a foto que ela respondeu citando ou, sem citar, a última enviada. NÃO use se ela disse que a foto não é o que quer ("parece mais liso", "queria mais cacheado", "outra cor"): aí peça de novo com a textura/cor que ela quer. Vazio nos outros casos', 'string']]));
   workflow.connections.enviar_catalogo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
