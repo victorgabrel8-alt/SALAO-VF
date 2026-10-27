@@ -710,7 +710,7 @@ organizar(faltas.faltasWorkflow, 'Faltas, atrasos e vagas', [
   'e conta para a Gleide o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).',
 ].join('\n'), 1);
 organizar(retomar.retomarWorkflow, 'Retomar conversa', [
-  'A cada 15 min: a cliente parou de responder depois da IA? No tempo certo (config.retomada.horas, com o salão aberto) o Gemini',
+  'A cada 1 min: a cliente parou de responder depois da IA? 5 min e 30 min depois (config.retomada.minutos, com o salão aberto) o Gemini',
   'escreve uma mensagem que retoma de onde parou, ou decide não retomar. Vai pelo número do salão, para o CRM e para a memória da IA.',
 ].join('\n'), 1);
 organizar(alerta.alertaWorkflow, 'Alerta de erro', 'Quando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).', 3);

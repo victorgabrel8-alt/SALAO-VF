@@ -1,12 +1,12 @@
 // IA - Retomar conversa (follow-up, ver supabase/019_retomar_conversa.sql).
-// A IA respondeu e a cliente sumiu: a cada 15 min o banco diz quem está esperando retomada (última mensagem da IA,
-// passou o tempo da tentativa, salão aberto, sem horário marcado, sem pausa; no máximo config.retomada.horas.length
-// tentativas desde a última mensagem dela). Para cada uma, o Gemini lê o histórico e escreve UMA mensagem que retoma
+// A IA respondeu e a cliente sumiu: a cada 1 min o banco diz quem está esperando retomada (última mensagem da IA,
+// passou o tempo da tentativa, salão aberto, sem horário marcado, sem pausa; no máximo config.retomada.minutos.length
+// tentativas desde a última mensagem dela; pedido do Victor: 5 min e 30 min, e para). Para cada uma, o Gemini lê o histórico e escreve UMA mensagem que retoma
 // de onde parou, ou responde PULAR quando não cabe (ela se despediu, disse que não quer, a pendência é do salão...).
 // Enviada: vai pelo número do salão, entra no histórico do CRM e na memória da IA (a resposta dela cai no agente
 // normal, que sabe o que foi dito). Pulada: não tenta mais até ela mandar mensagem de novo.
 // GET /webhook/retomar-conversa dispara na hora, para testar (com o header x-webhook-token).
-// Ligar no salão: empresas.config.retomada = {"ligado": true, "so_para": [...], "horas": [3, 24], "janela_dias": 3}.
+// Ligar no salão: empresas.config.retomada = {"ligado": true, "so_para": [...], "minutos": [5, 30], "janela_dias": 3} (supabase/020).
 
 const EMPRESA = "$env.EMPRESA_ID";
 
@@ -89,7 +89,7 @@ module.exports = ({ env, node, main, GEMINI }) => {
   const retomarWorkflow = {
     name: 'IA - Retomar conversa',
     nodes: [
-      node('A cada 15 min', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 0], { rule: { interval: [{ field: 'minutes', minutesInterval: 15 }] } }),
+      node('A cada 1 min', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 0], { rule: { interval: [{ field: 'minutes', minutesInterval: 1 }] } }),
       node('Disparar agora (teste)', 'n8n-nodes-base.webhook', 2, [0, 220],
         { httpMethod: 'GET', path: 'retomar-conversa', authentication: 'headerAuth', responseMode: 'lastNode', options: {} },
         // mesma senha do webhook do WhatsApp (header x-webhook-token): sem ela, ninguém dispara de fora
@@ -137,7 +137,7 @@ module.exports = ({ env, node, main, GEMINI }) => {
         `{ p_empresa_id: ${EMPRESA}, p_cliente_id: $json.cliente_id, p_tentativa: $json.tentativa, p_situacao: 'pulada', p_motivo: $json.motivo }`),
     ],
     connections: {
-      'A cada 15 min': main('Quem retomar'),
+      'A cada 1 min': main('Quem retomar'),
       'Disparar agora (teste)': main('Quem retomar'),
       'Quem retomar': main('Pausas'),
       'Pausas': main('Memórias'),
@@ -152,7 +152,8 @@ module.exports = ({ env, node, main, GEMINI }) => {
       'Registrar retomada': main('Memória (aviso)'),
       'Memória (aviso)': main('Memória (mensagem enviada)'),
     },
-    settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', saveManualExecutions: true },
+    // roda a cada minuto: execução que deu certo não fica guardada (o que foi feito está na tabela retomadas)
+    settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'none', saveManualExecutions: true },
   };
 
   return { retomarWorkflow, idFile: require('path').join(__dirname, '.workflow-retomar-id') };
