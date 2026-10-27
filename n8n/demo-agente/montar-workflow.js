@@ -270,7 +270,7 @@ const nodes = [
   ]),
   node('Aguardar 3s (IA respondendo)', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: 3, unit: 'seconds' }, { webhookId: '2c3d4e5f-6071-4829-8a1b-d2e3f4051627' }),
   node('Trava: marcar', 'n8n-nodes-base.redis', 1, [0, 0], {
-    operation: 'set', key: `=processando:{{ ${D}.telefone }}`, value: `={{ ${D}.msgId }}`, expire: true, ttl: 120,
+    operation: 'set', key: `=processando:{{ ${D}.telefone }}`, value: `={{ ${D}.msgId }}`, expire: true, ttl: 180,
   }, { credentials: REDIS }),
   node('Trava: liberar', 'n8n-nodes-base.redis', 1, [0, 0], {
     operation: 'delete', key: `=processando:{{ ${D}.telefone }}`,
@@ -298,14 +298,47 @@ const nodes = [
     options: {},
   }),
 
-  node('Marcar como lida', 'n8n-nodes-base.httpRequest', 4.2, [2420, -20], {
+  // Leitura como gente (pedido do Victor, 27/10, para não parecer robô e evitar banimento): fica online, espera
+  // um pouco (abrindo a conversa) e marca como lida CADA mensagem da rajada, na ordem em que chegou, com o tempo
+  // de ler cada uma (texto pelo tamanho, áudio pelo tempo de ouvir, foto alguns segundos). Antes só a última era
+  // marcada, na hora, junto com todas.
+  node('Leitura: ficar online', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
+    method: 'POST',
+    url: `${EVO}/chat/sendPresence/{{ $env.EVOLUTION_INSTANCE }}`,
+    sendHeaders: true, headerParameters: apikeyHeader,
+    sendBody: true, specifyBody: 'json',
+    jsonBody: "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'available', delay: 1000 }) }}",
+    options: {},
+  }, { onError: 'continueRegularOutput' }),
+  node('Leitura: uma por vez', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
+    "// espera (s) antes de marcar cada mensagem como lida: a 1ª inclui 'abrir a conversa' (2-5 s)",
+    "const e = $('Montar entrada').first().json;",
+    "let ms = [];",
+    "try { ms = JSON.parse(e.mensagens || '[]'); } catch (err) {}",
+    "if (!ms.length) ms = [{ id: e.msgId, texto: e.texto_cliente || '' }];",
+    "const ale = (a, b) => a + Math.random() * (b - a);",
+    "const ler = (t) => {",
+    "  t = String(t || '');",
+    "  if (/^\\[áudio\\]/i.test(t)) return Math.min(25, Math.max(3, t.length / 14)) * ale(0.9, 1.1); // ouvir (~14 letras/s)",
+    "  if (/^\\[foto/i.test(t)) return ale(2, 4);",
+    "  return Math.min(6, Math.max(0.8, t.length * 0.05)) * ale(0.8, 1.2); // ler (~20 letras/s)",
+    "};",
+    "return ms.filter((m) => m.id).map((m, i) => ({ json: { jid: e.jid, id: m.id,",
+    "  espera: Math.round(((i === 0 ? ale(2, 5) : ale(0.4, 1.2)) + ler(m.texto)) * 10) / 10 }, pairedItem: 0 }));",
+  ].join('\n') }),
+  node('Leitura: próxima', 'n8n-nodes-base.splitInBatches', 3, [0, 0], { options: {} }),
+  node('Leitura: lendo', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: '={{ $json.espera }}', unit: 'seconds' },
+    { webhookId: '4e5f6071-8293-4a4b-8c3d-f40516273849' }),
+  node('Leitura: marcar lida', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
     method: 'POST',
     url: `${EVO}/chat/markMessageAsRead/{{ $env.EVOLUTION_INSTANCE }}`,
     sendHeaders: true, headerParameters: apikeyHeader,
     sendBody: true, specifyBody: 'json',
-    jsonBody: "={{ JSON.stringify({ readMessages: [{ remoteJid: $json.jid, fromMe: false, id: $json.msgId }] }) }}",
+    jsonBody: "={{ JSON.stringify({ readMessages: [{ remoteJid: $('Leitura: próxima').item.json.jid, fromMe: false, id: $('Leitura: próxima').item.json.id }] }) }}",
     options: {},
   }, { onError: 'continueRegularOutput' }),
+  // fim da leitura: um item só segue (o resto do fluxo continua ligado em "Marcar como lida")
+  node('Marcar como lida', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: 'return [{ json: {}, pairedItem: 0 }];' }, { executeOnce: true }),
 
   node('Agente IA', '@n8n/n8n-nodes-langchain.agent', 3.1, [2640, -20], {
     promptType: 'define',
@@ -431,14 +464,13 @@ const nodes = [
       "const esperou = $('Aguardar 3s (IA respondendo)').isExecuted;",
       "const citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');",
       "// Ritmo de gente (pedido do Victor, 25/10): o tempo depende do tamanho do texto.",
-      "// pausa = 'lendo e pensando' antes do 'digitando…': 1º balão 1,5-3 s + 20 ms por letra da mensagem dela (até 8 s);",
+      "// pausa = 'pensando' antes do 'digitando…' (a leitura já foi feita antes, em Leitura: …): 1º balão 1-3 s;",
       "//         balões seguintes 1-2,5 s (respiro entre uma mensagem e outra).",
       "// delay = tempo de 'digitando…': 65-90 ms por letra (uns 12 caracteres por segundo, alguém rápido no celular),",
       "//         no mínimo 2,5 s e no máximo 22 s. Ex.: 40 letras ≈ 3 s; 120 ≈ 9 s; 250 ≈ 19 s.",
       "const ale = (a, b) => a + Math.random() * (b - a);",
-      "const lida = ($('Montar entrada').first().json.texto_cliente || '').length;",
       "return baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, citar: citarDe({ ref }, i),",
-      "  pausa: Math.round((i === 0 ? Math.min(8, ale(1.5, 3) + lida * 0.02) : ale(1, 2.5)) * 10) / 10,",
+      "  pausa: Math.round((i === 0 ? ale(1, 3) : ale(1, 2.5)) * 10) / 10,",
       "  delay: Math.round(Math.min(22000, Math.max(2500, texto.length * ale(65, 90)))) } }));",
     ].join('\n'),
   }),
@@ -566,7 +598,13 @@ const connections = {
   'Trava: marcar': main('Buffer: ler mensagens'),
   'Buffer: ler mensagens': main('Buffer: limpar'),
   'Buffer: limpar': main('Montar entrada'),
-  'Montar entrada': main('Marcar como lida'),
+  'Montar entrada': main('Leitura: ficar online'),
+  'Leitura: ficar online': main('Leitura: uma por vez'),
+  'Leitura: uma por vez': main('Leitura: próxima'),
+  // saída 0 = "done" (leu todas), saída 1 = "loop" (próxima mensagem)
+  'Leitura: próxima': { main: [[{ node: 'Marcar como lida', type: 'main', index: 0 }], [{ node: 'Leitura: lendo', type: 'main', index: 0 }]] },
+  'Leitura: lendo': main('Leitura: marcar lida'),
+  'Leitura: marcar lida': main('Leitura: próxima'),
   'Marcar como lida': main('Agente IA'),
   'Agente IA': main('Quebrar mensagens'),
   'Quebrar mensagens': main('Tem texto pra enviar?'),

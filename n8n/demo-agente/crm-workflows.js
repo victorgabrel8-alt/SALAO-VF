@@ -24,7 +24,7 @@ ON CONFLICT (telefone) DO UPDATE SET
   ultimo_contato = now(), atualizado_em = now(),
   etapa = CASE WHEN clientes.etapa IN ('novo', 'atendido', 'perdido') THEN 'conversa' ELSE clientes.etapa END`,
     "[ $('Montar entrada').first().json.telefone, $('Montar entrada').first().json.nome || '' ]"));
-  // ramo paralelo: Montar entrada → (Marcar como lida, CRM: registrar contato)
+  // ramo paralelo: Montar entrada → (Leitura: ficar online, CRM: registrar contato)
   workflow.connections['Montar entrada'].main[0].push({ node: 'CRM: registrar contato', type: 'main', index: 0 });
 
   workflow.nodes.push(toolSub('anotar_no_crm', [0, 0],
