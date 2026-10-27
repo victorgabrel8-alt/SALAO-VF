@@ -36,7 +36,7 @@ ON CONFLICT (telefone) DO UPDATE SET
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "progressiva")', 'string'],
-      ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 6x. Casamento em dezembro.")', 'string'],
+      ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 12x. Casamento em dezembro.")', 'string'],
       ['nome', 'Nome da cliente, se ela disse (senão deixe vazio)', 'string'],
     ]));
   workflow.connections.anotar_no_crm = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
