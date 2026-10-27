@@ -91,7 +91,8 @@ const instrucao = 'Você é a assistente virtual da Gleide, do salão Toda Bonit
   (nome || '') + '. Antes, a cliente perguntou algo que só a Gleide sabia: "' + p.pergunta + '". Você disse que ia confirmar com a Gleide. ' +
   'A Gleide respondeu: "' + resposta + '". Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, ' +
   'curta (1 ou 2 frases), natural e gentil, como uma atendente de verdade. Não invente nada além do que a Gleide disse, ' +
-  'não mude o sentido, não use negrito nem listas, no máximo um emoji. Responda só com a mensagem.';
+  'não mude o sentido, não use negrito nem listas, no máximo um emoji. Se ela passou valor, mantenha o número, a unidade e as ' +
+  'condições exatamente como ela disse e, se for estimativa, deixe claro que é estimativa. Responda só com a mensagem.';
 return [{ json: { ...p, nome, resposta, instrucao } }];
 ` }),
     node('Pedido: escrever (Gemini)', 'n8n-nodes-base.httpRequest', 4.2, [990, -900], {
