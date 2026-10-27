@@ -642,6 +642,9 @@ require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pa
 // Áudios prontos da Gleide: tool enviar_audio + catálogo no fim do prompt (ver audios-workflows.js)
 const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });
 
+// Catálogo de fotos de cabelo: tool enviar_catalogo (ver catalogo-workflows.js e cadastrar-catalogo.js)
+const catalogo = require('./catalogo-workflows.js')({ node, str, main, toolSub, workflow });
+
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
 
@@ -691,6 +694,11 @@ organizar(assistente.ferramentasWorkflow, 'Assistente - Ferramentas', 'Executa n
 organizar(assistente.pendenciasWorkflow, 'Assistente - Pendências', 'A cada 15 min (8h–20h) pergunta à Gleide o que falta registrar no app (atendimento sem resultado, avaliação sem retorno).', 6);
 organizar(audios.enviarWorkflow, 'Áudios prontos - Enviar', 'Chamado pelo agente (enviar_audio): acha o áudio do tema na lista do app, baixa do Storage e manda no WhatsApp da cliente.', 2);
 organizar(audios.transcreverWorkflow, 'Áudios prontos - Transcrever', 'Transcreve um áudio novo cadastrado para a IA saber o que ele diz.', 2);
+organizar(catalogo.enviarWorkflow, 'Catálogo - Enviar fotos', [
+  'Chamado pelo agente (enviar_catalogo) quando a cliente pede para ver os cabelos: escolhe 2 a 4 fotos que combinam',
+  '(tipo, cor, comprimento, textura), sem repetir as que ela já recebeu, e manda uma por vez pela Evolution (URL assinada do Storage).',
+  'Fotos e fichas: tabela catalogo + bucket "catalogo" (node cadastrar-catalogo.js <pasta>). Nunca manda preço.',
+].join('\n'), 2);
 organizar(faltas.faltasWorkflow, 'Faltas, atrasos e vagas', [
   'A cada 5 min (8h–20h): chama quem faltou ou está atrasada, oferece vaga que abriu para quem tem horário depois,',
   'e conta para a Gleide o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).',
@@ -700,7 +708,7 @@ organizar(pedidos.perguntaWorkflow, 'Perguntar para a Gleide', 'Chamado pelo age
 
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 if (fs.existsSync(alerta.idFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alerta.idFile, 'utf8').trim());
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alerta.idFile, 'utf8').trim());
 fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
@@ -710,6 +718,7 @@ fs.writeFileSync(path.join(dir, 'workflow-assistente-ferramentas.json'), JSON.st
 fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
+fs.writeFileSync(path.join(dir, 'workflow-catalogo-enviar.json'), JSON.stringify(catalogo.enviarWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 fs.writeFileSync(path.join(dir, 'workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
@@ -757,7 +766,7 @@ if (process.argv.includes('--enviar')) {
     const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
     await ativar(alertaId); // o n8n só aceita errorWorkflow publicado
     alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, faltas.faltasWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
+      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
     // n8n 2.x: subworkflow também precisa estar publicado (ativo) para ser chamado
     if (process.argv.includes('--ativar')) await ativar(agendaId);
@@ -780,11 +789,14 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(audiosId);
     const transcreverId = await upsert(audios.transcreverWorkflow, path.join(dir, '.workflow-audios-transcrever-id'));
     if (process.argv.includes('--ativar')) await ativar(transcreverId);
+    // catálogo de fotos: o subworkflow da tool enviar_catalogo
+    const catalogoId = await upsert(catalogo.enviarWorkflow, catalogo.idFile);
+    if (process.argv.includes('--ativar')) await ativar(catalogoId);
     const faltasId = await upsert(faltas.faltasWorkflow, faltas.idFile);
     if (process.argv.includes('--ativar')) await ativar(faltasId);
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
-    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, perguntar_para_gleide: perguntaId };
+    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
     const id = await upsert(workflow, path.join(dir, '.workflow-id'));

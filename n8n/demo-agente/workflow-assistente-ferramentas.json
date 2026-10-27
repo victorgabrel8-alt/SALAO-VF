@@ -2,7 +2,23 @@
   "name": "Assistente - Ferramentas",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000118",
+      "id": "00000000-0000-4000-9000-000000000006",
+      "name": "Nota 6",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Assistente - Ferramentas\nExecuta no banco o que a assistente da Gleide pediu (funções n8n_assistente_* do Supabase) e devolve o resultado.",
+        "width": 1400,
+        "height": 146,
+        "color": 6
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000139",
       "name": "Recebe pedido da assistente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -108,12 +124,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000119",
+      "id": "00000000-0000-4000-8000-000000000140",
       "name": "Montar chamada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        220,
+        300,
         0
       ],
       "parameters": {
@@ -121,12 +137,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000120",
+      "id": "00000000-0000-4000-8000-000000000141",
       "name": "Executar no banco",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
+        600,
         0
       ],
       "parameters": {
@@ -160,12 +176,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000121",
+      "id": "00000000-0000-4000-8000-000000000142",
       "name": "Mandar para a cliente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        660,
+        900,
         0
       ],
       "parameters": {
@@ -194,13 +210,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000122",
+      "id": "00000000-0000-4000-8000-000000000143",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
-        -120
+        1200,
+        0
       ],
       "parameters": {
         "method": "POST",
@@ -225,12 +241,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000123",
+      "id": "00000000-0000-4000-8000-000000000144",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1100,
+        1500,
         0
       ],
       "parameters": {

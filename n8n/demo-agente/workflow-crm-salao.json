@@ -2,7 +2,23 @@
   "name": "CRM (anotações do agente)",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000063",
+      "id": "00000000-0000-4000-9000-000000000004",
+      "name": "Nota 4",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Anotações do agente (CRM)\nChamado pelo agente nos marcos da conversa: grava o interesse, a objeção ou o agendamento como pré-avaliação da cliente.",
+        "width": 1200,
+        "height": 146,
+        "color": 7
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000068",
       "name": "Recebe pedido do agente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -30,12 +46,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000064",
+      "id": "00000000-0000-4000-8000-000000000069",
       "name": "Anotar na ficha",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        220,
+        300,
         0
       ],
       "parameters": {
@@ -47,19 +63,19 @@
       },
       "credentials": {
         "postgres": {
-          "id": "",
+          "id": "zzYnr5Tvb8vIFf4H",
           "name": "CRM Postgres"
         }
       },
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000065",
+      "id": "00000000-0000-4000-8000-000000000070",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        440,
+        900,
         0
       ],
       "parameters": {
@@ -77,12 +93,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000083",
+      "id": "00000000-0000-4000-8000-000000000088",
       "name": "Supabase: pré-avaliação",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
+        600,
         0
       ],
       "parameters": {

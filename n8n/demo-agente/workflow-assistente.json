@@ -2,7 +2,23 @@
   "name": "Assistente da Gleide",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000124",
+      "id": "00000000-0000-4000-9000-000000000005",
+      "name": "Nota 5",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -284
+      ],
+      "parameters": {
+        "content": "## Assistente da Gleide (WhatsApp)\nRoda quando a Gleide escreve para o número do salão (números da assistente).\nEla pede em linguagem normal e a assistente faz no app: agenda, fichas, bloqueios, pausar IA, avisar cliente (ferramentas embaixo do agente).\n\n➡️ O fluxo é lido da esquerda para a direita e continua na faixa de baixo.",
+        "width": 1400,
+        "height": 224,
+        "color": 6
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000145",
       "name": "Webhook assistente",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -18,12 +34,12 @@
       "webhookId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a80"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000125",
+      "id": "00000000-0000-4000-8000-000000000146",
       "name": "Extrair dados",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        220,
+        300,
         0
       ],
       "parameters": {
@@ -83,12 +99,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000126",
+      "id": "00000000-0000-4000-8000-000000000147",
       "name": "Filtro",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        440,
+        600,
         0
       ],
       "parameters": {
@@ -137,12 +153,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000127",
+      "id": "00000000-0000-4000-8000-000000000148",
       "name": "É áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        660,
+        900,
         0
       ],
       "parameters": {
@@ -171,13 +187,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000128",
+      "id": "00000000-0000-4000-8000-000000000149",
       "name": "Baixar áudio (Evolution)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        880,
-        -120
+        1200,
+        0
       ],
       "parameters": {
         "method": "POST",
@@ -199,13 +215,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000129",
+      "id": "00000000-0000-4000-8000-000000000150",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1100,
-        -120
+        1500,
+        0
       ],
       "parameters": {
         "method": "POST",
@@ -217,16 +233,21 @@
         "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
         "options": {}
       },
-      "credentials": {},
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000130",
+      "id": "00000000-0000-4000-8000-000000000151",
       "name": "Texto da mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1320,
+        1800,
         0
       ],
       "parameters": {
@@ -244,12 +265,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000131",
+      "id": "00000000-0000-4000-8000-000000000152",
       "name": "Ler pendências",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1540,
+        2400,
         0
       ],
       "parameters": {
@@ -284,13 +305,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000132",
+      "id": "00000000-0000-4000-8000-000000000153",
       "name": "Agente assistente",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        1760,
-        0
+        600,
+        460
       ],
       "parameters": {
         "promptType": "define",
@@ -301,13 +322,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000133",
+      "id": "00000000-0000-4000-8000-000000000154",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        1640,
-        220
+        600,
+        640
       ],
       "parameters": {
         "modelName": "models/gemini-3-flash-preview",
@@ -315,16 +336,21 @@
           "temperature": 0.2
         }
       },
-      "credentials": {}
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000134",
+      "id": "00000000-0000-4000-8000-000000000155",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
       "position": [
-        1800,
-        220
+        780,
+        640
       ],
       "parameters": {
         "sessionIdType": "customKey",
@@ -334,25 +360,25 @@
       },
       "credentials": {
         "redis": {
-          "id": "",
+          "id": "bSZHOsNCSsDVJpK7",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000135",
+      "id": "00000000-0000-4000-8000-000000000156",
       "name": "buscar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1960,
-        220
+        960,
+        640
       ],
       "parameters": {
         "description": "Procura clientes pelo nome ou telefone. Devolve id, telefone, status, etapa do funil, pré-avaliação, valor orçado, observações e os horários marcados (com agendamento_id).",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -671,19 +697,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000136",
+      "id": "00000000-0000-4000-8000-000000000157",
       "name": "agenda_do_dia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2120,
-        220
+        1140,
+        640
       ],
       "parameters": {
         "description": "Lista os horários de um dia (com agendamento_id, hora, fim, cliente, serviço, status, se chegou e serviços a mais).",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1002,19 +1028,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000137",
+      "id": "00000000-0000-4000-8000-000000000158",
       "name": "resultado_avaliacao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2280,
-        220
+        600,
+        800
       ],
       "parameters": {
         "description": "Grava o resultado de uma avaliação. Só use DEPOIS que a Gleide confirmou o resumo.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1343,19 +1369,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000138",
+      "id": "00000000-0000-4000-8000-000000000159",
       "name": "status_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2440,
-        220
+        780,
+        800
       ],
       "parameters": {
         "description": "Marca um horário como realizado (veio), faltou ou cancelado. Só use DEPOIS da confirmação.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1676,19 +1702,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000139",
+      "id": "00000000-0000-4000-8000-000000000160",
       "name": "registrar_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2600,
-        220
+        960,
+        800
       ],
       "parameters": {
         "description": "Registra um atendimento que já aconteceu e não estava na agenda (cliente veio sem marcar). Só use DEPOIS da confirmação.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2012,19 +2038,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000140",
+      "id": "00000000-0000-4000-8000-000000000161",
       "name": "anotar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2760,
-        220
+        1140,
+        800
       ],
       "parameters": {
         "description": "Acrescenta uma anotação na ficha da cliente (alergia, preferência, combinado). Não apaga as anteriores. Só use DEPOIS da confirmação.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2344,19 +2370,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000141",
+      "id": "00000000-0000-4000-8000-000000000162",
       "name": "liberar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2920,
-        220
+        600,
+        960
       ],
       "parameters": {
         "description": "Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. Só use quando a Gleide disser \"libera\" ou \"não veio\" para essa cliente. Nunca por conta própria.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2675,13 +2701,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000142",
+      "id": "00000000-0000-4000-8000-000000000163",
       "name": "Marcar como lida",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1430,
-        -120
+        2100,
+        0
       ],
       "parameters": {
         "method": "POST",
@@ -2703,26 +2729,26 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000143",
+      "id": "00000000-0000-4000-8000-000000000164",
       "name": "Ritmo humano",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1900,
-        -120
+        1440,
+        460
       ],
       "parameters": {
         "jsCode": "const dela = String($('Texto da mensagem').first().json.texto || '');\nconst texto = String($json.output || '');\nconst pausa = Math.min(4, 1.5 + dela.length / 120 + (dela.startsWith('[áudio]') ? 1 : 0));\nconst delay = Math.round(Math.min(8000, Math.max(2000, texto.length * 30)));\nreturn [{ json: { pausa, delay } }];"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000144",
+      "id": "00000000-0000-4000-8000-000000000165",
       "name": "Pausa (lendo)",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1950,
-        -120
+        1740,
+        460
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -2732,13 +2758,13 @@
       "webhookId": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0e"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000145",
+      "id": "00000000-0000-4000-8000-000000000166",
       "name": "Digitando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1980,
-        -120
+        2040,
+        460
       ],
       "parameters": {
         "method": "POST",
@@ -2760,19 +2786,19 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000146",
+      "id": "00000000-0000-4000-8000-000000000167",
       "name": "horarios_livres",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1960,
-        440
+        780,
+        960
       ],
       "parameters": {
         "description": "Horários livres de um dia para um serviço, de 30 em 30 min (mesmas regras do app: expediente, almoço, dias sem atender, sem encavalar).",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3093,19 +3119,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000147",
+      "id": "00000000-0000-4000-8000-000000000168",
       "name": "marcar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2120,
-        440
+        960,
+        960
       ],
       "parameters": {
         "description": "Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3430,19 +3456,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000148",
+      "id": "00000000-0000-4000-8000-000000000169",
       "name": "reagendar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2280,
-        440
+        1140,
+        960
       ],
       "parameters": {
         "description": "Muda o horário (e o serviço, se ela pedir) do MESMO agendamento. Pode usar direto quando ela disse qual horário e para quando.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3764,19 +3790,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000149",
+      "id": "00000000-0000-4000-8000-000000000170",
       "name": "atrasar_agenda",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2440,
-        440
+        600,
+        1120
       ],
       "parameters": {
         "description": "Empurra (ou adianta, minutos negativos) todos os horários a atender do dia a partir de uma hora. Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4097,19 +4123,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000150",
+      "id": "00000000-0000-4000-8000-000000000171",
       "name": "concluir",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2600,
-        440
+        780,
+        1120
       ],
       "parameters": {
         "description": "O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4431,19 +4457,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000151",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "chegou",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2760,
-        440
+        960,
+        1120
       ],
       "parameters": {
         "description": "A cliente chegou ao salão (botão \"Chegou\" do app): a IA não cobra atraso dela.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4763,19 +4789,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000152",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "excluir_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2920,
-        440
+        1140,
+        1120
       ],
       "parameters": {
         "description": "Apaga de vez um horário lançado por engano (cliente que desmarcou é status_atendimento cancelado). Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -5094,19 +5120,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000153",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "bloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        3080,
-        440
+        600,
+        1280
       ],
       "parameters": {
         "description": "Marca dias sem atender (viagem, folga, curso): o app e a IA de atendimento param de oferecer horário. Devolve os horários já marcados nesses dias. Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -5427,19 +5453,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000154",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "desbloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        3240,
-        440
+        780,
+        1280
       ],
       "parameters": {
         "description": "Tira o bloqueio que cobre um dia (o salão volta a atender). Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -5758,19 +5784,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000155",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "pausar_ia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        3080,
-        220
+        960,
+        1280
       ],
       "parameters": {
         "description": "Pausa por 12 h (ou reativa) a IA de atendimento para uma cliente, como no app.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -6090,19 +6116,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000156",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "editar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        3240,
-        220
+        1140,
+        1280
       ],
       "parameters": {
         "description": "Corrige o nome ou grava o aniversário da cliente. Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -6423,19 +6449,19 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000157",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "avisar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        3400,
-        220
+        600,
+        1440
       ],
       "parameters": {
         "description": "Manda mensagem para a cliente pelo número do salão sobre um horário dela. Só use DEPOIS do sim da Gleide.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "value": "49AdkUAS0oLDVIEM",
           "mode": "id"
         },
         "workflowInputs": {
@@ -6756,13 +6782,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000158",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Responder a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2000,
-        0
+        2340,
+        460
       ],
       "parameters": {
         "method": "POST",
@@ -6787,12 +6813,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000230",
+      "id": "00000000-0000-4000-8000-000000000251",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
+        2700,
         0
       ],
       "parameters": {
@@ -6804,19 +6830,19 @@
       },
       "credentials": {
         "redis": {
-          "id": "",
+          "id": "bSZHOsNCSsDVJpK7",
           "name": "Redis local"
         }
       },
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000231",
+      "id": "00000000-0000-4000-8000-000000000252",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
+        3000,
         0
       ],
       "parameters": {
@@ -6824,12 +6850,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000232",
+      "id": "00000000-0000-4000-8000-000000000253",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        0,
+        3300,
         0
       ],
       "parameters": {
@@ -6858,12 +6884,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000233",
+      "id": "00000000-0000-4000-8000-000000000254",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
+        3600,
         0
       ],
       "parameters": {
@@ -6872,18 +6898,18 @@
       },
       "credentials": {
         "redis": {
-          "id": "",
+          "id": "bSZHOsNCSsDVJpK7",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000234",
+      "id": "00000000-0000-4000-8000-000000000255",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
+        3900,
         0
       ],
       "parameters": {
@@ -6891,13 +6917,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000235",
+      "id": "00000000-0000-4000-8000-000000000256",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
         0,
-        0
+        460
       ],
       "parameters": {
         "operation": "push",
@@ -6907,19 +6933,19 @@
       },
       "credentials": {
         "redis": {
-          "id": "",
+          "id": "bSZHOsNCSsDVJpK7",
           "name": "Redis local"
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000236",
+      "id": "00000000-0000-4000-8000-000000000257",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
-        0
+        300,
+        460
       ],
       "parameters": {
         "jsCode": "return [{ json: {}, pairedItem: 0 }];"

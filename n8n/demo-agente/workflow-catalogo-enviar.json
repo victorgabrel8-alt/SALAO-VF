@@ -1,0 +1,617 @@
+{
+  "name": "Catálogo - Enviar fotos",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000010",
+      "name": "Nota 10",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -258
+      ],
+      "parameters": {
+        "content": "## Catálogo - Enviar fotos\nChamado pelo agente (enviar_catalogo) quando a cliente pede para ver os cabelos: escolhe 2 a 4 fotos que combinam\n(tipo, cor, comprimento, textura), sem repetir as que ela já recebeu, e manda uma por vez pela Evolution (URL assinada do Storage).\nFotos e fichas: tabela catalogo + bucket \"catalogo\" (node cadastrar-catalogo.js <pasta>). Nunca manda preço.",
+        "width": 1400,
+        "height": 198,
+        "color": 2
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000121",
+      "name": "Recebe pedido da IA",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "tipo"
+            },
+            {
+              "name": "cor"
+            },
+            {
+              "name": "comprimento"
+            },
+            {
+              "name": "textura"
+            },
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "jid"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000122",
+      "name": "Fotos do catálogo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/catalogo?select=arquivo,grupo,tipo,cor,comprimento_cm,textura,legenda,ordem&ativo=eq.true&empresa_id=eq.{{ $env.EMPRESA_ID }}&order=grupo,ordem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000123",
+      "name": "Já enviadas a ela",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?select=conteudo,clientes!inner(telefone)&autor=eq.ia&tipo=eq.imagem&clientes.telefone=eq.{{ (() => { const d = String($('Recebe pedido da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000124",
+      "name": "Escolher fotos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// O pedido da IA (tipo, cor, comprimento, textura) -> 2 a 4 fotos que combinam, no máximo 1 por cabelo,\n// sem repetir foto que esta cliente já recebeu.\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst pedido = $('Recebe pedido da IA').first().json;\nconst fotos = $('Fotos do catálogo').all().map((i) => i.json).filter((f) => f.arquivo);\nconst enviados = $('Já enviadas a ela').all().map((i) => i.json.conteudo || '').join(' ');\nif (!fotos.length) return [{ json: { ok: false, resposta: 'FOTOS NÃO ENVIADAS: o catálogo de fotos está vazio ou não carregou. Responda em texto, sem prometer foto.' } }];\n\nconst tipo = sem(pedido.tipo); const cor = sem(pedido.cor); const textura = sem(pedido.textura);\nconst cm = Number(String(pedido.comprimento || '').replace(/\\D/g, '')) || 0;\n// cores parecidas contam como a mesma família (cliente fala \"moreno\", \"escuro\", \"preto\", \"mel\"...)\nconst FAMILIA = [['loir', 'mel', 'dourad', 'platin', 'claro', 'ombre', 'esfumad', 'mesclad'], ['castanh', 'moren', 'escur', 'pret', 'chocolate', 'natural'],\n  ['ruiv', 'acobread', 'cobre', 'ruiva', 'vermelh'], ['grisalh', 'cinza', 'branc'], ['iluminad', 'luzes', 'mechas']];\nconst familia = (s) => FAMILIA.findIndex((f) => f.some((p) => s.includes(p)));\nconst famTex = (s) => /cache|cacho|caipira|crespo/.test(s) ? 'cacheado' : /ondul/.test(s) ? 'ondulado' : /liso/.test(s) ? 'liso' : '';\nconst pontos = (f) => {\n  let p = 0;\n  const ft = sem(f.tipo);\n  if (tipo) {\n    if (tipo.includes('sul') || tipo.includes('regional')) p += ft === tipo ? 4 : ft.startsWith('brasileiro') ? 2 : -4;\n    else if (tipo.includes('brasil')) p += ft.startsWith('brasileiro') ? 4 : -4;\n    else p += ft.includes(tipo.slice(0, 5)) ? 4 : -4;\n  }\n  const fc = sem(f.cor);\n  if (cor) {\n    if (fc === cor) p += 5;\n    else if (cor.split(/\\s+/).filter((w) => w.length > 3).every((w) => fc.includes(w.slice(0, 5)))) p += 4;\n    else if (familia(cor) >= 0 && familia(cor) === familia(fc)) p += 2;\n    else p -= 5;\n  }\n  if (textura) {\n    const a = famTex(textura); const b = famTex(sem(f.textura));\n    if (sem(f.textura) === textura) p += 3; else if (a && a === b) p += 2; else if (a && b) p -= 3;\n  }\n  if (cm && f.comprimento_cm) { const d = Math.abs(f.comprimento_cm - cm); p += d <= 5 ? 2 : d <= 10 ? 1 : d > 20 ? -2 : 0; }\n  return p;\n};\nconst exigido = (tipo ? 4 : 0) + (cor ? 2 : 0);\nconst porGrupo = {};\nfor (const f of fotos) {\n  if (enviados.includes('[foto do catálogo: ' + f.arquivo + ']')) continue;\n  const p = pontos(f);\n  if (p < exigido) continue;\n  const atual = porGrupo[f.grupo];\n  // do mesmo cabelo fica a 1ª foto (a principal) que ela ainda não viu\n  if (!atual || p > atual.p || (p === atual.p && f.ordem < atual.f.ordem)) porGrupo[f.grupo] = { f, p };\n}\n// cabelo que já teve foto enviada vai para o fim da fila (variedade antes de repetir o mesmo cabelo)\nconst jaViuGrupo = (g) => enviados.includes('[foto do catálogo: ' + g + '/');\nconst lista = Object.values(porGrupo).sort((a, b) => (jaViuGrupo(a.f.grupo) - jaViuGrupo(b.f.grupo)) || b.p - a.p || a.f.grupo.localeCompare(b.f.grupo));\nconst escolhidas = lista.slice(0, 4).map((x) => x.f);\nconst pedidoTxt = [pedido.tipo, pedido.cor, pedido.textura, pedido.comprimento && (cm ? cm + ' cm' : pedido.comprimento)].filter(Boolean).join(', ') || 'sem filtro';\nif (!escolhidas.length) {\n  const algumaJa = fotos.some((f) => enviados.includes('[foto do catálogo: ' + f.arquivo + ']') && pontos(f) >= exigido);\n  return [{ json: { ok: false, resposta: algumaJa\n    ? 'FOTOS NÃO ENVIADAS: ela JÁ recebeu todas as fotos do catálogo que combinam com \"' + pedidoTxt + '\". Não mande de novo; responda em texto, curto, e se ela quiser ver outra opção pergunte cor, tipo ou comprimento diferente.'\n    : 'FOTOS NÃO ENVIADAS: não tenho foto no catálogo para \"' + pedidoTxt + '\". Responda em texto, sem prometer foto; se fizer sentido, pergunte se ela quer ver outra cor, tipo ou comprimento.' } }];\n}\n// pausa de gente entre uma foto e a próxima (a 1ª sai logo)\nreturn escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, total: escolhidas.length, posicao: i + 1,\n  delay: 1200 + Math.floor(Math.random() * 1500) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000125",
+      "name": "Tem foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Tem foto?",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000126",
+      "name": "URLs assinadas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/storage/v1/object/sign/catalogo",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ expiresIn: 3600, paths: $('Escolher fotos').all().map(i => i.json.arquivo) }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000127",
+      "name": "Montar envios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const base = $env.SUPABASE_URL + '/storage/v1';\nconst assinadas = $('URLs assinadas').all().flatMap((i) => Array.isArray(i.json) ? i.json : [i.json]);\nconst url = Object.fromEntries(assinadas.filter((a) => a && a.signedURL).map((a) => [a.path, base + a.signedURL]));\nconst jid = $('Recebe pedido da IA').first().json.jid;\nreturn $('Escolher fotos').all().filter((i) => url[i.json.arquivo]).map((i) => ({ json: { ...i.json, jid, url: url[i.json.arquivo] } }));"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000128",
+      "name": "Gerou URL?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Gerou URL?",
+              "leftValue": "={{ !!$json.url }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000129",
+      "name": "Enviar foto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.jid, mediatype: 'image', mimetype: 'image/jpeg', media: $json.url, fileName: 'cabelo-' + $json.posicao + '.jpg', caption: $json.total > 1 ? ($json.legenda || '') : '', delay: $json.delay }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 3500
+            }
+          },
+          "timeout": 60000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000130",
+      "name": "Enviadas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const fotos = $('Gerou URL?').all();\nreturn $input.all().map((r, i) => ({ json: { ...fotos[i].json, wa_id: r.json.key?.id || null } })).filter((x) => x.json.wa_id);"
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000131",
+      "name": "Enviou alguma?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Enviou alguma?",
+              "leftValue": "={{ !!$json.wa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000132",
+      "name": "Registrar no CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: (() => { const d = String($('Recebe pedido da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(),\n           p_conteudo: '📷 Foto do catálogo ' + '[foto do catálogo: ' + $json.arquivo + ']' + ': ' + ($json.legenda || $json.tipo),\n           p_autor: 'ia', p_tipo: 'imagem', p_wa_message_id: $json.wa_id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000133",
+      "name": "Resposta (enviadas)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ (() => { const f = $('Enviadas').all().map(i => i.json); const pedidas = $('Escolher fotos').all().length;\n  return 'FOTOS ENVIADAS: a cliente acabou de receber ' + f.length + ' foto(s) do catálogo (' + f[0].pedido + '): ' +\n    f.map(x => x.tipo + ', ' + (x.legenda || x.cor)).join(' | ') + '. ' +\n    (f.length < pedidas ? 'Outras ' + (pedidas - f.length) + ' não foram (falha no envio); não comente. ' : '') +\n    'As fotos já falam por si: NÃO descreva uma por uma e NÃO fale preço (preço do cabelo só pela Gleide, via perguntar_para_gleide). ' +\n    'Escreva no máximo uma frase curta e natural, por exemplo perguntando se alguma agradou ou qual comprimento ela imagina. Se a mensagem dela tiver outras perguntas, responda-as.'; })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000134",
+      "name": "Resposta (sem foto)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        200
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $json.resposta }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000135",
+      "name": "Resposta (falhou)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3300,
+        200
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "FOTOS NÃO ENVIADAS (falha no envio). Responda em texto, curto, sem dizer que mandou foto e sem prometer mandar depois.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Recebe pedido da IA": {
+      "main": [
+        [
+          {
+            "node": "Fotos do catálogo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fotos do catálogo": {
+      "main": [
+        [
+          {
+            "node": "Já enviadas a ela",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Já enviadas a ela": {
+      "main": [
+        [
+          {
+            "node": "Escolher fotos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escolher fotos": {
+      "main": [
+        [
+          {
+            "node": "Tem foto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "URLs assinadas": {
+      "main": [
+        [
+          {
+            "node": "Montar envios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar envios": {
+      "main": [
+        [
+          {
+            "node": "Gerou URL?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar foto": {
+      "main": [
+        [
+          {
+            "node": "Enviadas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviadas": {
+      "main": [
+        [
+          {
+            "node": "Enviou alguma?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar no CRM": {
+      "main": [
+        [
+          {
+            "node": "Resposta (enviadas)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem foto?": {
+      "main": [
+        [
+          {
+            "node": "URLs assinadas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta (sem foto)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gerou URL?": {
+      "main": [
+        [
+          {
+            "node": "Enviar foto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta (falhou)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviou alguma?": {
+      "main": [
+        [
+          {
+            "node": "Registrar no CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta (falhou)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

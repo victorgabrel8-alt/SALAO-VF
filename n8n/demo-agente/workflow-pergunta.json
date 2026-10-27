@@ -2,7 +2,23 @@
   "name": "Perguntar para a Gleide",
   "nodes": [
     {
-      "id": "00000000-0000-4000-8000-000000000200",
+      "id": "00000000-0000-4000-9000-000000000013",
+      "name": "Nota 13",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Perguntar para a Gleide\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Gleide e guarda para repassar a resposta quando ela tocar em Responder.",
+        "width": 1400,
+        "height": 146,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000221",
       "name": "Recebe pergunta da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -33,12 +49,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000201",
+      "id": "00000000-0000-4000-8000-000000000222",
       "name": "Supabase: número de alerta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        220,
+        300,
         0
       ],
       "parameters": {
@@ -63,12 +79,12 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000202",
+      "id": "00000000-0000-4000-8000-000000000223",
       "name": "Enviar pergunta à Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        440,
+        600,
         0
       ],
       "parameters": {
@@ -85,7 +101,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '❓ Pergunta da ' + ($('Recebe pergunta da IA').first().json.nome || 'cliente') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n(' + $('Recebe pergunta da IA').first().json.contexto + ')' : '') +\n        '\\n\\nSegure esta mensagem, toque em *Responder* e escreva o que posso dizer a ela. Eu passo pra ela e sigo o atendimento.' }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '❓ ' + ($('Recebe pergunta da IA').first().json.nome || 'Cliente') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        '\\n\\n↩️ Toque em Responder e escreva a resposta.' }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -95,12 +111,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000203",
+      "id": "00000000-0000-4000-8000-000000000224",
       "name": "Guardar pedido",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        660,
+        900,
         0
       ],
       "parameters": {
@@ -112,19 +128,19 @@
       },
       "credentials": {
         "redis": {
-          "id": "",
+          "id": "bSZHOsNCSsDVJpK7",
           "name": "Redis local"
         }
       },
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000204",
+      "id": "00000000-0000-4000-8000-000000000225",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        880,
+        1200,
         0
       ],
       "parameters": {
