@@ -2,7 +2,7 @@
   {
     "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/cabelo-loiro-brasileiro-na-fita-adesiva-65-cm",
     "titulo": "Cabelo Loiro Brasileiro na Fita Adesiva 65 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 65,
     "textura": "liso",
@@ -112,7 +112,7 @@
   {
     "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-castanho-liso-70-cm-162-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Castanho Liso 70 CM - 162 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -128,7 +128,7 @@
   {
     "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-catanho-liso-70-cm-186-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Catanho Liso 70 CM - 186 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -141,7 +141,7 @@
   {
     "grupo": "TECNICAS-MEGAHAIR/cabelo-na-fita-adesiva/tela-fita-adesiva-brasileiro-ruivo-65-cm-150-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Ruivo 65 CM - 150 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo",
     "comprimento_cm": 65,
     "textura": "liso",
@@ -381,7 +381,7 @@
   {
     "grupo": "TECNICAS-MEGAHAIR/ponto-americano/03-telas-cabelo-humano-levemente-ondulado-natural-65-cm-200-gramas",
     "titulo": "03 Telas Cabelo Humano Levemente Ondulado Natural 65 CM 200 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "levemente ondulado",
@@ -416,7 +416,7 @@
   {
     "grupo": "TECNICAS-MEGAHAIR/ponto-americano/cabelo-cacheado-grisalho-na-tela-de-ponto-americano-65-cm",
     "titulo": "Cabelo Cacheado Grisalho na Tela de Ponto Americano 65 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "grisalho",
     "comprimento_cm": 65,
     "textura": "cacheado",
@@ -574,7 +574,7 @@
   {
     "grupo": "cabelo-brasileiro/aplique-tic-tac-cabelo-brasileiro-castanho-60-cm",
     "titulo": "Aplique Tic Tac Cabelo Brasileiro Castanho 60 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 60,
     "textura": "ondulado",
@@ -591,7 +591,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-45-cm-loiro-raiz-esfumada-164-gramas",
     "titulo": "Cabelo Brasileiro Loiro Raiz esfumada 45 CM - 164 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 45,
     "textura": "liso",
@@ -614,7 +614,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-50-cm-48-gramas",
     "titulo": "Cabelo Brasileiro 50 CM 48 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -633,7 +633,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-50-cm-64-gramas",
     "titulo": "Cabelo Brasileiro 50 CM - 64 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -652,7 +652,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-55-cm-levemente-ondulado-206-gramas",
     "titulo": "Cabelo Brasileiro 55 CM Levemente Ondulado - 206 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 55,
     "textura": "levemente ondulado",
@@ -670,7 +670,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-60-cm-44-gramas",
     "titulo": "Cabelo Brasileiro 60 CM 44 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 60,
     "textura": "ondulado",
@@ -686,7 +686,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-65-cm",
     "titulo": "CABELO BRASILEIRO 65 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "liso",
@@ -703,7 +703,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-65-cm-castanho-ondulado-244-gramas",
     "titulo": "Cabelo Brasileiro Castanho Liso 65 CM - 244 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 65,
     "textura": "liso",
@@ -720,7 +720,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-65-cm-loiro-raiz-esfumada-625",
     "titulo": "Cabelo Brasileiro 65 CM Loiro Raiz Esfumada",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 65,
     "textura": "ondulado",
@@ -737,7 +737,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-75-cm",
     "titulo": "CABELO BRASILEIRO 75 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 75,
     "textura": "liso",
@@ -753,7 +753,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-75-cm-loiro",
     "titulo": "Cabelo Brasileiro 75 CM Loiro Raiz Esfumada",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -769,7 +769,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-75-cm-loiro-639",
     "titulo": "Cabelo Brasileiro 75 CM Loiro Raiz Esfumada",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -785,7 +785,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-75-cm-loiro-medio-dourado-200-gramas",
     "titulo": "Cabelo Brasileiro 75 CM Loiro Médio Dourado - 214 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro médio dourado",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -802,7 +802,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-75-cm-loiro-mel-dourado-200-gramas",
     "titulo": "Cabelo Brasileiro 75 CM Loiro Mel Dourado - 216 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mel dourado",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -819,7 +819,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-80-cm-loiro-mel-144-gramas",
     "titulo": "Cabelo Brasileiro 80 CM Loiro Mel - 144 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mel",
     "comprimento_cm": 80,
     "textura": "ondulado",
@@ -836,7 +836,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-60-cm-70-gramas",
     "titulo": "Cabelo Brasileiro Castanho 60 CM 70 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 60,
     "textura": "ondulado",
@@ -853,7 +853,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-70-cm",
     "titulo": "Cabelo Brasileiro Castanho 70 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -867,7 +867,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-levemente-ondulado-50-cm-70-gramas",
     "titulo": "Cabelo Brasileiro Castanho Levemente Ondulado 50 CM 60 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -883,7 +883,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-levemente-ondulado-50-cm-84-gramas",
     "titulo": "Cabelo Brasileiro Castanho Levemente Ondulado 50 CM 84 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -899,7 +899,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-liso-50-cm-62-gramas",
     "titulo": "Cabelo Brasileiro Castanho Liso 50 CM 62 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -916,7 +916,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-liso-50-cm-70-gramas",
     "titulo": "Cabelo Brasileiro Castanho Liso 50 CM 70 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -932,7 +932,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-liso-55-cm-158-gramas",
     "titulo": "Cabelo Brasileiro Castanho Liso 55 CM 158 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 55,
     "textura": "liso",
@@ -948,7 +948,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-liso-70-cm-166-gramas",
     "titulo": "Cabelo Brasileiro Castanho Liso 70 CM - 166 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -963,7 +963,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-castanho-ondulado-65-cm-182-gramas",
     "titulo": "CABELO BRASILEIRO CASTANHO ONDULADO 65 CM - 182 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 65,
     "textura": "ondulado",
@@ -981,7 +981,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-chocolate-raiz-esfumada-80-cm",
     "titulo": "Cabelo Brasileiro Chocolate Raiz Esfumada 80 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "chocolate raiz esfumada",
     "comprimento_cm": 80,
     "textura": "liso",
@@ -996,7 +996,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-45-cm",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 45 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo acobreado",
     "comprimento_cm": 45,
     "textura": "levemente ondulado",
@@ -1013,7 +1013,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-50-cm-106-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 50 CM 106 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -1029,7 +1029,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-50-cm-130-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 50 CM 130 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -1045,7 +1045,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-50-cm-72-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 50 CM 26 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho médio",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -1061,7 +1061,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-50-cm-82-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 50 CM 82 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -1077,7 +1077,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-50-cm-90-gramas-95",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 50 CM 90 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -1093,7 +1093,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-55-cm-30-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 55 CM 30 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 55,
     "textura": "levemente ondulado",
@@ -1107,7 +1107,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-55-cm-80-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado Ruivo 55 CM 80 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo",
     "comprimento_cm": 55,
     "textura": "levemente ondulado",
@@ -1120,7 +1120,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-60-cm-100-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 60 CM 100 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 60,
     "textura": "levemente ondulado",
@@ -1136,7 +1136,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-60-cm-112-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 60 CM 18 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 60,
     "textura": "levemente ondulado",
@@ -1152,7 +1152,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-60-cm-78-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 60 CM 78 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 60,
     "textura": "levemente ondulado",
@@ -1168,7 +1168,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-65-cm-128-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 65 CM - 128 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "levemente ondulado",
@@ -1185,7 +1185,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-65-cm-146-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 65 CM - 146 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "levemente ondulado",
@@ -1202,7 +1202,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-65-cm-158-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 65 CM - 158 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "levemente ondulado",
@@ -1219,7 +1219,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-65-cm-64-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 65 CM 64 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "levemente ondulado",
@@ -1234,7 +1234,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-levemente-ondulado-90-cm-96-gramas",
     "titulo": "Cabelo Brasileiro Levemente Ondulado 90 CM 96 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 90,
     "textura": "levemente ondulado",
@@ -1250,7 +1250,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-40-cm-26-gramas",
     "titulo": "Cabelo Brasileiro Liso 40 CM 26 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 40,
     "textura": "liso",
@@ -1265,7 +1265,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-50-cm-144-gramas",
     "titulo": "Cabelo Brasileiro Liso 50 CM 144 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -1281,7 +1281,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-50-cm-64-gramas",
     "titulo": "Cabelo Brasileiro Liso 50 CM 64 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -1296,7 +1296,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-65-cm-182-gramas",
     "titulo": "Cabelo Brasileiro Liso 65 CM - 182 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 65,
     "textura": "liso",
@@ -1313,7 +1313,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-70-cm-59",
     "titulo": "Cabelo Brasileiro Liso Fio Gelado 70 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -1327,7 +1327,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-70-cm-80-gramas",
     "titulo": "Cabelo Brasileiro Liso 70 CM 44 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -1343,7 +1343,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-75-cm-236-gramas",
     "titulo": "Cabelo Brasileiro Liso 75 CM - 236 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 75,
     "textura": "liso",
@@ -1359,7 +1359,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-liso-castanho-55-cm-80-gramas",
     "titulo": "Cabelo Brasileiro Liso Castanho 55 CM 80 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 55,
     "textura": "liso",
@@ -1375,7 +1375,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-55-cm-263",
     "titulo": "Cabelo Brasileiro Loiro 55 CM Raiz Esfumada",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 55,
     "textura": "liso",
@@ -1394,7 +1394,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-55-cm-305",
     "titulo": "Cabelo Brasileiro Loiro 55 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 55,
     "textura": "ondulado",
@@ -1411,7 +1411,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-55-cm-503",
     "titulo": "Cabelo Brasileiro Loiro Raiz Esfumada 55 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 55,
     "textura": "ondulado",
@@ -1427,7 +1427,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-65-cm-509",
     "titulo": "Cabelo Brasileiro Loiro 65 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 65,
     "textura": "ondulado",
@@ -1443,7 +1443,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-75-cm",
     "titulo": "Cabelo Brasileiro Loiro 75 CM Raiz Esfumada",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -1459,7 +1459,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-mel-70-cm-129",
     "titulo": "Cabelo Brasileiro Loiro Mel 70 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mel",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -1473,7 +1473,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-mel-70-cm-186-gramas",
     "titulo": "Cabelo Brasileiro Loiro Mel 70 CM - 186 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mel",
     "comprimento_cm": 70,
     "textura": "liso",
@@ -1490,7 +1490,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-mel-mesclado-60-cm-104-gramas-101",
     "titulo": "Cabelo Brasileiro Loiro Mel Mesclado 60 CM 104 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mel mesclado",
     "comprimento_cm": 60,
     "textura": "liso",
@@ -1506,7 +1506,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-mesclado-55-cm-levemente-ondulado",
     "titulo": "Cabelo Brasileiro Loiro Mesclado 55 CM Levemente Ondulado",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mesclado",
     "comprimento_cm": 55,
     "textura": "levemente ondulado",
@@ -1523,7 +1523,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-mesclado-raiz-esfumada-75-cm-531",
     "titulo": "Cabelo Brasileiro Loiro Mesclado Raiz Esfumada 75 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mesclado raiz esfumada",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -1539,7 +1539,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-ombre-hair-75-cm-32-gramas",
     "titulo": "Cabelo Brasileiro Loiro Ombre Hair 75 CM 24 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro ombré",
     "comprimento_cm": 75,
     "textura": "liso",
@@ -1554,7 +1554,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-ondulado-65-cm-50-gramas",
     "titulo": "Cabelo Brasileiro Global Loiro Ondulado 65 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 65,
     "textura": "ondulado",
@@ -1569,7 +1569,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-ondulado-mesclado-com-pontas-douradas-80-cm",
     "titulo": "Cabelo Brasileiro Loiro Ondulado Mesclado Com Pontas Douradas 80 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro mesclado",
     "comprimento_cm": 80,
     "textura": "ondulado",
@@ -1584,7 +1584,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-raiz-esfumada-50-cm-156-gramas",
     "titulo": "Cabelo Brasileiro  Loiro Raiz Esfumada 50 CM 156 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -1600,7 +1600,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-raiz-esfumada-55-cm-ondulado",
     "titulo": "Cabelo Brasileiro Loiro Raiz Esfumada 55 CM Ondulado",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 55,
     "textura": "ondulado",
@@ -1618,7 +1618,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-raiz-esfumada-65-cm-168-gramas",
     "titulo": "Cabelo Brasileiro Loiro Raiz Esfumada 65 CM 102 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 65,
     "textura": "liso",
@@ -1632,7 +1632,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-loiro-raiz-esfumada-75-cm",
     "titulo": "Cabelo Brasileiro Loiro Raiz Esfumada 75 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 75,
     "textura": "ondulado",
@@ -1648,7 +1648,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-ondulado-70-cm-150-gramas",
     "titulo": "Cabelo Brasileiro Ondulado 70 CM - 150 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 70,
     "textura": "ondulado",
@@ -1665,7 +1665,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-ondulado-natural-85-cm-70-gramas",
     "titulo": "Cabelo Brasileiro Ondulado Natural 85 CM 70 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 85,
     "textura": "ondulado",
@@ -1680,7 +1680,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-ruivo-50-cm-166-gramas-679",
     "titulo": "Cabelo Brasileiro Ruivo 50 CM - 166 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo",
     "comprimento_cm": 50,
     "textura": "liso",
@@ -1697,7 +1697,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-ruivo-55-cm",
     "titulo": "Cabelo Brasileiro Ruivo 55 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo",
     "comprimento_cm": 55,
     "textura": "liso",
@@ -1711,7 +1711,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-ruivo-55-cm-60-gramas",
     "titulo": "Cabelo Brasileiro Ruivo 55 CM 60 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo",
     "comprimento_cm": 55,
     "textura": "ondulado",
@@ -1727,7 +1727,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-brasileiro-ruivo-liso-45-cm-96-gramas",
     "titulo": "Cabelo Brasileiro Ruivo Liso 45 CM 96 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "ruivo",
     "comprimento_cm": 45,
     "textura": "liso",
@@ -1741,7 +1741,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-cacheado-caipira-grisalho-65-cm",
     "titulo": "Cabelo Humano Brasileiro Cacheado Caipira Grisalho 65 CM Quantidade:250 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "grisalho",
     "comprimento_cm": 65,
     "textura": "cacheado",
@@ -1758,7 +1758,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-cacheado-caipira-grisalho-75-cm",
     "titulo": "Cabelo Humano Brasileiro Cacheado Caipira Grisalho 75 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "grisalho",
     "comprimento_cm": 75,
     "textura": "cacheado",
@@ -1774,7 +1774,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-cacheado-tipo-3-loiro-75-cm",
     "titulo": "Cabelo Humano Brasileiro Cacheado Tipo 3 Loiro 75 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 75,
     "textura": "cacheado tipo 3",
@@ -1791,7 +1791,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-cacheado-tipo-3-morena-iluminada-55-cm",
     "titulo": "Cabelo Humano Brasileiro Cacheado Tipo 3 Morena Iluminada 55 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "morena iluminada",
     "comprimento_cm": 55,
     "textura": "cacheado tipo 3",
@@ -1809,7 +1809,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-cacheado-tipo-3-morena-iluminada-65-cm",
     "titulo": "Cabelo Humano Brasileiro Cacheado Tipo 3 Morena Iluminada 65 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "morena iluminada",
     "comprimento_cm": 65,
     "textura": "cacheado tipo 3",
@@ -1827,7 +1827,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-cacheado-tipo-3-morena-iluminada-75-cm",
     "titulo": "Cabelo Humano Brasileiro Cacheado Tipo 3 Morena Iluminada 75 CM",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "morena iluminada",
     "comprimento_cm": 75,
     "textura": "cacheado tipo 3",
@@ -1845,7 +1845,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-brasileiro-levemente-ondulado-50-cm-44-gramas",
     "titulo": "Cabelo Humano Brasileiro Levemente Ondulado 50 CM 44 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 50,
     "textura": "levemente ondulado",
@@ -1859,7 +1859,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-cacheado-tipo-3-65-cm-loiro-raiz-esfumada-estoque",
     "titulo": "Cabelo Humano Cacheado tipo 3 65 CM LOIRO RAIZ ESFUMADA",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro raiz esfumada",
     "comprimento_cm": 65,
     "textura": "cacheado tipo 3",
@@ -1875,7 +1875,7 @@
   {
     "grupo": "cabelo-brasileiro/cabelo-humano-ondulado-98900-estoque",
     "titulo": "PAGAMENTO PERSONALIZADO - VENDEDORA Raylany 98900 -196g brasileiro 70cm + fita adesiva",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "",
     "comprimento_cm": 70,
     "textura": "ondulado",
@@ -1888,7 +1888,7 @@
   {
     "grupo": "cabelo-brasileiro/conjunto-tela-ponto-americado-brasileiro-45cm-98-gramas",
     "titulo": "CONJUNTO TELA PONTO AMERICADO BRASILEIRO 45CM - 98 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho escuro",
     "comprimento_cm": 45,
     "textura": "liso",
@@ -1923,7 +1923,7 @@
   {
     "grupo": "cabelo-brasileiro/pagamento-personalizado-vendedora-bianca-98900-543",
     "titulo": "PAGAMENTO PERSONALIZADO - VENDEDORA Lavínia 98900 - Cabelo brasileiro loiro 75cm 100g + confecção tela no metro",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 75,
     "textura": "",
@@ -1936,7 +1936,7 @@
   {
     "grupo": "cabelo-brasileiro/pagamento-personalizado-vendedora-michelli-98900-cabelo-brasileiro-loiro-65-cm-l",
     "titulo": "PAGAMENTO PERSONALIZADO 98900 - VENDEDORA  ERVELLYN",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro do Sul",
     "cor": "loiro",
     "comprimento_cm": 65,
     "textura": "",
@@ -1954,7 +1954,7 @@
   {
     "grupo": "cabelo-brasileiro/pagamento-personalizado-vendedora-raylany-98900-250g-cabelo-caipira-55cm",
     "titulo": "PAGAMENTO PERSONALIZADO - VENDEDORA Lavínia 98900 -  Cabelo Cacheado morena iluminada 55cm",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "morena iluminada",
     "comprimento_cm": 55,
     "textura": "cacheado",
@@ -1967,7 +1967,7 @@
   {
     "grupo": "cabelo-brasileiro/tela-fita-adesiva-brasileiro-castanho-55-cm-142-gramas",
     "titulo": "TELA Fita adesiva - Brasileiro Castanho 55 CM - 142 Gramas",
-    "tipo": "brasileiro",
+    "tipo": "brasileiro regional",
     "cor": "castanho",
     "comprimento_cm": 55,
     "textura": "liso",

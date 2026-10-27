@@ -59,7 +59,7 @@ const cm = Number(String(pedido.comprimento || '').replace(/\D/g, '')) || 0;
 // quantas fotos (o prompt pede 1 por tipo como padrão); sem número = até 4
 const maximo = Math.min(4, Math.max(1, Number(String(pedido.quantidade || '').replace(/\D/g, '')) || 4));
 // cores parecidas contam como a mesma família (cliente fala "moreno", "escuro", "preto", "mel"...)
-const FAMILIA = [['loir', 'mel', 'dourad', 'platin', 'claro', 'ombre', 'esfumad', 'mesclad'], ['castanh', 'moren', 'escur', 'pret', 'chocolate', 'natural'],
+const FAMILIA = [['loir', 'mel', 'dourad', 'platin', 'claro', 'ombre'], ['castanh', 'moren', 'escur', 'pret', 'chocolate', 'natural'],
   ['ruiv', 'acobread', 'cobre', 'ruiva', 'vermelh'], ['grisalh', 'cinza', 'branc'], ['iluminad', 'luzes', 'mechas']];
 const familia = (s) => FAMILIA.findIndex((f) => f.some((p) => s.includes(p)));
 const famTex = (s) => /cache|cacho|caipira|crespo/.test(s) ? 'cacheado' : /ondul/.test(s) ? 'ondulado' : /liso/.test(s) ? 'liso' : '';
@@ -67,8 +67,8 @@ const pontos = (f) => {
   let p = 0;
   const ft = sem(f.tipo);
   if (tipo) {
-    // "brasileiro" sem Sul/regional ainda não foi separado: serve para os dois
-    if (tipo.includes('sul') || tipo.includes('regional')) p += ft === tipo || ft === 'brasileiro' ? 4 : ft.startsWith('brasileiro') ? 2 : -4;
+    // Sul e regional não se misturam; "brasileiro" sem separação (se algum voltar a existir) serve para os dois
+    if (tipo.includes('sul') || tipo.includes('regional')) p += ft === tipo || ft === 'brasileiro' ? 4 : -4;
     else if (tipo.includes('brasil')) p += ft.startsWith('brasileiro') ? 4 : -4;
     else p += ft.includes(tipo.slice(0, 5)) ? 4 : -4;
   }
