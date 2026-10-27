@@ -143,7 +143,7 @@ Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva 
 
 COMO A RESPOSTA CHEGA NO WHATSAPP
 Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda.
-De 1 a 3 parágrafos curtos, uma ideia em cada, com a pergunta no fim. Resposta simples: um parágrafo só. Não use ---.
+Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo (duas mensagens):
 A manutenção da tela adesiva fica a partir de R$ 300 e leva uns 90 minutos.
 
