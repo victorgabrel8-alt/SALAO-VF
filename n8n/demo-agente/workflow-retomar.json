@@ -11,7 +11,7 @@
         -232
       ],
       "parameters": {
-        "content": "## Retomar conversa\nA cada 15 min: a cliente parou de responder depois da IA? No tempo certo (config.retomada.horas, com o salão aberto) o Gemini\nescreve uma mensagem que retoma de onde parou, ou decide não retomar. Vai pelo número do salão, para o CRM e para a memória da IA.",
+        "content": "## Retomar conversa\nA cada 1 min: a cliente parou de responder depois da IA? 5 min e 30 min depois (config.retomada.minutos, com o salão aberto) o Gemini\nescreve uma mensagem que retoma de onde parou, ou decide não retomar. Vai pelo número do salão, para o CRM e para a memória da IA.",
         "width": 1400,
         "height": 172,
         "color": 1
@@ -19,7 +19,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000221",
-      "name": "A cada 15 min",
+      "name": "A cada 1 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
@@ -31,7 +31,7 @@
           "interval": [
             {
               "field": "minutes",
-              "minutesInterval": 15
+              "minutesInterval": 1
             }
           ]
         }
@@ -447,7 +447,7 @@
     }
   ],
   "connections": {
-    "A cada 15 min": {
+    "A cada 1 min": {
       "main": [
         [
           {
@@ -612,7 +612,7 @@
   "settings": {
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
-    "saveDataSuccessExecution": "all",
+    "saveDataSuccessExecution": "none",
     "saveManualExecutions": true,
     "errorWorkflow": "WLbjR5DvKLRVPVX8"
   }
