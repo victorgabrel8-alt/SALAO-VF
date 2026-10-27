@@ -180,17 +180,51 @@ if (p.acao === 'consultar') {
     }
     return v;
   };
-  // agrupa horários seguidos em faixas: "09:00 às 10:00; 14:30 às 16:00; 17:30"
+  // "9h", "9h30": como a cliente lê no WhatsApp
+  const hm = (d) => (d.minute ? d.toFormat("H'h'mm") : d.toFormat("H'h'"));
+  // agrupa horários seguidos em faixas: "9h às 10h; 14h30 às 16h; 17h30"
   const faixas = (v) => {
     const out = [];
     for (const t of v) {
       const f = out[out.length - 1];
       if (f && t.diff(f[1], 'minutes').minutes === PASSO_MIN) f[1] = t; else out.push([t, t]);
     }
-    return out.map(([a, b]) => (+a === +b ? a.toFormat('HH:mm') : a.toFormat('HH:mm') + ' às ' + b.toFormat('HH:mm'))).join('; ');
+    return out.map(([a, b]) => (+a === +b ? hm(a) : hm(a) + ' às ' + hm(b))).join('; ');
   };
-  const quadro = (dia, v) => dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + ') — horários de INÍCIO livres para ' + p.dur +
-    ' min, de 30 em 30 min: ' + faixas(v) + '. Qualquer horário dentro dessas faixas está livre; fora delas, não.';
+  // Pedido do Victor (26/10): em vez de 3 opções soltas, o dia inteiro por período (manhã, almoço, tarde),
+  // dizendo o que está livre e o que já tem cliente marcada. Sem nome de cliente: só o horário reservado.
+  const quadro = (dia, v) => {
+    const ints = intervalos(dia).filter(([a, b]) =>
+      !(p.periodo.startsWith('manh') && a.hour >= 12) && !(p.periodo.startsWith('tard') && b.hour <= 12));
+    const inicioHoje = agora.plus({ minutes: ANTECEDENCIA_MIN });
+    const linhas = [];
+    intervalos(dia).forEach(([a, b], k, todos) => {
+      if (!ints.some(([x]) => +x === +a)) return;
+      const nome = todos.length === 1 ? 'Expediente' : k === 0 ? 'Manhã' : 'Tarde';
+      // pedaços do período: reservado (alguém sendo atendida) ou vago
+      const res = ocupados.filter(([x, y]) => x < b && y > a).map(([x, y]) => [x < a ? a : x, y > b ? b : y]).sort((m, n) => m[0] - n[0]);
+      const juntos = [];
+      for (const r of res) { const u = juntos[juntos.length - 1]; if (u && r[0] <= u[1]) { if (r[1] > u[1]) u[1] = r[1]; } else juntos.push([...r]); }
+      const partes = [];
+      let t = a;
+      const vago = (x, y) => {
+        // hoje: o que já passou (ou está a menos de 1 h) não conta
+        if (y <= inicioHoje) return;
+        if (x < inicioHoje) { x = inicioHoje; const m = x.minute % PASSO_MIN; if (m || x.second) x = x.plus({ minutes: PASSO_MIN - m }).startOf('minute'); }
+        if (x >= y) return;
+        const cabe = y.diff(x, 'minutes').minutes >= p.dur;
+        partes.push((cabe ? 'livre das ' : 'vago das ') + hm(x) + ' às ' + hm(y) + (cabe ? '' : ' (não cabe o serviço de ' + p.dur + ' min)'));
+      };
+      for (const [x, y] of juntos) { if (x > t) vago(t, x); if (y > inicioHoje) partes.push('das ' + hm(x) + ' às ' + hm(y) + ' já tem cliente marcada'); t = y; }
+      if (t < b) vago(t, b);
+      linhas.push(nome + ' (' + hm(a) + ' às ' + hm(b) + '): ' + (partes.length ? partes.join('; ') : 'nada disponível (já passou)') + '.');
+      if (todos[k + 1] && nome === 'Manhã' && ints.length > 1) linhas.push('Almoço: ' + hm(b) + ' às ' + hm(todos[k + 1][0]) + ' (fechado).');
+    });
+    return 'QUADRO DO DIA — ' + dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + '), serviço de ' + p.dur + ' min:\\n' +
+      linhas.join('\\n') + '\\nInícios que cabem o serviço (de 30 em 30 min): ' + faixas(v) +
+      '. Passe à cliente o dia por período, como está acima (livre de tal a tal hora, almoço, e o que já tem cliente marcada). ' +
+      'Não escolha só 3 horários. Qualquer início dessas faixas pode ser marcado; fora delas, não.';
+  };
   const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');
   // dia bloqueado no app (folga, viagem) também é "fechado": senão a IA dizia "não temos mais vaga"
   const fechado = !(EXPEDIENTE[pedido.weekday]) || bloqueado(pedido);
