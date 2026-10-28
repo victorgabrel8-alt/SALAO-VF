@@ -14,7 +14,7 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 // marca na mensagem gravada no CRM: é por ela que o fluxo sabe quais fotos a cliente já recebeu
 const MARCA = (arquivo) => `'[foto do catálogo: ' + ${arquivo} + ']'`;
 
-module.exports = ({ node, str, main, toolSub, workflow }) => {
+module.exports = ({ node, str, main, toolSub, workflow, fotosIndividuais = true }) => {
   const SUPA_H = { parameters: [
     { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
     { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
@@ -226,6 +226,12 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
       ['quantidade', 'Quantas fotos mandar, de 1 a 4. Padrão 1 por tipo pedido', 'string'],
       ['mesmo_cabelo', 'sim quando ela pedir MAIS FOTOS DO MESMO cabelo que já viu ("tem mais desse?", "mais fotos dele"): vale a foto que ela respondeu citando ou, sem citar, a última enviada. NÃO use se ela disse que a foto não é o que quer ("parece mais liso", "queria mais cacheado", "outra cor"): aí peça de novo com a textura/cor que ela quer. Vazio nos outros casos', 'string']]));
   workflow.connections.enviar_catalogo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
+  // modo temporário do prompt (seção 01-A): a IA manda o link do catálogo do WhatsApp Business, sem foto individual.
+  // O workflow de envio continua publicado, para religar é só voltar fotosIndividuais para true no montar-workflow.js.
+  if (!fotosIndividuais) {
+    workflow.nodes.splice(workflow.nodes.findIndex((n) => n.name === 'enviar_catalogo'), 1);
+    delete workflow.connections.enviar_catalogo;
+  }
 
   return { enviarWorkflow, idFile };
 };
