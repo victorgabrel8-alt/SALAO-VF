@@ -487,6 +487,8 @@ const nodes = [
       "// no máximo 2 balões (26/10: 3 balões era texto demais)",
       "if (baloes.length > 2) baloes = [baloes[0], { t: baloes.slice(1).map(b => b.t).join('\\n\\n'), ref: 0 }];",
       "baloes = baloes.filter(b => b.t);",
+      "// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10)",
+      "baloes.forEach(b => { b.t = b.t.replace(/(https?:\\/\\/\\S*?)[.,;:!?]+(?=\\s|$)/g, '$1'); });",
       "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
       "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
