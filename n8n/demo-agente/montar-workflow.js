@@ -647,7 +647,8 @@ require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pa
 const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });
 
 // Catálogo de fotos de cabelo: tool enviar_catalogo (ver catalogo-workflows.js e cadastrar-catalogo.js)
-const catalogo = require('./catalogo-workflows.js')({ node, str, main, toolSub, workflow });
+// fotosIndividuais: false enquanto o prompt estiver no modo de link do catálogo do WhatsApp Business (seção 01-A)
+const catalogo = require('./catalogo-workflows.js')({ node, str, main, toolSub, workflow, fotosIndividuais: false });
 
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
