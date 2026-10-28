@@ -17,7 +17,8 @@
 //                 empresas.config.vagas = {"oferecer": true, "so_para": [...]} (idem, para as vagas).
 
 const EMPRESA = "$env.EMPRESA_ID";
-const NUMEROS = "($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean)";
+// sem ASSISTENTE_NUMEROS no servidor (Easypanel), vale o número da Gleide (28/10; igual a empresas.config.assistente_numeros)
+const NUMEROS = "($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map(s => s.trim()).filter(Boolean)";
 
 // Hora e dia no fuso do salão: "hoje às 14:00", "ontem às 14:00", "qui, 30/10 às 09:00"
 const QUANDO = String.raw`

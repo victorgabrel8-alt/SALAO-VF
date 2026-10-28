@@ -13,7 +13,8 @@
 // n8n_assistente_* de supabase/004 e 006. (Antes era o "salao_teste" local, credencial "Salão teste (004)".)
 
 const EMPRESA = "$env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001'";
-const NUMEROS = "($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean)";
+// sem ASSISTENTE_NUMEROS no servidor (Easypanel), vale o número da Gleide (28/10; igual a empresas.config.assistente_numeros)
+const NUMEROS = "($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map(s => s.trim()).filter(Boolean)";
 const TEL = "($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]";
 // número cadastrado que bate com o telefone t (no WhatsApp, celular antigo de MT pode chegar sem o 9: 5566999990000 → 556699990000)
 const NUMERO_DE = (t) => `(${NUMEROS}.find(n => n === ${t} || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === ${t}) || '')`;

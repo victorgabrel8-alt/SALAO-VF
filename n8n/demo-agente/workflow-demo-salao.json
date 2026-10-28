@@ -2904,7 +2904,7 @@
           "conditions": [
             {
               "id": "g1",
-              "leftValue": "={{ (($env.ASSISTENTE_NUMEROS || '').split(',').map(s => s.trim()).filter(Boolean).find(n => n === $json.telefone || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === $json.telefone) || '') !== '' }}",
+              "leftValue": "={{ (($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map(s => s.trim()).filter(Boolean).find(n => n === $json.telefone || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === $json.telefone) || '') !== '' }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
