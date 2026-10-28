@@ -761,7 +761,7 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3300,
+        3900,
         1460
       ],
       "parameters": {
@@ -784,7 +784,7 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3840,
+        4440,
         2780
       ],
       "parameters": {
@@ -800,12 +800,185 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000040",
+      "name": "Vez: contar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        1460
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "processando:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000041",
+      "name": "Tem vez?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3600,
+        1460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "v1",
+              "leftValue": "={{ Object.keys($json).length < 3 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000042",
+      "name": "Vez: esperar 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3900,
+        1660
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "webhookId": "7d8e9f0a-1b2c-4d3e-8f4a-5b6c7d8e9f0a"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000043",
+      "name": "Offline: esperar",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        3780
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ 5 + Math.floor(Math.random() * 11) }}",
+        "unit": "seconds"
+      },
+      "webhookId": "8e9f0a1b-2c3d-4e4f-9a5b-6c7d8e9f0a1b",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000044",
+      "name": "Offline: alguém respondendo?",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        3780
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "processando:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000045",
+      "name": "Ninguém mais respondendo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        3780
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "o1",
+              "leftValue": "={{ Object.keys($json).length === 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000046",
+      "name": "Offline: sair",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        3780
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ $env.EVOLUTION_INSTANCE }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'unavailable', delay: 1000 }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000047",
       "name": "Buffer: ler mensagens",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3600,
-        1460
+        0,
+        2120
       ],
       "parameters": {
         "operation": "get",
@@ -822,13 +995,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000041",
+      "id": "00000000-0000-4000-8000-000000000048",
       "name": "Buffer: limpar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3900,
-        1460
+        300,
+        2120
       ],
       "parameters": {
         "operation": "delete",
@@ -842,12 +1015,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000042",
+      "id": "00000000-0000-4000-8000-000000000049",
       "name": "Montar entrada",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        0,
+        600,
         2120
       ],
       "parameters": {
@@ -895,12 +1068,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000043",
+      "id": "00000000-0000-4000-8000-000000000050",
       "name": "Leitura: ficar online",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
+        900,
         2120
       ],
       "parameters": {
@@ -923,12 +1096,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000044",
+      "id": "00000000-0000-4000-8000-000000000051",
       "name": "Leitura: uma por vez",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        600,
+        1200,
         2120
       ],
       "parameters": {
@@ -936,12 +1109,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000045",
+      "id": "00000000-0000-4000-8000-000000000052",
       "name": "Leitura: próxima",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        900,
+        1500,
         2120
       ],
       "parameters": {
@@ -949,12 +1122,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000046",
+      "id": "00000000-0000-4000-8000-000000000053",
       "name": "Leitura: lendo",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1200,
+        1800,
         2320
       ],
       "parameters": {
@@ -965,12 +1138,12 @@
       "webhookId": "4e5f6071-8293-4a4b-8c3d-f40516273849"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000047",
+      "id": "00000000-0000-4000-8000-000000000054",
       "name": "Leitura: marcar lida",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1500,
+        2100,
         2320
       ],
       "parameters": {
@@ -993,12 +1166,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000048",
+      "id": "00000000-0000-4000-8000-000000000055",
       "name": "Marcar como lida",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        1800,
         2120
       ],
       "parameters": {
@@ -1007,12 +1180,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000049",
+      "id": "00000000-0000-4000-8000-000000000056",
       "name": "Agente IA",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        2100,
+        2700,
         2780
       ],
       "parameters": {
@@ -1029,12 +1202,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000050",
+      "id": "00000000-0000-4000-8000-000000000057",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        2100,
+        2700,
         2960
       ],
       "parameters": {
@@ -1051,12 +1224,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000051",
+      "id": "00000000-0000-4000-8000-000000000058",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
       "position": [
-        2280,
+        2880,
         2960
       ],
       "parameters": {
@@ -1073,12 +1246,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000052",
+      "id": "00000000-0000-4000-8000-000000000059",
       "name": "Quebrar mensagens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2940,
+        3540,
         2780
       ],
       "parameters": {
@@ -1086,12 +1259,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000053",
+      "id": "00000000-0000-4000-8000-000000000060",
       "name": "consultar_horarios_livres",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2460,
+        3060,
         2960
       ],
       "parameters": {
@@ -1218,12 +1391,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000054",
+      "id": "00000000-0000-4000-8000-000000000061",
       "name": "ver_agendamentos",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2100,
+        2700,
         3120
       ],
       "parameters": {
@@ -1348,12 +1521,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000055",
+      "id": "00000000-0000-4000-8000-000000000062",
       "name": "remarcar_agendamento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2280,
+        2880,
         3120
       ],
       "parameters": {
@@ -1480,12 +1653,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000056",
+      "id": "00000000-0000-4000-8000-000000000063",
       "name": "cancelar_agendamento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2460,
+        3060,
         3120
       ],
       "parameters": {
@@ -1611,12 +1784,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000057",
+      "id": "00000000-0000-4000-8000-000000000064",
       "name": "criar_agendamento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2640,
+        3240,
         2960
       ],
       "parameters": {
@@ -1746,12 +1919,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000058",
+      "id": "00000000-0000-4000-8000-000000000065",
       "name": "transferir_para_humano",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2640,
+        3240,
         3120
       ],
       "parameters": {
@@ -1818,12 +1991,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000059",
+      "id": "00000000-0000-4000-8000-000000000066",
       "name": "Tem texto pra enviar?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3240,
+        3840,
         2780
       ],
       "parameters": {
@@ -1852,12 +2025,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000060",
+      "id": "00000000-0000-4000-8000-000000000067",
       "name": "Um balão por vez",
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        3540,
+        4140,
         2780
       ],
       "parameters": {
@@ -1865,12 +2038,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000061",
+      "id": "00000000-0000-4000-8000-000000000068",
       "name": "Pausa (lendo/respirando)",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3840,
+        4440,
         2980
       ],
       "parameters": {
@@ -1881,26 +2054,26 @@
       "webhookId": "3d4e5f60-7182-493a-9b2c-e3f405162738"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000062",
+      "id": "00000000-0000-4000-8000-000000000069",
       "name": "Digitando (blocos de 8s)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4140,
-        2980
+        0,
+        3980
       ],
       "parameters": {
         "jsCode": "// o tempo de 'digitando…' em blocos iguais de até 7,5 s: cada chamada da Evolution dura o delay do bloco e o\n// próximo bloco começa um bloco depois (batchInterval = delay), então o tempo total é o delay calculado\nconst b = $input.first().json;\nconst n = Math.max(1, Math.ceil(b.delay / 7500));\nconst delay = Math.round(b.delay / n);\nreturn Array.from({ length: n }, () => ({ json: { jid: b.jid, delay }, pairedItem: 0 }));"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000063",
+      "id": "00000000-0000-4000-8000-000000000070",
       "name": "Digitando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4440,
-        2980
+        300,
+        3980
       ],
       "parameters": {
         "method": "POST",
@@ -1929,13 +2102,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000064",
+      "id": "00000000-0000-4000-8000-000000000071",
       "name": "Enviar mensagem",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
-        3780
+        600,
+        3980
       ],
       "parameters": {
         "method": "POST",
@@ -1961,12 +2134,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000065",
+      "id": "00000000-0000-4000-8000-000000000072",
       "name": "CRM: registrar contato",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        300,
+        900,
         2320
       ],
       "parameters": {
@@ -1985,12 +2158,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000066",
+      "id": "00000000-0000-4000-8000-000000000073",
       "name": "anotar_no_crm",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2100,
+        2700,
         3280
       ],
       "parameters": {
@@ -2057,7 +2230,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000071",
+      "id": "00000000-0000-4000-8000-000000000078",
       "name": "Supabase: registrar entrada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2096,7 +2269,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000072",
+      "id": "00000000-0000-4000-8000-000000000079",
       "name": "Pausa: alinhar com o CRM",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2116,12 +2289,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000073",
+      "id": "00000000-0000-4000-8000-000000000080",
       "name": "Supabase: ficha da cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1500,
+        2100,
         2120
       ],
       "parameters": {
@@ -2155,12 +2328,12 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000074",
+      "id": "00000000-0000-4000-8000-000000000081",
       "name": "Supabase: histórico da cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1800,
+        2400,
         2120
       ],
       "parameters": {
@@ -2194,12 +2367,12 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000075",
+      "id": "00000000-0000-4000-8000-000000000082",
       "name": "Sobre esta cliente",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3000,
+        3600,
         2120
       ],
       "parameters": {
@@ -2207,12 +2380,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000076",
+      "id": "00000000-0000-4000-8000-000000000083",
       "name": "Supabase: último alô",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2100,
+        2700,
         2120
       ],
       "parameters": {
@@ -2247,12 +2420,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000077",
+      "id": "00000000-0000-4000-8000-000000000084",
       "name": "Supabase: últimas mensagens",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
+        3000,
         2120
       ],
       "parameters": {
@@ -2287,12 +2460,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000078",
+      "id": "00000000-0000-4000-8000-000000000085",
       "name": "Supabase: tabela de serviços",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2700,
+        3300,
         2120
       ],
       "parameters": {
@@ -2327,13 +2500,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000079",
+      "id": "00000000-0000-4000-8000-000000000086",
       "name": "Supabase: registrar saída",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
-        3780
+        900,
+        3980
       ],
       "parameters": {
         "method": "POST",
@@ -2366,7 +2539,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000080",
+      "id": "00000000-0000-4000-8000-000000000087",
       "name": "Supabase: dona respondeu",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2405,7 +2578,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000081",
+      "id": "00000000-0000-4000-8000-000000000088",
       "name": "Supabase: reativar IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2444,7 +2617,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000082",
+      "id": "00000000-0000-4000-8000-000000000089",
       "name": "Supabase: alô recente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2483,7 +2656,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000083",
+      "id": "00000000-0000-4000-8000-000000000090",
       "name": "É o alô do CRM?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2517,7 +2690,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000084",
+      "id": "00000000-0000-4000-8000-000000000091",
       "name": "Supabase: registrar alô",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2556,12 +2729,12 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000117",
+      "id": "00000000-0000-4000-8000-000000000124",
       "name": "enviar_audio",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2280,
+        2880,
         3280
       ],
       "parameters": {
@@ -2628,12 +2801,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000118",
+      "id": "00000000-0000-4000-8000-000000000125",
       "name": "Supabase: áudios do salão",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3300,
+        3900,
         2120
       ],
       "parameters": {
@@ -2664,13 +2837,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000119",
+      "id": "00000000-0000-4000-8000-000000000126",
       "name": "Supabase: áudios já enviados",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3600,
-        2120
+        0,
+        2780
       ],
       "parameters": {
         "method": "GET",
@@ -2699,20 +2872,20 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000120",
+      "id": "00000000-0000-4000-8000-000000000127",
       "name": "Áudios disponíveis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3900,
-        2120
+        300,
+        2780
       ],
       "parameters": {
         "jsCode": "\nconst catalogo = (($('Supabase: áudios do salão').first().json.config) || {}).audios_prontos || [];\nconst enviados = $('Supabase: áudios já enviados').all().map((i) => i.json.conteudo || '').join(' ');\nif (!catalogo.length) return [{ json: { texto: '(nenhum áudio pronto cadastrado: responda sempre em texto)' } }];\nreturn [{ json: { texto: catalogo.map((a) => '- ' + a.tema + ' — quando usar: ' + (a.quando_usar || a.tema) +\n  (enviados.includes('[áudio pronto: ' + a.tema + ']') ? ' (JÁ ENVIADO para esta cliente: não mande de novo)' : '')).join('\\n') } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000137",
+      "id": "00000000-0000-4000-8000-000000000144",
       "name": "É a Gleide (assistente)?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2746,7 +2919,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000138",
+      "id": "00000000-0000-4000-8000-000000000145",
       "name": "Repassar para a assistente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2765,12 +2938,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000242",
+      "id": "00000000-0000-4000-8000-000000000249",
       "name": "perguntar_para_gleide",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        2460,
+        3060,
         3280
       ],
       "parameters": {
@@ -2848,7 +3021,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000243",
+      "id": "00000000-0000-4000-8000-000000000250",
       "name": "Pedido: procurar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -2872,7 +3045,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000244",
+      "id": "00000000-0000-4000-8000-000000000251",
       "name": "É resposta da Gleide?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -2906,7 +3079,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000245",
+      "id": "00000000-0000-4000-8000-000000000252",
       "name": "Pedido: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2919,7 +3092,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000246",
+      "id": "00000000-0000-4000-8000-000000000253",
       "name": "Pedido: escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2949,7 +3122,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000247",
+      "id": "00000000-0000-4000-8000-000000000254",
       "name": "Pedido: texto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2962,7 +3135,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000248",
+      "id": "00000000-0000-4000-8000-000000000255",
       "name": "Pedido: enviar à cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2994,7 +3167,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000249",
+      "id": "00000000-0000-4000-8000-000000000256",
       "name": "Pedido: registrar saída",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3026,7 +3199,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000250",
+      "id": "00000000-0000-4000-8000-000000000257",
       "name": "Pedido: memória (resposta da Gleide)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3049,7 +3222,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000251",
+      "id": "00000000-0000-4000-8000-000000000258",
       "name": "Pedido: memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3072,7 +3245,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000252",
+      "id": "00000000-0000-4000-8000-000000000259",
       "name": "Pedido: apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3093,7 +3266,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000253",
+      "id": "00000000-0000-4000-8000-000000000260",
       "name": "Pedido: confirmar à Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3125,7 +3298,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000254",
+      "id": "00000000-0000-4000-8000-000000000261",
       "name": "Pedido: seguir normal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3138,12 +3311,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000258",
+      "id": "00000000-0000-4000-8000-000000000265",
       "name": "IA falhou? (alerta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3240,
+        3840,
         2980
       ],
       "parameters": {
@@ -3172,12 +3345,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000259",
+      "id": "00000000-0000-4000-8000-000000000266",
       "name": "Avisar Victor (IA falhou)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3540,
+        4140,
         2980
       ],
       "parameters": {
@@ -3204,12 +3377,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000260",
+      "id": "00000000-0000-4000-8000-000000000267",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
+        600,
         2780
       ],
       "parameters": {
@@ -3228,12 +3401,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000261",
+      "id": "00000000-0000-4000-8000-000000000268",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        300,
+        900,
         2780
       ],
       "parameters": {
@@ -3241,12 +3414,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000262",
+      "id": "00000000-0000-4000-8000-000000000269",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        600,
+        1200,
         2780
       ],
       "parameters": {
@@ -3275,12 +3448,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000263",
+      "id": "00000000-0000-4000-8000-000000000270",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        900,
+        1500,
         2780
       ],
       "parameters": {
@@ -3295,12 +3468,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000264",
+      "id": "00000000-0000-4000-8000-000000000271",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        1800,
         2780
       ],
       "parameters": {
@@ -3308,12 +3481,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000265",
+      "id": "00000000-0000-4000-8000-000000000272",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1500,
+        2100,
         2780
       ],
       "parameters": {
@@ -3330,12 +3503,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000266",
+      "id": "00000000-0000-4000-8000-000000000273",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1800,
+        2400,
         2780
       ],
       "parameters": {
@@ -3586,7 +3759,7 @@
       "main": [
         [
           {
-            "node": "Trava: marcar",
+            "node": "Vez: contar",
             "type": "main",
             "index": 0
           }
@@ -3598,6 +3771,91 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Vez: contar": {
+      "main": [
+        [
+          {
+            "node": "Tem vez?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem vez?": {
+      "main": [
+        [
+          {
+            "node": "Trava: marcar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Vez: esperar 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vez: esperar 5s": {
+      "main": [
+        [
+          {
+            "node": "Buffer: ler última",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trava: liberar": {
+      "main": [
+        [
+          {
+            "node": "Offline: esperar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offline: esperar": {
+      "main": [
+        [
+          {
+            "node": "Offline: alguém respondendo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offline: alguém respondendo?": {
+      "main": [
+        [
+          {
+            "node": "Ninguém mais respondendo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ninguém mais respondendo?": {
+      "main": [
+        [
+          {
+            "node": "Offline: sair",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     },
     "Aguardar 3s (IA respondendo)": {

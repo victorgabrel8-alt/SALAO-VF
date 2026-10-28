@@ -276,6 +276,32 @@ const nodes = [
   node('Trava: liberar', 'n8n-nodes-base.redis', 1, [0, 0], {
     operation: 'delete', key: `=processando:{{ ${D}.telefone }}`,
   }, { credentials: REDIS }),
+  // Contra ban (pedido do Victor, 28/10): no máximo 3 conversas sendo respondidas ao mesmo tempo; a 4ª espera a vez
+  // (5 s e confere de novo). As travas vencem sozinhas em 180 s, então a fila nunca fica presa.
+  node('Vez: contar', 'n8n-nodes-base.redis', 1, [0, 0], { operation: 'keys', keyPattern: 'processando:*', getValues: false },
+    { credentials: REDIS, alwaysOutputData: true }),
+  ifNode('Tem vez?', [0, 0], [
+    cond('v1', '={{ Object.keys($json).length < 3 }}', { type: 'boolean', operation: 'true', singleValue: true }),
+  ]),
+  node('Vez: esperar 5s', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: 5, unit: 'seconds' }, { webhookId: '7d8e9f0a-1b2c-4d3e-8f4a-5b6c7d8e9f0a' }),
+  // Depois de responder, sai do "online" como gente (antes ficava online para sempre: com atendimento 24 h o número
+  // parecia nunca sair do WhatsApp). Espera 5–15 s e só sai se nenhuma outra conversa estiver sendo respondida
+  // (o "online" é do número inteiro, não de uma conversa).
+  node('Offline: esperar', 'n8n-nodes-base.wait', 1.1, [0, 0], { resume: 'timeInterval', amount: '={{ 5 + Math.floor(Math.random() * 11) }}', unit: 'seconds' },
+    { webhookId: '8e9f0a1b-2c3d-4e4f-9a5b-6c7d8e9f0a1b', executeOnce: true }),
+  node('Offline: alguém respondendo?', 'n8n-nodes-base.redis', 1, [0, 0], { operation: 'keys', keyPattern: 'processando:*', getValues: false },
+    { credentials: REDIS, alwaysOutputData: true }),
+  ifNode('Ninguém mais respondendo?', [0, 0], [
+    cond('o1', '={{ Object.keys($json).length === 0 }}', { type: 'boolean', operation: 'true', singleValue: true }),
+  ]),
+  node('Offline: sair', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
+    method: 'POST',
+    url: `${EVO}/chat/sendPresence/{{ $env.EVOLUTION_INSTANCE }}`,
+    sendHeaders: true, headerParameters: apikeyHeader,
+    sendBody: true, specifyBody: 'json',
+    jsonBody: "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'unavailable', delay: 1000 }) }}",
+    options: {},
+  }, { onError: 'continueRegularOutput' }),
 
   node('Buffer: ler mensagens', 'n8n-nodes-base.redis', 1, [1760, -20], {
     operation: 'get', key: `=buffer:{{ ${D}.telefone }}`, propertyName: 'mensagens', keyType: 'list', options: {},
@@ -597,7 +623,16 @@ const connections = {
   'Ainda ativa?': { main: [[{ node: 'Trava: ler', type: 'main', index: 0 }], [{ node: 'Buffer: descartar (pausada)', type: 'main', index: 0 }]] },
   'Trava: ler': main('Ninguém respondendo?'),
   // livre -> marca a trava e segue; ocupado -> espera 3 s e volta a conferir se ainda é a última mensagem
-  'Ninguém respondendo?': { main: [[{ node: 'Trava: marcar', type: 'main', index: 0 }], [{ node: 'Aguardar 3s (IA respondendo)', type: 'main', index: 0 }]] },
+  'Ninguém respondendo?': { main: [[{ node: 'Vez: contar', type: 'main', index: 0 }], [{ node: 'Aguardar 3s (IA respondendo)', type: 'main', index: 0 }]] },
+  // até 3 conversas ao mesmo tempo; sem vez, espera 5 s e volta a conferir se ainda é a última mensagem dela
+  'Vez: contar': main('Tem vez?'),
+  'Tem vez?': { main: [[{ node: 'Trava: marcar', type: 'main', index: 0 }], [{ node: 'Vez: esperar 5s', type: 'main', index: 0 }]] },
+  'Vez: esperar 5s': main('Buffer: ler última'),
+  // respondeu: depois de 5–15 s sai do "online", se ninguém mais estiver sendo respondido
+  'Trava: liberar': main('Offline: esperar'),
+  'Offline: esperar': main('Offline: alguém respondendo?'),
+  'Offline: alguém respondendo?': main('Ninguém mais respondendo?'),
+  'Ninguém mais respondendo?': { main: [[{ node: 'Offline: sair', type: 'main', index: 0 }], []] },
   'Aguardar 3s (IA respondendo)': main('Buffer: ler última'),
   'Trava: marcar': main('Buffer: ler mensagens'),
   'Buffer: ler mensagens': main('Buffer: limpar'),
