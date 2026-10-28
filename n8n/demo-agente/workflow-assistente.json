@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000145",
+      "id": "00000000-0000-4000-8000-000000000152",
       "name": "Webhook assistente",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -34,7 +34,7 @@
       "webhookId": "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a80"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000146",
+      "id": "00000000-0000-4000-8000-000000000153",
       "name": "Extrair dados",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -99,7 +99,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000147",
+      "id": "00000000-0000-4000-8000-000000000154",
       "name": "Filtro",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -153,7 +153,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000148",
+      "id": "00000000-0000-4000-8000-000000000155",
       "name": "É áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -187,7 +187,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000149",
+      "id": "00000000-0000-4000-8000-000000000156",
       "name": "Baixar áudio (Evolution)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -215,7 +215,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000150",
+      "id": "00000000-0000-4000-8000-000000000157",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -242,7 +242,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000151",
+      "id": "00000000-0000-4000-8000-000000000158",
       "name": "Texto da mensagem",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -265,7 +265,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000152",
+      "id": "00000000-0000-4000-8000-000000000159",
       "name": "Ler pendências",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -305,7 +305,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000153",
+      "id": "00000000-0000-4000-8000-000000000160",
       "name": "Agente assistente",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
@@ -322,7 +322,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000154",
+      "id": "00000000-0000-4000-8000-000000000161",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
@@ -344,7 +344,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000155",
+      "id": "00000000-0000-4000-8000-000000000162",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
@@ -366,7 +366,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000156",
+      "id": "00000000-0000-4000-8000-000000000163",
       "name": "buscar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -697,7 +697,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000157",
+      "id": "00000000-0000-4000-8000-000000000164",
       "name": "agenda_do_dia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1028,7 +1028,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000158",
+      "id": "00000000-0000-4000-8000-000000000165",
       "name": "resultado_avaliacao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1369,7 +1369,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000159",
+      "id": "00000000-0000-4000-8000-000000000166",
       "name": "status_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1702,7 +1702,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000160",
+      "id": "00000000-0000-4000-8000-000000000167",
       "name": "registrar_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2038,7 +2038,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000161",
+      "id": "00000000-0000-4000-8000-000000000168",
       "name": "anotar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2370,7 +2370,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000162",
+      "id": "00000000-0000-4000-8000-000000000169",
       "name": "liberar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2701,7 +2701,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000163",
+      "id": "00000000-0000-4000-8000-000000000170",
       "name": "Marcar como lida",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2729,7 +2729,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000164",
+      "id": "00000000-0000-4000-8000-000000000171",
       "name": "Ritmo humano",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -2742,7 +2742,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000165",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "Pausa (lendo)",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
@@ -2758,7 +2758,7 @@
       "webhookId": "7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0e"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000166",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "Digitando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2786,7 +2786,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000167",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "horarios_livres",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3119,7 +3119,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000168",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "marcar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3456,7 +3456,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000169",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "reagendar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3790,7 +3790,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000170",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "atrasar_agenda",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4123,7 +4123,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000171",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "concluir",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4457,7 +4457,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000172",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "chegou",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4789,7 +4789,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000173",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "excluir_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -5120,7 +5120,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000174",
+      "id": "00000000-0000-4000-8000-000000000181",
       "name": "bloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -5453,7 +5453,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000175",
+      "id": "00000000-0000-4000-8000-000000000182",
       "name": "desbloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -5784,7 +5784,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000176",
+      "id": "00000000-0000-4000-8000-000000000183",
       "name": "pausar_ia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -6116,7 +6116,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000177",
+      "id": "00000000-0000-4000-8000-000000000184",
       "name": "editar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -6449,7 +6449,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000178",
+      "id": "00000000-0000-4000-8000-000000000185",
       "name": "avisar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -6782,7 +6782,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000179",
+      "id": "00000000-0000-4000-8000-000000000186",
       "name": "Responder a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -6813,7 +6813,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000267",
+      "id": "00000000-0000-4000-8000-000000000274",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -6837,7 +6837,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000268",
+      "id": "00000000-0000-4000-8000-000000000275",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -6850,7 +6850,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000269",
+      "id": "00000000-0000-4000-8000-000000000276",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -6884,7 +6884,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000270",
+      "id": "00000000-0000-4000-8000-000000000277",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -6904,7 +6904,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000271",
+      "id": "00000000-0000-4000-8000-000000000278",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -6917,7 +6917,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000272",
+      "id": "00000000-0000-4000-8000-000000000279",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -6939,7 +6939,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000273",
+      "id": "00000000-0000-4000-8000-000000000280",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

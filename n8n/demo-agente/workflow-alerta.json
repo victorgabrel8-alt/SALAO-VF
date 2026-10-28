@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000255",
+      "id": "00000000-0000-4000-8000-000000000262",
       "name": "Execução falhou",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
@@ -29,7 +29,7 @@
       "parameters": {}
     },
     {
-      "id": "00000000-0000-4000-8000-000000000256",
+      "id": "00000000-0000-4000-8000-000000000263",
       "name": "Montar alerta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -42,7 +42,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000257",
+      "id": "00000000-0000-4000-8000-000000000264",
       "name": "Avisar no WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

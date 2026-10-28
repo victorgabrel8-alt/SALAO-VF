@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000180",
+      "id": "00000000-0000-4000-8000-000000000187",
       "name": "A cada 1 h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000181",
+      "id": "00000000-0000-4000-8000-000000000188",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000182",
+      "id": "00000000-0000-4000-8000-000000000189",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000183",
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -129,7 +129,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000184",
+      "id": "00000000-0000-4000-8000-000000000191",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -142,7 +142,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000185",
+      "id": "00000000-0000-4000-8000-000000000192",
       "name": "Mandar para a Gleide",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -172,7 +172,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000186",
+      "id": "00000000-0000-4000-8000-000000000193",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -194,7 +194,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000187",
+      "id": "00000000-0000-4000-8000-000000000194",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

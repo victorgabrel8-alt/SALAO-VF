@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000139",
+      "id": "00000000-0000-4000-8000-000000000146",
       "name": "Recebe pedido da assistente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -124,7 +124,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000140",
+      "id": "00000000-0000-4000-8000-000000000147",
       "name": "Montar chamada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -137,7 +137,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000141",
+      "id": "00000000-0000-4000-8000-000000000148",
       "name": "Executar no banco",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -176,7 +176,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000142",
+      "id": "00000000-0000-4000-8000-000000000149",
       "name": "Mandar para a cliente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -210,7 +210,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000143",
+      "id": "00000000-0000-4000-8000-000000000150",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -241,7 +241,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000144",
+      "id": "00000000-0000-4000-8000-000000000151",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
