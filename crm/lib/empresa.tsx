@@ -8,6 +8,8 @@ export type Empresa = {
   id: string;
   nome: string;
   config: Record<string, unknown>;
+  // mega_hair | manicure | estudio_beleza (supabase/024); ver lib/nicho.ts
+  nicho: string | null;
   papel: "dona" | "recepcao";
 };
 
@@ -27,7 +29,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     supabase()
       .from("usuarios_empresa")
-      .select("papel, empresas (id, nome, config)")
+      .select("papel, empresas (id, nome, config, nicho)")
       .limit(1)
       .maybeSingle()
       .then(({ data, error }) => {

@@ -20,6 +20,18 @@ export default function ConfiguracoesPage() {
         }
       />
       <div className="space-y-4">
+        <Link
+          href="/configuracoes/loja"
+          className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm active:bg-neutral-50"
+        >
+          <span>
+            <span className="block text-lg font-semibold">Dados do salão</span>
+            <span className="block text-neutral-600">Endereço, horário de funcionamento, pagamento e regras.</span>
+          </span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500" aria-hidden>
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </Link>
         <AlertaWhatsApp />
         <HorarioAlmoco />
         <Link

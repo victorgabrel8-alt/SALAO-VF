@@ -53,9 +53,18 @@ daquela loja. A Gleide continua sendo gerada como hoje (sem `--loja`), sem nenhu
 - [x] Função `criar_loja(...)` (supabase/024)
 - [ ] Funções com "America/Cuiaba" fixo passam a usar `empresas.fuso` (só se alguma loja for fora de MT)
 
-### Fase 2 — Dados da loja de manicure (Victor com a dona) — 1 dia
-- [ ] Nome da loja, endereço, horário de funcionamento e almoço, formas de pagamento
-- [ ] Serviços com preço e duração (mão, pé, pé e mão, esmaltação em gel, alongamento, blindagem…)
+### Fase 2 — Dados da loja de manicure (a própria dona, no app) — 1 dia
+A dona preenche no app, sem depender da gente (feito em 29/10, vale para qualquer nicho):
+- **Configurações → Dados do salão**: nome, endereço, referência, Instagram, horário de funcionamento por
+  dia, formas de pagamento, parcelamento, tolerância de atraso, cancelamento, sinal e um recado para a IA
+  (`empresas.config`: `horario_funcionamento`, `endereco`, `formas_pagamento`, `loja`).
+- **Configurações → Serviços e preços**: os serviços modelo do nicho já vêm criados sem preço; ela põe o
+  valor, a duração e liga o "a partir de". As categorias seguem o nicho (`crm/lib/nicho.ts`).
+- Almoço e WhatsApp para alertas já existiam em Configurações.
+
+Combinar com ela fora do app:
+- [ ] Nome da loja, endereço, horário de funcionamento e almoço, formas de pagamento (ela mesma preenche)
+- [ ] Serviços com preço e duração (ela mesma preenche)
 - [ ] Quem atende (uma ou mais manicures) e se a IA marca para qualquer uma ou para uma específica
 - [ ] Número de WhatsApp que a IA vai usar (de preferência WhatsApp Business só para isso)
 - [ ] Número da dona para avisos e para a assistente (igual à Gleide hoje)
@@ -68,7 +77,9 @@ daquela loja. A Gleide continua sendo gerada como hoje (sem `--loja`), sem nenhu
 - [ ] Conferir no app, logado como ela, que não aparece nada da Gleide (e, logado como a Gleide, nada dela)
 
 ### Fase 4 — App por nicho (José Paulo) — 2 a 4 dias
-- [ ] Categorias de serviço vindas do nicho da loja (hoje fixas em mega hair; manicure cai em "Outros")
+- [x] Categorias de serviço vindas do nicho da loja (`crm/lib/nicho.ts`, 29/10)
+- [x] Tela "Dados do salão" para a dona preencher a loja (29/10)
+- [ ] Publicar o app (branch `deploy-cloudflare`) — a Gleide também vê a tela nova
 - [ ] Textos de mega hair só para loja de mega hair (etiqueta "mega hair", ficha de pré-avaliação, placeholders)
 - [ ] Nome da dona/profissional vindo do banco onde hoje está "Gleide" em textos da tela
 - [ ] Fuso da loja em vez de `FUSO = "America/Cuiaba"` (`crm/lib/config.ts`) — pode ficar para depois se for MT
@@ -80,6 +91,8 @@ daquela loja. A Gleide continua sendo gerada como hoje (sem `--loja`), sem nenhu
 - [ ] Prefixo da loja nas chaves do Redis só no conjunto novo (`<loja>:memoria:…`); a Gleide fica sem prefixo
 - [ ] Nome dos workflows com a loja ("[Manicure X] Agente WhatsApp") e webhook próprio
 - [ ] Textos fixos com "Gleide" (avisos, assistente, alerta) passam a usar o nome da dona da loja
+- [ ] O prompt da loja nova monta "dados do salão" a partir de `empresas.config` (endereço, horários,
+  pagamento, regras, recado) e liga `config.ia_usa_dados_loja = true` (a tela passa a dizer que a IA usa)
 - [ ] Catálogo de cabelos e avaliação online só existem no conjunto de mega hair
 - [ ] Prova de que a Gleide não mudou: gerar sem `--loja` e comparar com os workflows atuais
 - [ ] Instância nova na Evolution com o número da manicure (QR ou código de pareamento)
