@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Folha } from "@/components/Folha";
 import { useEmpresa } from "@/lib/empresa";
+import { categoriasDo, exemploServico, nichoDa, type Categoria } from "@/lib/nicho";
 import { supabase } from "@/lib/supabase/client";
 
 // Serviços e preços: a Gleide muda valor, duração e retorno sem depender da gente. A IA lê esta
@@ -24,16 +25,6 @@ type Servico = {
   a_partir_de: boolean;
 };
 
-const CATEGORIAS: { id: string; nome: string }[] = [
-  { id: "aplicacao", nome: "Aplicação de mega hair" },
-  { id: "manutencao", nome: "Manutenção" },
-  { id: "quimica", nome: "Químicas" },
-  { id: "tratamento", nome: "Tratamentos" },
-  { id: "avaliacao", nome: "Avaliação" },
-  { id: "venda", nome: "Venda de cabelo" },
-  { id: "outro", nome: "Outros" },
-];
-
 function preco(valor: number | null, aPartirDe = false): string {
   if (valor === null) return "sem preço";
   if (valor === 0) return "gratuito";
@@ -49,8 +40,8 @@ function duracao(min: number): string {
 }
 
 // Na lista, o título da seção já diz a categoria: "Manutenção – queratina" aparece como "Queratina"
-function nomeCurto(nome: string, categoria: string): string {
-  const c = CATEGORIAS.find((x) => x.id === categoria)?.nome ?? "";
+function nomeCurto(nome: string, categoria: string, categorias: Categoria[]): string {
+  const c = categorias.find((x) => x.id === categoria)?.nome ?? "";
   const resto = c && nome.toLowerCase().startsWith(c.toLowerCase()) ? nome.slice(c.length).replace(/^\s*[–—-]\s*/, "") : "";
   return resto ? resto[0].toUpperCase() + resto.slice(1) : nome;
 }
@@ -70,6 +61,7 @@ async function buscarServicos(empresaId: string): Promise<{ servicos: Servico[] 
 
 export default function ServicosPage() {
   const empresa = useEmpresa();
+  const categorias = categoriasDo(nichoDa(empresa));
   const [servicos, setServicos] = useState<Servico[] | null>(null);
   const [erro, setErro] = useState("");
   const [editando, setEditando] = useState<Servico | "novo" | null>(null);
@@ -112,13 +104,13 @@ export default function ServicosPage() {
         {erro && <p className="rounded-2xl bg-rose p-3 text-rose-texto">Não foi possível carregar: {erro}</p>}
         {!servicos && !erro && <p className="text-[15px] text-texto-2">Carregando…</p>}
 
-        {CATEGORIAS.map((c) => {
-          const lista = ativos.filter((s) => (CATEGORIAS.some((x) => x.id === s.categoria) ? s.categoria : "outro") === c.id);
+        {categorias.map((c) => {
+          const lista = ativos.filter((s) => (categorias.some((x) => x.id === s.categoria) ? s.categoria : "outro") === c.id);
           if (!lista.length) return null;
           return (
             <section key={c.id} className="flex flex-col gap-2">
               <span className="rotulo text-texto-2">{c.nome}</span>
-              <Lista servicos={lista} aoTocar={setEditando} />
+              <Lista servicos={lista} categorias={categorias} aoTocar={setEditando} />
             </section>
           );
         })}
@@ -128,7 +120,7 @@ export default function ServicosPage() {
             <button onClick={() => setVerDesativados(!verDesativados)} className="rotulo w-fit text-texto-2">
               {verDesativados ? "Esconder" : "Ver"} desativados · {desativados.length}
             </button>
-            {verDesativados && <Lista servicos={desativados} aoTocar={setEditando} />}
+            {verDesativados && <Lista servicos={desativados} categorias={categorias} aoTocar={setEditando} />}
           </section>
         )}
 
@@ -159,14 +151,14 @@ export default function ServicosPage() {
   );
 }
 
-function Lista({ servicos, aoTocar }: { servicos: Servico[]; aoTocar: (s: Servico) => void }) {
+function Lista({ servicos, categorias, aoTocar }: { servicos: Servico[]; categorias: Categoria[]; aoTocar: (s: Servico) => void }) {
   return (
     <ul className="overflow-hidden rounded-[22px] bg-card borda-suave">
       {servicos.map((s, i) => (
         <li key={s.id} className={i > 0 ? "border-t border-borda" : ""}>
           <button onClick={() => aoTocar(s)} className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-campo">
             <span className="flex min-w-0 flex-1 flex-col">
-              <span className={`text-[16px] leading-snug font-semibold ${s.ativo ? "" : "text-texto-2 line-through"}`}>{nomeCurto(s.nome, s.categoria)}</span>
+              <span className={`text-[16px] leading-snug font-semibold ${s.ativo ? "" : "text-texto-2 line-through"}`}>{nomeCurto(s.nome, s.categoria, categorias)}</span>
               <span className="text-[13px] text-texto-2">{duracao(s.duracao_min)}</span>
             </span>
             <span className="flex shrink-0 flex-col items-end">
@@ -186,6 +178,7 @@ function Lista({ servicos, aoTocar }: { servicos: Servico[]; aoTocar: (s: Servic
 // Folha para criar ou mudar um serviço
 function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | null; aoFechar: () => void; aoSalvar: () => void }) {
   const empresa = useEmpresa();
+  const nicho = nichoDa(empresa);
   const { dialogo, perguntar } = useDialogo();
   const [nome, setNome] = useState(servico?.nome ?? "");
   const [categoria, setCategoria] = useState(servico?.categoria ?? "outro");
@@ -240,7 +233,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
 
         <label className="flex flex-col gap-1.5">
           <span className="rotulo text-texto-2">Nome</span>
-          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Ex.: Selagem" className={campo} />
+          <input value={nome} onChange={(e) => setNome(e.target.value)} placeholder={exemploServico(nicho)} className={campo} />
         </label>
 
         <div className="grid grid-cols-2 gap-2.5">
@@ -296,7 +289,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
             <div className="flex flex-col gap-2">
               <span className="rotulo text-texto-2">Tipo</span>
               <div className="flex flex-wrap gap-2">
-                {CATEGORIAS.map((c) => (
+                {categoriasDo(nicho).map((c) => (
                   <button
                     key={c.id}
                     onClick={() => setCategoria(c.id)}
