@@ -24,6 +24,47 @@ esquema novo no fim, num horário calmo.
 - **IA por loja**: cada loja com o próprio número de WhatsApp, o próprio prompt (base comum + parte do
   nicho + dados da loja), a própria memória e as próprias regras (retomada, faltas, vagas, catálogo).
 
+## Estrutura da agência (no estilo GoHighLevel)
+
+Três níveis, como no GHL (agência → subcontas → usuários):
+
+```
+AGÊNCIA (Victor)  ── painel-crm: vê e manda em todas as empresas
+   │
+   ├── Empresa: Toda Bonita (mega hair)    ── app crm: a dona e a recepção só veem a empresa delas
+   │      ├── WhatsApp + IA própria
+   │      └── clientes, CRM, agenda, serviços
+   ├── Empresa: Manicure X (manicure)
+   └── Empresa: … (estúdio de beleza)
+```
+
+| Nível | Quem | Onde entra | O que vê e faz |
+|---|---|---|---|
+| Agência | Victor (e quem ele colocar na equipe) | `painel-crm`, no computador | Todas as empresas da agência, sem cadastro manual. Cria empresa, conecta o WhatsApp, liga/desliga a IA e os recursos, vê conversas, CRM e custo de cada uma, entra no app de qualquer empresa para ajudar. |
+| Empresa | dona (papel `dona`) | `crm`, no celular | Só a própria empresa: agenda, clientes, CRM, conversas, serviços e preços, dados do salão. |
+| Equipe da empresa | recepção/profissional (papel `recepcao`) | `crm` | O mesmo app, só a empresa dela (permissões menores no futuro). |
+
+**Como o banco faz isso (mudança que só soma):**
+- Tabela `agencias` e `empresas.agencia_id` (a Gleide passa a ser da agência do Victor).
+- Tabela `agencia_usuarios` (quem é da equipe da agência).
+- `private.minhas_empresas()` passa a devolver também **todas as empresas da agência** de quem está
+  logado. Para a dona nada muda (continua vendo só a dela); para o Victor, toda empresa nova aparece
+  sozinha no painel.
+
+**"Nova empresa" em uma tela do painel** (o que o GHL chama de criar subconta):
+1. Nome, nicho (mega hair / manicure / estúdio de beleza), nome e e-mail da dona, número de WhatsApp.
+2. O painel chama `criar_loja` (empresa + profissional + serviços modelo do nicho, sem preço).
+3. Manda o convite de login para o e-mail da dona (ela cria a senha e já cai no app da empresa dela).
+4. Cria a instância na Evolution e mostra o QR code / código de pareamento para conectar o WhatsApp.
+5. Gera e liga a IA da empresa (fase 5): no começo é o Victor que roda o comando; depois vira botão.
+6. A dona preenche no app: Dados do salão e Serviços e preços. A IA passa a usar.
+
+Essas ações precisam da chave de serviço do Supabase e da Evolution, então rodam **no servidor** do
+painel (rota de servidor ou função do Supabase), nunca no navegador.
+
+**"Cada empresa com seu app":** é o mesmo app para todas; cada login abre a empresa dele. Mais para a
+frente dá para cada empresa ter nome, cor e logo próprios no app (marca branca), sem outro código.
+
 ## Onde estamos (conferido em 29/10)
 
 | Parte | Situação |
@@ -111,10 +152,15 @@ Combinar com ela fora do app:
 - [ ] Piloto acompanhando as conversas todo dia; ajustes no prompt
 - [ ] Liberar para todas as clientes da manicure
 
-### Fase 8 — Painel da agência (José Paulo + Victor) — depois do piloto
-- [ ] Lista de lojas com status (WhatsApp conectado, IA ligada, mensagens do dia, custo da IA)
-- [ ] "Nova loja": chama `criar_loja`, mostra o QR code da Evolution, gera o arquivo da loja
-- [ ] Ligar/desligar recursos por loja (`empresas.config`)
+### Fase 8 — Painel da agência (José Paulo + Victor)
+Banco da agência pode entrar já (só soma); o resto do painel em paralelo com as fases 4–6.
+- [ ] Banco: `agencias`, `empresas.agencia_id`, `agencia_usuarios` e `minhas_empresas()` incluindo as
+  empresas da agência (testar: a dona continua vendo só a dela)
+- [ ] Lista de empresas com status (WhatsApp conectado, IA ligada, mensagens do dia, custo da IA)
+- [ ] "Nova empresa": `criar_loja` + convite da dona por e-mail + instância e QR da Evolution (no servidor)
+- [ ] Ligar/desligar IA e recursos por empresa (`empresas.config`)
+- [ ] Abrir o app de uma empresa como agência (para ajudar a dona sem pedir senha)
+- [ ] Depois: gerar a IA da empresa por botão, marca branca do app, cobrança por empresa
 
 ### Fase 9 — Juntar tudo (quando passar de ~10 lojas)
 - [ ] Um conjunto único de workflows que descobre a loja pela instância (`empresas.instancia_whatsapp`)
