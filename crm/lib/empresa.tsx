@@ -19,8 +19,9 @@ type Estado =
   | { carregando: false; erro: string };
 
 const EmpresaContext = createContext<Empresa | null>(null);
-// Para uma tela que salvou o config (ex.: dias bloqueados) atualizar o salão em todas as abas
-const TrocarConfigContext = createContext<(config: Record<string, unknown>) => void>(() => {});
+// Para uma tela que salvou o config (ex.: dias bloqueados) atualizar o salão em todas as abas;
+// a tela Dados do salão também manda o nome novo
+const TrocarConfigContext = createContext<(config: Record<string, unknown>, nome?: string) => void>(() => {});
 
 // Carrega o salão do usuário logado (tabela usuarios_empresa) e entrega para as telas.
 export function EmpresaProvider({ children }: { children: ReactNode }) {
@@ -57,8 +58,8 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  const trocarConfig = (config: Record<string, unknown>) =>
-    setEstado((e) => ("empresa" in e ? { carregando: false, empresa: { ...e.empresa, config } } : e));
+  const trocarConfig = (config: Record<string, unknown>, nome?: string) =>
+    setEstado((e) => ("empresa" in e ? { carregando: false, empresa: { ...e.empresa, config, nome: nome ?? e.empresa.nome } } : e));
   return (
     <EmpresaContext value={estado.empresa}>
       <TrocarConfigContext value={trocarConfig}>{children}</TrocarConfigContext>
