@@ -13,14 +13,15 @@ import { supabase } from "@/lib/supabase/client";
 // A IA de cada loja nova lê daqui (docs/PLANO-VARIAS-LOJAS.md, fase 5). Enquanto config.ia_usa_dados_loja
 // não estiver ligado, a IA da loja ainda usa o texto combinado na implantação, e a tela avisa isso.
 
-const DIAS: { id: string; nome: string }[] = [
-  { id: "seg", nome: "Segunda" },
-  { id: "ter", nome: "Terça" },
-  { id: "qua", nome: "Quarta" },
-  { id: "qui", nome: "Quinta" },
-  { id: "sex", nome: "Sexta" },
-  { id: "sab", nome: "Sábado" },
-  { id: "dom", nome: "Domingo" },
+// curto: nome na linha do horário (precisa caber em celular de 320px)
+const DIAS: { id: string; nome: string; curto: string }[] = [
+  { id: "seg", nome: "Segunda", curto: "Seg" },
+  { id: "ter", nome: "Terça", curto: "Ter" },
+  { id: "qua", nome: "Quarta", curto: "Qua" },
+  { id: "qui", nome: "Quinta", curto: "Qui" },
+  { id: "sex", nome: "Sexta", curto: "Sex" },
+  { id: "sab", nome: "Sábado", curto: "Sáb" },
+  { id: "dom", nome: "Domingo", curto: "Dom" },
 ];
 
 const PAGAMENTOS = ["Pix", "Cartão de crédito", "Cartão de débito", "Dinheiro"];
@@ -66,11 +67,11 @@ export default function DadosLojaPage() {
   const [nome, setNome] = useState(empresa.nome);
   const [endereco, setEndereco] = useState(texto(empresa.config.endereco));
   const [referencia, setReferencia] = useState(texto(loja.referencia));
-  const [instagram, setInstagram] = useState(texto(loja.instagram));
+  const [instagram, setInstagram] = useState(loja.instagram ? `@${loja.instagram}` : "");
   const [horarios, setHorarios] = useState(() => lerHorarios(empresa.config));
   const [pagamentos, setPagamentos] = useState<string[]>(salvos);
   const [parcelamento, setParcelamento] = useState(texto(loja.parcelamento));
-  const [tolerancia, setTolerancia] = useState(loja.tolerancia_atraso ? String(loja.tolerancia_atraso) : "");
+  const [tolerancia, setTolerancia] = useState(typeof loja.tolerancia_atraso === "number" ? String(loja.tolerancia_atraso) : "");
   const [cancelamento, setCancelamento] = useState(texto(loja.cancelamento));
   const [sinal, setSinal] = useState(texto(loja.sinal));
   const [sobre, setSobre] = useState(texto(loja.sobre));
@@ -123,7 +124,7 @@ export default function DadosLojaPage() {
     const { error } = await db.from("empresas").update({ nome: n, config }).eq("id", empresa.id);
     setSalvando(false);
     if (error) return setAviso(`Não foi possível salvar: ${error.message}`);
-    trocarConfig(config);
+    trocarConfig(config, n);
     setAviso("Salvo ✓");
   }
 
@@ -164,7 +165,7 @@ export default function DadosLojaPage() {
             {DIAS.map((d, i) => {
               const f = horarios[d.id];
               return (
-                <li key={d.id} className={`flex items-center gap-2 px-3.5 py-2.5 ${i > 0 ? "border-t border-borda" : ""}`}>
+                <li key={d.id} className={`flex items-center gap-2 px-3 py-2.5 ${i > 0 ? "border-t border-borda" : ""}`}>
                   <button
                     onClick={() => mudarDia(d.id, { aberto: !f.aberto })}
                     role="switch"
@@ -174,12 +175,12 @@ export default function DadosLojaPage() {
                   >
                     <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${f.aberto ? "left-6" : "left-1"}`} />
                   </button>
-                  <span className="w-20 text-[15px] font-semibold">{d.nome}</span>
+                  <span className="w-9 shrink-0 text-[15px] font-semibold">{d.curto}</span>
                   {f.aberto ? (
-                    <span className="flex flex-1 items-center justify-end gap-1.5">
-                      <input type="time" value={f.abre} onChange={(e) => mudarDia(d.id, { abre: e.target.value })} aria-label={`${d.nome}: abre`} className="h-10 w-[92px] rounded-full bg-campo px-2 text-center text-[15px] font-semibold" />
-                      <span className="text-texto-2">às</span>
-                      <input type="time" value={f.fecha} onChange={(e) => mudarDia(d.id, { fecha: e.target.value })} aria-label={`${d.nome}: fecha`} className="h-10 w-[92px] rounded-full bg-campo px-2 text-center text-[15px] font-semibold" />
+                    <span className="flex min-w-0 flex-1 items-center justify-end gap-1">
+                      <input type="time" value={f.abre} onChange={(e) => mudarDia(d.id, { abre: e.target.value })} aria-label={`${d.nome}: abre`} className="h-10 min-w-0 flex-1 basis-0 rounded-full bg-campo px-0.5 text-center text-[13px] font-semibold min-[360px]:px-1 min-[360px]:text-[15px] sm:max-w-[110px]" />
+                      <span className="shrink-0 text-[13px] text-texto-2">às</span>
+                      <input type="time" value={f.fecha} onChange={(e) => mudarDia(d.id, { fecha: e.target.value })} aria-label={`${d.nome}: fecha`} className="h-10 min-w-0 flex-1 basis-0 rounded-full bg-campo px-0.5 text-center text-[13px] font-semibold min-[360px]:px-1 min-[360px]:text-[15px] sm:max-w-[110px]" />
                     </span>
                   ) : (
                     <span className="flex-1 text-right text-[15px] text-texto-2">Fechado</span>
@@ -188,6 +189,9 @@ export default function DadosLojaPage() {
               );
             })}
           </ul>
+          {!empresa.config.horario_funcionamento && (
+            <p className="rounded-2xl bg-campo px-4 py-3 text-[14px] font-semibold">Confira os dias: o horário ainda não foi salvo, por isso todos aparecem abertos.</p>
+          )}
           <p className="text-[13px] text-texto-2">A agenda só deixa marcar dentro desses horários. O almoço fica em Configurações.</p>
         </section>
 

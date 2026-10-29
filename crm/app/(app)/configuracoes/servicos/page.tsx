@@ -8,11 +8,12 @@ import { useEmpresa } from "@/lib/empresa";
 import { categoriasDo, exemploServico, nichoDa, type Categoria } from "@/lib/nicho";
 import { supabase } from "@/lib/supabase/client";
 
-// Serviços e preços: a Gleide muda valor, duração e retorno sem depender da gente. A IA lê esta
+// Serviços e preços: a dona da loja muda valor, duração e retorno sem depender da gente. A IA lê esta
 // tabela a cada conversa (preço que ela fala e duração que ela reserva na agenda) e o retorno
 // previsto de cada cliente sai de dias_retorno. Serviço que sai de linha é desativado, não apagado:
 // os atendimentos antigos continuam apontando para ele. a_partir_de (ligado por padrão): o preço é o
-// menor e o final depende do cabelo, a Gleide confirma olhando; a IA fala "a partir de".
+// menor e o final depende do caso da cliente, a dona confirma; a IA fala "a partir de".
+// As categorias seguem o nicho da loja (lib/nicho.ts).
 
 type Servico = {
   id: string;
