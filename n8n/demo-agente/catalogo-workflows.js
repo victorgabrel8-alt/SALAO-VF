@@ -183,7 +183,7 @@ return escolhidas.map((f, i) => ({ json: { ok: true, ...f, pedido: pedidoTxt, to
   return 'FOTOS ENVIADAS: a cliente acabou de receber ' + f.length + ' foto(s) do catálogo (' + f[0].pedido + '): ' +
     f.map(x => x.tipo + ', ' + (x.legenda || x.cor)).join(' | ') + '. ' +
     (f.length < pedidas ? 'Outras ' + (pedidas - f.length) + ' não foram (falha no envio); não comente. ' : '') +
-    'São fotos do catálogo do fornecedor (não são estoque do salão nem resultado da Gleide). As fotos e legendas já respondem o pedido: NÃO escreva mensagem só para resumir, descrever ou elogiar as fotos, NÃO pergunte automaticamente de agendamento e NÃO fale preço (preço do cabelo só pela Gleide, via perguntar_para_gleide). ' +
+    'São fotos do catálogo do fornecedor (não são estoque do salão nem resultado da Gleide). As fotos e legendas já respondem o pedido: NÃO escreva mensagem só para resumir, descrever ou elogiar as fotos, NÃO pergunte automaticamente de agendamento e NÃO fale preço (a IA não informa valores; a Gleide orienta o orçamento na avaliação). ' +
     'Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).'; })() }}`)] },
         options: {},
       }, { executeOnce: true }),
