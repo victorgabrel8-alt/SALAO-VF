@@ -168,16 +168,16 @@ return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
   workflow.connections['Supabase: último alô'] = main('Supabase: últimas mensagens');
   // Tabela de serviços que a Gleide edita no app (Configurações › Serviços e preços): vale mais que a seção 09
   workflow.nodes.push(supa('Supabase: tabela de serviços', 'GET',
-    `servicos?select=nome,categoria,preco,duracao_min,a_partir_de&ativo=eq.true&order=categoria,nome&empresa_id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }));
+    `servicos?select=nome,categoria,duracao_min&ativo=eq.true&order=categoria,nome&empresa_id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }));
   workflow.connections['Supabase: últimas mensagens'] = main('Supabase: tabela de serviços');
   workflow.connections['Supabase: tabela de serviços'] = main('Sobre esta cliente');
   workflow.connections['Sobre esta cliente'] = main('Agente IA');
   const agente = achar(workflow, 'Agente IA').parameters.options;
   agente.systemMessage += `
 
-SERVIÇOS E PREÇOS (do app, atualizados agora pela Gleide; se algum valor ou duração for diferente da seção 09, vale ESTA lista)
-{{ $('Supabase: tabela de serviços').all().map((i) => i.json).filter((s) => s.nome).map((s) => '- ' + s.nome + ': ' + (s.preco === null || s.preco === undefined ? 'sem preço cadastrado (não informe valor)' : Number(s.preco) === 0 ? 'gratuito' : (s.a_partir_de === false ? 'R$ ' : 'a partir de R$ ') + Number(s.preco).toLocaleString('pt-BR')) + ', ' + s.duracao_min + ' min').join('\\n') || '(sem lista: use a seção 09)' }}
-Serviço desativado no app não deve estar nesta lista nem ser oferecido. O filtro de serviços ativos precisa ser garantido na consulta Supabase anterior a esta expressão; não presuma que o .filter((s) => s.nome) exclui desativados. "a partir de" = valor mínimo, o final depende do serviço/cabelo (seção 07); sem "a partir de" = preço fechado. Cabelo humano (fios) não tem preço liberado nesta lista nem na seção 09: para tentar obter uma estimativa, consulte a Gleide conforme seção 07-C, e só repasse número explicitamente confirmado para aquele pedido, se houver. Se a lista aparecer vazia ou inválida, não trate isso como prova de que todos os serviços antigos estão ativos: use a seção 09 só como referência e peça confirmação à Gleide se não houver dados confiáveis para ofertar/marcar um serviço. Valores ausentes, vazios ou inválidos não devem ser interpretados como gratuito ou R$ NaN. As expressões dinâmicas acima permanecem intocadas; a validação de campos preco, a_partir_de, duracao_min e ativo deve ser feita no fluxo antes de inserir a lista aqui.`;
+SERVIÇOS E DURAÇÕES (do app, para agenda e oferta de serviços, sem expor preços; se uma duração divergir da seção 09, vale ESTA lista)
+{{ $('Supabase: tabela de serviços').all().map((i) => i.json).filter((s) => s.nome).map((s) => '- ' + s.nome + ': ' + s.duracao_min + ' min').join('\\n') || '(sem lista: use a seção 09)' }}
+Serviço desativado no app não deve estar nesta lista nem ser oferecido. O filtro de serviços ativos precisa ser garantido na consulta Supabase anterior a esta expressão; não presuma que o .filter((s) => s.nome) exclui desativados. Esta lista dinâmica contém NOMES E DURAÇÕES PARA AGENDAMENTO, não valores de venda. Se aparecer vazia ou inválida, não presuma que serviços antigos estão ativos: use a seção 09 só como referência de duração e confirme serviço/tempo pelos meios operacionais apropriados antes de marcar. A validação de duracao_min e ativo deve ser feita no fluxo n8n antes de injetar a lista. A expressão dinâmica Supabase foi ajustada NESTA VERSÃO apenas para não inserir preço no contexto do agente; os demais placeholders do n8n foram preservados.`;
   // o prompt do Victor já traz a ficha na seção 22: só acrescenta se ele não tiver
   if (!agente.systemMessage.includes("$('Sobre esta cliente')")) agente.systemMessage += `
 

@@ -60,8 +60,9 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
     'Pergunta à Gleide uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança ' +
     'sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Coisas de bom senso (levar o ' +
     'filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à ' +
-    'cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para avaliação à distância, reclamação, dor, ' +
-    'negociação ou pedido de falar com ela, use transferir_para_humano.',
+    'cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para reclamação, dor ou pedido de falar com ela, ' +
+    'use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou ' +
+    'estimativa: a IA não pergunta valores à Gleide (seção 07).',
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
       nome: "={{ $('Montar entrada').first().json.nome }}" },
@@ -91,8 +92,9 @@ const instrucao = 'Você é a assistente virtual da Gleide, do salão Toda Bonit
   (nome || '') + '. Antes, a cliente perguntou algo que só a Gleide sabia: "' + p.pergunta + '". Você disse que ia confirmar com a Gleide. ' +
   'A Gleide respondeu: "' + resposta + '". Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, ' +
   'curta (1 ou 2 frases), natural e gentil, como uma atendente de verdade. Não invente nada além do que a Gleide disse, ' +
-  'não mude o sentido, não use negrito nem listas, no máximo um emoji. Se ela passou valor, mantenha o número, a unidade e as ' +
-  'condições exatamente como ela disse e, se for estimativa, deixe claro que é estimativa. Responda só com a mensagem.';
+  'não mude o sentido, não use negrito nem listas, no máximo um emoji. NUNCA passe valor, preço, orçamento ou parcela, ' +
+  'mesmo que a Gleide tenha escrito um número: nesse caso diga só que a Gleide explica o orçamento na avaliação ' +
+  '(o salão não informa valores por mensagem). Responda só com a mensagem.';
 return [{ json: { ...p, nome, resposta, instrucao } }];
 ` }),
     node('Pedido: escrever (Gemini)', 'n8n-nodes-base.httpRequest', 4.2, [990, -900], {
