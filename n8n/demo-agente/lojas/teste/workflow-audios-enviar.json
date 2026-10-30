@@ -1,0 +1,566 @@
+{
+  "name": "[Loja Teste] Áudios prontos - Enviar",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000008",
+      "name": "Nota 8",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Áudios prontos - Enviar\nChamado pelo agente (enviar_audio): acha o áudio do tema na lista do app, baixa do Storage e manda no WhatsApp da cliente.",
+        "width": 1400,
+        "height": 146,
+        "color": 2
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000107",
+      "name": "Recebe pedido da IA",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "tema"
+            },
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "jid"
+            },
+            {
+              "name": "mensagem"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000108",
+      "name": "Catálogo de áudios",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000109",
+      "name": "Já enviados a ela",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&select=conteudo,clientes!inner(telefone)&autor=eq.ia&tipo=eq.audio&clientes.telefone=eq.{{ (() => { const d = String($('Recebe pedido da IA').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000110",
+      "name": "Achar áudio",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// O tema pedido pela IA -> o áudio do catálogo com mais palavras em comum\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2);\nconst pedido = $('Recebe pedido da IA').first().json;\nconst catalogo = ($('Catálogo de áudios').first().json.config || {}).audios_prontos || [];\nconst alvo = palavras(pedido.tema);\nlet melhor = null, nota = 0;\nfor (const a of catalogo) {\n  const ps = palavras(a.tema + ' ' + (a.quando_usar || ''));\n  const n = alvo.filter((p) => ps.includes(p)).length / Math.max(1, alvo.length);\n  if (n > nota) { melhor = a; nota = n; }\n}\nif (!melhor || nota < 0.5) return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: não existe áudio pronto para \"' + pedido.tema + '\". Temas disponíveis: ' + catalogo.map((a) => a.tema).join('; ') + '. Responda em texto.' } }];\n// trava: a mensagem da cliente precisa falar do assunto do áudio (a IA às vezes manda áudio \"de brinde\"\n// numa conversa de outro assunto). Palavras genéricas não contam.\nconst COMUNS = new Set('mega hair cabelo cabelos quero queria fazer faz quando perguntar pergunta voce pra para por com uma uns que qual quanto natural sobre isso esse essa tem ter'.split(' '));\nconst chave = (s) => palavras(s).filter((p) => !COMUNS.has(p));\nconst doTema = chave(melhor.tema + ' ' + (melhor.quando_usar || ''));\nif (pedido.mensagem && !chave(pedido.mensagem).some((p) => doTema.some((t) => t.startsWith(p.slice(0, 5)) || p.startsWith(t.slice(0, 5)))))\n  return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: a cliente não perguntou sobre \"' + melhor.tema + '\" nesta mensagem. Responda em texto só o que ela perguntou, sem falar desse assunto.' } }];\nconst enviados = $('Já enviados a ela').all().map((i) => i.json.conteudo || '').join(' ');\nif (enviados.includes('[áudio pronto: ' + melhor.tema + ']')) return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: ela JÁ recebeu o áudio \"' + melhor.tema + '\" antes. Não mande de novo; responda em texto, curto, sem repetir tudo.' } }];\nreturn [{ json: { ok: true, ...melhor } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000111",
+      "name": "Tem áudio?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Tem áudio?",
+              "leftValue": "={{ $json.ok }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000112",
+      "name": "Baixar do Storage",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/storage/v1/object/audios/{{ encodeURIComponent($json.arquivo) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000113",
+      "name": "Para base64",
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "operation": "binaryToPropery",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000114",
+      "name": "Gravando (blocos de 8s)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const total = Math.min(45000, Math.max(5000, Math.round(($('Achar áudio').item.json.duracao_s || 10) * 1000)));\nconst n = Math.max(1, Math.round(total / 7500));\nreturn Array.from({ length: n }, () => ({ json: { jid: $('Recebe pedido da IA').item.json.jid, delay: 7500 }, pairedItem: 0 }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000115",
+      "name": "Gravando...",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.jid, presence: 'recording', delay: $json.delay }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 7500
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000116",
+      "name": "Enviar áudio",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Recebe pedido da IA').item.json.jid, audio: $('Para base64').item.json.data, encoding: true, delay: 2000 }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000117",
+      "name": "Enviou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "Enviou?",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000118",
+      "name": "Registrar no CRM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Recebe pedido da IA').item.json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(),\n           p_conteudo: '🎤 Áudio pronto ' + '[áudio pronto: ' + $('Achar áudio').item.json.tema + ']' + ': ' + $('Achar áudio').item.json.transcricao,\n           p_autor: 'ia', p_tipo: 'audio', p_wa_message_id: $('Enviar áudio').item.json.key?.id || null }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000119",
+      "name": "Resposta (enviado)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $('Enviar áudio').item.json.key?.id\n  ? 'ÁUDIO ENVIADO (\"' + $('Achar áudio').item.json.tema + '\"). A cliente acabou de receber este áudio (voz de terceiro, NÃO diga que é a Ana): «' + $('Achar áudio').item.json.transcricao + '». ' +\n    'O áudio É a resposta: NÃO escreva nada sobre ele (sem apresentar, resumir, perguntar ou convidar). ' +\n    'Se ele respondeu tudo o que ela perguntou, não escreva nada (resposta vazia). ' +\n    'Se ficaram perguntas que o áudio não responde, responda só essas, curto, sem citar o áudio.'\n  : 'ÁUDIO NÃO ENVIADO (falhou). Responda em texto, curto (até 3 frases), usando SÓ o que este áudio explica, sem dizer que é da Ana e sem acrescentar promessa (nada de \"fica super natural\", \"imperceptível\", \"não estraga\"): ' + $('Achar áudio').item.json.transcricao }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000120",
+      "name": "Resposta (sem áudio)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        200
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $json.resposta }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Recebe pedido da IA": {
+      "main": [
+        [
+          {
+            "node": "Catálogo de áudios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catálogo de áudios": {
+      "main": [
+        [
+          {
+            "node": "Já enviados a ela",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Já enviados a ela": {
+      "main": [
+        [
+          {
+            "node": "Achar áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Achar áudio": {
+      "main": [
+        [
+          {
+            "node": "Tem áudio?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar do Storage": {
+      "main": [
+        [
+          {
+            "node": "Para base64",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Para base64": {
+      "main": [
+        [
+          {
+            "node": "Gravando (blocos de 8s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gravando (blocos de 8s)": {
+      "main": [
+        [
+          {
+            "node": "Gravando...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gravando...": {
+      "main": [
+        [
+          {
+            "node": "Enviar áudio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar áudio": {
+      "main": [
+        [
+          {
+            "node": "Enviou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar no CRM": {
+      "main": [
+        [
+          {
+            "node": "Resposta (enviado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar no CRM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta (enviado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem áudio?": {
+      "main": [
+        [
+          {
+            "node": "Baixar do Storage",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta (sem áudio)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

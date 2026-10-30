@@ -1,0 +1,4651 @@
+{
+  "name": "[Loja Teste] Demo Salão - Agente WhatsApp",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000001",
+      "name": "Nota 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -440
+      ],
+      "parameters": {
+        "content": "## Atendimento das clientes (WhatsApp)\nRoda a cada mensagem que chega no WhatsApp do salão (Evolution).\n1. Entrada: separa telefone, nome e texto. Mensagem sua pelo celular pausa a IA 12 h para aquele número; #ia tira a pausa.\n2. Resposta da Ana a uma pergunta rápida (ela tocou em Responder): a IA repassa para a cliente.\n3. Filtro e pausa: ignora grupos e status; cliente pausada para aqui. Áudio é transcrito e foto é descrita pelo Gemini.\n4. Junta as mensagens seguidas (20 s) e só a última da rajada segue. A trava evita duas respostas ao mesmo tempo.\n5. Agente IA: prompt-agente.md + ficha da cliente + memória (Redis) + ferramentas (agenda, Ana, áudio, CRM).\n6. Quebra a resposta em até 3 mensagens, mostra \"digitando…\" proporcional ao texto e envia.\nPublicar mudanças: node montar-workflow.js --enviar --ativar (não edite aqui pela tela).\n\n➡️ O fluxo é lido da esquerda para a direita e continua na faixa de baixo.",
+        "width": 1400,
+        "height": 380,
+        "color": 5
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "name": "Webhook Evolution",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "teste-whatsapp-salao",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "webhookId": "f07ba12c-af39-4ee5-818d-c160140c9932",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "name": "Extrair dados",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-evento",
+              "name": "evento",
+              "value": "={{ $json.body.event }}",
+              "type": "string"
+            },
+            {
+              "id": "a-jid",
+              "name": "jid",
+              "value": "={{ $json.body.data.key.remoteJid }}",
+              "type": "string"
+            },
+            {
+              "id": "a-telefone",
+              "name": "telefone",
+              "value": "={{ ($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "a-fromMe",
+              "name": "fromMe",
+              "value": "={{ $json.body.data.key.fromMe }}",
+              "type": "boolean"
+            },
+            {
+              "id": "a-msgId",
+              "name": "msgId",
+              "value": "={{ $json.body.data.key.id }}",
+              "type": "string"
+            },
+            {
+              "id": "a-nome",
+              "name": "nome",
+              "value": "={{ $json.body.data.pushName || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-tipo",
+              "name": "tipo",
+              "value": "={{ $json.body.data.messageType }}",
+              "type": "string"
+            },
+            {
+              "id": "a-texto",
+              "name": "texto",
+              "value": "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || $json.body.data.message?.imageMessage?.caption || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-citado",
+              "name": "citado",
+              "value": "={{ $json.body.data.contextInfo?.stanzaId || $json.body.data.message?.extendedTextMessage?.contextInfo?.stanzaId || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "a-permitido",
+              "name": "permitido",
+              "value": "={{ !'556699270860' || '556699270860'.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000016",
+      "name": "Minha resposta manual?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1800,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "m1",
+              "leftValue": "={{ $json.evento }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "m2",
+              "leftValue": "={{ $json.fromMe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "m3",
+              "leftValue": "={{ /@(s\\.whatsapp\\.net|lid)$/.test($json.jid) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "name": "Comando #ia?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "k1",
+              "leftValue": "={{ $json.texto.trim().toLowerCase() }}",
+              "rightValue": "#ia",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "name": "Pausa: remover",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2400,
+        400
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:pausa:{{ $('Extrair dados').first().json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000019",
+      "name": "Pausa: humano assumiu (12h)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        1000
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:pausa:{{ $('Extrair dados').first().json.telefone }}",
+        "value": "manual",
+        "expire": true,
+        "ttl": 43200
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000020",
+      "name": "Filtro",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        600
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.evento }}",
+              "rightValue": "messages.upsert",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.fromMe }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "false",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c3",
+              "leftValue": "={{ /@(s\\.whatsapp\\.net|lid)$/.test($json.jid) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c4",
+              "leftValue": "={{ ['audioMessage', 'imageMessage'].includes($json.tipo) || (['conversation', 'extendedTextMessage'].includes($json.tipo) && $json.texto.trim() !== '') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "c5",
+              "leftValue": "={{ $json.permitido }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000021",
+      "name": "Pausa: verificar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3900,
+        600
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:pausa:{{ $('Extrair dados').first().json.telefone }}",
+        "propertyName": "pausa",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000022",
+      "name": "IA ativa?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        1460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "p1",
+              "leftValue": "={{ (() => { const p = $('Supabase: registrar entrada').first().json.ia_pausada; return typeof p === 'boolean' ? !p : !$json.pausa; })() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000023",
+      "name": "É áudio ou foto?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        600
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "a1",
+              "leftValue": "={{ ['audioMessage', 'imageMessage'].includes($('Extrair dados').first().json.tipo) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000024",
+      "name": "Baixar mídia (Evolution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/getBase64FromMediaMessage/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').first().json.msgId } }, convertToMp4: false }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000025",
+      "name": "Entender mídia (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3000,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [ { text: $('Extrair dados').first().json.tipo === 'imageMessage' ? 'Uma cliente de um estúdio de unhas mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor (preto, castanho escuro, castanho claro, loiro, ruivo, grisalho) e se tem mechas, luzes ou reflexos; textura e curvatura (liso; ondulado; cacheado com cachos abertos/largos; cacheado com cachos fechados/pequenos; crespo); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo. Se for print de conversa, comprovante ou outra coisa, diga só o que é. Não invente.' : 'Transcreva este áudio de WhatsApp em português do Brasil, exatamente como foi falado. Responda só com a transcrição, sem comentários.' }, { inline_data: { mime_type: String($json.mimetype || 'audio/ogg').split(';')[0], data: $json.base64 } } ] }] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000026",
+      "name": "Texto da mensagem",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        3300,
+        600
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-texto",
+              "name": "texto",
+              "value": "={{ (() => { const tipo = $('Extrair dados').first().json.tipo; if (!['audioMessage', 'imageMessage'].includes(tipo)) return $('Extrair dados').first().json.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); if (tipo === 'audioMessage') return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; const legenda = $('Extrair dados').first().json.texto ? ' Legenda: ' + $('Extrair dados').first().json.texto : ''; return (r ? '[foto da cliente] ' + r : '[foto da cliente que não consegui ver]') + legenda; })() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000027",
+      "name": "Buffer: guardar msg",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        600,
+        1460
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:buffer:{{ $('Extrair dados').first().json.telefone }}",
+        "messageData": "={{ JSON.stringify({ id: $('Extrair dados').first().json.msgId, texto: $('Texto da mensagem').item.json.texto }) }}",
+        "tail": true
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000028",
+      "name": "Buffer: marcar última",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        1460
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:buffer_ultima:{{ $('Extrair dados').first().json.telefone }}",
+        "value": "={{ $('Extrair dados').first().json.msgId }}",
+        "expire": true,
+        "ttl": 120
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000029",
+      "name": "Aguardar (juntar mensagens)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1200,
+        1460
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 20,
+        "unit": "seconds"
+      },
+      "webhookId": "dc2526d1-d1af-40b3-87d9-3d3c8f8d86bd"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000030",
+      "name": "Buffer: ler última",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        1460
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:buffer_ultima:{{ $('Extrair dados').first().json.telefone }}",
+        "propertyName": "ultima",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000031",
+      "name": "É a última msg?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1800,
+        1460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "u1",
+              "leftValue": "={{ $json.ultima }}",
+              "rightValue": "={{ $('Extrair dados').first().json.msgId }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000032",
+      "name": "Pausa: verificar de novo",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        1460
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:pausa:{{ $('Extrair dados').first().json.telefone }}",
+        "propertyName": "pausa",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000033",
+      "name": "Ainda ativa?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        1460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "p2",
+              "leftValue": "={{ !$json.pausa }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000034",
+      "name": "Buffer: descartar (pausada)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        1660
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:buffer:{{ $('Extrair dados').first().json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000035",
+      "name": "Trava: ler",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        1460
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:processando:{{ $('Extrair dados').first().json.telefone }}",
+        "propertyName": "processando",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000036",
+      "name": "Ninguém respondendo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3000,
+        1460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !$json.processando }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000037",
+      "name": "Aguardar 3s (IA respondendo)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3300,
+        1660
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "webhookId": "dd2953e7-ea4f-4885-82fe-12c123186785"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000038",
+      "name": "Trava: marcar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3900,
+        1460
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:processando:{{ $('Extrair dados').first().json.telefone }}",
+        "value": "={{ $('Extrair dados').first().json.msgId }}",
+        "expire": true,
+        "ttl": 180
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000039",
+      "name": "Trava: liberar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        4440,
+        2780
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:processando:{{ $('Extrair dados').first().json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000040",
+      "name": "Vez: contar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        1460
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:processando:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000041",
+      "name": "Tem vez?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3600,
+        1460
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "v1",
+              "leftValue": "={{ Object.keys($json).length < 3 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000042",
+      "name": "Vez: esperar 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        3900,
+        1660
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": 5,
+        "unit": "seconds"
+      },
+      "webhookId": "9b40ec69-7433-49f7-88ce-c8b96c3f8869"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000043",
+      "name": "Offline: esperar",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        3780
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ 5 + Math.floor(Math.random() * 11) }}",
+        "unit": "seconds"
+      },
+      "webhookId": "ded88355-01b1-4d00-80ca-bad6591d9b34",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000044",
+      "name": "Offline: alguém respondendo?",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        3780
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:processando:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000045",
+      "name": "Ninguém mais respondendo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        3780
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "o1",
+              "leftValue": "={{ Object.keys($json).length === 0 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000046",
+      "name": "Offline: sair",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        3780
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'unavailable', delay: 1000 }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000047",
+      "name": "Buffer: ler mensagens",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        2120
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:buffer:{{ $('Extrair dados').first().json.telefone }}",
+        "propertyName": "mensagens",
+        "keyType": "list",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000048",
+      "name": "Buffer: limpar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        2120
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:buffer:{{ $('Extrair dados').first().json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000049",
+      "name": "Montar entrada",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        600,
+        2120
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-mensagens",
+              "name": "mensagens",
+              "value": "={{ JSON.stringify([].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })) }}",
+              "type": "string"
+            },
+            {
+              "id": "a-texto_cliente",
+              "name": "texto_cliente",
+              "value": "={{ (() => { const ms = [].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; }); return ms.length > 1 ? ms.map((m, i) => '[' + (i + 1) + '] ' + m.texto).join('\\n') : ms.map((m) => m.texto).join('\\n'); })() }}",
+              "type": "string"
+            },
+            {
+              "id": "a-telefone",
+              "name": "telefone",
+              "value": "={{ $('Extrair dados').first().json.telefone }}",
+              "type": "string"
+            },
+            {
+              "id": "a-jid",
+              "name": "jid",
+              "value": "={{ $('Extrair dados').first().json.jid }}",
+              "type": "string"
+            },
+            {
+              "id": "a-msgId",
+              "name": "msgId",
+              "value": "={{ $('Extrair dados').first().json.msgId }}",
+              "type": "string"
+            },
+            {
+              "id": "a-nome",
+              "name": "nome",
+              "value": "={{ $('Extrair dados').first().json.nome }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000050",
+      "name": "Leitura: ficar online",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        2120
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'available', delay: 1000 }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000051",
+      "name": "Leitura: uma por vez",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        2120
+      ],
+      "parameters": {
+        "jsCode": "// espera (s) antes de marcar cada mensagem como lida: a 1ª inclui 'abrir a conversa' (2-5 s)\nconst e = $('Montar entrada').first().json;\nlet ms = [];\ntry { ms = JSON.parse(e.mensagens || '[]'); } catch (err) {}\nif (!ms.length) ms = [{ id: e.msgId, texto: e.texto_cliente || '' }];\nconst ale = (a, b) => a + Math.random() * (b - a);\nconst ler = (t) => {\n  t = String(t || '');\n  if (/^\\[áudio\\]/i.test(t)) return Math.min(25, Math.max(3, t.length / 14)) * ale(0.9, 1.1); // ouvir (~14 letras/s)\n  if (/^\\[foto/i.test(t)) return ale(2, 4);\n  return Math.min(6, Math.max(0.8, t.length * 0.05)) * ale(0.8, 1.2); // ler (~20 letras/s)\n};\nreturn ms.filter((m) => m.id).map((m, i) => ({ json: { jid: e.jid, id: m.id,\n  espera: Math.round(((i === 0 ? ale(2, 5) : ale(0.4, 1.2)) + ler(m.texto)) * 10) / 10 }, pairedItem: 0 }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000052",
+      "name": "Leitura: próxima",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1500,
+        2120
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000053",
+      "name": "Leitura: lendo",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1800,
+        2320
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.espera }}",
+        "unit": "seconds"
+      },
+      "webhookId": "117dae8e-ba4d-494d-8005-ec60f8895217"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000054",
+      "name": "Leitura: marcar lida",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        2320
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/markMessageAsRead/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ readMessages: [{ remoteJid: $('Leitura: próxima').item.json.jid, fromMe: false, id: $('Leitura: próxima').item.json.id }] }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000055",
+      "name": "Marcar como lida",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        2120
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: {}, pairedItem: 0 }];"
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000056",
+      "name": "Agente IA",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2700,
+        2780
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('Montar entrada').first().json.texto_cliente }}",
+        "options": {
+          "systemMessage": "=====================================================================\n01 | QUEM VOCÊ É\n====================================================================\nVocê é a assistente virtual da Loja Teste, um estúdio de unhas (manicure e pedicure) em Sinop-MT, e conversa com as clientes pelo WhatsApp. A dona é a Ana. Seu trabalho: entender o que a pessoa quer, responder com informação certa e, quando fizer sentido, marcar o horário. Seja gentil, direta e natural, como uma recepcionista experiente. Não pressione.\n\n====================================================================\n02 | COMO ESCREVER\n====================================================================\n- Mensagens curtas, como no WhatsApp: uma ou duas frases por balão, no máximo dois balões.\n- Sem lista, negrito, título ou \"Valor: R$ 70\". Escreva como gente.\n- No máximo uma pergunta por resposta, e só quando ela ajuda.\n- Não repita o que a cliente disse em eco nem a mesma pergunta de antes.\n- Cumprimente só na primeira mensagem do dia.\n\n====================================================================\n03 | PREÇOS\n====================================================================\n- A única fonte de preço e duração é a lista SERVIÇOS E PREÇOS do app, no fim deste prompt.\n- Quando o serviço estiver \"a partir de\", diga \"a partir de R$ X\" e explique que o valor final a Ana confirma.\n- Serviço sem preço na lista: não invente; diga que a Ana confirma o valor e ofereça perguntar para ela.\n- Nunca calcule desconto, pacote ou parcela por conta própria.\n\n====================================================================\n04 | AGENDA\n====================================================================\n- Para ver horário: consultar_horarios_livres. Ofereça no máximo dois horários.\n- Só marque (criar_agendamento) depois que a cliente escolher um horário que a consulta mostrou como livre.\n- Para ver, remarcar ou cancelar o que ela já tem: ver_agendamentos, remarcar_agendamento, cancelar_agendamento.\n- Use a duração do serviço da lista do app.\n\n====================================================================\n05 | QUANDO PRECISA DA ANA\n====================================================================\n- Dúvida simples que depende dela (ex.: atende a domicílio?): perguntar_para_gleide.\n- Reclamação, pedido para falar com alguém ou assunto delicado: transferir_para_humano.\n- Anote na ficha o que a cliente quer: anotar_no_crm.\n\n====================================================================\n17 | CONTEXTO DINÂMICO DO N8N — NÃO ALTERAR EXPRESSÕES\n====================================================================\nData e hora atual: {{ $now.setZone('America/Cuiaba').setLocale('pt-BR').toFormat(\"cccc, dd/LL/yyyy HH:mm\") }} (horário de Cuiabá/Sinop).\nHoje em formato AAAA-MM-DD: {{ $now.setZone('America/Cuiaba').toFormat('yyyy-LL-dd') }}.\nCumprimento certo agora: {{ $now.setZone('America/Cuiaba').hour < 12 ? 'bom dia' : $now.setZone('America/Cuiaba').hour < 18 ? 'boa tarde' : 'boa noite' }}.\nNome da cliente no WhatsApp: {{ $('Montar entrada').first().json.nome }}\nTelefone da cliente: {{ $('Montar entrada').first().json.telefone }}\n\nSOBRE ESTA CLIENTE (ficha do salão, atualizada agora)\n{{ $('Sobre esta cliente').first().json.texto }}\n\nÁUDIOS PRONTOS (temas cadastrados; use enviar_audio só se o tema combinar)\n{{ $('Áudios disponíveis').first().json.texto }}\n\nMENSAGENS SEGUIDAS (numeradas)\nQuando a mensagem da cliente vier em linhas numeradas ([1], [2], [3]...), são mensagens separadas que ela mandou em sequência.\nLeia tudo como uma conversa só e responda uma vez, cobrindo todas na ordem em que ela mandou, começando pela [1] (um parágrafo curto por assunto).\nCumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.\n\nCOMO A RESPOSTA CHEGA NO WHATSAPP\nCada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda.\nPadrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.\nExemplo (duas mensagens):\nA manutenção fica a partir de R$ 350 e leva umas 2 horas.\n\nQuer que eu veja um horário pra você?\n\nSERVIÇOS E PREÇOS (do app, atualizados agora pela Ana; se algum valor ou duração for diferente da seção 09, vale ESTA lista)\n{{ $('Supabase: tabela de serviços').all().map((i) => i.json).filter((s) => s.nome).map((s) => '- ' + s.nome + ': ' + (s.preco === null || s.preco === undefined ? 'sem preço cadastrado (não informe valor)' : Number(s.preco) === 0 ? 'gratuito' : (s.a_partir_de === false ? 'R$ ' : 'a partir de R$ ') + Number(s.preco).toLocaleString('pt-BR')) + ', ' + s.duracao_min + ' min').join('\\n') || '(sem lista: use a seção 09)' }}\nServiço desativado no app não deve estar nesta lista nem ser oferecido. O filtro de serviços ativos precisa ser garantido na consulta Supabase anterior a esta expressão; não presuma que o .filter((s) => s.nome) exclui desativados. \"a partir de\" = valor mínimo, o final depende do serviço/cabelo (seção 07); sem \"a partir de\" = preço fechado. Cabelo humano (fios) não tem preço liberado nesta lista nem na seção 09: para tentar obter uma estimativa, consulte a Ana conforme seção 07-C, e só repasse número explicitamente confirmado para aquele pedido, se houver. Se a lista aparecer vazia ou inválida, não trate isso como prova de que todos os serviços antigos estão ativos: use a seção 09 só como referência e peça confirmação à Ana se não houver dados confiáveis para ofertar/marcar um serviço. Valores ausentes, vazios ou inválidos não devem ser interpretados como gratuito ou R$ NaN. As expressões dinâmicas acima permanecem intocadas; a validação de campos preco, a_partir_de, duracao_min e ativo deve ser feita no fluxo antes de inserir a lista aqui.",
+          "returnIntermediateSteps": true
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000057",
+      "name": "Gemini Flash",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        2960
+      ],
+      "parameters": {
+        "modelName": "models/gemini-3-flash-preview",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000058",
+      "name": "Memória (Redis)",
+      "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
+      "typeVersion": 1.5,
+      "position": [
+        2880,
+        2960
+      ],
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "=teste:memoria:{{ $('Montar entrada').first().json.telefone }}",
+        "sessionTTL": 604800,
+        "contextWindowLength": 20
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000059",
+      "name": "Quebrar mensagens",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3540,
+        2780
+      ],
+      "parameters": {
+        "jsCode": "const jid = $('Montar entrada').first().json.jid;\n// caractere invisível (espaço de largura zero) não é texto: em 27/10 a IA respondeu só isso e saiu um balão em branco\nlet t = ($input.first().json.output || '').replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim();\n// Prompt: se o áudio respondeu tudo, a IA não escreve nada. Áudio enviado + resposta vazia = não manda balão\n// (sem isso cairia na mensagem de erro lá embaixo). [SEM TEXTO] também vale, se a IA usar.\nconst passos = $input.first().json.intermediateSteps || [];\n// fotos do catálogo enviadas também são resposta: se elas responderam tudo, a IA pode não escrever nada\nconst audioEnviado = passos.some(p => (p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || ''))) ||\n  (p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || ''))));\nconst semTexto = /\\[SEM TEXTO\\]/i.test(t);\nt = t.replace(/\\[SEM TEXTO\\]/gi, '').trim();\nif ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];\n// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)\nt = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');\n// Cumprimento (pedido do Victor, 26/10): devolve o MESMO que a cliente usou ('Boa tarde' às 17h59 → 'Boa tarde',\n// não 'Boa noite' porque o relógio virou); se ela não cumprimentou, vale a hora do salão.\nconst hSalao = $now.setZone('America/Cuiaba').hour;\nconst dela = (String($('Montar entrada').first().json.texto_cliente || '').match(/bom dia|boa tarde|boa noite/gi) || []).pop();\nconst cumprimento = dela ? dela.toLowerCase() : hSalao < 12 ? 'bom dia' : hSalao < 18 ? 'boa tarde' : 'boa noite';\nt = t.replace(/^(\\s*(?:(?:oi|olá)[^.!?\\n]{0,25}[!,.]\\s*)?)(bom dia|boa tarde|boa noite)/i, (m, antes, g) => antes + (g[0] === g[0].toUpperCase() ? cumprimento[0].toUpperCase() + cumprimento.slice(1) : cumprimento));\n// Cumprimenta UMA vez: se a IA já respondeu esta cliente nas últimas 3 h, tira o 'Oi, Victor! Boa tarde.' / 'Boa noite!' do\n// começo (26/10: 'Boa tarde' e o áudio 30 s depois viraram duas respostas, cada uma com cumprimento)\nconst jaFalou = ($('Sobre esta cliente').first().json.texto || '').match(/Você já conversou com ela hoje \\(sua última resposta foi às (\\d\\d):(\\d\\d)/);\nif (jaFalou) {\n  const ultima = $now.setZone('America/Cuiaba').set({ hour: +jaFalou[1], minute: +jaFalou[2] });\n  if ($now.diff(ultima, 'hours').hours < 3) {\n    const semOi = t.replace(/^\\s*(?:(?:oi|olá)(?:,\\s*[^.!?\\n]{1,25})?[!.,]\\s*)?(?:(?:bom dia|boa tarde|boa noite)(?:,\\s*[^.!?\\n]{1,25})?[!.]\\s*)?/i, '').trim();\n    if (semOi) t = semOi[0].toUpperCase() + semOi.slice(1);\n  }\n}\n// já conversaram hoje (ficha): tira a reapresentação que a IA às vezes ainda põe ('Sou a assistente virtual da Ana.')\nif (/Você já conversou com ela hoje/.test($('Sobre esta cliente').first().json.texto || '')) {\n  const semApresentacao = t.replace(/(^|[.!?]\\s+|\\n)\\s*((Eu )?sou a assistente virtual( da Ana)?( Vieira)?|Aqui é a assistente( virtual)?( da Ana)?)[^.!?\\n]*[.!?]?/gi, '$1').trim();\n  if (semApresentacao) t = semApresentacao;\n}\n// sem negrito/markdown: mensagem de gente não tem *asterisco*\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');\n// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)\nconst semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Loja Teste/gi, '').trim();\nif (semRobo) t = semRobo;\n// sobras de chatbot no fim (humanizer §22): fecho automático que não diz nada; só sai se sobrar texto\nconst semFecho = t.replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').trim();\nif (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';\n// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente\nt = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));\n// regra da Ana: valor só quando a cliente pergunta preço. Se ela não perguntou, tira as frases com R$\n// ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô\nconst pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test($('Montar entrada').first().json.texto_cliente || '');\nconst FRASES = /(?<=[.!?😊😉🥰])\\s+/u;\nconst QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;\n// limpa linha por linha: o quadro da agenda vem uma linha por período e precisa chegar assim\nconst limpar = (p) => p.split('\\n').map(limparLinha).filter(Boolean).join('\\n');\nconst limparLinha = (p) => {\n  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));\n  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a\n  // cliente recebe \"algum desses horários?\" sem horário nenhum\n  if (!pediuPreco) fs = fs.map(f => {\n    if (!/R\\$\\s?\\d/.test(f)) return f;\n    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?/gi, '').replace(/\\s+,/g, ',').trim();\n    return !/R\\$/.test(s) && QUANDO.test(s) ? s : '';\n  }).filter(f => f && !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));\n  return fs.join(' ').trim();\n};\n// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;\n// parágrafo sem número continua respondendo a mesma mensagem do anterior\nt = t.replace(/\\s*\\[(\\d{1,2})\\]\\s*/g, '\\n\\n[$1] ').trim();\nlet ref = 0;\nlet paragrafos = t.split(/\\n\\s*\\n/).map(s => { const m = s.trim().match(/^\\[(\\d{1,2})\\]\\s*/); if (m) ref = Number(m[1]); return { t: s.trim().slice(m ? m[0].length : 0).trim(), ref }; }).filter(p => p.t);\nconst limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);\nif (limpos.length) paragrafos = limpos;\n// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta\nconst falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor\nif (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];\n// Como gente manda no WhatsApp (pedido do Victor, 26/10): um balão por parágrafo, na ordem, no máximo 2.\n// Parágrafo minúsculo (menos de 25 letras, ex.: 'Oi, Maria!') gruda no seguinte; parágrafo enorme (mais de\n// 300 letras) é cortado entre frases; se passar de 3, os do fim se juntam no 3º. O --- da IA conta como parágrafo.\nconst ps = paragrafos.filter(p => p.t !== '§§').map(p => p.t);\nlet baloes = [];\nlet junto = '';\nfor (const p of ps) {\n  junto = junto ? junto + '\\n\\n' + p : p;\n  if (junto.length >= 25) { baloes.push({ t: junto, ref: 0 }); junto = ''; }\n}\nif (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }\nconst cortar = (t) => {\n  if (t.length <= 300 || t.includes('\\n')) return [t]; // quadro do dia (em linhas) vai inteiro\n  const fs = t.split(FRASES);\n  if (fs.length < 2) return [t];\n  let a = '', i = 0;\n  while (i < fs.length - 1 && (a + ' ' + fs[i]).trim().length < t.length / 2) a = (a + ' ' + fs[i++]).trim();\n  if (!a) a = fs[i++];\n  return [a, fs.slice(i).join(' ').trim()].filter(Boolean);\n};\nbaloes = baloes.flatMap((b) => cortar(b.t).map((t) => ({ t, ref: 0 })));\n// no máximo 2 balões (26/10: 3 balões era texto demais)\nif (baloes.length > 2) baloes = [baloes[0], { t: baloes.slice(1).map(b => b.t).join('\\n\\n'), ref: 0 }];\nbaloes = baloes.filter(b => b.t);\n// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10)\nbaloes.forEach(b => { b.t = b.t.replace(/(https?:\\/\\/\\S*?)[.,;:!?]+(?=\\s|$)/g, '$1'); });\n// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai\n// depois de outra e ficaria solta): cita a última mensagem do bloco\nlet msgs = [];\ntry { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}\nconst esperou = $('Aguardar 3s (IA respondendo)').isExecuted;\nconst citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');\n// Ritmo de gente (pedido do Victor, 25/10): o tempo depende do tamanho do texto.\n// pausa = 'pensando' antes do 'digitando…' (a leitura já foi feita antes, em Leitura: …): 1º balão 1-3 s;\n//         balões seguintes 1-2,5 s (respiro entre uma mensagem e outra).\n// delay = tempo de 'digitando…': 65-90 ms por letra (uns 12 caracteres por segundo, alguém rápido no celular),\n//         no mínimo 2,5 s e no máximo 22 s. Ex.: 40 letras ≈ 3 s; 120 ≈ 9 s; 250 ≈ 19 s.\nconst ale = (a, b) => a + Math.random() * (b - a);\nreturn baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, citar: citarDe({ ref }, i),\n  pausa: Math.round((i === 0 ? ale(1, 3) : ale(1, 2.5)) * 10) / 10,\n  delay: Math.round(Math.min(22000, Math.max(2500, texto.length * ale(65, 90)))) } }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000060",
+      "name": "consultar_horarios_livres",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3060,
+        2960
+      ],
+      "parameters": {
+        "description": "Consulta a agenda do salão e devolve o QUADRO DO DIA: manhã, almoço e tarde, o que está livre e o que já tem cliente marcada, e os inícios que cabem o serviço. Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-agenda-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "consultar",
+            "data": "={{ $fromAI('data', `Dia desejado no formato AAAA-MM-DD (calcule \"amanhã\", \"sábado\" etc. a partir da data atual). Se a cliente pediu um HORÁRIO específico, envie AAAA-MM-DDTHH:mm para verificar exatamente esse horário.`, 'string') }}",
+            "duracao_minutos": "={{ $fromAI('duracao_minutos', `Duração do serviço em minutos, conforme a lista de serviços (ex.: 240 para aplicação de mega hair, 120 para manutenção, 30 para avaliação)`, 'number') }}",
+            "periodo": "={{ $fromAI('periodo', `Período preferido: manha, tarde ou qualquer`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "duracao_minutos",
+              "displayName": "duracao_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_inicio",
+              "displayName": "data_hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_nova",
+              "displayName": "data_hora_nova",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000061",
+      "name": "ver_agendamentos",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        3120
+      ],
+      "parameters": {
+        "description": "Lista os horários futuros desta cliente (marcados pela IA ou pela Ana). SEMPRE use quando ela perguntar o horário dela (\"que horas é meu horário?\", \"que dia marquei?\"), mesmo se a ficha já mostrar um: a ficha pode estar desatualizada. Use também antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-agenda-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "listar",
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "duracao_minutos",
+              "displayName": "duracao_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_inicio",
+              "displayName": "data_hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_nova",
+              "displayName": "data_hora_nova",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000062",
+      "name": "remarcar_agendamento",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2880,
+        3120
+      ],
+      "parameters": {
+        "description": "MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo agendamento passa para o novo horário). Use sempre que ela quiser remarcar/trocar/mudar/adiantar/atrasar o horário. NUNCA use criar_agendamento para remarcar. Só diga que remarcou se a resposta começar com REMARCADO.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-agenda-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "remarcar",
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "data_hora_inicio": "={{ $fromAI('data_hora_inicio', `Horário ATUAL do agendamento, AAAA-MM-DDTHH:mm (pode deixar vazio se ela só tem um agendamento)`, 'string') }}",
+            "data_hora_nova": "={{ $fromAI('data_hora_nova', `NOVO horário desejado, AAAA-MM-DDTHH:mm`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "duracao_minutos",
+              "displayName": "duracao_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_inicio",
+              "displayName": "data_hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_nova",
+              "displayName": "data_hora_nova",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000063",
+      "name": "cancelar_agendamento",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3060,
+        3120
+      ],
+      "parameters": {
+        "description": "Cancela (remove da agenda) um agendamento que a cliente já tem. Use só depois que ela confirmar que quer cancelar. Só diga que cancelou se a resposta começar com CANCELADO.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-agenda-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "cancelar",
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "data_hora_inicio": "={{ $fromAI('data_hora_inicio', `Horário do agendamento a cancelar, AAAA-MM-DDTHH:mm (pode deixar vazio se ela só tem um)`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "duracao_minutos",
+              "displayName": "duracao_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_inicio",
+              "displayName": "data_hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_nova",
+              "displayName": "data_hora_nova",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000064",
+      "name": "criar_agendamento",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3240,
+        2960
+      ],
+      "parameters": {
+        "description": "Cria um agendamento NOVO na agenda do salão. Use SOMENTE depois que a cliente escolheu um dos horários de consultar_horarios_livres e confirmou serviço e nome. NÃO use para remarcar (para isso existe remarcar_agendamento). Se a resposta não começar com AGENDADO, o horário NÃO foi marcado.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-agenda-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "criar",
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "nome": "={{ $fromAI('nome', `Nome da cliente`, 'string') }}",
+            "servico": "={{ $fromAI('servico', `Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: \"Manutenção – mão de obra\", \"Aplicação de mega hair – mão de obra\", \"Selagem\")`, 'string') }}",
+            "motivo": "={{ $fromAI('motivo', `Resumo curto (até ~60 caracteres) do que a cliente quer e do que ela contou na conversa, para a Ana ler na agenda. Ex.: \"comprar cabelo vietnamita 60 cm\", \"selagem - cabelo ressecado\", \"manutenção tela adesiva colocada em agosto\", \"avaliar técnica, cabelo curto\"`, 'string') }}",
+            "data_hora_inicio": "={{ $fromAI('data_hora_inicio', `Início no formato AAAA-MM-DDTHH:mm, exatamente como veio em consultar_horarios_livres`, 'string') }}",
+            "duracao_minutos": "={{ $fromAI('duracao_minutos', `Duração do serviço em minutos`, 'number') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "periodo",
+              "displayName": "periodo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "duracao_minutos",
+              "displayName": "duracao_minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "number",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_inicio",
+              "displayName": "data_hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_hora_nova",
+              "displayName": "data_hora_nova",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000065",
+      "name": "transferir_para_humano",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3240,
+        3120
+      ],
+      "parameters": {
+        "description": "Passa a conversa para a Ana e PAUSA a IA para esta cliente por 12h. A Ana recebe no WhatsApp o resumo e o link da conversa no app, para não precisar ler tudo. Use nos casos do bloco QUANDO PRECISA DA ANA (passar a conversa). Dúvida que só a Ana decide (levar cachorro, criança, atraso, serviço fora da tabela) é perguntar_para_gleide, que não pausa, MESMO que a cliente diga \"quero falar com a Ana\" por causa disso: a resposta da Ana chega sozinha para a cliente.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-pausa-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "motivo": "={{ $fromAI('motivo', `Motivo curto, até 12 palavras (ex.: quer avaliação à distância, mora longe)`, 'string') }}",
+            "resumo": "={{ $fromAI('resumo', `Uma frase curta, até 20 palavras, só com o que a Ana não sabe pelo pedido: nova ou já cliente, horário marcado, o que você já explicou ou enviou (áudio, preço, fotos). Não repita o pedido. Sem diagnóstico.`, 'string') }}",
+            "o_que_precisa": "={{ $fromAI('o_que_precisa', `O que a Ana precisa fazer, direto, até 15 palavras (ex.: Dizer se dá para orientar por foto)`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo",
+              "displayName": "motivo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resumo",
+              "displayName": "resumo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "o_que_precisa",
+              "displayName": "o_que_precisa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000066",
+      "name": "Tem texto pra enviar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3840,
+        2780
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !$json.semTexto }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000067",
+      "name": "Um balão por vez",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        4140,
+        2780
+      ],
+      "parameters": {
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000068",
+      "name": "Pausa (lendo/respirando)",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        4440,
+        2980
+      ],
+      "parameters": {
+        "resume": "timeInterval",
+        "amount": "={{ $json.pausa }}",
+        "unit": "seconds"
+      },
+      "webhookId": "0ebada71-a0a5-4e7b-831b-d6e4c5274322"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000069",
+      "name": "Digitando (blocos de 8s)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        3980
+      ],
+      "parameters": {
+        "jsCode": "// o tempo de 'digitando…' em blocos iguais de até 7,5 s: cada chamada da Evolution dura o delay do bloco e o\n// próximo bloco começa um bloco depois (batchInterval = delay), então o tempo total é o delay calculado\nconst b = $input.first().json;\nconst n = Math.max(1, Math.ceil(b.delay / 7500));\nconst delay = Math.round(b.delay / n);\nreturn Array.from({ length: n }, () => ({ json: { jid: b.jid, delay }, pairedItem: 0 }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000070",
+      "name": "Digitando...",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        3980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.jid, presence: 'composing', delay: $json.delay }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": "={{ $json.delay }}"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000071",
+      "name": "Enviar mensagem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        3980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify(Object.assign({ number: $('Um balão por vez').item.json.jid, text: $('Um balão por vez').item.json.texto }, $('Um balão por vez').item.json.citar ? { quoted: { key: { id: $('Um balão por vez').item.json.citar } } } : {})) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000072",
+      "name": "CRM: registrar contato",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        900,
+        2320
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT 1 AS ok -- CRM antigo (só telefone, sem loja): desligado nas lojas",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "zzYnr5Tvb8vIFf4H",
+          "name": "CRM Postgres"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000073",
+      "name": "anotar_no_crm",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        3280
+      ],
+      "parameters": {
+        "description": "Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-crm-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "interesse": "={{ $fromAI('interesse', `O que ela quer, curto (ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"selagem\")`, 'string') }}",
+            "resumo": "={{ $fromAI('resumo', `Resumo de 1-2 frases da conversa até agora (ex.: \"Achou caro, quer parcelar em 12x. Casamento em dezembro.\")`, 'string') }}",
+            "nome": "={{ $fromAI('nome', `Nome da cliente, se ela disse (senão deixe vazio)`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "interesse",
+              "displayName": "interesse",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resumo",
+              "displayName": "resumo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000078",
+      "name": "Supabase: registrar entrada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_entrada",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_nome: $('Extrair dados').first().json.nome || null,\n       p_conteudo: $json.texto, p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').first().json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').first().json.msgId }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000079",
+      "name": "Pausa: alinhar com o CRM",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        1460
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:pausa:{{ $('Extrair dados').first().json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000080",
+      "name": "Supabase: ficha da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        2120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes_status?select=id,nome,status,criado_em,ultima_visita,total_visitas,proximo_agendamento,retorno_previsto,observacoes&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&telefone=eq.{{ (() => { const d = String($('Montar entrada').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000081",
+      "name": "Supabase: histórico da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        2120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=inicio,status,retorno_previsto,servicos(nome)&status=neq.cancelado&order=inicio.desc&limit=12&cliente_id=eq.{{ $json.id || '00000000-0000-0000-0000-000000000000' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000082",
+      "name": "Sobre esta cliente",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        2120
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst ficha = $('Supabase: ficha da cliente').first().json;\nconst hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);\nconst dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');\nconst data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');\nconst NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';\n// Mensagens dela que ficaram sem resposta (ex.: a IA falhou e só mandou o pedido de desculpas): não estão na\n// memória do Redis, mas estão no banco. Sem isso a IA esquece o que ela pediu antes.\nlet agora_ids = [];\ntry { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]').map((m) => m.id).filter(Boolean); } catch (e) {}\nconst recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);\nconst pendentes = [];\nfor (const m of recentes) {\n  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada\n  if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);\n}\nconst SEM_RESPOSTA = pendentes.length ? '\\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +\n  pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';\n// Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo\nconst ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));\nconst JA_FALOU = ultimaIA ? '\\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +\n  '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '';\nif (!ficha.id) return [{ json: { texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA } }];\n// A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então \"sem visita\" sozinho não diz se é nova:\n// nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).\nconst recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });\nif (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: (ultimaIA ? 'Ainda não veio ao salão e não tem nada marcado.' : NOVA) + (ficha.observacoes ? '\\nObservações da Ana: ' + ficha.observacoes : '') + JA_FALOU + SEM_RESPOSTA } }];\n\nconst SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',\n  inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };\nconst linhas = [];\nif (ficha.nome) linhas.push('Nome: ' + ficha.nome);\nlinhas.push('Situação: ' + (SITUACAO[ficha.status] || ficha.status));\nif (ficha.total_visitas) linhas.push('Veio ' + ficha.total_visitas + 'x; última visita em ' + data(ficha.ultima_visita) + '.');\n\nconst agora = DateTime.now();\nconst futuros = hist.filter((a) => a.status === 'agendado' && dia(a.inicio) > agora).reverse();\nfor (const a of futuros) linhas.push('Horário marcado: ' + dia(a.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' — ' + (a.servicos?.nome || 'serviço não informado'));\n\n// um por serviço (o mais recente), com o retorno previsto de cada um\nconst vistos = new Set();\nfor (const a of hist.filter((x) => x.status === 'realizado')) {\n  const nome = a.servicos?.nome || 'serviço não informado';\n  if (vistos.has(nome)) continue;\n  vistos.add(nome);\n  linhas.push('Já fez: ' + nome + ' em ' + data(a.inicio) + (a.retorno_previsto ? ' → voltar por volta de ' + data(a.retorno_previsto) : ''));\n}\nconst faltas = hist.filter((a) => a.status === 'faltou').length;\nif (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');\nif (ficha.observacoes) linhas.push('Observações da Ana: ' + ficha.observacoes.replace(/\\s*\\n\\s*/g, ' | '));\n// a Ana chamou pelo CRM e esta mensagem é a resposta dela\nconst alo = $('Supabase: último alô').first().json;\n// remarcação: a Ana teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)\n// falta: ela não veio e a IA a chamou sozinha para marcar outro horário (ver supabase/007)\nif (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'antes') +\n  ' e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');\n// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)\nelse if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : 'hoje') +\n  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));\n// vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)\nelse if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'agora') +\n  ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)\n  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))\n    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));\nelse if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Ana pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'ela') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');\n// aviso: a Ana pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)\nelse if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Ana mandou avisar: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');\nelse if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Ana mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');\nreturn [{ json: { texto: linhas.join('\\n') + JA_FALOU + SEM_RESPOSTA } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000083",
+      "name": "Supabase: último alô",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        2120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000084",
+      "name": "Supabase: últimas mensagens",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3000,
+        2120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&select=direcao,conteudo,wa_message_id,criado_em&order=criado_em.desc&limit=15&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}&criado_em=gte.{{ $now.minus(12, 'hours').toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000085",
+      "name": "Supabase: tabela de serviços",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        2120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/servicos?select=nome,categoria,preco,duracao_min,a_partir_de&ativo=eq.true&order=categoria,nome&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000086",
+      "name": "Supabase: registrar saída",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        3980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/{{ $json.key?.id ? 'rpc/n8n_registrar_saida' : 'nao_gravar' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Um balão por vez').first().json.texto,\n       p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000087",
+      "name": "Supabase: dona respondeu",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').first().json.texto || '[mídia]',\n       p_autor: 'humano', p_tipo: ({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[$('Extrair dados').first().json.tipo] || 'outro', p_wa_message_id: $('Extrair dados').first().json.msgId, p_pausar_horas: 12 }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000088",
+      "name": "Supabase: reativar IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        400
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&telefone=eq.{{ (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: null, motivo_pausa: null }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000089",
+      "name": "Supabase: alô recente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        800
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?select=mensagem,clientes!inner(telefone)&order=criado_em.desc&limit=1&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&clientes.telefone=eq.{{ (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}&criado_em=gte.{{ $now.minus(2, 'hours').toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000090",
+      "name": "É o alô do CRM?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        800
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "alo1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "rightValue": "",
+              "leftValue": "={{ (() => { const n = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '').slice(0, 60); const a = n($json.mensagem); return a.length > 10 && a === n($('Extrair dados').first().json.texto); })() }}"
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000091",
+      "name": "Supabase: registrar alô",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3000,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Extrair dados').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Extrair dados').first().json.texto, p_autor: 'humano', p_tipo: 'texto', p_wa_message_id: $('Extrair dados').first().json.msgId }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000124",
+      "name": "enviar_audio",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        2880,
+        3280
+      ],
+      "parameters": {
+        "description": "Manda para a cliente um ÁUDIO pronto (voz de terceiro, não diga que é a Ana) explicando um assunto (temas em ÁUDIOS PRONTOS, no fim das instruções). Use quando a pergunta dela for exatamente sobre um desses temas. A resposta diz se o áudio foi enviado e o que ele fala.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-audios-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "jid": "={{ $('Montar entrada').first().json.jid }}",
+            "mensagem": "={{ $('Montar entrada').first().json.texto_cliente }}",
+            "tema": "={{ $fromAI('tema', `O tema do áudio, igual à lista ÁUDIOS PRONTOS`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "tema",
+              "displayName": "tema",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jid",
+              "displayName": "jid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "mensagem",
+              "displayName": "mensagem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000125",
+      "name": "Supabase: áudios do salão",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3900,
+        2120
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000126",
+      "name": "Supabase: áudios já enviados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        2780
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&select=conteudo&autor=eq.ia&tipo=eq.audio&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000127",
+      "name": "Áudios disponíveis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        2780
+      ],
+      "parameters": {
+        "jsCode": "\nconst catalogo = (($('Supabase: áudios do salão').first().json.config) || {}).audios_prontos || [];\nconst enviados = $('Supabase: áudios já enviados').all().map((i) => i.json.conteudo || '').join(' ');\nif (!catalogo.length) return [{ json: { texto: '(nenhum áudio pronto cadastrado: responda sempre em texto)' } }];\nreturn [{ json: { texto: catalogo.map((a) => '- ' + a.tema + ' — quando usar: ' + (a.quando_usar || a.tema) +\n  (enviados.includes('[áudio pronto: ' + a.tema + ']') ? ' (JÁ ENVIADO para esta cliente: não mande de novo)' : '')).join('\\n') } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000144",
+      "name": "É a Ana (assistente)?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ (('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean).find(n => n === $json.telefone || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === $json.telefone) || '') !== '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000145",
+      "name": "Repassar para a assistente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:5678/webhook/teste-assistente-gleide",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($('Webhook Evolution').item.json.body) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000249",
+      "name": "perguntar_para_gleide",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        3060,
+        3280
+      ],
+      "parameters": {
+        "description": "Pergunta à Ana uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Coisas de bom senso (levar o filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à cliente sozinha. Use quando não for preciso a Ana assumir a conversa. Para avaliação à distância, reclamação, dor, negociação ou pedido de falar com ela, use transferir_para_humano.",
+        "workflowId": {
+          "__rl": true,
+          "value": "PENDENTE.workflow-pergunta-id",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $('Montar entrada').first().json.telefone }}",
+            "jid": "={{ $('Montar entrada').first().json.jid }}",
+            "nome": "={{ $('Montar entrada').first().json.nome }}",
+            "pergunta": "={{ $fromAI('pergunta', `A pergunta direta para a Ana, até 15 palavras, sem \"a cliente quer saber\" nem o nome dela (ex.: Pode trazer cachorro de porte grande na avaliação?)`, 'string') }}",
+            "contexto": "={{ $fromAI('contexto', `Só o que a Ana precisa e não está na pergunta, até 8 palavras (ex.: avaliação qui 29/10 9h). Não repita a pergunta. Pode ficar vazio.`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "jid",
+              "displayName": "jid",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "pergunta",
+              "displayName": "pergunta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "contexto",
+              "displayName": "contexto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000250",
+      "name": "Pedido: procurar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:pedido:{{ $('Extrair dados').first().json.citado || 'nenhum' }}",
+        "propertyName": "pedido",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000251",
+      "name": "É resposta da Ana?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "rg1",
+              "leftValue": "={{ !!$json.pedido && !$('Extrair dados').first().json.fromMe && $('Extrair dados').first().json.texto.trim() !== '' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000252",
+      "name": "Pedido: preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst p = JSON.parse($('Pedido: procurar').first().json.pedido);\nconst resposta = $('Extrair dados').first().json.texto.trim();\nconst nome = String(p.nome || '').trim().split(/\\s+/)[0] || '';\nconst instrucao = 'Você é a assistente virtual da Ana, do salão Loja Teste, conversando pelo WhatsApp com a cliente ' +\n  (nome || '') + '. Antes, a cliente perguntou algo que só a Ana sabia: \"' + p.pergunta + '\". Você disse que ia confirmar com a Ana. ' +\n  'A Ana respondeu: \"' + resposta + '\". Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, ' +\n  'curta (1 ou 2 frases), natural e gentil, como uma atendente de verdade. Não invente nada além do que a Ana disse, ' +\n  'não mude o sentido, não use negrito nem listas, no máximo um emoji. Se ela passou valor, mantenha o número, a unidade e as ' +\n  'condições exatamente como ela disse e, se for estimativa, deixe claro que é estimativa. Responda só com a mensagem.';\nreturn [{ json: { ...p, nome, resposta, instrucao } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000253",
+      "name": "Pedido: escrever (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.instrucao }] }] }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000254",
+      "name": "Pedido: texto",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst p = $('Pedido: preparar').first().json;\nlet t = String($input.first().json.candidates?.[0]?.content?.parts?.map((x) => x.text || '').join('') || '').trim();\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/^[\"“]|[\"”]$/g, '').trim();\nif (!t) t = 'Falei com a Ana sobre isso: ' + p.resposta;\nreturn [{ json: { ...p, texto: t } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000255",
+      "name": "Pedido: enviar à cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Pedido: preparar').first().json.jid, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000256",
+      "name": "Pedido: registrar saída",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Pedido: preparar').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Pedido: texto').first().json.texto, p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key?.id || null }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000257",
+      "name": "Pedido: memória (resposta da Ana)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:memoria:{{ $('Pedido: preparar').first().json.telefone }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'human', data: { content: '[a Ana respondeu à pergunta \"' + $('Pedido: preparar').first().json.pergunta + '\": ' + $('Pedido: preparar').first().json.resposta + ']', additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000258",
+      "name": "Pedido: memória (mensagem enviada)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:memoria:{{ $('Pedido: preparar').first().json.telefone }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: $('Pedido: texto').first().json.texto, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000259",
+      "name": "Pedido: apagar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:pedido:{{ $('Extrair dados').first().json.citado }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000260",
+      "name": "Pedido: confirmar à Ana",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, text: 'Avisei ' + ($('Pedido: preparar').first().json.nome ? 'a ' + $('Pedido: preparar').first().json.nome : 'a cliente') + ' ✓\\n' + $('Pedido: texto').first().json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000261",
+      "name": "Pedido: seguir normal",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: $('Extrair dados').first().json }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000265",
+      "name": "IA falhou? (alerta)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        3840,
+        2980
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "falhou",
+              "leftValue": "={{ $json.falhou === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000266",
+      "name": "Avisar Victor (IA falhou)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        4140,
+        2980
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '». Veja em n8n → Executions.' }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000267",
+      "name": "Memória: ler (Agente IA)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        600,
+        2780
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:memoria:{{ $('Montar entrada').first().json.telefone }}",
+        "propertyName": "memoria",
+        "keyType": "list",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000268",
+      "name": "Memória: conferir (Agente IA)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        2780
+      ],
+      "parameters": {
+        "jsCode": "// lista do Redis: [0] = mais nova (a memória grava com LPUSH)\nconst lista = [].concat($input.first().json.memoria || []);\nconst quebra = (s) => { try { const m = JSON.parse(s); return m.type === 'tool' || (m.type === 'ai' && (m.data?.tool_calls || []).length > 0); } catch (e) { return false; } };\nlet fim = Math.min(lista.length, 40);\nif (!fim || !quebra(lista[fim - 1])) return [{ json: { cortar: false }, pairedItem: 0 }];\n// recua até uma mensagem dela: o histórico começa como uma conversa normal\nconst dela = (s) => { try { return JSON.parse(s).type === 'human'; } catch (e) { return false; } };\nwhile (fim > 0 && !dela(lista[fim - 1])) fim--;\n// toda interação começa com a mensagem dela, então sempre há um ponto bom; sem ele, não mexe\nif (!fim) return [{ json: { cortar: false }, pairedItem: 0 }];\nreturn [{ json: { cortar: true, de: lista.length, para: fim, manter: lista.slice(0, fim) }, pairedItem: 0 }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000269",
+      "name": "Memória: cortar? (Agente IA)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        2780
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "mj1",
+              "leftValue": "={{ $json.cortar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000270",
+      "name": "Memória: apagar (Agente IA)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        2780
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "=teste:memoria:{{ $('Montar entrada').first().json.telefone }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000271",
+      "name": "Memória: regravar itens (Agente IA)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        2780
+      ],
+      "parameters": {
+        "jsCode": "return [].concat($('Memória: conferir (Agente IA)').first().json.manter || []).reverse().map((m) => ({ json: { m }, pairedItem: 0 }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000272",
+      "name": "Memória: regravar (Agente IA)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2100,
+        2780
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:memoria:{{ $('Montar entrada').first().json.telefone }}",
+        "messageData": "={{ $json.m }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000273",
+      "name": "Memória: pronta (Agente IA)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        2780
+      ],
+      "parameters": {
+        "jsCode": "return [{ json: {}, pairedItem: 0 }];"
+      },
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Webhook Evolution": {
+      "main": [
+        [
+          {
+            "node": "Extrair dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair dados": {
+      "main": [
+        [
+          {
+            "node": "Pedido: procurar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Minha resposta manual?": {
+      "main": [
+        [
+          {
+            "node": "Comando #ia?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Filtro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comando #ia?": {
+      "main": [
+        [
+          {
+            "node": "Pausa: remover",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase: alô recente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filtro": {
+      "main": [
+        [
+          {
+            "node": "É áudio ou foto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: verificar": {
+      "main": [
+        [
+          {
+            "node": "IA ativa?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA ativa?": {
+      "main": [
+        [
+          {
+            "node": "Pausa: alinhar com o CRM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É áudio ou foto?": {
+      "main": [
+        [
+          {
+            "node": "Baixar mídia (Evolution)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Texto da mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Baixar mídia (Evolution)": {
+      "main": [
+        [
+          {
+            "node": "Entender mídia (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entender mídia (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Texto da mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Texto da mensagem": {
+      "main": [
+        [
+          {
+            "node": "Supabase: registrar entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer: guardar msg": {
+      "main": [
+        [
+          {
+            "node": "Buffer: marcar última",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer: marcar última": {
+      "main": [
+        [
+          {
+            "node": "Aguardar (juntar mensagens)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aguardar (juntar mensagens)": {
+      "main": [
+        [
+          {
+            "node": "Buffer: ler última",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer: ler última": {
+      "main": [
+        [
+          {
+            "node": "É a última msg?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É a última msg?": {
+      "main": [
+        [
+          {
+            "node": "Pausa: verificar de novo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: verificar de novo": {
+      "main": [
+        [
+          {
+            "node": "Ainda ativa?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ainda ativa?": {
+      "main": [
+        [
+          {
+            "node": "Trava: ler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Buffer: descartar (pausada)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trava: ler": {
+      "main": [
+        [
+          {
+            "node": "Ninguém respondendo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ninguém respondendo?": {
+      "main": [
+        [
+          {
+            "node": "Vez: contar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aguardar 3s (IA respondendo)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vez: contar": {
+      "main": [
+        [
+          {
+            "node": "Tem vez?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem vez?": {
+      "main": [
+        [
+          {
+            "node": "Trava: marcar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Vez: esperar 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vez: esperar 5s": {
+      "main": [
+        [
+          {
+            "node": "Buffer: ler última",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trava: liberar": {
+      "main": [
+        [
+          {
+            "node": "Offline: esperar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offline: esperar": {
+      "main": [
+        [
+          {
+            "node": "Offline: alguém respondendo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Offline: alguém respondendo?": {
+      "main": [
+        [
+          {
+            "node": "Ninguém mais respondendo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ninguém mais respondendo?": {
+      "main": [
+        [
+          {
+            "node": "Offline: sair",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Aguardar 3s (IA respondendo)": {
+      "main": [
+        [
+          {
+            "node": "Buffer: ler última",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trava: marcar": {
+      "main": [
+        [
+          {
+            "node": "Buffer: ler mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer: ler mensagens": {
+      "main": [
+        [
+          {
+            "node": "Buffer: limpar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buffer: limpar": {
+      "main": [
+        [
+          {
+            "node": "Montar entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar entrada": {
+      "main": [
+        [
+          {
+            "node": "Leitura: ficar online",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "CRM: registrar contato",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leitura: ficar online": {
+      "main": [
+        [
+          {
+            "node": "Leitura: uma por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leitura: uma por vez": {
+      "main": [
+        [
+          {
+            "node": "Leitura: próxima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leitura: próxima": {
+      "main": [
+        [
+          {
+            "node": "Marcar como lida",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Leitura: lendo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leitura: lendo": {
+      "main": [
+        [
+          {
+            "node": "Leitura: marcar lida",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leitura: marcar lida": {
+      "main": [
+        [
+          {
+            "node": "Leitura: próxima",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Marcar como lida": {
+      "main": [
+        [
+          {
+            "node": "Supabase: ficha da cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA": {
+      "main": [
+        [
+          {
+            "node": "Quebrar mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quebrar mensagens": {
+      "main": [
+        [
+          {
+            "node": "Tem texto pra enviar?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "IA falhou? (alerta)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem texto pra enviar?": {
+      "main": [
+        [
+          {
+            "node": "Um balão por vez",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Trava: liberar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Um balão por vez": {
+      "main": [
+        [
+          {
+            "node": "Trava: liberar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pausa (lendo/respirando)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa (lendo/respirando)": {
+      "main": [
+        [
+          {
+            "node": "Digitando (blocos de 8s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digitando (blocos de 8s)": {
+      "main": [
+        [
+          {
+            "node": "Digitando...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Digitando...": {
+      "main": [
+        [
+          {
+            "node": "Enviar mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar mensagem": {
+      "main": [
+        [
+          {
+            "node": "Supabase: registrar saída",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória (Redis)": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "consultar_horarios_livres": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "criar_agendamento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ver_agendamentos": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "remarcar_agendamento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cancelar_agendamento": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "transferir_para_humano": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "anotar_no_crm": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: registrar entrada": {
+      "main": [
+        [
+          {
+            "node": "Pausa: verificar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: alinhar com o CRM": {
+      "main": [
+        [
+          {
+            "node": "Buffer: guardar msg",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: ficha da cliente": {
+      "main": [
+        [
+          {
+            "node": "Supabase: histórico da cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: histórico da cliente": {
+      "main": [
+        [
+          {
+            "node": "Supabase: último alô",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: último alô": {
+      "main": [
+        [
+          {
+            "node": "Supabase: últimas mensagens",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: últimas mensagens": {
+      "main": [
+        [
+          {
+            "node": "Supabase: tabela de serviços",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: tabela de serviços": {
+      "main": [
+        [
+          {
+            "node": "Sobre esta cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sobre esta cliente": {
+      "main": [
+        [
+          {
+            "node": "Supabase: áudios do salão",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: registrar saída": {
+      "main": [
+        [
+          {
+            "node": "Um balão por vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: humano assumiu (12h)": {
+      "main": [
+        [
+          {
+            "node": "Supabase: dona respondeu",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausa: remover": {
+      "main": [
+        [
+          {
+            "node": "Supabase: reativar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: alô recente": {
+      "main": [
+        [
+          {
+            "node": "É o alô do CRM?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É o alô do CRM?": {
+      "main": [
+        [
+          {
+            "node": "Supabase: registrar alô",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pausa: humano assumiu (12h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "enviar_audio": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: áudios do salão": {
+      "main": [
+        [
+          {
+            "node": "Supabase: áudios já enviados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: áudios já enviados": {
+      "main": [
+        [
+          {
+            "node": "Áudios disponíveis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Áudios disponíveis": {
+      "main": [
+        [
+          {
+            "node": "Memória: ler (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É a Ana (assistente)?": {
+      "main": [
+        [
+          {
+            "node": "Repassar para a assistente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Minha resposta manual?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "perguntar_para_gleide": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: procurar": {
+      "main": [
+        [
+          {
+            "node": "É resposta da Ana?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "É resposta da Ana?": {
+      "main": [
+        [
+          {
+            "node": "Pedido: preparar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pedido: seguir normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: seguir normal": {
+      "main": [
+        [
+          {
+            "node": "É a Ana (assistente)?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: preparar": {
+      "main": [
+        [
+          {
+            "node": "Pedido: escrever (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: escrever (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Pedido: texto",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: texto": {
+      "main": [
+        [
+          {
+            "node": "Pedido: enviar à cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: enviar à cliente": {
+      "main": [
+        [
+          {
+            "node": "Pedido: registrar saída",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: registrar saída": {
+      "main": [
+        [
+          {
+            "node": "Pedido: memória (resposta da Ana)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: memória (resposta da Ana)": {
+      "main": [
+        [
+          {
+            "node": "Pedido: memória (mensagem enviada)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: memória (mensagem enviada)": {
+      "main": [
+        [
+          {
+            "node": "Pedido: apagar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido: apagar": {
+      "main": [
+        [
+          {
+            "node": "Pedido: confirmar à Ana",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IA falhou? (alerta)": {
+      "main": [
+        [
+          {
+            "node": "Avisar Victor (IA falhou)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: ler (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Memória: conferir (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: conferir (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Memória: cortar? (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: cortar? (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Memória: apagar (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: apagar (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Memória: regravar itens (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: regravar itens (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Memória: regravar (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: regravar (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Memória: pronta (Agente IA)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória: pronta (Agente IA)": {
+      "main": [
+        [
+          {
+            "node": "Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  }
+}

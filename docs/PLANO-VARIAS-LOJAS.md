@@ -127,15 +127,23 @@ Combinar com ela fora do app:
 - [ ] Teste: Gleide abre o app e tudo está igual
 
 ### Fase 5 — IA da manicure (Victor) — 3 a 5 dias
-- [ ] `montar-workflow.js --loja <nome>`: lê os dados da loja de um arquivo `lojas/<nome>.json`
-  (empresa_id, instância, números, prefixo, nicho, prompt) em vez do `.env`
-- [ ] Prefixo da loja nas chaves do Redis só no conjunto novo (`<loja>:memoria:…`); a Gleide fica sem prefixo
-- [ ] Nome dos workflows com a loja ("[Manicure X] Agente WhatsApp") e webhook próprio
-- [ ] Textos fixos com "Gleide" (avisos, assistente, alerta) passam a usar o nome da dona da loja
+Feito em 29/10 (`n8n/demo-agente/lojas.js`, gerado e conferido, **ainda não enviado ao n8n**):
+- [x] `montar-workflow.js --loja <slug>`: lê `lojas/<slug>/loja.json` e `lojas/<slug>/prompt-agente.md`;
+  gera e guarda os ids na pasta da loja (nunca nos `.workflow-*-id` da Gleide)
+- [x] Prefixo da loja nas chaves do Redis só no conjunto novo (`<slug>:memoria:…`); a Gleide fica sem prefixo
+- [x] Nome dos workflows com a loja ("[Loja Teste] …"), webhooks `<slug>-…` com webhookId próprio
+- [x] Textos com "Gleide" passam a usar o nome da dona da loja; empresa, instância e números da loja
+- [x] CRM antigo (Postgres só por telefone) desligado nas lojas; áudios/fotos já enviados filtrados pela loja
+- [x] Travas: o gerador para se sobrar qualquer coisa da Gleide (empresa, instância, número, Redis sem prefixo,
+  webhook, id de workflow); o envio recusa id da Gleide; a dona da loja não pode ser número da assistente da Gleide
+- [x] Loja Teste em `lojas/teste/` (empresa ff4b7937…, trava `permitidos` só no número do Victor)
+- [ ] Textos de nicho que ainda falam de mega hair no código (agenda, retomada, foto, áudios) — fase 6
+- [ ] Trava `permitidos` também nas rotinas (faltas, retomada, pendências) antes de ligar uma loja real
 - [ ] O prompt da loja nova monta "dados do salão" a partir de `empresas.config` (endereço, horários,
   pagamento, regras, recado) e liga `config.ia_usa_dados_loja = true` (a tela passa a dizer que a IA usa)
 - [ ] Catálogo de cabelos e avaliação online só existem no conjunto de mega hair
-- [ ] Prova de que a Gleide não mudou: gerar sem `--loja` e comparar com os workflows atuais
+- [x] Prova de que a Gleide não mudou: os 14 workflows gerados sem `--loja` saíram byte a byte iguais aos de antes
+- [ ] Instância na Evolution para a Loja Teste (número de teste) e primeiro envio: `node montar-workflow.js --loja teste --enviar --ativar`
 - [ ] Instância nova na Evolution com o número da manicure (QR ou código de pareamento)
 
 ### Fase 6 — Prompt de manicure (Victor) — 2 dias, junto com a fase 5
