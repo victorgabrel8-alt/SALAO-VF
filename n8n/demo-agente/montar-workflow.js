@@ -153,7 +153,7 @@ COMO A RESPOSTA CHEGA NO WHATSAPP
 Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda.
 Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo (duas mensagens):
-A manutenção costuma ocupar umas 2 horas na agenda.
+A manutenção fica a partir de R$ 350 e leva umas 2 horas.
 
 Quer que eu veja um horário pra você?`;
 
@@ -442,9 +442,11 @@ const nodes = [
       "if (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';",
       "// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente",
       "t = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));",
-      "// a IA não informa valor (prompt v4): tira as frases com R$; se ela nem perguntou de preço, tira também",
-      "// o 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô",
-      "const pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test($('Montar entrada').first().json.texto_cliente || '');",
+      "// regra da Gleide: valor de serviço só quando a cliente pergunta preço (prompt v5). Se ela não perguntou, tira",
+      "// as frases com valor ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô",
+      "// \"e a selagem?\" logo depois de um preço também é pergunta de preço (a IA só fala valor se fizer sentido)",
+      "const msgCliente = $('Montar entrada').first().json.texto_cliente || '';",
+      "const pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test(msgCliente) || /^\\s*e (a|o|as|os|pra|para|no|na)\\b[^?]{0,40}\\?\\s*$/i.test(msgCliente);",
       "const FRASES = /(?<=[.!?😊😉🥰])\\s+/u;",
       "const QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;",
       "// valor em dinheiro: R$ 160, R$160,00 ou 350 reais",
@@ -455,8 +457,7 @@ const nodes = [
       "  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));",
       "  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a",
       "  // cliente recebe \"algum desses horários?\" sem horário nenhum",
-      "  // política sem preços (prompt v4, 29/10): frase com R$ sai SEMPRE, mesmo se ela perguntou o valor",
-      "  fs = fs.map(f => {",
+      "  if (!pediuPreco) fs = fs.map(f => {",
       "    if (!VALOR.test(f)) return f;",
       "    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?(?:a partir de\\s+)?(?:R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?|\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais)/gi, '').replace(/\\s+,/g, ',').replace(/^[\\s,;:–-]+/, '').trim().replace(/^\\p{Ll}/u, (l) => l.toUpperCase());",
       "    return !VALOR.test(s) && !/R\\$/.test(s) && QUANDO.test(s) ? s : '';",
@@ -470,10 +471,8 @@ const nodes = [
       "let ref = 0;",
       "let paragrafos = t.split(/\\n\\s*\\n/).map(s => { const m = s.trim().match(/^\\[(\\d{1,2})\\]\\s*/); if (m) ref = Number(m[1]); return { t: s.trim().slice(m ? m[0].length : 0).trim(), ref }; }).filter(p => p.t);",
       "const limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);",
-      "// a resposta era só preço e a limpeza tirou tudo: não volta para o texto com o valor (prompt v4)",
-      "// (§§ é só a marca de quebra do ---: lista só com §§ também conta como vazia)",
-      "if (!limpos.some(p => p.t !== '§§') && paragrafos.some(p => VALOR.test(p.t))) paragrafos = [{ t: 'Quem passa o orçamento é a Gleide, depois de ver o seu caso. Quer que eu veja um horário pra você conversar com ela?', ref: 0 }];",
-      "else if (limpos.length) paragrafos = limpos;",
+      "// só sobra §§ (marca do ---) = a limpeza tirou todo o texto: fica a resposta como veio",
+      "if (limpos.some(p => p.t !== '§§')) paragrafos = limpos;",
       "// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta",
       "const falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor",
       "if (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];",
