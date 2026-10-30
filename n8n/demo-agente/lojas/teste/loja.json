@@ -1,0 +1,15 @@
+{
+  "slug": "teste",
+  "nome": "Loja Teste",
+  "nicho": "manicure",
+  "empresa_id": "ff4b7937-1abb-4803-83c8-e0896d94fc9f",
+  "instancia": "loja-teste",
+  "dona": "Ana",
+  "cidade": "Sinop",
+  "assistente_numeros": ["5500000000001"],
+  "permitidos": ["556699270860"],
+  "trocas": [
+    ["Uma cliente de um salão de mega hair mandou esta foto", "Uma cliente de um estúdio de unhas mandou esta foto"],
+    ["puxando o assunto do salão de mega hair", "puxando o assunto do estúdio de unhas"]
+  ]
+}

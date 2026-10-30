@@ -11,8 +11,15 @@ const env = Object.fromEntries(
     .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim()]),
 );
 
+// --loja <slug>: monta o conjunto de outra loja (lojas/<slug>/, ver lojas.js). Sem --loja é a Gleide, como sempre.
+const lojas = require('./lojas.js');
+const iLoja = process.argv.indexOf('--loja');
+const LOJA = iLoja > 0 ? lojas.carregarLoja(dir, process.argv[iLoja + 1] || '', env) : null;
+// pasta onde ficam os JSON gerados e os .workflow-*-id (a da loja, ou esta para a Gleide)
+const saida = (arquivo) => path.join(LOJA ? LOJA.pasta : dir, path.basename(arquivo));
+
 // sem \r: no Windows o Git baixa o .md com CRLF e o prompt no n8n ficaria diferente do publicado pelo Linux
-const md = fs.readFileSync(path.join(dir, 'prompt-agente.md'), 'utf8').replace(/\r\n/g, '\n');
+const md = fs.readFileSync(saida('prompt-agente.md'), 'utf8').replace(/\r\n/g, '\n');
 const prompt = md.match(/```text\r?\n([\s\S]*?)```/)[1].trim();
 
 const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };
@@ -754,23 +761,39 @@ organizar(retomar.retomarWorkflow, 'Retomar conversa', [
 organizar(alerta.alertaWorkflow, 'Alerta de erro', 'Quando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).', 3);
 organizar(pedidos.perguntaWorkflow, 'Perguntar para a Gleide', 'Chamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Gleide e guarda para repassar a resposta quando ela tocar em Responder.', 1);
 
+const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow, assistente.pendenciasWorkflow,
+  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow,
+  alerta.alertaWorkflow, workflow];
+// Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
+const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
+if (LOJA) {
+  const ids = lojas.mapaIds(dir, LOJA);
+  for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
+  const { erros, avisos } = lojas.conferirLoja(todos, LOJA, idsGleide);
+  for (const a of avisos) console.log(`aviso: ${a}`);
+  if (erros.length) {
+    console.error(`\nNÃO GEREI a loja "${LOJA.slug}": sobrou coisa da Gleide.\n- ${erros.join('\n- ')}\n`);
+    process.exit(1);
+  }
+}
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
-if (fs.existsSync(alerta.idFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alerta.idFile, 'utf8').trim());
-fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-crm-salao.json'), JSON.stringify(crmWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-assistente-ferramentas.json'), JSON.stringify(assistente.ferramentasWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-catalogo-enviar.json'), JSON.stringify(catalogo.enviarWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-retomar.json'), JSON.stringify(retomar.retomarWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
-fs.writeFileSync(path.join(dir, 'workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
+const alertaIdFile = saida(alerta.idFile);
+if (fs.existsSync(alertaIdFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
+fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
+fs.writeFileSync(saida('workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-crm-salao.json'), JSON.stringify(crmWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-assistente-ferramentas.json'), JSON.stringify(assistente.ferramentasWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-assistente-pendencias.json'), JSON.stringify(assistente.pendenciasWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-audios-enviar.json'), JSON.stringify(audios.enviarWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-audios-transcrever.json'), JSON.stringify(audios.transcreverWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-catalogo-enviar.json'), JSON.stringify(catalogo.enviarWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-retomar.json'), JSON.stringify(retomar.retomarWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 // Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
@@ -783,7 +806,9 @@ if (process.argv.includes('--enviar') && !process.argv.includes('--forcar')) {
     git('fetch -q origin main');
     const faltam = git('rev-list --count HEAD..origin/main');
     if (faltam !== '0') erro = `sua cópia está ${faltam} commit(s) atrás da main. Rode: git pull origin main`;
-    else if (git("status --porcelain -- '*.js' prompt-agente.md")) erro = 'há mudanças não commitadas no prompt ou nos *.js. Faça commit e push antes de enviar';
+    // sem aspas em volta do *.js: no Windows (cmd) as aspas simples iam junto e o Git não achava nada
+    else if (git('status --porcelain -- *.js prompt-agente.md')) erro = 'há mudanças não commitadas no prompt ou nos *.js. Faça commit e push antes de enviar';
+    else if (LOJA && git(`status --porcelain -- lojas/${LOJA.slug}/loja.json lojas/${LOJA.slug}/prompt-agente.md`)) erro = `há mudanças não commitadas em lojas/${LOJA.slug}. Faça commit e push antes de enviar`;
   } catch (e) {
     erro = 'não consegui conferir o Git (sem internet ou fora do repositório)';
   }
@@ -796,8 +821,16 @@ if (process.argv.includes('--enviar') && !process.argv.includes('--forcar')) {
 if (process.argv.includes('--enviar')) {
   const base = `${env.N8N_URL || 'http://localhost:5678'}/api/v1/workflows`;
   const headers = { 'X-N8N-API-KEY': env.N8N_API_KEY, 'Content-Type': 'application/json' };
-  const upsert = async (wf, idFile) => {
+  const upsert = async (wf, arquivoId) => {
+    // loja: o id fica na pasta dela; e nunca envia nada que aponte para (ou grave em cima de) um workflow da Gleide
+    const idFile = saida(arquivoId);
+    if (LOJA) {
+      const s = JSON.stringify(wf);
+      const ruim = idsGleide.find((g) => s.includes(g)) || (s.includes('PENDENTE.workflow') && 'id pendente');
+      if (ruim) { console.error(`NÃO ENVIEI "${wf.name}": aponta para ${ruim}`); process.exit(1); }
+    }
     const id = fs.existsSync(idFile) ? fs.readFileSync(idFile, 'utf8').trim() : '';
+    if (LOJA && idsGleide.includes(id)) { console.error(`NÃO ENVIEI "${wf.name}": o id ${id} é da Gleide`); process.exit(1); }
     const res = await fetch(id ? `${base}/${id}` : base, { method: id ? 'PUT' : 'POST', headers, body: JSON.stringify(wf) });
     const body = await res.json();
     if (!res.ok) { console.error(`Erro em "${wf.name}"`, res.status, JSON.stringify(body)); process.exit(1); }
@@ -828,7 +861,7 @@ if (process.argv.includes('--enviar')) {
     const ferramentasId = await upsert(assistente.ferramentasWorkflow, assistente.ferramentasIdFile);
     if (process.argv.includes('--ativar')) await ativar(ferramentasId);
     for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = ferramentasId;
-    fs.writeFileSync(path.join(dir, 'workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
+    fs.writeFileSync(saida('workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
     for (const [wf, arq] of [[assistente.assistenteWorkflow, '.workflow-assistente-id'], [assistente.pendenciasWorkflow, '.workflow-assistente-pendencias-id']]) {
       const wid = await upsert(wf, path.join(dir, arq));
       if (process.argv.includes('--ativar')) await ativar(wid);
@@ -849,7 +882,7 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
-    fs.writeFileSync(path.join(dir, 'workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
+    fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
     const id = await upsert(workflow, path.join(dir, '.workflow-id'));
     if (process.argv.includes('--ativar')) await ativar(id);
   })();

@@ -1,0 +1,618 @@
+{
+  "name": "[Loja Teste] IA - Retomar conversa",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000012",
+      "name": "Nota 12",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -232
+      ],
+      "parameters": {
+        "content": "## Retomar conversa\nA cada 1 min: a cliente parou de responder depois da IA? 5 min e 30 min depois (config.retomada.minutos, com o salão aberto) o Gemini\nescreve uma mensagem que retoma de onde parou, ou decide não retomar. Vai pelo número do salão, para o CRM e para a memória da IA.",
+        "width": 1400,
+        "height": 172,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000228",
+      "name": "A cada 1 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000229",
+      "name": "Disparar agora (teste)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "teste-retomar-conversa",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "d3bab3f5-50de-4e19-8b1f-09d094227011",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000230",
+      "name": "Quem retomar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_retomadas_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000231",
+      "name": "Pausas",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:pausa:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000232",
+      "name": "Memórias",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:memoria:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000233",
+      "name": "Preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\n// chaves do Redis vêm com o número do WhatsApp, que pode ter ou não o 9 depois do DDD: acha pelos 8 últimos dígitos\nconst chaves = (j) => [].concat(j?.keys || Object.keys(j || {})).map(String);\nconst pausas = chaves($('Pausas').first().json);\nconst memorias = chaves($('Memórias').first().json);\nconst achar = (lista, prefixo, tel) => lista.find((k) => k.startsWith(prefixo + tel.slice(0, 4)) && k.endsWith(tel.slice(-8)));\nconst agora = new Date().toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });\nconst quem = { cliente: 'Cliente', ia: 'Você (IA)', humano: 'Ana' };\nreturn $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).filter((c) => !achar(pausas, 'teste:pausa:', c.telefone)).map((c) => {\n  const nome = String(c.nome || '').trim().split(/\\s+/)[0] || '';\n  const conversa = (c.historico || []).map((m) => '[' + m.em + '] ' + (quem[m.autor] || m.autor) + (m.tipo !== 'texto' ? ' (' + m.tipo + ')' : '') + ': ' + m.texto).join('\\n');\n  const ultima = c.tentativa >= c.total;\n  const instrucao = [\n    'Você é a assistente virtual da Ana, do salão Loja Teste (Sinop-MT), no WhatsApp do salão.',\n    'A conversa abaixo parou: a última mensagem foi sua e a cliente' + (nome ? ' (' + nome + ')' : '') + ' não respondeu. Agora é ' + agora + '.',\n    'Esta é a tentativa ' + c.tentativa + ' de ' + c.total + ' de retomar a conversa' + (ultima ? ' (a última: depois dela você não manda mais nada).' : '.'),\n    c.resumo_ia ? 'Resumo do que se sabe dela: ' + c.resumo_ia : '',\n    '', 'CONVERSA (mais antiga primeiro):', conversa, '',\n    'O QUE ELA FALOU POR ÚLTIMO: ' + (c.historico || []).filter((m) => m.autor === 'cliente').slice(-3).map((m) => '\"' + m.texto + '\"').join(' / '), '',\n    'Primeiro decida se faz sentido retomar. Responda exatamente \"PULAR: <motivo curto>\" se:',\n    '- a conversa terminou de forma natural (ela agradeceu, se despediu ou disse \"ok, obrigada\" sem nada pendente);',\n    '- ela disse que não quer, não tem interesse, vai procurar outro lugar ou pediu para não mandar mensagem;',\n    '- quem está devendo resposta é o salão (você disse que ia confirmar com a Ana, ou a Ana assumiu a conversa);',\n    '- o horário já está marcado e não há nada pendente;',\n    '- sua última mensagem não deixou nada em aberto e retomar seria só insistência.',\n    'NÃO pule quando ela só cumprimentou (\"oi\", \"boa noite\", \"olá\") e sumiu sem dizer o que queria: muita cliente chega por anúncio assim. Nesse caso retome.',\n    'Se fizer sentido, escreva a mensagem como uma pessoa de verdade que atende o WhatsApp do salão e lembrou dessa conversa:',\n    // só cumprimento: não há assunto dela para retomar; um alô leve perguntando o que ela procura\n    !(c.historico || []).some((m) => m.autor === 'cliente' && !/^\\W*(oi+|ol[aá]|opa|e a[ií]|bo[am] (dia|tarde|noite)|tudo bem|td bem|tudo bom)[\\s!?.,🙂😊]*$/i.test(String(m.texto || '').trim()))\n      ? (c.tentativa === 1\n        ? '- ela só cumprimentou e ainda não disse o que procura. Mande um alô leve e curto, puxando o assunto do estúdio de unhas sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair. Não se apresente de novo e não repita o cumprimento que você já mandou;'\n        : '- você JÁ mandou um alô antes. NÃO repita nem reformule esse alô e não cumprimente de novo. Uma frase curta e diferente, deixando a porta aberta para quando ela quiser saber sobre mega hair, sem cobrar resposta;')\n      : c.tentativa === 1\n      ? '- fale do assunto DELA, com o detalhe que ela trouxe (a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...), e pergunte de um jeito simples se ficou alguma dúvida sobre isso ou o que ela achou. O objetivo é só saber se ficou dúvida: não convide para agendar nem para a avaliação (a não ser que ela mesma já tenha falado em marcar) e não faça de novo a sua última pergunta com outras palavras; varie o começo (nem sempre \"Oi, nome!\": pode ir direto ao assunto);'\n      : '- você JÁ mandou um alô antes (é a sua última mensagem na conversa). NÃO repita nem reformule esse alô, não pergunte de novo se ficou dúvida e não cumprimente de novo. Escreva só uma frase curta e diferente da anterior, ligada ao assunto dela, deixando a porta aberta sem cobrar resposta (a ideia é \"quando quiser ver isso, é só me chamar\"; não copie essas palavras);',\n    '- NÃO repita nem reformule a pergunta que ficou sem resposta, e não explique de novo o que já foi explicado;',\n    '- nada de frase pronta de robô: \"Se precisar de ajuda, estou por aqui\", \"Fico à disposição\", \"Qualquer dúvida estou à disposição\", \"Só passando pra lembrar\", \"Espero que esteja bem\";',\n    '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop (\"pra\", \"tá\"), sem formalidade; sem cobrança, culpa, urgência ou promoção inventada;',\n    '- não invente situação nem contexto (\"o dia tá corrido\", \"lembrei de você\", promoção, novidade); não comece com \"Oi\" se você já cumprimentou nesta conversa;',\n    '- não ofereça fotos de resultados ou de clientes da Ana (não existem; só há fotos de cabelo do catálogo do fornecedor);',\n    '- não invente preço, valor, horário livre, estoque nem resultado; não diga que ela respondeu nem que você \"viu\" algo novo;',\n    '- sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez, se souber;',\n    '- não fale de tempo sem resposta.',\n    'Responda só com a mensagem (ou com PULAR: motivo), sem aspas.',\n  ].filter((l) => l !== null).join('\\n');\n  // memória da IA: a chave que já existe; sem ela, o formato do WhatsApp (sem o 9)\n  const memoria = achar(memorias, 'teste:memoria:', c.telefone) || 'teste:memoria:' + c.telefone.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2');\n  return { json: { ...c, nome, instrucao, memoria, historico: undefined } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000234",
+      "name": "Escrever (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.instrucao }] }], generationConfig: { temperature: 0.6, thinkingConfig: { thinkingLevel: 'low' } } }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000235",
+      "name": "Decidir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst prep = $('Preparar').all();\nreturn $input.all().map((r, i) => {\n  const c = prep[i].json;\n  let t = String(r.json.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text || '').join('') || '').trim();\n  t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/^[\"“]|[\"”]$/g, '').trim();\n  // sem resposta do Gemini: não grava nada, tenta de novo na próxima rodada\n  if (!t) return { json: { ...c, acao: 'erro' } };\n  const pular = t.match(/^PULAR\\s*:?\\s*(.*)$/is);\n  if (pular) return { json: { ...c, acao: 'pular', motivo: pular[1].trim().slice(0, 300) || 'sem motivo' } };\n  return { json: { ...c, acao: 'enviar', texto: t } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000236",
+      "name": "Enviar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "r1",
+              "leftValue": "={{ $json.acao === 'enviar' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000237",
+      "name": "Pular?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "r2",
+              "leftValue": "={{ $json.acao === 'pular' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000238",
+      "name": "Mandar para a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000239",
+      "name": "Enviou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "r3",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000240",
+      "name": "Registrar retomada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_retomada",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_cliente_id: $('Decidir').item.json.cliente_id, p_tentativa: $('Decidir').item.json.tentativa, p_situacao: 'enviada', p_mensagem: $('Decidir').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000241",
+      "name": "Memória (aviso)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Decidir').item.json.memoria }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'human', data: { content: '[a cliente não respondeu; ' + $('Decidir').item.json.tentativa + 'ª retomada automática da conversa]', additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000242",
+      "name": "Memória (mensagem enviada)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Decidir').item.json.memoria }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: $('Decidir').item.json.texto, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000243",
+      "name": "Registrar pulada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_retomada",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_cliente_id: $json.cliente_id, p_tentativa: $json.tentativa, p_situacao: 'pulada', p_motivo: $json.motivo }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "A cada 1 min": {
+      "main": [
+        [
+          {
+            "node": "Quem retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste)": {
+      "main": [
+        [
+          {
+            "node": "Quem retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quem retomar": {
+      "main": [
+        [
+          {
+            "node": "Pausas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausas": {
+      "main": [
+        [
+          {
+            "node": "Memórias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memórias": {
+      "main": [
+        [
+          {
+            "node": "Preparar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar": {
+      "main": [
+        [
+          {
+            "node": "Escrever (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escrever (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Decidir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decidir": {
+      "main": [
+        [
+          {
+            "node": "Enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar?": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pular?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pular?": {
+      "main": [
+        [
+          {
+            "node": "Registrar pulada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Enviou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar retomada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar retomada": {
+      "main": [
+        [
+          {
+            "node": "Memória (aviso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória (aviso)": {
+      "main": [
+        [
+          {
+            "node": "Memória (mensagem enviada)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true
+  }
+}

@@ -1,0 +1,104 @@
+{
+  "name": "[Loja Teste] Alerta de erro",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000013",
+      "name": "Nota 13",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Alerta de erro\nQuando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).",
+        "width": 900,
+        "height": 146,
+        "color": 3
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000262",
+      "name": "Execução falhou",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000263",
+      "name": "Montar alerta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst e = $input.first().json;\nconst wf = e.workflow?.name || '?';\nconst no = e.execution?.lastNodeExecuted || e.trigger?.error?.node?.name || '?';\nconst erro = String(e.execution?.error?.message || e.trigger?.error?.message || 'sem mensagem').slice(0, 300);\n// no máximo 1 alerta por workflow a cada 10 min (vários erros seguidos não viram enxurrada)\nconst visto = $getWorkflowStaticData('global');\nif (visto[wf] && Date.now() - visto[wf] < 10 * 60 * 1000) return [];\nvisto[wf] = Date.now();\nconst hora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Cuiaba' });\nreturn [{ json: { texto: '⚠️ Erro no n8n (' + hora + ')\\nWorkflow: ' + wf + '\\nNó: ' + no + '\\nErro: ' + erro +\n  (e.execution?.url ? '\\n' + e.execution.url : '') } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000264",
+      "name": "Avisar no WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    }
+  ],
+  "connections": {
+    "Execução falhou": {
+      "main": [
+        [
+          {
+            "node": "Montar alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Montar alerta": {
+      "main": [
+        [
+          {
+            "node": "Avisar no WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all"
+  }
+}

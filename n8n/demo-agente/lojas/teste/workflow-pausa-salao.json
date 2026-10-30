@@ -1,0 +1,302 @@
+{
+  "name": "[Loja Teste] Pausar IA (transferir para humano)",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000003",
+      "name": "Nota 3",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -258
+      ],
+      "parameters": {
+        "content": "## Transferir para a Ana\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou o assunto precisa da Ana.\nPausa a IA 12 h para a cliente, salva o resumo na ficha e avisa a Ana no WhatsApp (número de alerta do app).\nMande #ia na conversa para devolver à IA.",
+        "width": 1400,
+        "height": 198,
+        "color": 3
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000011",
+      "name": "Recebe pedido do agente",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "motivo"
+            },
+            {
+              "name": "resumo"
+            },
+            {
+              "name": "o_que_precisa"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000012",
+      "name": "Gravar pausa (12h)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:pausa:{{ $json.telefone }}",
+        "value": "={{ 'agente: ' + ($json.motivo || 'transferido') }}",
+        "expire": true,
+        "ttl": 43200
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000013",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "TRANSFERIDO: a Ana recebeu o resumo no WhatsApp e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora numa frase gentil que passou o assunto pra Ana e que ela responde por aqui (ex.: \"Vou confirmar com a Ana se pode trazer seu cachorro, ela te responde por aqui, tá?\" ou \"Vou passar sua conversa pra Ana, ela te chama por aqui 😊\"), sem prometer prazo e sem falar em equipe.",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000074",
+      "name": "CRM: com humano",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT 1 AS ok -- CRM antigo (só telefone, sem loja): desligado nas lojas",
+        "options": {}
+      },
+      "credentials": {
+        "postgres": {
+          "id": "zzYnr5Tvb8vIFf4H",
+          "name": "CRM Postgres"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000092",
+      "name": "Supabase: pausar IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/clientes?empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&telefone=eq.{{ (() => { const d = String($('Recebe pedido do agente').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ ia_pausada_ate: $now.plus(12, 'hours').toISO(), motivo_pausa: (/reclam|insatisf|chatead|chate|frustr|caiu|mal feit|ruim|estrag|defeito|problema com o servi/i.test($('Recebe pedido do agente').first().json.motivo || '') ? 'reclamacao' : 'pediu_humano'), resumo_ia_em: $now.toISO(),\n       resumo_ia: ['Motivo: ' + ($('Recebe pedido do agente').first().json.motivo || 'pediu atendimento'), $('Recebe pedido do agente').first().json.resumo || '', $('Recebe pedido do agente').first().json.o_que_precisa ? 'Precisa de você: ' + $('Recebe pedido do agente').first().json.o_que_precisa : ''].filter(Boolean).join('\\n') }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000093",
+      "name": "Supabase: número de alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000094",
+      "name": "Avisar a Ana (WhatsApp)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + ($('Supabase: pausar IA').first().json.nome || 'Cliente') + ' · ' + String($('Supabase: pausar IA').first().json.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') +\n      '\\n' + ($('Recebe pedido do agente').first().json.o_que_precisa || $('Recebe pedido do agente').first().json.motivo || 'Quer falar com você') + ($('Recebe pedido do agente').first().json.resumo ? '\\n' + $('Recebe pedido do agente').first().json.resumo : '') +\n      '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + $('Supabase: pausar IA').first().json.id }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    }
+  ],
+  "connections": {
+    "Recebe pedido do agente": {
+      "main": [
+        [
+          {
+            "node": "Gravar pausa (12h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gravar pausa (12h)": {
+      "main": [
+        [
+          {
+            "node": "CRM: com humano",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CRM: com humano": {
+      "main": [
+        [
+          {
+            "node": "Supabase: pausar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: pausar IA": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: número de alerta": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Ana (WhatsApp)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a Ana (WhatsApp)": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
