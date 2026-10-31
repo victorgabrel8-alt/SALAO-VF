@@ -48,7 +48,15 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
       ? '- fale do assunto DELA, com o detalhe que ela trouxe (a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...), e pergunte de um jeito simples se ficou alguma dúvida sobre isso ou o que ela achou. O objetivo é só saber se ficou dúvida: não convide para agendar nem para a avaliação (a não ser que ela mesma já tenha falado em marcar) e não faça de novo a sua última pergunta com outras palavras; varie o começo (nem sempre "Oi, nome!": pode ir direto ao assunto);'
       : '- você JÁ mandou um alô antes (é a sua última mensagem na conversa). NÃO repita nem reformule esse alô, não pergunte de novo se ficou dúvida e não cumprimente de novo. Escreva só uma frase curta e diferente da anterior, ligada ao assunto dela, deixando a porta aberta sem cobrar resposta (a ideia é "quando quiser ver isso, é só me chamar"; não copie essas palavras);',
     '- NÃO repita nem reformule a pergunta que ficou sem resposta, e não explique de novo o que já foi explicado;',
-    '- nada de frase pronta de robô: "Se precisar de ajuda, estou por aqui", "Fico à disposição", "Qualquer dúvida estou à disposição", "Só passando pra lembrar", "Espero que esteja bem";',
+    '- nada de frase pronta de robô: "Se precisar de ajuda, estou por aqui", "Fico à disposição", "Qualquer dúvida estou à disposição", "Só passando pra lembrar", "Espero que esteja bem", "é só me chamar", "é só me dar um alô";',
+    // regras do prompt da Gleide que valem também para o alô (conversa da Grazi, 30–31/10)
+    '- use só o que está escrito na conversa: não suponha o que ela não disse (se ela não respondeu se é a primeira vez, não diga que é);',
+    '- não indique técnica, quantidade nem tipo de cabelo, e não ofereça "explicar qual técnica a Gleide recomenda": quem define isso é a Gleide na avaliação;',
+    '- não afirme estoque, cor ou textura disponível, nem resultado ("tem uns pretos lindos", "temos aqui no salão", "tem liso e ondulado", "ia ficar perfeito em você"); o catálogo é do fornecedor: fale dele só como catálogo, sem dizer que o salão tem aquele cabelo;',
+    '- sem exagero nem superlativo ("maravilhoso", "lindíssimo", "um mais lindo que o outro", "perfeito");',
+    '- não sugira dia nem plano que ela não mencionou ("aproveitar o sábado", "passar aqui hoje");',
+    '- se ela já disse que usa mega ou conhece a técnica, nada de explicação de iniciante;',
+    '- não prometa passar foto ou mensagem para a Gleide nem que ela vai dar retorno (o alô não encaminha nada);',
     '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop ("pra", "tá"), sem formalidade; sem cobrança, culpa, urgência ou promoção inventada;',
     '- não invente situação nem contexto ("o dia tá corrido", "lembrei de você", promoção, novidade); não comece com "Oi" se você já cumprimentou nesta conversa;',
     '- não ofereça fotos de resultados ou de clientes da Gleide (não existem; só há fotos de cabelo do catálogo do fornecedor);',
