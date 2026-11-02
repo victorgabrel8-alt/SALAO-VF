@@ -36,6 +36,8 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
     '- ela disse que não quer, não tem interesse, vai procurar outro lugar ou pediu para não mandar mensagem;',
     '- quem está devendo resposta é o salão (você disse que ia confirmar com a Gleide, ou a Gleide assumiu a conversa);',
     '- o horário já está marcado e não há nada pendente;',
+    // prompt v5.7/v5.8: impedimento temporário é adiamento, e "não crie retorno automático sem autorização da cliente"
+    '- ela disse que precisa esperar um tempo antes de vir (cirurgia/recuperação, viagem, compromisso, "volto depois", "semana que vem") — respeite: o alô automático soaria como cobrança;',
     '- sua última mensagem não deixou nada em aberto e retomar seria só insistência.',
     'NÃO pule quando ela só cumprimentou ("oi", "boa noite", "olá") e sumiu sem dizer o que queria: muita cliente chega por anúncio assim. Nesse caso retome.',
     'Se fizer sentido, escreva a mensagem como uma pessoa de verdade que atende o WhatsApp do salão e lembrou dessa conversa:',
