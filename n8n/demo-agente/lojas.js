@@ -27,7 +27,7 @@ const GLEIDE_ASSISTENTE = '5566999596740';
 // endereços de webhook dos workflows (path); na loja viram "<slug>-<path>", inclusive em URL que chama outro
 const TODOS_OS_PATHS = ['whatsapp-salao', 'assistente-gleide', 'assistente-pendencias', 'audios-transcrever', 'faltas-avisos', 'retomar-conversa'];
 // chaves do Redis usadas pelos workflows (ver montar-workflow.js, pedidos, assistente, faltas, retomar)
-const CHAVES = ['memoria', 'pausa', 'buffer_ultima', 'buffer', 'processando', 'pedido', 'assistente', 'alerta'];
+const CHAVES = ['memoria', 'pausa', 'buffer_ultima', 'buffer', 'processando', 'pedido', 'assistente', 'alerta', 'descartes'];
 
 // 55 + DDD + número, sem o 9 da frente (o jeito que o WhatsApp manda), para comparar números
 const semNove = (n) => { const d = String(n).replace(/\D/g, ''); return /^55\d{2}9\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; };
