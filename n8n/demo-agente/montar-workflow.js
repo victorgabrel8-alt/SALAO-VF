@@ -721,6 +721,9 @@ const memoriaJanela = require('./memoria-janela.js')({ node, main });
 memoriaJanela(workflow, 'Agente IA', REDIS);
 memoriaJanela(assistente.assistenteWorkflow, 'Agente assistente', REDIS);
 
+// resposta no ritmo da cliente: espera a rajada e não manda resposta velha (ver resposta-velha.js)
+require('./resposta-velha.js')({ node, main, ifNode, cond, REDIS, D })(workflow);
+
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');
 organizar(workflow, 'Atendimento das clientes (WhatsApp)', [
