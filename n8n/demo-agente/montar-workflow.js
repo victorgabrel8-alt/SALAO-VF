@@ -150,7 +150,7 @@ Leia tudo como uma conversa só e responda uma vez, cobrindo todas na ordem em q
 Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.
 
 COMO A RESPOSTA CHEGA NO WHATSAPP
-Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda.
+Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução; se uma pergunta/CTA foi feita, aguarde nova entrada da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
 Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo (duas mensagens):
 A manutenção fica a partir de R$ 350 e leva umas 2 horas.
