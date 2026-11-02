@@ -259,7 +259,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
   workflow.nodes.push(
     ifNode('É a Gleide (assistente)?', [440, -520], [cond('g1', `={{ ${NUMERO_DE('$json.telefone')} !== '' }}`)]),
     node('Repassar para a assistente', 'n8n-nodes-base.httpRequest', 4.2, [660, -600], {
-      method: 'POST', url: 'http://localhost:5678/webhook/assistente-gleide',
+      // 127.0.0.1 e não "localhost": dentro do n8n o localhost vira ::1 (IPv6) e a chamada falhava (ECONNREFUSED)
+      method: 'POST', url: 'http://127.0.0.1:5678/webhook/assistente-gleide',
       sendBody: true, specifyBody: 'json', jsonBody: "={{ JSON.stringify($('Webhook Evolution').item.json.body) }}", options: {},
     }, { onError: 'continueRegularOutput' }),
   );
