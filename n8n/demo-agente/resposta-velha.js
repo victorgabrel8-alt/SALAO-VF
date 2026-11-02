@@ -69,8 +69,8 @@ module.exports = ({ node, main, ifNode, cond, REDIS, D }) => (wf) => {
         { type: 'boolean', operation: 'true', singleValue: true }),
     ]),
     node('Descarte: contar', 'n8n-nodes-base.redis', 1, [0, 0], {
-      operation: 'set', key: `=descartes:${TEL}`, value: '={{ Number($json.descartes || 0) + 1 }}', expire: true, ttl: 600,
-    }, { credentials: REDIS }),
+      operation: 'set', key: `=descartes:${TEL}`, keyType: 'string', value: '={{ String(Number($json.descartes || 0) + 1) }}', expire: true, ttl: 600,
+    }, { credentials: REDIS, onError: 'continueRegularOutput' }),
     node('Descarte: memória ler', 'n8n-nodes-base.redis', 1, [0, 0], {
       operation: 'get', key: MEMORIA, propertyName: 'memoria', keyType: 'list', options: {},
     }, { credentials: REDIS, onError: 'continueRegularOutput' }),
