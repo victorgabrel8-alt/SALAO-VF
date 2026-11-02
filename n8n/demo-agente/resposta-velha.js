@@ -64,7 +64,8 @@ module.exports = ({ node, main, ifNode, cond, REDIS, D }) => (wf) => {
       operation: 'get', key: `=descartes:${TEL}`, propertyName: 'descartes', keyType: 'string', options: {},
     }, { credentials: REDIS, executeOnce: true, onError: 'continueRegularOutput' }),
     ifNode('Resposta velha?', [0, 0], [
-      cond('rv1', `={{ !!$json.ultimaAgora && $json.ultimaAgora !== ${D}.msgId && Number($json.descartes || 0) < 2 }}`,
+      // o get do Redis devolve só a chave lida (não soma ao item anterior): a última vem do nó que a leu
+      cond('rv1', `={{ (() => { const u = $('Resposta velha: ler fila').first().json.ultimaAgora; return !!u && u !== ${D}.msgId && Number($json.descartes || 0) < 2; })() }}`,
         { type: 'boolean', operation: 'true', singleValue: true }),
     ]),
     node('Descarte: contar', 'n8n-nodes-base.redis', 1, [0, 0], {
