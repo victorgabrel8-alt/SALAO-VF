@@ -84,6 +84,8 @@ const recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filt
 const pendentes = [];
 for (const m of recentes) {
   if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada
+  // aceno ("ok", "assim") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente
+  if (/^\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\s.!]*$/iu.test(m.conteudo || '')) continue;
   if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);
 }
 const SEM_RESPOSTA = pendentes.length ? '\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +
