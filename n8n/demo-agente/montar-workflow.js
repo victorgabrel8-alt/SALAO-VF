@@ -155,7 +155,7 @@ Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múl
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 350.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Após pergunta de ENDEREÇO em conversa qualificada, uma oferta de horários pode ser pertinente (seção 02), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
