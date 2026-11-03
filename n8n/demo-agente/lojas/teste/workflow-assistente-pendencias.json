@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000187",
+      "id": "00000000-0000-4000-8000-000000000188",
       "name": "A cada 1 h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000188",
+      "id": "00000000-0000-4000-8000-000000000189",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000189",
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000190",
+      "id": "00000000-0000-4000-8000-000000000191",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -129,7 +129,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000191",
+      "id": "00000000-0000-4000-8000-000000000192",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -142,7 +142,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000192",
+      "id": "00000000-0000-4000-8000-000000000193",
       "name": "Mandar para a Ana",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -172,7 +172,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000193",
+      "id": "00000000-0000-4000-8000-000000000194",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -194,7 +194,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000194",
+      "id": "00000000-0000-4000-8000-000000000195",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -221,6 +221,40 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_pedido_a: $('Montar mensagem').item.json.tel, p_ids: $('Montar mensagem').item.json.ids }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "f359c54a-6e4a-4fd5-8533-8dedb5efcacc",
+      "name": "Trava de teste: Mandar para a Ana",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
         "options": {}
       }
     }
@@ -274,7 +308,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a Ana",
+            "node": "Trava de teste: Mandar para a Ana",
             "type": "main",
             "index": 0
           }
@@ -301,6 +335,18 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Trava de teste: Mandar para a Ana": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a Ana",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },

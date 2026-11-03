@@ -14,7 +14,15 @@
 //   cidade        "Sinop"                        troca "Sinop"
 //   assistente_numeros ["5566…"]                 WhatsApp da dona (assistente e avisos)
 //   permitidos    ["5566…"]                      trava de teste: só esses números recebem resposta ([] = todos)
-//   trocas        [["texto", "novo"], …]         textos do nicho (ex.: "salão de mega hair")
+//   trocas        [["texto", "novo"], …]         textos do nicho (ex.: "salão de mega hair"), escritos como no
+//                                                código (com "Gleide": a troca pelo nome da dona vem depois).
+//                                                Troca que não acha o texto para o gerador (o código mudou)
+//
+// Só nas lojas (a Gleide não muda):
+//   - "DADOS DO SALÃO" no fim do prompt, lido a cada mensagem de empresas.config (tela Dados do salão do app);
+//     o 1º envio liga config.ia_usa_dados_loja (a tela passa a dizer que a IA usa esses dados)
+//   - trava "permitidos" também nas rotinas (faltas, retomada, assistente, pendências): mensagem para número
+//     fora da lista (e fora de assistente_numeros) não sai
 //
 // Tudo é trocado no JSON já montado e depois conferido: se sobrar qualquer coisa da Gleide (empresa,
 // instância, número, chave do Redis sem prefixo, webhook, id de workflow), o gerador para com erro.
@@ -89,8 +97,13 @@ function paraLoja(wf, loja, ids) {
   // mensagens já enviadas (áudios e fotos): só as desta loja
   s = s.split('/rest/v1/mensagens?select=').join(`/rest/v1/mensagens?empresa_id=eq.${loja.empresa_id}&select=`);
   s = s.replace(/"webhookId":"([0-9a-f-]{36})"/g, (_, id) => `"webhookId":"${novoUuid(loja.slug, id)}"`);
-  // textos
-  for (const [de, para] of loja.trocas) s = s.split(JSON.stringify(de).slice(1, -1)).join(JSON.stringify(para).slice(1, -1));
+  // textos (cada troca conta onde achou; conferirTrocas avisa a que não achou em nenhum workflow)
+  loja.trocasAchadas = loja.trocasAchadas || new Set();
+  for (const [de, para] of loja.trocas) {
+    const de2 = JSON.stringify(de).slice(1, -1);
+    if (s.includes(de2)) loja.trocasAchadas.add(de);
+    s = s.split(de2).join(JSON.stringify(para).slice(1, -1));
+  }
   s = s.split('Toda Bonita Mega Hair').join(loja.nome).split('Toda Bonita').join(loja.nome);
   s = s.split('Gleide').join(loja.dona).split('GLEIDE').join(loja.dona.toUpperCase());
   if (loja.cidade !== 'Sinop') s = s.split('Sinop').join(loja.cidade);
@@ -132,10 +145,89 @@ function conferirLoja(workflows, loja, idsGleide) {
     if (/Gleide|GLEIDE/.test(s)) erros.push(`${nome}: ainda fala "Gleide"`);
     for (const nd of wf.nodes) if (nd.type === 'n8n-nodes-base.postgres' && /insert|update|delete/i.test(nd.parameters.query || '')) erros.push(`${nome}: "${nd.name}" grava no CRM antigo (sem loja)`);
     for (const m of s.matchAll(/\/rest\/v1\/mensagens\?([^"]*)/g)) if (!m[1].includes(`empresa_id=eq.${loja.empresa_id}`)) erros.push(`${nome}: lê mensagens sem filtrar pela loja`);
-    const nicho = s.match(/[Mm]ega ?[Hh]air/g);
+    // comentário de código (// … até o fim da linha) não chega na cliente nem no Gemini: não conta como texto
+    const nicho = s.replace(/(^|\\n)\s*\/\/.*?(?=\\n)/g, '$1').match(/[Mm]ega ?[Hh]air/g);
     if (nicho && loja.nicho && loja.nicho !== 'mega_hair') avisos.push(`${nome}: ${nicho.length}x "mega hair" no texto (ajustar em trocas ou no prompt da loja)`);
   }
+  for (const [de] of loja.trocas) if (!loja.trocasAchadas?.has(de)) erros.push(`troca sem efeito (o texto mudou no código?): "${de.slice(0, 70)}…"`);
+  const travados = workflows.filter((wf) => TRAVADOS.has(wf));
+  if (loja.permitidos.length) {
+    for (const wf of workflows) {
+      if (TRAVADOS.has(wf) || LIBERADOS.has(wf)) continue;
+      const envio = wf.nodes.find((nd) => /\/message\/send/.test(nd.parameters?.url || ''));
+      if (envio) erros.push(`${wf.name}: "${envio.name}" manda mensagem e o workflow não está em travarEnvios nem em semTrava`);
+    }
+    for (const wf of travados) {
+      for (const nd of wf.nodes) {
+        if (!/\/message\/send/.test(nd.parameters?.url || '') || /number:\s*'\d+'/.test(nd.parameters.jsonBody || '')) continue;
+        const antes = Object.entries(wf.connections).filter(([, c]) => (c.main || []).flat().some((l) => l?.node === nd.name)).map(([k]) => k);
+        if (!antes.length || antes.some((k) => !k.startsWith('Trava de teste'))) erros.push(`${wf.name}: "${nd.name}" manda mensagem sem passar pela trava de teste`);
+      }
+    }
+  }
   return { erros, avisos };
+}
+
+// "DADOS DO SALÃO" no prompt da loja: config da empresa (tela Dados do salão do app), lida a cada mensagem logo
+// depois da tabela de serviços. Usa o mesmo jeito de chamar o Supabase do nó "Supabase: tabela de serviços".
+function dadosDoSalao(workflow) {
+  const servicos = workflow.nodes.find((nd) => nd.name === 'Supabase: tabela de serviços');
+  if (!servicos || !workflow.connections['Supabase: tabela de serviços']) throw new Error('dados do salão: não achei o nó "Supabase: tabela de serviços"');
+  const nome = 'Supabase: dados do salão';
+  const nd = JSON.parse(JSON.stringify(servicos));
+  nd.name = nome;
+  nd.id = novoUuid('no', nome);
+  nd.position = [servicos.position[0], servicos.position[1] + 200];
+  nd.parameters.url = '={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ $env.EMPRESA_ID }}';
+  workflow.nodes.push(nd);
+  workflow.connections[nome] = workflow.connections['Supabase: tabela de serviços'];
+  workflow.connections['Supabase: tabela de serviços'] = { main: [[{ node: nome, type: 'main', index: 0 }]] };
+  const agente = workflow.nodes.find((n) => n.name === 'Agente IA').parameters.options;
+  agente.systemMessage += `
+
+DADOS DO SALÃO (preenchidos pela dona no app; valem mais que qualquer outro texto sobre endereço, horário, pagamento e regras)
+{{ (() => { const c = $('${nome}').first().json.config || {}; const l = c.loja || {}; const t = (v) => (typeof v === 'string' ? v.trim() : ''); const dias = { seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sab: 'sábado', dom: 'domingo' }; const h = c.horario_funcionamento; const hora = (x) => x.replace(/^0/, '').replace(':00', 'h').replace(':', 'h'); const a = c.almoco === null ? null : (c.almoco && c.almoco.inicio ? c.almoco : { inicio: '11:00', fim: '13:00' }); const linhas = []; linhas.push('- Endereço: ' + (t(c.endereco) ? t(c.endereco) + (t(l.referencia) ? ' (' + t(l.referencia) + ')' : '') : 'não cadastrado (não invente; se perguntarem, perguntar_para_gleide)')); if (t(l.instagram)) linhas.push('- Instagram: @' + t(l.instagram).replace(/^@+/, '')); linhas.push('- Funcionamento: ' + (!h ? 'não cadastrado (não diga dias nem horários; a agenda é que diz se tem vaga)' : Object.keys(dias).map((d) => dias[d] + ' ' + (h[d] ? h[d].split('-').map(hora).join(' às ') : 'fechado')).join('; ') + '.' + (a ? ' Almoço todo dia ' + hora(a.inicio) + ' às ' + hora(a.fim) + ', sem atendimento.' : '') + ' A agenda é que diz se tem vaga.')); if (Array.isArray(c.formas_pagamento) && c.formas_pagamento.length) linhas.push('- Pagamento: ' + c.formas_pagamento.join(', ') + (t(l.parcelamento) ? '; parcelamento: ' + t(l.parcelamento) : '; parcelamento: não cadastrado (não informe)')); else linhas.push('- Pagamento: não cadastrado (não informe forma de pagamento; se perguntarem, perguntar_para_gleide)'); if (l.tolerancia_atraso !== null && l.tolerancia_atraso !== undefined && String(l.tolerancia_atraso).trim() !== '' && Number.isFinite(Number(l.tolerancia_atraso))) linhas.push('- Tolerância de atraso: ' + Number(l.tolerancia_atraso) + ' minutos'); if (t(l.cancelamento)) linhas.push('- Cancelamento: ' + t(l.cancelamento)); if (t(l.sinal)) linhas.push('- Sinal: ' + t(l.sinal)); if (t(l.sobre)) linhas.push('- Recado da dona para você: ' + t(l.sobre)); return linhas.join('\\n'); })() }}
+O que não está aqui (sinal, atraso, cancelamento, estacionamento, levar acompanhante…) não está cadastrado: não invente, use perguntar_para_gleide.`;
+}
+
+// workflows que passaram por travarEnvios (conferirLoja confere que todo envio deles passa pela trava)
+const TRAVADOS = new WeakSet();
+// workflows que mandam mensagem sem trava própria, de propósito (ver a lista em montar-workflow.js)
+const LIBERADOS = new WeakSet();
+function semTrava(workflows) {
+  for (const wf of workflows) LIBERADOS.add(wf);
+}
+
+// Trava de teste nas rotinas: antes de cada envio para cliente (sendText/sendMedia/áudio com número vindo dos
+// dados, não fixo no código) entra um "Trava de teste": só passa número de loja.permitidos ou da dona.
+// Com permitidos vazio (loja liberada) não faz nada.
+function travarEnvios(workflows, loja) {
+  for (const wf of workflows) TRAVADOS.add(wf);
+  if (!loja.permitidos.length) return;
+  const lista = JSON.stringify([...new Set([...loja.permitidos, ...loja.assistente_numeros].map(semNove))]).replace(/"/g, "'");
+  for (const wf of workflows) {
+    for (const nd of [...wf.nodes]) {
+      if (!/\/message\/send/.test(nd.parameters?.url || '')) continue;
+      const corpo = nd.parameters.jsonBody || '';
+      if (/number:\s*'\d+'/.test(corpo)) continue; // número fixo do código (ex.: alerta do Victor)
+      const m = corpo.match(/number:\s*([^,}]+?)\s*[,}]/);
+      if (!m) throw new Error(`${wf.name}: "${nd.name}" manda mensagem e não achei o número para a trava de teste`);
+      const nome = `Trava de teste: ${nd.name}`;
+      const numero = `(() => { const d = String(${m[1]} || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()`;
+      wf.nodes.push({
+        id: novoUuid(`no:${wf.name}`, nome), name: nome, type: 'n8n-nodes-base.if', typeVersion: 2.2,
+        position: [nd.position[0], nd.position[1] - 120],
+        parameters: {
+          conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+            conditions: [{ id: 'trava1', leftValue: `={{ ${lista}.includes(${numero}) }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+            combinator: 'and' },
+          options: {},
+        },
+      });
+      for (const c of Object.values(wf.connections)) for (const saida of c.main || []) for (const l of saida || []) if (l.node === nd.name) l.node = nome;
+      wf.connections[nome] = { main: [[{ node: nd.name, type: 'main', index: 0 }], []] };
+    }
+  }
 }
 
 // ids dos workflows da Gleide (para garantir que a loja nunca aponta nem grava em cima deles)
@@ -155,4 +247,4 @@ function mapaIds(dir, loja) {
   }).filter(([g]) => g);
 }
 
-module.exports = { carregarLoja, paraLoja, conferirLoja, idsDaGleide, mapaIds };
+module.exports = { carregarLoja, paraLoja, conferirLoja, idsDaGleide, mapaIds, dadosDoSalao, travarEnvios, semTrava };

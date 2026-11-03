@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000195",
+      "id": "00000000-0000-4000-8000-000000000196",
       "name": "A cada 5 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -38,7 +38,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000196",
+      "id": "00000000-0000-4000-8000-000000000197",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -72,7 +72,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000197",
+      "id": "00000000-0000-4000-8000-000000000198",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -96,7 +96,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000198",
+      "id": "00000000-0000-4000-8000-000000000199",
       "name": "Faltas para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -128,7 +128,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000199",
+      "id": "00000000-0000-4000-8000-000000000200",
       "name": "Mensagem da falta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -141,7 +141,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000200",
+      "id": "00000000-0000-4000-8000-000000000201",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -172,7 +172,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000201",
+      "id": "00000000-0000-4000-8000-000000000202",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -206,7 +206,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000202",
+      "id": "00000000-0000-4000-8000-000000000203",
       "name": "Registrar chamada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -238,7 +238,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000203",
+      "id": "00000000-0000-4000-8000-000000000204",
       "name": "Atrasos para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -270,7 +270,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000204",
+      "id": "00000000-0000-4000-8000-000000000205",
       "name": "Mensagem do atraso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -283,7 +283,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000205",
+      "id": "00000000-0000-4000-8000-000000000206",
       "name": "Chamar a atrasada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -314,7 +314,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000206",
+      "id": "00000000-0000-4000-8000-000000000207",
       "name": "Chamou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -348,7 +348,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000207",
+      "id": "00000000-0000-4000-8000-000000000208",
       "name": "Registrar chamada do atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -380,7 +380,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000208",
+      "id": "00000000-0000-4000-8000-000000000209",
       "name": "Atrasos para confirmar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -412,7 +412,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000209",
+      "id": "00000000-0000-4000-8000-000000000210",
       "name": "Mensagem veio ou libera",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -425,7 +425,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000210",
+      "id": "00000000-0000-4000-8000-000000000211",
       "name": "Perguntar à Ana (atraso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -455,7 +455,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000211",
+      "id": "00000000-0000-4000-8000-000000000212",
       "name": "Guardar pergunta do atraso",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -477,7 +477,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000212",
+      "id": "00000000-0000-4000-8000-000000000213",
       "name": "Marcar atraso perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -509,7 +509,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000213",
+      "id": "00000000-0000-4000-8000-000000000214",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -541,7 +541,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000214",
+      "id": "00000000-0000-4000-8000-000000000215",
       "name": "Mensagem do conflito",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -554,7 +554,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000215",
+      "id": "00000000-0000-4000-8000-000000000216",
       "name": "Avisar a Ana (conflito)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -584,7 +584,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000216",
+      "id": "00000000-0000-4000-8000-000000000217",
       "name": "Guardar aviso do conflito",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -606,7 +606,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000217",
+      "id": "00000000-0000-4000-8000-000000000218",
       "name": "Marcar conflito avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -639,7 +639,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000218",
+      "id": "00000000-0000-4000-8000-000000000219",
       "name": "Vagas para oferecer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -671,7 +671,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000219",
+      "id": "00000000-0000-4000-8000-000000000220",
       "name": "Mensagem da vaga",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -684,7 +684,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000220",
+      "id": "00000000-0000-4000-8000-000000000221",
       "name": "Oferecer para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -715,7 +715,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000221",
+      "id": "00000000-0000-4000-8000-000000000222",
       "name": "Ofereceu?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -749,7 +749,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000222",
+      "id": "00000000-0000-4000-8000-000000000223",
       "name": "Registrar oferta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -781,7 +781,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000223",
+      "id": "00000000-0000-4000-8000-000000000224",
       "name": "Avisos para a Ana",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -813,7 +813,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000224",
+      "id": "00000000-0000-4000-8000-000000000225",
       "name": "Mensagem do aviso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -826,7 +826,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000225",
+      "id": "00000000-0000-4000-8000-000000000226",
       "name": "Mandar para a Ana",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -856,7 +856,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000226",
+      "id": "00000000-0000-4000-8000-000000000227",
       "name": "Guardar na memória da assistente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -878,7 +878,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000227",
+      "id": "00000000-0000-4000-8000-000000000228",
       "name": "Marcar avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -909,6 +909,210 @@
       },
       "onError": "continueRegularOutput",
       "executeOnce": true
+    },
+    {
+      "id": "c3d42bb0-f464-4cd8-8b92-f9c62bcd1624",
+      "name": "Trava de teste: Mandar para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bd15fba3-4fc3-414f-88d9-4e9d6b56b0a4",
+      "name": "Trava de teste: Chamar a atrasada",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "ed35ea8d-028f-4264-8b5a-b8146359c3d6",
+      "name": "Trava de teste: Perguntar à Ana (atraso)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "91ca8d05-a81b-4a2d-82a0-0b1b8c55ef9c",
+      "name": "Trava de teste: Avisar a Ana (conflito)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "4ed5b04a-f92b-4e97-881e-05aefc6e8992",
+      "name": "Trava de teste: Oferecer para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        680
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3fc30ece-9cbe-4172-8a8b-86db60c7fa07",
+      "name": "Trava de teste: Mandar para a Ana",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        880
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -1010,7 +1214,7 @@
       "main": [
         [
           {
-            "node": "Chamar a atrasada",
+            "node": "Trava de teste: Chamar a atrasada",
             "type": "main",
             "index": 0
           }
@@ -1054,7 +1258,7 @@
       "main": [
         [
           {
-            "node": "Perguntar à Ana (atraso)",
+            "node": "Trava de teste: Perguntar à Ana (atraso)",
             "type": "main",
             "index": 0
           }
@@ -1098,7 +1302,7 @@
       "main": [
         [
           {
-            "node": "Avisar a Ana (conflito)",
+            "node": "Trava de teste: Avisar a Ana (conflito)",
             "type": "main",
             "index": 0
           }
@@ -1142,7 +1346,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a cliente",
+            "node": "Trava de teste: Mandar para a cliente",
             "type": "main",
             "index": 0
           }
@@ -1186,7 +1390,7 @@
       "main": [
         [
           {
-            "node": "Oferecer para a cliente",
+            "node": "Trava de teste: Oferecer para a cliente",
             "type": "main",
             "index": 0
           }
@@ -1230,7 +1434,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a Ana",
+            "node": "Trava de teste: Mandar para a Ana",
             "type": "main",
             "index": 0
           }
@@ -1257,6 +1461,78 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Trava de teste: Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Chamar a atrasada": {
+      "main": [
+        [
+          {
+            "node": "Chamar a atrasada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Perguntar à Ana (atraso)": {
+      "main": [
+        [
+          {
+            "node": "Perguntar à Ana (atraso)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Avisar a Ana (conflito)": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Ana (conflito)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Oferecer para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Oferecer para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Mandar para a Ana": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a Ana",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },

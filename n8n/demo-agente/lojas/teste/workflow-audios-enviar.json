@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000107",
+      "id": "00000000-0000-4000-8000-000000000108",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -46,7 +46,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000108",
+      "id": "00000000-0000-4000-8000-000000000109",
       "name": "Catálogo de áudios",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -81,7 +81,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000109",
+      "id": "00000000-0000-4000-8000-000000000110",
       "name": "Já enviados a ela",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -116,7 +116,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000110",
+      "id": "00000000-0000-4000-8000-000000000111",
       "name": "Achar áudio",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -125,11 +125,11 @@
         0
       ],
       "parameters": {
-        "jsCode": "\n// O tema pedido pela IA -> o áudio do catálogo com mais palavras em comum\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2);\nconst pedido = $('Recebe pedido da IA').first().json;\nconst catalogo = ($('Catálogo de áudios').first().json.config || {}).audios_prontos || [];\nconst alvo = palavras(pedido.tema);\nlet melhor = null, nota = 0;\nfor (const a of catalogo) {\n  const ps = palavras(a.tema + ' ' + (a.quando_usar || ''));\n  const n = alvo.filter((p) => ps.includes(p)).length / Math.max(1, alvo.length);\n  if (n > nota) { melhor = a; nota = n; }\n}\nif (!melhor || nota < 0.5) return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: não existe áudio pronto para \"' + pedido.tema + '\". Temas disponíveis: ' + catalogo.map((a) => a.tema).join('; ') + '. Responda em texto.' } }];\n// trava: a mensagem da cliente precisa falar do assunto do áudio (a IA às vezes manda áudio \"de brinde\"\n// numa conversa de outro assunto). Palavras genéricas não contam.\nconst COMUNS = new Set('mega hair cabelo cabelos quero queria fazer faz quando perguntar pergunta voce pra para por com uma uns que qual quanto natural sobre isso esse essa tem ter'.split(' '));\nconst chave = (s) => palavras(s).filter((p) => !COMUNS.has(p));\nconst doTema = chave(melhor.tema + ' ' + (melhor.quando_usar || ''));\nif (pedido.mensagem && !chave(pedido.mensagem).some((p) => doTema.some((t) => t.startsWith(p.slice(0, 5)) || p.startsWith(t.slice(0, 5)))))\n  return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: a cliente não perguntou sobre \"' + melhor.tema + '\" nesta mensagem. Responda em texto só o que ela perguntou, sem falar desse assunto.' } }];\nconst enviados = $('Já enviados a ela').all().map((i) => i.json.conteudo || '').join(' ');\nif (enviados.includes('[áudio pronto: ' + melhor.tema + ']')) return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: ela JÁ recebeu o áudio \"' + melhor.tema + '\" antes. Não mande de novo; responda em texto, curto, sem repetir tudo.' } }];\nreturn [{ json: { ok: true, ...melhor } }];\n"
+        "jsCode": "\n// O tema pedido pela IA -> o áudio do catálogo com mais palavras em comum\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2);\nconst pedido = $('Recebe pedido da IA').first().json;\nconst catalogo = ($('Catálogo de áudios').first().json.config || {}).audios_prontos || [];\nconst alvo = palavras(pedido.tema);\nlet melhor = null, nota = 0;\nfor (const a of catalogo) {\n  const ps = palavras(a.tema + ' ' + (a.quando_usar || ''));\n  const n = alvo.filter((p) => ps.includes(p)).length / Math.max(1, alvo.length);\n  if (n > nota) { melhor = a; nota = n; }\n}\nif (!melhor || nota < 0.5) return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: não existe áudio pronto para \"' + pedido.tema + '\". Temas disponíveis: ' + catalogo.map((a) => a.tema).join('; ') + '. Responda em texto.' } }];\n// trava: a mensagem da cliente precisa falar do assunto do áudio (a IA às vezes manda áudio \"de brinde\"\n// numa conversa de outro assunto). Palavras genéricas não contam.\nconst COMUNS = new Set('unha unhas mao maos pe pes quero queria fazer faz quando perguntar pergunta voce pra para por com uma uns que qual quanto natural sobre isso esse essa tem ter'.split(' '));\nconst chave = (s) => palavras(s).filter((p) => !COMUNS.has(p));\nconst doTema = chave(melhor.tema + ' ' + (melhor.quando_usar || ''));\nif (pedido.mensagem && !chave(pedido.mensagem).some((p) => doTema.some((t) => t.startsWith(p.slice(0, 5)) || p.startsWith(t.slice(0, 5)))))\n  return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: a cliente não perguntou sobre \"' + melhor.tema + '\" nesta mensagem. Responda em texto só o que ela perguntou, sem falar desse assunto.' } }];\nconst enviados = $('Já enviados a ela').all().map((i) => i.json.conteudo || '').join(' ');\nif (enviados.includes('[áudio pronto: ' + melhor.tema + ']')) return [{ json: { ok: false, resposta: 'ÁUDIO NÃO ENVIADO: ela JÁ recebeu o áudio \"' + melhor.tema + '\" antes. Não mande de novo; responda em texto, curto, sem repetir tudo.' } }];\nreturn [{ json: { ok: true, ...melhor } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000111",
+      "id": "00000000-0000-4000-8000-000000000112",
       "name": "Tem áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -163,7 +163,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000112",
+      "id": "00000000-0000-4000-8000-000000000113",
       "name": "Baixar do Storage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -198,7 +198,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000113",
+      "id": "00000000-0000-4000-8000-000000000114",
       "name": "Para base64",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
@@ -213,7 +213,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000114",
+      "id": "00000000-0000-4000-8000-000000000115",
       "name": "Gravando (blocos de 8s)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -226,7 +226,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000115",
+      "id": "00000000-0000-4000-8000-000000000116",
       "name": "Gravando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -261,7 +261,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000116",
+      "id": "00000000-0000-4000-8000-000000000117",
       "name": "Enviar áudio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -293,7 +293,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000117",
+      "id": "00000000-0000-4000-8000-000000000118",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -327,7 +327,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000118",
+      "id": "00000000-0000-4000-8000-000000000119",
       "name": "Registrar no CRM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -362,7 +362,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000119",
+      "id": "00000000-0000-4000-8000-000000000120",
       "name": "Resposta (enviado)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -385,7 +385,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000120",
+      "id": "00000000-0000-4000-8000-000000000121",
       "name": "Resposta (sem áudio)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

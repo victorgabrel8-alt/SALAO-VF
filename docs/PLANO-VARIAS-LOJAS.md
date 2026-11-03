@@ -137,19 +137,39 @@ Feito em 29/10 (`n8n/demo-agente/lojas.js`, gerado e conferido, **ainda não env
 - [x] Travas: o gerador para se sobrar qualquer coisa da Gleide (empresa, instância, número, Redis sem prefixo,
   webhook, id de workflow); o envio recusa id da Gleide; a dona da loja não pode ser número da assistente da Gleide
 - [x] Loja Teste em `lojas/teste/` (empresa ff4b7937…, trava `permitidos` só no número do Victor)
-- [ ] Textos de nicho que ainda falam de mega hair no código (agenda, retomada, foto, áudios) — fase 6
-- [ ] Trava `permitidos` também nas rotinas (faltas, retomada, pendências) antes de ligar uma loja real
-- [ ] O prompt da loja nova monta "dados do salão" a partir de `empresas.config` (endereço, horários,
-  pagamento, regras, recado) e liga `config.ia_usa_dados_loja = true` (a tela passa a dizer que a IA usa)
-- [ ] Catálogo de cabelos e avaliação online só existem no conjunto de mega hair
+Feito em 03/11 (gerado e conferido, **ainda não enviado ao n8n**):
+- [x] Textos de nicho que falavam de mega hair (descrição de foto, exemplos das ferramentas, retomada, áudios,
+  cabeçalho da lista de preços) entram nas `trocas` do `loja.json`; troca que não acha o texto para o gerador.
+  Comentário de código não conta mais como aviso
+- [x] Trava `permitidos` também nas rotinas: faltas, retomada, assistente e pendências ganham um nó
+  "Trava de teste" antes de cada envio (passa só número de `permitidos` ou da dona); o gerador confere
+- [x] "DADOS DO SALÃO" no fim do prompt da loja, lido a cada mensagem de `empresas.config` (endereço, referência,
+  Instagram, horário e almoço, pagamento, parcelamento, atraso, cancelamento, sinal, recado); o `--enviar` da loja
+  liga `config.ia_usa_dados_loja = true`
+- [ ] Catálogo de cabelos e avaliação online só existem no conjunto de mega hair (hoje a ferramenta
+  enviar_catalogo existe na loja, mas acha 0 fotos porque filtra pela empresa, e o prompt de manicure proíbe usar)
 - [x] Prova de que a Gleide não mudou: os 14 workflows gerados sem `--loja` saíram byte a byte iguais aos de antes
+  (03/11: comparação com o que o código da main gerava antes da mudança; os JSON commitados estão atrás do código)
+- [x] Ensaio do `--enviar --ativar` da loja com n8n e Supabase simulados: os 14 sobem na ordem, sem id da Gleide
 - [ ] Instância na Evolution para a Loja Teste (número de teste) e primeiro envio: `node montar-workflow.js --loja teste --enviar --ativar`
 - [ ] Instância nova na Evolution com o número da manicure (QR ou código de pareamento)
+
+**Quando o número de teste chegar (Loja Teste):**
+1. Criar a instância `loja-teste` na Evolution e parear o número (QR ou código).
+2. Webhook da instância: `<n8n>/webhook/teste-whatsapp-salao` (evento MESSAGES_UPSERT, igual ao da Gleide).
+3. Gravar `instancia_whatsapp = 'loja-teste'` na empresa da Loja Teste e trocar `assistente_numeros` do
+   `lojas/teste/loja.json` por um número de teste da "dona" (hoje é um número falso).
+4. Commit e push, depois `node montar-workflow.js --loja teste --enviar --ativar`.
+5. Teste do número do Victor: preço, marcar, remarcar, cancelar, foto de unha, áudio; conferir no app (login de
+   teste) que a conversa e o horário caem só na Loja Teste; mesmo número falando com a Gleide não mistura nada.
 
 ### Fase 6 — Prompt de manicure (Victor) — 2 dias, junto com a fase 5
 - [ ] Separar o prompt de hoje em **base comum** (jeito de escrever, segurança, agenda, preços do app)
   + **parte mega hair** + **dados da loja**. A Gleide continua com o mesmo texto final.
-- [ ] Escrever a parte de manicure (serviços, duração, manutenção do gel/alongamento, cuidados, dúvidas comuns)
+- [x] Escrever a parte de manicure (serviços, duração, manutenção do gel/alongamento, cuidados, dúvidas comuns):
+  `lojas/teste/prompt-agente.md` (03/11), com as mesmas travas do prompt da Gleide (uma oferta, preço só quando
+  pedem, agenda só com a ferramenta, perguntar/transferir para a dona, alôs da ficha) e endereço, horário e regras
+  vindos do app. Fica pronto para copiar na primeira manicure real
 - [ ] Bateria de conversas de teste: preço, marcar, remarcar, cancelar, atraso, "faz pé e mão juntos?",
   áudio, foto de unha de referência
 

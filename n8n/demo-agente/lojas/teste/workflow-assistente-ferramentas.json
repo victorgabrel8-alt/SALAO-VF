@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000146",
+      "id": "00000000-0000-4000-8000-000000000147",
       "name": "Recebe pedido da assistente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -124,7 +124,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000147",
+      "id": "00000000-0000-4000-8000-000000000148",
       "name": "Montar chamada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -137,7 +137,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000148",
+      "id": "00000000-0000-4000-8000-000000000149",
       "name": "Executar no banco",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -176,7 +176,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000149",
+      "id": "00000000-0000-4000-8000-000000000150",
       "name": "Mandar para a cliente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -210,7 +210,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000150",
+      "id": "00000000-0000-4000-8000-000000000151",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -241,7 +241,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000151",
+      "id": "00000000-0000-4000-8000-000000000152",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -259,6 +259,40 @@
               "type": "string"
             }
           ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3e1bfb79-41db-441a-8363-a17852453b0a",
+      "name": "Trava de teste: Mandar para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String(JSON.parse($json.data).telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
         },
         "options": {}
       }
@@ -302,7 +336,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a cliente",
+            "node": "Trava de teste: Mandar para a cliente",
             "type": "main",
             "index": 0
           }
@@ -325,6 +359,18 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Trava de teste: Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },
