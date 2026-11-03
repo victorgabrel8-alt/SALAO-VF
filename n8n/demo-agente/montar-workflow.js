@@ -709,6 +709,8 @@ const assistente = require('./assistente-workflows.js')({ env, node, str, main, 
 const faltas = require('./faltas-workflows.js')({ env, node, main });
 // Retomar conversa: a cliente sumiu depois da resposta da IA (ver retomar-workflows.js e supabase/019)
 const retomar = require('./retomar-workflows.js')({ env, node, main, GEMINI });
+// Retorno combinado: alô na data que a cliente combinou (ver retorno-workflows.js e supabase/028)
+const retorno = require('./retorno-workflows.js')({ env, node, main, GEMINI });
 
 // Pergunta rápida para a Gleide: a IA pergunta, a Gleide responde citando e a IA repassa (ver pedidos-workflows.js)
 const perguntaIdFile = path.join(dir, '.workflow-pergunta-id');
@@ -771,9 +773,13 @@ organizar(retomar.retomarWorkflow, 'Retomar conversa', [
 ].join('\n'), 1);
 organizar(alerta.alertaWorkflow, 'Alerta de erro', 'Quando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).', 3);
 organizar(pedidos.perguntaWorkflow, 'Perguntar para a Gleide', 'Chamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Gleide e guarda para repassar a resposta quando ela tocar em Responder.', 1);
+organizar(retorno.retornoWorkflow, 'Retorno combinado', [
+  'A cada 10 min: a cliente combinou de voltar a falar numa data (a IA anota pela anotar_no_crm)? Nessa data, com o salão aberto, o Gemini',
+  'escreve um alô leve sobre o que ficou combinado, ou decide não mandar. Vai pelo número do salão, para o CRM (contato retorno) e para a memória da IA.',
+].join('\n'), 1);
 
 const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow, assistente.pendenciasWorkflow,
-  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow,
+  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow,
   alerta.alertaWorkflow, workflow];
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
@@ -790,7 +796,7 @@ if (LOJA) {
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 const alertaIdFile = saida(alerta.idFile);
 if (fs.existsSync(alertaIdFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
 fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
 fs.writeFileSync(saida('workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
@@ -803,6 +809,7 @@ fs.writeFileSync(saida('workflow-audios-transcrever.json'), JSON.stringify(audio
 fs.writeFileSync(saida('workflow-catalogo-enviar.json'), JSON.stringify(catalogo.enviarWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-retomar.json'), JSON.stringify(retomar.retomarWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-retorno.json'), JSON.stringify(retorno.retornoWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
@@ -859,7 +866,7 @@ if (process.argv.includes('--enviar')) {
     const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
     await ativar(alertaId); // o n8n só aceita errorWorkflow publicado
     alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
+      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
     // n8n 2.x: subworkflow também precisa estar publicado (ativo) para ser chamado
     if (process.argv.includes('--ativar')) await ativar(agendaId);
@@ -889,6 +896,8 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(faltasId);
     const retomarId = await upsert(retomar.retomarWorkflow, retomar.idFile);
     if (process.argv.includes('--ativar')) await ativar(retomarId);
+    const retornoId = await upsert(retorno.retornoWorkflow, retorno.idFile);
+    if (process.argv.includes('--ativar')) await ativar(retornoId);
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId };

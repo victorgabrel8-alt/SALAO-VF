@@ -29,8 +29,11 @@ ON CONFLICT (telefone) DO UPDATE SET
 
   workflow.nodes.push(toolSub('anotar_no_crm', [0, 0],
     'Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse ' +
-    'dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente.',
-    lerCrmId, ['telefone', 'nome', 'interesse', 'resumo'],
+    'dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente. ' +
+    // retorno combinado (supabase/028): a rotina "IA - Retorno combinado" manda um alô nessa data
+    'Quando a cliente combinar de voltar a falar numa data ("semana que vem te falo", "segunda ou terça te aviso", "depois do dia 10 eu vejo"), ' +
+    'preencha data_retorno e assunto_retorno. A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.',
+    lerCrmId, ['telefone', 'nome', 'interesse', 'resumo', 'data_retorno', 'assunto_retorno'],
     // .first(): o .item perdia o fio até "Montar entrada" (ex.: mensagem que esperou a IA terminar outra)
     // e a anotação chegava sem telefone, sem ir para lugar nenhum
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
@@ -38,6 +41,8 @@ ON CONFLICT (telefone) DO UPDATE SET
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "selagem")', 'string'],
       ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 12x. Casamento em dezembro.")', 'string'],
       ['nome', 'Nome da cliente, se ela disse (senão deixe vazio)', 'string'],
+      ['data_retorno', 'Só se ela combinou de voltar a falar: a data AAAA-MM-DD, calculada pela data atual ("semana que vem" = segunda da semana que vem; "segunda ou terça" = a mais tarde das duas). Senão deixe vazio', 'string'],
+      ['assunto_retorno', 'Só com data_retorno: o que ela ficou de contar ou decidir, curto (ex.: "como ficou o cabelo com a amiga", "se recebeu o salário")', 'string'],
     ]));
   workflow.connections.anotar_no_crm = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
@@ -54,7 +59,7 @@ ON CONFLICT (telefone) DO UPDATE SET etapa = 'humano',
     name: 'CRM (anotações do agente)',
     nodes: [
       node('Recebe pedido do agente', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
-        workflowInputs: { values: ['telefone', 'nome', 'interesse', 'resumo'].map((name) => ({ name })) },
+        workflowInputs: { values: ['telefone', 'nome', 'interesse', 'resumo', 'data_retorno', 'assunto_retorno'].map((name) => ({ name })) },
       }),
       sql('Anotar na ficha',
         `INSERT INTO clientes (telefone, nome, etapa, interesse, resumo) VALUES ($1, NULLIF($4, ''), 'conversa', NULLIF($2, ''), NULLIF($3, ''))
