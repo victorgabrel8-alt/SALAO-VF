@@ -120,8 +120,11 @@ module.exports = ({ env, node, main, GEMINI }) => {
       }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
       // só grava se o WhatsApp aceitou (senão tenta de novo na próxima rodada)
       se('Enviou?', [1980, -200], 'c3', '={{ !!$json.key?.id }}'),
+      // já foi para o WhatsApp: se não gravar, a próxima rodada mandaria outro alô. Tenta de novo (a função
+      // não grava duas vezes: o segundo "enviado" volta "já estava enviado")
       rpc('Registrar alô', [2200, -200], 'n8n_registrar_retorno',
-        `{ p_empresa_id: ${EMPRESA}, p_retorno_id: ${D}.retorno_id, p_situacao: 'enviado', p_mensagem: ${D}.texto, p_wa_message_id: $json.key.id }`),
+        `{ p_empresa_id: ${EMPRESA}, p_retorno_id: ${D}.retorno_id, p_situacao: 'enviado', p_mensagem: ${D}.texto, p_wa_message_id: $json.key.id }`,
+        { retryOnFail: true, maxTries: 5, waitBetweenTries: 5000 }),
       // memória da conversa (LPUSH, a mais nova na frente), como na retomada: o agente sabe o que mandou quando ela responder
       node('Memória (aviso)', 'n8n-nodes-base.redis', 1, [2420, -200], {
         operation: 'push', list: `={{ ${D}.memoria }}`, tail: false,

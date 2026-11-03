@@ -40,9 +40,10 @@ create or replace function n8n_combinar_retorno(p_empresa_id uuid, p_telefone te
 returns jsonb language plpgsql set search_path = public as $$
 declare v_cliente uuid; v_id uuid; v_cfg jsonb;
 begin
+  -- anotação comum, sem data: nada a fazer (e nada a avisar à IA)
+  if p_data is null then return jsonb_build_object('ok', false, 'motivo', 'sem data'); end if;
   select id into v_cliente from clientes where empresa_id = p_empresa_id and telefone = p_telefone;
   if v_cliente is null then return jsonb_build_object('ok', false, 'motivo', 'cliente não encontrada'); end if;
-  if p_data is null then return jsonb_build_object('ok', false, 'motivo', 'sem data'); end if;
   if p_data <= hoje_cuiaba() then return jsonb_build_object('ok', false, 'motivo', 'a data tem que ser depois de hoje'); end if;
   if p_data > hoje_cuiaba() + 60 then return jsonb_build_object('ok', false, 'motivo', 'data a mais de 60 dias'); end if;
 
@@ -115,7 +116,7 @@ create or replace function n8n_registrar_retorno(p_empresa_id uuid, p_retorno_id
 returns jsonb language plpgsql set search_path = public as $$
 declare rc retornos_combinados%rowtype; v_contato uuid;
 begin
-  if p_situacao not in ('enviado', 'pulado') then raise exception 'situação inválida: %', p_situacao; end if;
+  if p_situacao is null or p_situacao not in ('enviado', 'pulado') then raise exception 'situação inválida: %', p_situacao; end if;
   select * into rc from retornos_combinados where id = p_retorno_id and empresa_id = p_empresa_id for update;
   if not found then raise exception 'retorno % não encontrado', p_retorno_id; end if;
   if rc.situacao <> 'aguardando' then return jsonb_build_object('ok', false, 'motivo', 'já estava ' || rc.situacao); end if;
