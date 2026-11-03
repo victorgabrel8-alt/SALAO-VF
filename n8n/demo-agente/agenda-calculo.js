@@ -192,7 +192,7 @@ if (p.acao === 'consultar') {
     return out.map(([a, b]) => (+a === +b ? hm(a) : hm(a) + ' às ' + hm(b))).join('; ');
   };
   // Pedido do Victor (03/11): para a cliente vão só 2 horários (um de manhã e um de tarde, quando há); o quadro
-  // do dia por período fica para a IA, que só passa o dia inteiro se a cliente pedir outros horários.
+  // do dia por período fica só para a IA: se a cliente pedir outros horários, ela oferece 1 ou 2 inícios novos (prompt v7.1).
   // Sem nome de cliente: só o horário reservado.
   const sugestao = (v) => {
     const m = v.find((t) => t.hour < 12), t = v.find((x) => x.hour >= 12);
@@ -228,7 +228,7 @@ if (p.acao === 'consultar') {
     });
     return 'QUADRO DO DIA — ' + dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + '), serviço de ' + p.dur + ' min:\\n' +
       'OFEREÇA À CLIENTE SÓ ESTES 2 HORÁRIOS: ' + sugestao(v) + '. Não mande o quadro abaixo de cara.\\n' +
-      'Quadro do dia (para você; passe à cliente por período, livre de tal a tal hora e almoço, SÓ se ela perguntar se tem outros horários):\\n' +
+      'Quadro do dia (só para você, não mande à cliente nem comente se a agenda está aberta ou cheia; se ela perguntar se tem outros horários, ofereça 1 ou 2 inícios NOVOS e exatos tirados daqui):\\n' +
       linhas.join('\\n') + '\\nInícios que cabem o serviço (de 30 em 30 min): ' + faixas(v) +
       '. Se ela disser outro horário, confira esse horário exato com consultar_horarios_livres antes de marcar; se estiver livre e ela já escolheu, pode marcar.';
   };
