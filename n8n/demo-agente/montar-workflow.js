@@ -150,12 +150,12 @@ Leia tudo como uma conversa só e responda uma vez, cobrindo todas na ordem em q
 Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.
 
 COMO A RESPOSTA CHEGA NO WHATSAPP
-Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução; se uma pergunta/CTA foi feita, aguarde nova entrada da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
+Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução quando houver conteúdo útil. Para uma reação isolada sem nova demanda, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. Se uma pergunta/CTA foi feita, aguarde nova entrada substantiva da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
 Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 350.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Após pergunta de ENDEREÇO em conversa qualificada, uma oferta de horários só pode ser feita se ainda NÃO houve convite pendente (seção 02), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
@@ -406,8 +406,9 @@ const nodes = [
       "// fotos do catálogo enviadas também são resposta: se elas responderam tudo, a IA pode não escrever nada",
       "const audioEnviado = passos.some(p => (p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || ''))) ||",
       "  (p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || ''))));",
-      "const semTexto = /\\[SEM TEXTO\\]/i.test(t);",
-      "t = t.replace(/\\[SEM TEXTO\\]/gi, '').trim();",
+      "// Prompt v7.3: [[NAO_ENVIAR]] = a cliente só mandou um aceno (ok, assim) e a IA escolheu ficar quieta. Nunca vai pro WhatsApp",
+      "const semTexto = /\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/i.test(t);",
+      "t = t.replace(/\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/gi, '').trim();",
       "if ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];",
       "// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)",
       "t = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');",
@@ -438,7 +439,8 @@ const nodes = [
       "const semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Toda Bonita Mega Hair/gi, '').trim();",
       "if (semRobo) t = semRobo;",
       "// sobras de chatbot no fim (humanizer §22): fecho automático que não diz nada; só sai se sobrar texto",
-      "const semFecho = t.replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').trim();",
+      "// \"Qualquer dúvida, estou à disposição.\" sai inteira: a frase do \"qualquer dúvida\" vem antes da do \"disposição\" (senão sobrava \"Qualquer dúvida,.\")",
+      "const semFecho = t.replace(/\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').replace(/[\\s,;:]+$/, '').trim();",
       "if (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';",
       "// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente",
       "t = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));",
@@ -521,7 +523,7 @@ const nodes = [
   }),
 
   toolAgenda('consultar_horarios_livres', [2880, 200],
-    'Consulta a agenda do salão e devolve o QUADRO DO DIA: manhã, almoço e tarde, o que está livre e o que já tem cliente marcada, e os inícios que cabem o serviço. ' +
+    'Consulta a agenda do salão e devolve 2 horários para oferecer (um de manhã e um de tarde, quando há) e o QUADRO DO DIA (manhã, almoço e tarde), só para você tirar 1 ou 2 inícios novos se a cliente pedir outros horários. ' +
     'Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.',
     { acao: 'consultar' },
     [
@@ -707,6 +709,8 @@ const assistente = require('./assistente-workflows.js')({ env, node, str, main, 
 const faltas = require('./faltas-workflows.js')({ env, node, main });
 // Retomar conversa: a cliente sumiu depois da resposta da IA (ver retomar-workflows.js e supabase/019)
 const retomar = require('./retomar-workflows.js')({ env, node, main, GEMINI });
+// Retorno combinado: alô na data que a cliente combinou (ver retorno-workflows.js e supabase/028)
+const retorno = require('./retorno-workflows.js')({ env, node, main, GEMINI });
 
 // Pergunta rápida para a Gleide: a IA pergunta, a Gleide responde citando e a IA repassa (ver pedidos-workflows.js)
 const perguntaIdFile = path.join(dir, '.workflow-pergunta-id');
@@ -769,9 +773,13 @@ organizar(retomar.retomarWorkflow, 'Retomar conversa', [
 ].join('\n'), 1);
 organizar(alerta.alertaWorkflow, 'Alerta de erro', 'Quando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).', 3);
 organizar(pedidos.perguntaWorkflow, 'Perguntar para a Gleide', 'Chamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Gleide e guarda para repassar a resposta quando ela tocar em Responder.', 1);
+organizar(retorno.retornoWorkflow, 'Retorno combinado', [
+  'A cada 10 min: a cliente combinou de voltar a falar numa data (a IA anota pela anotar_no_crm)? Nessa data, com o salão aberto, o Gemini',
+  'escreve um alô leve sobre o que ficou combinado, ou decide não mandar. Vai pelo número do salão, para o CRM (contato retorno) e para a memória da IA.',
+].join('\n'), 1);
 
 const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow, assistente.pendenciasWorkflow,
-  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow,
+  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow,
   alerta.alertaWorkflow, workflow];
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
@@ -790,7 +798,7 @@ if (LOJA) {
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 const alertaIdFile = saida(alerta.idFile);
 if (fs.existsSync(alertaIdFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
 fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
 fs.writeFileSync(saida('workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
@@ -803,6 +811,7 @@ fs.writeFileSync(saida('workflow-audios-transcrever.json'), JSON.stringify(audio
 fs.writeFileSync(saida('workflow-catalogo-enviar.json'), JSON.stringify(catalogo.enviarWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-faltas.json'), JSON.stringify(faltas.faltasWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-retomar.json'), JSON.stringify(retomar.retomarWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-retorno.json'), JSON.stringify(retorno.retornoWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
@@ -859,7 +868,7 @@ if (process.argv.includes('--enviar')) {
     const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
     await ativar(alertaId); // o n8n só aceita errorWorkflow publicado
     alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
+      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
     // n8n 2.x: subworkflow também precisa estar publicado (ativo) para ser chamado
     if (process.argv.includes('--ativar')) await ativar(agendaId);
@@ -889,6 +898,8 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(faltasId);
     const retomarId = await upsert(retomar.retomarWorkflow, retomar.idFile);
     if (process.argv.includes('--ativar')) await ativar(retomarId);
+    const retornoId = await upsert(retorno.retornoWorkflow, retorno.idFile);
+    if (process.argv.includes('--ativar')) await ativar(retornoId);
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId };

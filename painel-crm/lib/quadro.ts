@@ -152,7 +152,7 @@ async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; 
   const [contatos, servicos] = await Promise.all([
     db
       .from("contatos")
-      .select("id, cliente_id, resultado, criado_em, mensagem")
+      .select("id, cliente_id, resultado, criado_em, mensagem, canal")
       // Pedido de remarcação (app da dona) não é chamar para voltar: não mexe na coluna do quadro
       .neq("tipo", "remarcacao")
       .in("cliente_id", ids)
@@ -162,11 +162,16 @@ async function buscarQuadro(empresaId: string): Promise<{ cards: CardCliente[]; 
   ]);
   if (contatos.error) return { cards: [], erro: contatos.error.message };
   const ultimo: Record<string, Contato> = {};
-  for (const ct of contatos.data as (Omit<Contato, "enviado"> & { cliente_id: string })[])
-    ultimo[ct.cliente_id] ??= { id: ct.id, resultado: ct.resultado, criado_em: ct.criado_em, mensagem: ct.mensagem, enviado: true };
+  // canal 'ia': a IA mandou pelo número do salão (falta, atraso, vaga, retorno combinado) e só grava depois de sair
+  const daIa = new Set<string>();
+  for (const ct of contatos.data as (Omit<Contato, "enviado"> & { cliente_id: string; canal: string })[]) {
+    if (ultimo[ct.cliente_id]) continue;
+    ultimo[ct.cliente_id] = { id: ct.id, resultado: ct.resultado, criado_em: ct.criado_em, mensagem: ct.mensagem, enviado: true };
+    if (ct.canal === "ia") daIa.add(ct.id);
+  }
 
   // Alô aberto pelo card ainda pendente: confere se saiu mensagem do salão depois dele
-  const abertos = Object.entries(ultimo).filter(([, ct]) => ct.resultado === "pendente" && ct.mensagem);
+  const abertos = Object.entries(ultimo).filter(([, ct]) => ct.resultado === "pendente" && ct.mensagem && !daIa.has(ct.id));
   if (abertos.length) {
     const desde = abertos.reduce((m, [, ct]) => (ct.criado_em < m ? ct.criado_em : m), abertos[0][1].criado_em);
     const { data: saidas } = await db
@@ -242,7 +247,9 @@ export async function moverCard(
   }
   const contato = card.contato;
   if (contato) {
-    const mudanca = mensagem ? { resultado, mensagem } : { resultado };
+    // escreveu pelo card: o alô passa a ser da agência (canal manual), mesmo em cima de um da IA, e só conta
+    // como enviado quando a mensagem sair de verdade
+    const mudanca = mensagem ? { resultado, mensagem, canal: "manual" } : { resultado };
     const { error } = await db.from("contatos").update(mudanca).eq("id", contato.id);
     if (error) return { erro: error.message };
     // Arrastou para "Mensagem enviada" um alô que ainda não tinha saído: a agência confirmou o envio

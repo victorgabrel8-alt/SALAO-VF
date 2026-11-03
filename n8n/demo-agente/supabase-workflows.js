@@ -84,6 +84,8 @@ const recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filt
 const pendentes = [];
 for (const m of recentes) {
   if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada
+  // aceno ("ok", "assim") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente
+  if (/^\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\s.!]*$/iu.test(m.conteudo || '')) continue;
   if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);
 }
 const SEM_RESPOSTA = pendentes.length ? '\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +
@@ -146,6 +148,9 @@ else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCA
 // aviso: a Gleide pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)
 else if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou avisar: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');
+// retorno combinado: ela tinha combinado de voltar a falar nesta data e a IA chamou (ver supabase/028)
+else if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia') linhas.push('ALÔ DE RETORNO (combinado com ela): ela tinha ficado de falar com o salão nesta data e em ' +
+  dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. Siga o assunto que ficou combinado; se ela ainda não decidiu, acolha sem insistir.');
 else if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');
 return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
@@ -155,7 +160,7 @@ return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status)' +
+    'contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status)' +
     '&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
@@ -288,6 +293,20 @@ Use a ficha como quem já conhece a cliente:
   entre(crmWorkflow, 'Anotar na ficha', supa('Supabase: pré-avaliação', 'POST', 'rpc/n8n_salvar_pre_avaliacao',
     `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${A}.telefone`)},
        p_dados: { resumo: (${A}.resumo || ${A}.interesse || '').trim(), tecnica_interesse: (${A}.interesse || '').trim() } }`), 'Resposta');
+  // retorno combinado (supabase/028): sem data, o banco só responde "sem data". A resposta da ferramenta
+  // diz à IA se o alô está ligado para ela: só então pode prometer que chama nesse dia
+  entre(crmWorkflow, 'Supabase: pré-avaliação', supa('Supabase: retorno combinado', 'POST', 'rpc/n8n_combinar_retorno',
+    `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR(`${A}.telefone`)},
+       p_data: /^\\d{4}-\\d{2}-\\d{2}$/.test(String(${A}.data_retorno || '').trim()) ? String(${A}.data_retorno).trim() : null,
+       p_assunto: (${A}.assunto_retorno || '').trim() }`), 'Resposta');
+  achar(crmWorkflow, 'Resposta').parameters.assignments.assignments[0].value = `={{ (() => {
+  const r = $('Supabase: retorno combinado').first().json;
+  const base = 'ANOTADO na ficha da cliente. Continue a conversa normalmente (não comente isso com ela).';
+  if (r.ok && r.vai_chamar) return base + ' RETORNO COMBINADO para ' + r.data.split('-').reverse().join('/') + ': o salão manda um alô para ela nesse dia. Pode dizer, com naturalidade e uma vez só, que chama ela nesse dia.';
+  if (r.ok) return base + ' Data de retorno guardada, mas o alô automático não está ligado para ela: não prometa chamar; diga que fica no aguardo do contato dela.';
+  if (r.motivo && r.motivo !== 'sem data') return base + ' A data de retorno NÃO foi guardada (' + r.motivo + '): não prometa chamar.';
+  return base;
+})() }}`;
 
   const Pr = "$('Preparar').item.json";
   const C = "$('Calcular').item.json";
