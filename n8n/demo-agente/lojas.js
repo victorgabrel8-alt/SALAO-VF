@@ -25,7 +25,7 @@ const crypto = require('crypto');
 
 const GLEIDE_ASSISTENTE = '5566999596740';
 // endereços de webhook dos workflows (path); na loja viram "<slug>-<path>", inclusive em URL que chama outro
-const TODOS_OS_PATHS = ['whatsapp-salao', 'assistente-gleide', 'assistente-pendencias', 'audios-transcrever', 'faltas-avisos', 'retomar-conversa'];
+const TODOS_OS_PATHS = ['whatsapp-salao', 'assistente-gleide', 'assistente-pendencias', 'audios-transcrever', 'faltas-avisos', 'retomar-conversa', 'retorno-combinado'];
 // chaves do Redis usadas pelos workflows (ver montar-workflow.js, pedidos, assistente, faltas, retomar)
 const CHAVES = ['memoria', 'pausa', 'buffer_ultima', 'buffer', 'processando', 'pedido', 'assistente', 'alerta', 'descartes'];
 
