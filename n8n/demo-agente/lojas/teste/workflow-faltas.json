@@ -911,7 +911,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "c3d42bb0-f464-4cd8-8b92-f9c62bcd1624",
       "name": "Trava de teste: Mandar para a cliente",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -945,7 +945,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "bd15fba3-4fc3-414f-88d9-4e9d6b56b0a4",
       "name": "Trava de teste: Chamar a atrasada",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -979,7 +979,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "ed35ea8d-028f-4264-8b5a-b8146359c3d6",
       "name": "Trava de teste: Perguntar à Ana (atraso)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1013,7 +1013,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "91ca8d05-a81b-4a2d-82a0-0b1b8c55ef9c",
       "name": "Trava de teste: Avisar a Ana (conflito)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1047,7 +1047,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "4ed5b04a-f92b-4e97-881e-05aefc6e8992",
       "name": "Trava de teste: Oferecer para a cliente",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1081,7 +1081,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "3fc30ece-9cbe-4172-8a8b-86db60c7fa07",
       "name": "Trava de teste: Mandar para a Ana",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,

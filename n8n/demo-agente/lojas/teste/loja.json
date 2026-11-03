@@ -6,42 +6,112 @@
   "instancia": "loja-teste",
   "dona": "Ana",
   "cidade": "Sinop",
-  "assistente_numeros": ["5500000000001"],
-  "permitidos": ["556699270860"],
+  "assistente_numeros": [
+    "5500000000001"
+  ],
+  "permitidos": [
+    "556699270860"
+  ],
   "trocas": [
-    ["Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor (preto, castanho escuro, castanho claro, loiro, ruivo, grisalho) e se tem mechas, luzes ou reflexos; textura e curvatura (liso; ondulado; cacheado com cachos abertos/largos; cacheado com cachos fechados/pequenos; crespo); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo.",
-     "Uma cliente de um estúdio de unhas (manicure e pedicure) mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o estúdio: se parecem as unhas da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); mão ou pé; comprimento e formato das unhas (curtas, médias, longas; quadrada, redonda, amendoada, bailarina, stiletto); se parecem naturais, esmaltação comum, esmaltação em gel ou alongamento; cor e acabamento (brilho, fosco, francesinha, degradê, glitter, pedrarias, desenhos). Se a luz, o ângulo ou o enquadramento não deixam ver as unhas direito, diga isso. Não avalie saúde da unha nem da pele."],
-    ["(ex.: 240 para aplicação de mega hair, 120 para manutenção, 30 para avaliação)",
-     "(ex.: 90 para pé e mão, 60 para esmaltação em gel, 150 para alongamento)"],
-    ["dizendo se é aplicação ou manutenção (ex.: \"Manutenção – mão de obra\", \"Aplicação de mega hair – mão de obra\", \"Selagem\")",
-     "dizendo se é alongamento novo ou manutenção (ex.: \"Pé e mão\", \"Esmaltação em gel\", \"Manutenção de alongamento\")"],
-    ["Ex.: \"comprar cabelo vietnamita 60 cm\", \"selagem - cabelo ressecado\", \"manutenção tela adesiva colocada em agosto\", \"avaliar técnica, cabelo curto\"",
-     "Ex.: \"pé e mão, primeira vez\", \"gel nude pra casamento sábado\", \"manutenção do alongamento feito há 3 semanas\", \"tirar o gel e esmaltar\""],
-    ["(ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"selagem\")",
-     "(ex.: \"alongamento em gel, formato amendoado\", \"pé e mão\")"],
-    ["dela (serviço, tipo de cabelo, química, orçamento)",
-     "dela (serviço, mão ou pé, gel ou alongamento, cor, ocasião)"],
-    ["valores de SERVIÇOS/MÃO DE OBRA e durações, nunca preço dos FIOS; se houver divergência",
-     "valores e durações; se houver divergência"],
-    ["(sem lista atualizada: não invente preço; use seção 09 apenas para base geral da mão de obra e durações)",
-     "(sem lista atualizada: não informe preço nem duração; diga que a Gleide confirma)"],
-    ["mas NÃO libera preço de cabelo humano vendido por gramas/comprimento, nem permite calcular o TOTAL da primeira aplicação",
-     "mas NÃO permite somar valores, montar pacote nem dar desconto"],
-    ["puxando o assunto do salão de mega hair sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair.",
-     "puxando o assunto do estúdio de unhas sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer marcar as unhas."],
-    ["deixando a porta aberta para quando ela quiser saber sobre mega hair, sem cobrar resposta",
-     "deixando a porta aberta para quando ela quiser marcar, sem cobrar resposta"],
-    ["(a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...)",
-     "(o gel, o alongamento, a cor, o pé e mão, a primeira vez...)"],
-    ["- não indique técnica, quantidade nem tipo de cabelo, e não ofereça \"explicar qual técnica a Gleide recomenda\": quem define isso é a Gleide na avaliação;",
-     "- não prometa quanto tempo o gel ou o alongamento dura nem indique formato ou técnica: quem orienta isso é a Gleide no atendimento;"],
-    ["- não afirme estoque, cor ou textura disponível, nem resultado (\"tem uns pretos lindos\", \"temos aqui no salão\", \"tem liso e ondulado\", \"ia ficar perfeito em você\"); o catálogo é do fornecedor: fale dele só como catálogo, sem dizer que o salão tem aquele cabelo;",
-     "- não afirme cor de esmalte disponível nem resultado (\"temos aqui\", \"ia ficar perfeito em você\");"],
-    ["- se ela já disse que usa mega ou conhece a técnica, nada de explicação de iniciante;",
-     "- se ela já faz gel ou alongamento, nada de explicação de iniciante;"],
-    ["(não existem; só há fotos de cabelo do catálogo do fornecedor)",
-     "(não existem por aqui)"],
-    ["const COMUNS = new Set('mega hair cabelo cabelos quero",
-     "const COMUNS = new Set('unha unhas mao maos pe pes quero"]
+    [
+      "Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor (preto, castanho escuro, castanho claro, loiro, ruivo, grisalho) e se tem mechas, luzes ou reflexos; textura e curvatura (liso; ondulado; cacheado com cachos abertos/largos; cacheado com cachos fechados/pequenos; crespo); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo.",
+      "Uma cliente de um estúdio de unhas (manicure e pedicure) mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o estúdio: se parecem as unhas da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); mão ou pé; comprimento e formato das unhas (curtas, médias, longas; quadrada, redonda, amendoada, bailarina, stiletto); se parecem naturais, esmaltação comum, esmaltação em gel ou alongamento; cor e acabamento (brilho, fosco, francesinha, degradê, glitter, pedrarias, desenhos). Se a luz, o ângulo ou o enquadramento não deixam ver as unhas direito, diga isso. Não avalie saúde da unha nem da pele."
+    ],
+    [
+      "(ex.: 240 para aplicação de mega hair, 120 para manutenção, 30 para avaliação)",
+      "(ex.: 90 para pé e mão, 60 para esmaltação em gel, 150 para alongamento)"
+    ],
+    [
+      "dizendo se é aplicação ou manutenção (ex.: \"Manutenção – mão de obra\", \"Aplicação de mega hair – mão de obra\", \"Selagem\")",
+      "dizendo se é alongamento novo ou manutenção (ex.: \"Pé e mão\", \"Esmaltação em gel\", \"Manutenção de alongamento\")"
+    ],
+    [
+      "Ex.: \"comprar cabelo vietnamita 60 cm\", \"selagem - cabelo ressecado\", \"manutenção tela adesiva colocada em agosto\", \"avaliar técnica, cabelo curto\"",
+      "Ex.: \"pé e mão, primeira vez\", \"gel nude pra casamento sábado\", \"manutenção do alongamento feito há 3 semanas\", \"tirar o gel e esmaltar\""
+    ],
+    [
+      "(ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"selagem\")",
+      "(ex.: \"alongamento em gel, formato amendoado\", \"pé e mão\")"
+    ],
+    [
+      "dela (serviço, tipo de cabelo, química, orçamento)",
+      "dela (serviço, mão ou pé, gel ou alongamento, cor, ocasião)"
+    ],
+    [
+      "valores de SERVIÇOS/MÃO DE OBRA e durações, nunca preço dos FIOS; se houver divergência",
+      "valores e durações; se houver divergência"
+    ],
+    [
+      "(sem lista atualizada: não invente preço; use seção 09 apenas para base geral da mão de obra e durações)",
+      "(sem lista atualizada: não informe preço nem duração; diga que a Gleide confirma)"
+    ],
+    [
+      "mas NÃO libera preço de cabelo humano vendido por gramas/comprimento, nem permite calcular o TOTAL da primeira aplicação",
+      "mas NÃO permite somar valores, montar pacote nem dar desconto"
+    ],
+    [
+      "puxando o assunto do salão de mega hair sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair.",
+      "puxando o assunto do estúdio de unhas sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer marcar as unhas."
+    ],
+    [
+      "deixando a porta aberta para quando ela quiser saber sobre mega hair, sem cobrar resposta",
+      "deixando a porta aberta para quando ela quiser marcar, sem cobrar resposta"
+    ],
+    [
+      "(a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...)",
+      "(o gel, o alongamento, a cor, o pé e mão, a primeira vez...)"
+    ],
+    [
+      "- não indique técnica, quantidade nem tipo de cabelo, e não ofereça \"explicar qual técnica a Gleide recomenda\": quem define isso é a Gleide na avaliação;",
+      "- não prometa quanto tempo o gel ou o alongamento dura nem indique formato ou técnica: quem orienta isso é a Gleide no atendimento;"
+    ],
+    [
+      "- não afirme estoque, cor ou textura disponível, nem resultado (\"tem uns pretos lindos\", \"temos aqui no salão\", \"tem liso e ondulado\", \"ia ficar perfeito em você\"); o catálogo é do fornecedor: fale dele só como catálogo, sem dizer que o salão tem aquele cabelo;",
+      "- não afirme cor de esmalte disponível nem resultado (\"temos aqui\", \"ia ficar perfeito em você\");"
+    ],
+    [
+      "- se ela já disse que usa mega ou conhece a técnica, nada de explicação de iniciante;",
+      "- se ela já faz gel ou alongamento, nada de explicação de iniciante;"
+    ],
+    [
+      "(não existem; só há fotos de cabelo do catálogo do fornecedor)",
+      "(não existem por aqui)"
+    ],
+    [
+      "const COMUNS = new Set('mega hair cabelo cabelos quero",
+      "const COMUNS = new Set('unha unhas mao maos pe pes quero"
+    ],
+    [
+      "“A manutenção fica a partir de R$ 350.”",
+      "“O pé e mão fica a partir de R$ [valor da lista].”"
+    ],
+    [
+      "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: a IA não pergunta valores à Gleide (seção 07).",
+      "use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à Gleide, sem prometer valor."
+    ],
+    [
+      "(ex.: Pode trazer cachorro de porte grande na avaliação?)",
+      "(ex.: Pode trazer a filha de 5 anos junto?)"
+    ],
+    [
+      "(ex.: avaliação qui 29/10 9h)",
+      "(ex.: pé e mão qui 29/10 9h)"
+    ],
+    [
+      "(ex.: quer avaliação à distância, mora longe)",
+      "(ex.: unha inchada depois do alongamento)"
+    ],
+    [
+      "(ex.: Dizer se dá para orientar por foto)",
+      "(ex.: Ver a foto da unha e dizer se precisa voltar)"
+    ],
+    [
+      "use a seção 09 apenas para durações e base geral de mão de obra autorizada, nunca para inventar preço específico",
+      "não informe preço nem duração que não estejam na lista"
+    ],
+    [
+      "Químicas e tratamentos com preço positivo válido são sempre apresentados com “a partir de”; demais serviços",
+      "Os serviços"
+    ]
   ]
 }

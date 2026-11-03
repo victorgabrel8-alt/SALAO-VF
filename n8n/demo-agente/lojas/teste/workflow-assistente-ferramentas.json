@@ -264,7 +264,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "3e1bfb79-41db-441a-8363-a17852453b0a",
       "name": "Trava de teste: Mandar para a cliente",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,

@@ -225,7 +225,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "id": "f359c54a-6e4a-4fd5-8533-8dedb5efcacc",
       "name": "Trava de teste: Mandar para a Ana",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,

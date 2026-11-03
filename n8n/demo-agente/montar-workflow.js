@@ -783,7 +783,7 @@ if (LOJA) {
   const { erros, avisos } = lojas.conferirLoja(todos, LOJA, idsGleide);
   for (const a of avisos) console.log(`aviso: ${a}`);
   if (erros.length) {
-    console.error(`\nNÃO GEREI a loja "${LOJA.slug}": sobrou coisa da Gleide.\n- ${erros.join('\n- ')}\n`);
+    console.error(`\nNÃO GEREI a loja "${LOJA.slug}": sobrou coisa da Gleide ou o conjunto tem problema.\n- ${erros.join('\n- ')}\n`);
     process.exit(1);
   }
 }
@@ -900,7 +900,9 @@ if (process.argv.includes('--enviar')) {
     if (LOJA) {
       const supa = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
       const rota = `${env.SUPABASE_URL}/rest/v1/empresas?id=eq.${LOJA.empresa_id}`;
-      const [emp] = await (await fetch(`${rota}&select=config`, { headers: supa })).json();
+      const res = await fetch(`${rota}&select=config`, { headers: supa });
+      const lista = res.ok ? await res.json() : null;
+      const emp = Array.isArray(lista) ? lista[0] : null;
       if (!emp) { console.error(`empresa ${LOJA.empresa_id} não achada no Supabase: config.ia_usa_dados_loja não ligado`); return; }
       if (emp.config?.ia_usa_dados_loja !== true) {
         const r = await fetch(rota, { method: 'PATCH', headers: supa, body: JSON.stringify({ config: { ...emp.config, ia_usa_dados_loja: true } }) });
