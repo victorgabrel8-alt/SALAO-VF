@@ -223,6 +223,40 @@
         "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_pedido_a: $('Montar mensagem').item.json.tel, p_ids: $('Montar mensagem').item.json.ids }) }}",
         "options": {}
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-00000000a7a0",
+      "name": "Trava de teste: Mandar para a Ana",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -274,7 +308,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a Ana",
+            "node": "Trava de teste: Mandar para a Ana",
             "type": "main",
             "index": 0
           }
@@ -301,6 +335,18 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Trava de teste: Mandar para a Ana": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a Ana",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     }
   },
