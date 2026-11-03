@@ -150,7 +150,7 @@ Leia tudo como uma conversa só e responda uma vez, cobrindo todas na ordem em q
 Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.
 
 COMO A RESPOSTA CHEGA NO WHATSAPP
-Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução; se uma pergunta/CTA foi feita, aguarde nova entrada da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
+Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução quando houver conteúdo útil. Para uma reação isolada sem nova demanda, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. Se uma pergunta/CTA foi feita, aguarde nova entrada substantiva da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
 Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 350.”
@@ -406,8 +406,9 @@ const nodes = [
       "// fotos do catálogo enviadas também são resposta: se elas responderam tudo, a IA pode não escrever nada",
       "const audioEnviado = passos.some(p => (p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || ''))) ||",
       "  (p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || ''))));",
-      "const semTexto = /\\[SEM TEXTO\\]/i.test(t);",
-      "t = t.replace(/\\[SEM TEXTO\\]/gi, '').trim();",
+      "// Prompt v7.3: [[NAO_ENVIAR]] = a cliente só mandou um aceno (ok, assim) e a IA escolheu ficar quieta. Nunca vai pro WhatsApp",
+      "const semTexto = /\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/i.test(t);",
+      "t = t.replace(/\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/gi, '').trim();",
       "if ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];",
       "// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)",
       "t = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');",
