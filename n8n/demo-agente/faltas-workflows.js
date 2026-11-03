@@ -1,6 +1,8 @@
 // IA - Faltas e avisos (situação 2, ver supabase/007_ia_chama_faltas.sql).
 // Chamado pelo montar-workflow.js: devolve 1 workflow novo que confere a cada 5 min (8h–20h). Conferir não é
 // mandar: cada cliente recebe no máximo 2 mensagens de atraso, 1 de falta e 1 oferta por vaga.
+//   G) lembrete (supabase/027): 1 por horário, na véspera (18h) ou de 4 h a 45 min antes; a resposta cai no
+//      agente com o "ALÔ DE LEMBRETE" na ficha. Ligar: empresas.config.lembretes = {"ligado": true, "so_para": [...]}
 //   D) atraso (supabase/011): +5 min "está a caminho?", +25 min "conseguiu vir?"
 //   E) sem resposta 10 min depois: pergunta à Gleide "veio ou libera?". Silêncio não libera nada; o "libera"
 //      dela (ferramenta liberar_horario da assistente) marca falta e abre a vaga (C, só no mesmo dia)
@@ -53,6 +55,19 @@ return $input.all().map((i) => i.json).filter((a) => a.agendamento_id).map((a) =
     ? 'Oi' + (nome ? ' ' + nome : '') + '! Seu horário aqui no salão era ' + quando(a.inicio) + ' 💛 Está a caminho?'
     : (nome ? nome + ', c' : 'C') + 'onseguiu vir? Se hoje não der, me avisa que eu vejo outro horário pra você, sem problema 💛';
   return { json: { ...a, texto } };
+});
+`;
+
+// lembrete (supabase/027): véspera a partir das 18h ou, se não saiu, de 4 h a 45 min antes
+const MENSAGEM_LEMBRETE = QUANDO + String.raw`
+return $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {
+  const nome = primeiro(l.nome);
+  const oi = 'Oi' + (nome ? ' ' + nome : '') + '! ';
+  const texto = l.online
+    ? oi + 'Sua avaliação online é ' + quando(l.inicio) + ' 💛 A Gleide te liga por áudio aqui no WhatsApp. Posso confirmar?'
+    : oi + 'Seu horário é ' + quando(l.inicio) + (l.servico ? ' (' + l.servico.toLowerCase().replace(/\s*[–-]\s*mão de obra$/, '') + ')' : '') +
+      ' aqui no salão' + (l.endereco ? ', ' + l.endereco : '') + ' 💛 Posso confirmar?';
+  return { json: { ...l, texto } };
 });
 `;
 
@@ -133,7 +148,7 @@ module.exports = ({ env, node, main }) => {
     sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}`, options: {},
   }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, ...extra });
   const cond = (id, left) => ({ id, leftValue: left, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } });
-  const INICIOS = ['Atrasos para chamar', 'Atrasos para confirmar', 'Conflitos de atraso','Faltas para chamar', 'Vagas para oferecer', 'Avisos para a Gleide']
+  const INICIOS = ['Lembretes para mandar', 'Atrasos para chamar', 'Atrasos para confirmar', 'Conflitos de atraso','Faltas para chamar', 'Vagas para oferecer', 'Avisos para a Gleide']
     .map((n) => ({ node: n, type: 'main', index: 0 }));
 
   const faltasWorkflow = {
@@ -174,6 +189,19 @@ module.exports = ({ env, node, main }) => {
       }),
       rpc('Registrar chamada do atraso', [1320, -540], 'n8n_registrar_chamada_atraso',
         `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Mensagem do atraso').item.json.agendamento_id, p_mensagem: $('Mensagem do atraso').item.json.texto, p_wa_message_id: $json.key.id }`),
+
+      // G) lembrar do horário (véspera ou no dia)
+      rpc('Lembretes para mandar', [440, -1200], 'n8n_lembretes_para_mandar', `{ p_empresa_id: ${EMPRESA} }`),
+      node('Mensagem do lembrete', 'n8n-nodes-base.code', 2, [660, -1200], { jsCode: MENSAGEM_LEMBRETE }),
+      // véspera às 18h pode juntar várias clientes: uma de cada vez, espaçadas, como no retorno e na retomada
+      (() => { const n = evoPost('Lembrar a cliente', [880, -1200], '{ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }', { onError: 'continueRegularOutput' }); n.parameters.options = { batching: { batch: { batchSize: 1, batchInterval: 8000 } } }; return n; })(),
+      node('Lembrou?', 'n8n-nodes-base.if', 2.2, [1100, -1200], {
+        conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+          conditions: [cond('l1', '={{ !!$json.key?.id }}')], combinator: 'and' },
+        options: {},
+      }),
+      rpc('Registrar lembrete', [1320, -1200], 'n8n_registrar_lembrete',
+        `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Mensagem do lembrete').item.json.agendamento_id, p_mensagem: $('Mensagem do lembrete').item.json.texto, p_wa_message_id: $json.key.id }`),
 
       // E) atraso sem resposta: pergunta à Gleide "veio ou libera?" (quem libera é ela, pela assistente)
       rpc('Atrasos para confirmar', [440, -760], 'n8n_atrasos_para_confirmar', `{ p_empresa_id: ${EMPRESA} }`),
@@ -225,6 +253,10 @@ module.exports = ({ env, node, main }) => {
       'A cada 5 min': main('Horário do salão?'),
       'Horário do salão?': { main: [INICIOS] },
       'Disparar agora (teste)': { main: [INICIOS] },
+      'Lembretes para mandar': main('Mensagem do lembrete'),
+      'Mensagem do lembrete': main('Lembrar a cliente'),
+      'Lembrar a cliente': main('Lembrou?'),
+      'Lembrou?': main('Registrar lembrete'),
       'Atrasos para chamar': main('Mensagem do atraso'),
       'Mensagem do atraso': main('Chamar a atrasada'),
       'Chamar a atrasada': main('Chamou?'),

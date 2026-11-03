@@ -134,6 +134,14 @@ else if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o h
   (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : 'hoje') +
   ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +
   (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));
+// lembrete: a IA lembrou do horário na véspera ou no dia (ver supabase/027)
+// (só enquanto aquele horário ainda vale: remarcou, cancelou ou já passou, o lembrete não conta mais)
+else if (alo.mensagem && alo.tipo === 'lembrete') {
+  if (alo.agendamentos?.status === 'agendado' && alo.agendamentos?.inicio && alo.horario_original &&
+      +dia(alo.agendamentos.inicio) === +dia(alo.horario_original) && dia(alo.horario_original) > DateTime.now()) linhas.push('ALÔ DE LEMBRETE: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+  ' você lembrou do horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : '?') +
+  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.');
+}
 // vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)
 else if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") : 'agora') +
@@ -160,7 +168,7 @@ return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status)' +
+    'contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status,inicio)' +
     '&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
@@ -206,6 +214,9 @@ Use a ficha como quem já conhece a cliente:
 - Se a ficha tiver "ALÔ DE ATRASO", passou do horário dela e você perguntou se está a caminho. Chegando ou já
   no salão: responda curto, sem cobrar. Não vem hoje: acolha, consulte horários do mesmo serviço e, com o "sim",
   use remarcar_agendamento com o data_hora_inicio da ficha (se a ficha disser que já ficou como falta, criar_agendamento).
+- Se a ficha tiver "ALÔ DE LEMBRETE", você lembrou do horário dela. Confirmou ("sim", "confirmo", "ok", "estarei aí"):
+  responda curto e carinhoso, sem repetir o lembrete. Não vai poder: acolha, consulte horários do mesmo serviço e, com o
+  "sim", use remarcar_agendamento com o data_hora_inicio da ficha. Quer desmarcar: confirme e use cancelar_agendamento.
 - Se a ficha tiver "AVISO DO SALÃO", a Gleide mandou um aviso sobre o horário dela (ex.: horário mudou porque a agenda
   atrasou). Se ela confirmar ("ok", "tudo bem"), responda curto e carinhoso. Se o novo horário não der, peça desculpas pelo
   transtorno, use ver_agendamentos e consultar_horarios_livres do mesmo serviço e, com o "sim", remarcar_agendamento.
