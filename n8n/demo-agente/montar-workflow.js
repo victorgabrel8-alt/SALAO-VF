@@ -787,7 +787,10 @@ if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
   lojas.dadosDoSalao(workflow);
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
-  lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
+  lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
+  // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
+  // (pausa, pergunta, assistente) e o alerta (número fixo). Workflow novo que manda mensagem entra numa das duas listas.
+  lojas.semTrava([workflow, audios.enviarWorkflow, catalogo.enviarWorkflow, pausaWorkflow, pedidos.perguntaWorkflow, assistente.assistenteWorkflow, alerta.alertaWorkflow]);
   const { erros, avisos } = lojas.conferirLoja(todos, LOJA, idsGleide);
   for (const a of avisos) console.log(`aviso: ${a}`);
   if (erros.length) {

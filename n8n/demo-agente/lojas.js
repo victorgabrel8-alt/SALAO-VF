@@ -152,6 +152,11 @@ function conferirLoja(workflows, loja, idsGleide) {
   for (const [de] of loja.trocas) if (!loja.trocasAchadas?.has(de)) erros.push(`troca sem efeito (o texto mudou no código?): "${de.slice(0, 70)}…"`);
   const travados = workflows.filter((wf) => TRAVADOS.has(wf));
   if (loja.permitidos.length) {
+    for (const wf of workflows) {
+      if (TRAVADOS.has(wf) || LIBERADOS.has(wf)) continue;
+      const envio = wf.nodes.find((nd) => /\/message\/send/.test(nd.parameters?.url || ''));
+      if (envio) erros.push(`${wf.name}: "${envio.name}" manda mensagem e o workflow não está em travarEnvios nem em semTrava`);
+    }
     for (const wf of travados) {
       for (const nd of wf.nodes) {
         if (!/\/message\/send/.test(nd.parameters?.url || '') || /number:\s*'\d+'/.test(nd.parameters.jsonBody || '')) continue;
@@ -187,6 +192,11 @@ O que não está aqui (sinal, atraso, cancelamento, estacionamento, levar acompa
 
 // workflows que passaram por travarEnvios (conferirLoja confere que todo envio deles passa pela trava)
 const TRAVADOS = new WeakSet();
+// workflows que mandam mensagem sem trava própria, de propósito (ver a lista em montar-workflow.js)
+const LIBERADOS = new WeakSet();
+function semTrava(workflows) {
+  for (const wf of workflows) LIBERADOS.add(wf);
+}
 
 // Trava de teste nas rotinas: antes de cada envio para cliente (sendText/sendMedia/áudio com número vindo dos
 // dados, não fixo no código) entra um "Trava de teste": só passa número de loja.permitidos ou da dona.
@@ -237,4 +247,4 @@ function mapaIds(dir, loja) {
   }).filter(([g]) => g);
 }
 
-module.exports = { carregarLoja, paraLoja, conferirLoja, idsDaGleide, mapaIds, dadosDoSalao, travarEnvios };
+module.exports = { carregarLoja, paraLoja, conferirLoja, idsDaGleide, mapaIds, dadosDoSalao, travarEnvios, semTrava };

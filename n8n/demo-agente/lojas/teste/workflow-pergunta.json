@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000244",
+      "id": "00000000-0000-4000-8000-000000000261",
       "name": "Recebe pergunta da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -49,7 +49,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000245",
+      "id": "00000000-0000-4000-8000-000000000262",
       "name": "Supabase: número de alerta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -79,7 +79,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000246",
+      "id": "00000000-0000-4000-8000-000000000263",
       "name": "Enviar pergunta à Ana",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -111,7 +111,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000247",
+      "id": "00000000-0000-4000-8000-000000000264",
       "name": "Guardar pedido",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -135,7 +135,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000248",
+      "id": "00000000-0000-4000-8000-000000000265",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

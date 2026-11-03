@@ -12,7 +12,7 @@
       ],
       "parameters": {
         "content": "## Anotações do agente (CRM)\nChamado pelo agente nos marcos da conversa: grava o interesse, a objeção ou o agendamento como pré-avaliação da cliente.",
-        "width": 1200,
+        "width": 1400,
         "height": 146,
         "color": 7
       }
@@ -40,6 +40,12 @@
             },
             {
               "name": "resumo"
+            },
+            {
+              "name": "data_retorno"
+            },
+            {
+              "name": "assunto_retorno"
             }
           ]
         }
@@ -73,7 +79,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        900,
+        1200,
         0
       ],
       "parameters": {
@@ -82,7 +88,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "ANOTADO na ficha da cliente. Continue a conversa normalmente (não comente isso com ela).",
+              "value": "={{ (() => {\n  const r = $('Supabase: retorno combinado').first().json;\n  const base = 'ANOTADO na ficha da cliente. Continue a conversa normalmente (não comente isso com ela).';\n  if (r.ok && r.vai_chamar) return base + ' RETORNO COMBINADO para ' + r.data.split('-').reverse().join('/') + ': o salão manda um alô para ela nesse dia. Pode dizer, com naturalidade e uma vez só, que chama ela nesse dia.';\n  if (r.ok) return base + ' Data de retorno guardada, mas o alô automático não está ligado para ela: não prometa chamar; diga que fica no aguardo do contato dela.';\n  if (r.motivo && r.motivo !== 'sem data') return base + ' A data de retorno NÃO foi guardada (' + r.motivo + '): não prometa chamar.';\n  return base;\n})() }}",
               "type": "string"
             }
           ]
@@ -128,6 +134,45 @@
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000096",
+      "name": "Supabase: retorno combinado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_combinar_retorno",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_telefone: (() => { const d = String($('Recebe pedido do agente').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(),\n       p_data: /^\\d{4}-\\d{2}-\\d{2}$/.test(String($('Recebe pedido do agente').first().json.data_retorno || '').trim()) ? String($('Recebe pedido do agente').first().json.data_retorno).trim() : null,\n       p_assunto: ($('Recebe pedido do agente').first().json.assunto_retorno || '').trim() }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -154,6 +199,17 @@
       ]
     },
     "Supabase: pré-avaliação": {
+      "main": [
+        [
+          {
+            "node": "Supabase: retorno combinado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: retorno combinado": {
       "main": [
         [
           {
