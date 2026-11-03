@@ -521,7 +521,7 @@ const nodes = [
   }),
 
   toolAgenda('consultar_horarios_livres', [2880, 200],
-    'Consulta a agenda do salão e devolve o QUADRO DO DIA: manhã, almoço e tarde, o que está livre e o que já tem cliente marcada, e os inícios que cabem o serviço. ' +
+    'Consulta a agenda do salão e devolve 2 horários para oferecer (um de manhã e um de tarde, quando há) e o QUADRO DO DIA (manhã, almoço e tarde), que só vai para a cliente se ela pedir outros horários. ' +
     'Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.',
     { acao: 'consultar' },
     [

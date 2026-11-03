@@ -191,8 +191,14 @@ if (p.acao === 'consultar') {
     }
     return out.map(([a, b]) => (+a === +b ? hm(a) : hm(a) + ' às ' + hm(b))).join('; ');
   };
-  // Pedido do Victor (26/10): em vez de 3 opções soltas, o dia inteiro por período (manhã, almoço, tarde),
-  // dizendo o que está livre e o que já tem cliente marcada. Sem nome de cliente: só o horário reservado.
+  // Pedido do Victor (03/11): para a cliente vão só 2 horários (um de manhã e um de tarde, quando há); o quadro
+  // do dia por período fica para a IA, que só passa o dia inteiro se a cliente pedir outros horários.
+  // Sem nome de cliente: só o horário reservado.
+  const sugestao = (v) => {
+    const m = v.find((t) => t.hour < 12), t = v.find((x) => x.hour >= 12);
+    const dois = m && t ? [m, t] : [v[0], v.find((x) => x.diff(v[0], 'minutes').minutes >= 120) || v[v.length - 1]];
+    return dois.filter((x, i) => x && (i === 0 || +x !== +dois[0])).map((x) => hm(x) + ' (data_hora_inicio: ' + iso(x) + ')').join(' ou ');
+  };
   const quadro = (dia, v) => {
     const ints = intervalos(dia).filter(([a, b]) =>
       !(p.periodo.startsWith('manh') && a.hour >= 12) && !(p.periodo.startsWith('tard') && b.hour <= 12));
@@ -221,9 +227,10 @@ if (p.acao === 'consultar') {
       if (todos[k + 1] && nome === 'Manhã' && ints.length > 1) linhas.push('Almoço: ' + hm(b) + ' às ' + hm(todos[k + 1][0]) + ' (fechado).');
     });
     return 'QUADRO DO DIA — ' + dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + '), serviço de ' + p.dur + ' min:\\n' +
+      'OFEREÇA À CLIENTE SÓ ESTES 2 HORÁRIOS: ' + sugestao(v) + '. Não mande o quadro abaixo de cara.\\n' +
+      'Quadro do dia (para você; passe à cliente por período, livre de tal a tal hora e almoço, SÓ se ela perguntar se tem outros horários):\\n' +
       linhas.join('\\n') + '\\nInícios que cabem o serviço (de 30 em 30 min): ' + faixas(v) +
-      '. Passe à cliente o dia por período, como está acima (livre de tal a tal hora, almoço, e o que já tem cliente marcada). ' +
-      'Não escolha só 3 horários. Qualquer início dessas faixas pode ser marcado; fora delas, não.';
+      '. Se ela disser outro horário, confira esse horário exato com consultar_horarios_livres antes de marcar; se estiver livre e ela já escolheu, pode marcar.';
   };
   const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');
   // dia bloqueado no app (folga, viagem) também é "fechado": senão a IA dizia "não temos mais vaga"
@@ -247,7 +254,7 @@ if (p.acao === 'consultar') {
     if (!motivo) return [{ json: { acao: 'consultar', ok: true, resposta: 'LIVRE: ' + fmt(t) + ' está disponível para ' + p.dur + ' min (data_hora_inicio: ' + iso(t) + '). Pode oferecer à cliente.' } }];
     const alt = vagasDoDia(pedido);
     return [{ json: { acao: 'consultar', ok: true, resposta: 'INDISPONÍVEL: ' + fmt(t) + ' ' + motivo + '.' +
-      (alt.length ? ' Quadro completo do dia: ' + quadro(pedido, alt) + ' Ofereça os horários livres mais próximos do que ela pediu.' : ' Não há outro horário livre nesse dia; consulte outro dia.') } }];
+      (alt.length ? ' Quadro completo do dia: ' + quadro(pedido, alt) + ' Ofereça no máximo 2 horários livres, os mais próximos do que ela pediu.' : ' Não há outro horário livre nesse dia; consulte outro dia.') } }];
   }
   let opcoes = vagasDoDia(pedido);
   let diaAlternativo = null;
