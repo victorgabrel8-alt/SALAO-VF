@@ -659,6 +659,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "none",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "fsDy9N8aKuW6XAHY"
   }
 }
