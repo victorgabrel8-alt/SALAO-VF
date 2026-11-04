@@ -3,6 +3,7 @@
 // mandar: cada cliente recebe no máximo 2 mensagens de atraso, 1 de falta e 1 oferta por vaga.
 //   G) lembrete (supabase/027): 1 por horário, na véspera (18h) ou de 4 h a 45 min antes; a resposta cai no
 //      agente com o "ALÔ DE LEMBRETE" na ficha. Ligar: empresas.config.lembretes = {"ligado": true, "so_para": [...]}
+//   H) a IA remarcou ou cancelou (supabase/031) -> avisa a Gleide, fora o que já tem aviso próprio em B
 //   D) atraso (supabase/011): +5 min "está a caminho?", +25 min "conseguiu vir?"
 //   E) sem resposta 10 min depois: pergunta à Gleide "veio ou libera?". Silêncio não libera nada; o "libera"
 //      dela (ferramenta liberar_horario da assistente) marca falta e abre a vaga (C, só no mesmo dia)
@@ -107,6 +108,24 @@ return $input.all().map((i) => i.json).filter((v) => v.vaga_id && !vistas.has(v.
 });
 `;
 
+// a IA remarcou ou cancelou (supabase/031)
+const MENSAGEM_MUDANCA = String.raw`
+const ms = $input.all().map((i) => i.json).filter((m) => m.mudanca_id);
+if (!ms.length) return [];
+const linha = (m) => {
+  const n = '*' + (m.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';
+  const serv = m.servico ? ' (' + m.servico.toLowerCase().replace(/\s*[–-]\s*mão de obra$/, '') + ')' : '';
+  return m.tipo === 'cancelou'
+    ? '❌ ' + n + ' cancelou o horário de ' + m.de_texto + serv + '.'
+    : '📅 ' + n + ' mudou o horário de ' + m.de_texto + ' para *' + m.para_texto + '*' + serv + '.';
+};
+const texto = ms.map(linha).join('\n');
+const ids = ms.map((m) => m.mudanca_id);
+const numeros = ${NUMEROS};
+return numeros.map((tel) => ({ json: { tel, texto, ids,
+  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));
+`;
+
 const MENSAGEM_AVISO = QUANDO + String.raw`
 const as = $input.all().map((i) => i.json).filter((a) => a.contato_id);
 if (!as.length) return [];
@@ -148,7 +167,7 @@ module.exports = ({ env, node, main }) => {
     sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify(${body}) }}`, options: {},
   }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, ...extra });
   const cond = (id, left) => ({ id, leftValue: left, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } });
-  const INICIOS = ['Lembretes para mandar', 'Atrasos para chamar', 'Atrasos para confirmar', 'Conflitos de atraso','Faltas para chamar', 'Vagas para oferecer', 'Avisos para a Gleide']
+  const INICIOS = ['Mudanças da IA', 'Lembretes para mandar', 'Atrasos para chamar', 'Atrasos para confirmar', 'Conflitos de atraso','Faltas para chamar', 'Vagas para oferecer', 'Avisos para a Gleide']
     .map((n) => ({ node: n, type: 'main', index: 0 }));
 
   const faltasWorkflow = {
@@ -238,6 +257,22 @@ module.exports = ({ env, node, main }) => {
       rpc('Registrar oferta', [1320, -320], 'n8n_registrar_oferta_vaga',
         `{ p_empresa_id: ${EMPRESA}, p_vaga_id: $('Mensagem da vaga').item.json.vaga_id, p_agendamento_id: $('Mensagem da vaga').item.json.agendamento_id, p_mensagem: $('Mensagem da vaga').item.json.texto, p_wa_message_id: $json.key.id }`),
 
+      // H) a IA remarcou ou cancelou: avisa a Gleide. Só marca como avisado se o WhatsApp aceitou
+      rpc('Mudanças da IA', [440, 340], 'n8n_mudancas_para_avisar', `{ p_empresa_id: ${EMPRESA} }`),
+      node('Mensagem da mudança', 'n8n-nodes-base.code', 2, [660, 340], { jsCode: MENSAGEM_MUDANCA }),
+      evoPost('Avisar a mudança', [880, 340], '{ number: $json.tel, text: $json.texto }', { onError: 'continueRegularOutput' }),
+      node('Avisou a mudança?', 'n8n-nodes-base.if', 2.2, [1100, 340], {
+        conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+          conditions: [cond('m1', '={{ !!$json.key?.id }}')], combinator: 'and' },
+        options: {},
+      }),
+      node('Guardar a mudança na memória', 'n8n-nodes-base.redis', 1, [1320, 340], {
+        operation: 'push', list: "=assistente:{{ $('Mensagem da mudança').item.json.tel }}",
+        messageData: "={{ $('Mensagem da mudança').item.json.memoria }}", tail: false,
+      }, { credentials: REDIS, onError: 'continueRegularOutput' }),
+      rpc('Marcar mudança avisada', [1540, 340], 'n8n_marcar_mudancas_avisadas',
+        `{ p_empresa_id: ${EMPRESA}, p_ids: $('Mensagem da mudança').item.json.ids }`, { executeOnce: true }),
+
       // B) avisar a Gleide
       rpc('Avisos para a Gleide', [440, 120], 'n8n_avisos_para_gleide', `{ p_empresa_id: ${EMPRESA} }`),
       node('Mensagem do aviso', 'n8n-nodes-base.code', 2, [660, 120], { jsCode: MENSAGEM_AVISO }),
@@ -277,6 +312,11 @@ module.exports = ({ env, node, main }) => {
       'Mensagem da vaga': main('Oferecer para a cliente'),
       'Oferecer para a cliente': main('Ofereceu?'),
       'Ofereceu?': main('Registrar oferta'),
+      'Mudanças da IA': main('Mensagem da mudança'),
+      'Mensagem da mudança': main('Avisar a mudança'),
+      'Avisar a mudança': main('Avisou a mudança?'),
+      'Avisou a mudança?': main('Guardar a mudança na memória'),
+      'Guardar a mudança na memória': main('Marcar mudança avisada'),
       'Avisos para a Gleide': main('Mensagem do aviso'),
       'Mensagem do aviso': main('Mandar para a Gleide'),
       'Mandar para a Gleide': main('Guardar na memória da assistente'),
