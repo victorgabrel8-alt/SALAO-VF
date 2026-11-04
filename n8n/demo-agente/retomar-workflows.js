@@ -49,6 +49,7 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
       : c.tentativa === 1
       ? '- fale do assunto DELA, com o detalhe que ela trouxe (a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...), e pergunte de um jeito simples se ficou alguma dúvida sobre isso ou o que ela achou. O objetivo é só saber se ficou dúvida: não convide para agendar nem para a avaliação (a não ser que ela mesma já tenha falado em marcar) e não faça de novo a sua última pergunta com outras palavras; varie o começo (nem sempre "Oi, nome!": pode ir direto ao assunto);'
       : '- você JÁ mandou um alô antes (é a sua última mensagem na conversa). NÃO repita nem reformule esse alô, não pergunte de novo se ficou dúvida e não cumprimente de novo. Escreva só uma frase curta e diferente da anterior, ligada ao assunto dela, deixando a porta aberta sem cobrar resposta (a ideia é "quando quiser ver isso, é só me chamar"; não copie essas palavras);',
+    '- faça UMA coisa só nesta mensagem: uma pergunta simples ou um pedido, nunca os dois; não peça foto e pergunte sobre dúvida juntos;',
     '- NÃO repita nem reformule a pergunta que ficou sem resposta, e não explique de novo o que já foi explicado;',
     '- nada de frase pronta de robô: "Se precisar de ajuda, estou por aqui", "Fico à disposição", "Qualquer dúvida estou à disposição", "Só passando pra lembrar", "Espero que esteja bem", "é só me chamar", "é só me dar um alô";',
     // regras do prompt da Gleide que valem também para o alô (conversa da Grazi, 30–31/10)
