@@ -119,6 +119,15 @@ for (const a of doCrm.filter(a => a.inicio && a.status !== 'faltou')) {
   const ini = DateTime.fromISO(a.inicio).setZone(TZ);
   ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);
 }
+// Horas sem atender num dia (supabase/030): config.bloqueios_horario = [{ dia, inicio, fim, motivo }]
+const blocosHora = [];
+try {
+  const blocos = $('Supabase: config do salão').first().json.config.bloqueios_horario;
+  for (const b of Array.isArray(blocos) ? blocos : []) {
+    const ini = DateTime.fromISO(b.dia + 'T' + b.inicio, { zone: TZ }), fim = DateTime.fromISO(b.dia + 'T' + b.fim, { zone: TZ });
+    if (ini.isValid && fim.isValid) { ocupados.push([ini, fim]); blocosHora.push([ini, fim]); }
+  }
+} catch (e) {}
 const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
@@ -156,6 +165,8 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
     if (a < alvo.ini) semEle.push([a, alvo.ini]);
     if (b > alvo.fim) semEle.push([alvo.fim, b]);
   }
+  // o horário atual dela libera o que era dela, nunca um período que a Gleide bloqueou
+  semEle.push(...blocosHora);
   if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
