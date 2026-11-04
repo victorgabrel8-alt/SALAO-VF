@@ -427,11 +427,18 @@ return [{ json: { pular: false, corpo: {
     supa('Supabase: cancelar agendamento', 'PATCH', `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&${ALVO}`, "{ status: 'cancelado' }"),
     supa('Supabase: remarcar agendamento', 'PATCH', `agendamentos?empresa_id=eq.{{ ${EMPRESA} }}&${ALVO}`,
       `{ inicio: ${C}.patch.start.dateTime, fim: ${C}.patch.end.dateTime, ...(${C}.observacoes ? { observacoes: ${C}.observacoes } : {}) }`),
+    // anota para avisar a Gleide (supabase/031). Só com o id que a gravação devolveu; se falhar, a resposta à cliente não muda
+    supa('Anotar cancelamento da IA', 'POST', 'rpc/n8n_registrar_mudanca_ia',
+      `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Supabase: cancelar agendamento').item.json.id, p_tipo: 'cancelou', p_de: ${C}.de }`),
+    supa('Anotar remarcação da IA', 'POST', 'rpc/n8n_registrar_mudanca_ia',
+      `{ p_empresa_id: ${EMPRESA}, p_agendamento_id: $('Supabase: remarcar agendamento').item.json.id, p_tipo: 'remarcou', p_de: ${C}.de, p_para: ${C}.quando }`),
   );
   se(agendaWorkflow, 'Cancelar evento?', 0, 'Supabase: cancelar agendamento');
-  agendaWorkflow.connections['Supabase: cancelar agendamento'] = main('Resposta (cancelado)');
+  agendaWorkflow.connections['Supabase: cancelar agendamento'] = main('Anotar cancelamento da IA');
+  agendaWorkflow.connections['Anotar cancelamento da IA'] = main('Resposta (cancelado)');
   se(agendaWorkflow, 'Remarcar evento?', 0, 'Supabase: remarcar agendamento');
-  agendaWorkflow.connections['Supabase: remarcar agendamento'] = main('Resposta (remarcado)');
+  agendaWorkflow.connections['Supabase: remarcar agendamento'] = main('Anotar remarcação da IA');
+  agendaWorkflow.connections['Anotar remarcação da IA'] = main('Resposta (remarcado)');
   resposta('Resposta (cancelado)', 'Supabase: cancelar agendamento',
     `'CANCELADO com sucesso: o agendamento de ' + ${C}.de + ' foi removido da agenda. Confirme para a cliente.'`,
     "'NÃO CANCELADO: a agenda falhou. Peça desculpas e use transferir_para_humano.'");
