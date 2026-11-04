@@ -27,7 +27,7 @@ import {
 } from "@/lib/atendimentos";
 import { lerAlmoco, textoAlmoco } from "@/lib/almoco";
 import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
-import { bloqueioDoDia } from "@/lib/bloqueios";
+import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import {
   formatarData,
@@ -418,6 +418,13 @@ export default function AgendaPage() {
             <span aria-hidden className="text-lg">›</span>
           </Link>
         )}
+        {/* Horas sem atender, que a Gleide pede à assistente */}
+        {bloqueiosHorarioDoDia(empresa.config, dia).map((b) => (
+          <p key={`${b.inicio}-${b.fim}`} className="mb-3 rounded-[18px] bg-rose px-4 py-3 text-[15px] text-rose-texto">
+            <b>Sem atender das {b.inicio} às {b.fim}</b>
+            {b.motivo && ` · ${b.motivo}`}. A IA não marca ninguém nesse período.
+          </p>
+        ))}
         {!dados && <p className="text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 

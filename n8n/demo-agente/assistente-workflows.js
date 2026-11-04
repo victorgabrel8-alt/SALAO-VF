@@ -24,7 +24,9 @@ const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendament
   'tipo_cabelo', 'comprimento_cm', 'gramas', 'valor', 'motivo_nao_fechou', 'proximo_passo', 'data_proximo_passo',
   'observacoes', 'status', 'telefone', 'nome', 'servico', 'inicio', 'texto',
   // agenda pelo WhatsApp (supabase/013)
-  'extras', 'forcar', 'minutos', 'a_partir', 'ate', 'tipo', 'desfazer', 'aniversario'];
+  'extras', 'forcar', 'minutos', 'a_partir', 'ate', 'tipo', 'desfazer', 'aniversario',
+  // horas sem atender (supabase/030)
+  'hora_inicio', 'hora_fim'];
 
 // O que cada ferramenta chama no Supabase: uma função n8n_assistente_* (supabase/004, 006, 011 e 013), pela API
 // com a chave de serviço, como o agente de atendimento. Vazio vira null; o resto vem da IA (texto).
@@ -105,6 +107,15 @@ switch (v('acao')) {
   case 'desbloquear_dias':
     funcao = 'n8n_assistente_desbloquear_dias'; args = { ...base, p_dia: ou(v('data')) };
     break;
+  case 'bloquear_horario':
+    funcao = 'n8n_assistente_bloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')), p_fim: ou(v('hora_fim')), p_motivo: ou(v('texto')) };
+    break;
+  case 'desbloquear_horario':
+    funcao = 'n8n_assistente_desbloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')) };
+    break;
+  case 'ver_bloqueios_horario':
+    funcao = 'n8n_assistente_ver_bloqueios_horario'; args = { ...base, p_dia: ou(v('data')) };
+    break;
   case 'pausar_ia':
     funcao = 'n8n_assistente_pausar_ia'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_pausar: !sim('desfazer') };
     break;
@@ -140,7 +151,7 @@ O QUE VOCÊ FAZ
 - Agenda, igual ao app: ver o dia (agenda_do_dia), ver horários livres (horarios_livres), marcar (marcar_horario),
   reagendar (reagendar), empurrar a agenda quando ela atrasa (atrasar_agenda), cancelar (status_atendimento cancelado),
   apagar horário lançado por engano (excluir_horario), "chegou" (chegou), concluir com o que foi feito (concluir),
-  dias sem atender (bloquear_dias / desbloquear_dias).
+  dias sem atender (bloquear_dias / desbloquear_dias), horas sem atender num dia (bloquear_horario / desbloquear_horario / ver_bloqueios_horario).
 - Fala com a cliente pelo número do salão quando a Gleide pedir: aviso de horário mudado ou o pedido para remarcar
   num imprevisto dela (avisar_cliente).
 - Ficha da cliente: anotar, nome e aniversário (editar_cliente), pausar ou reativar a IA de atendimento para ela (pausar_ia).
@@ -161,7 +172,7 @@ AGENDA (siga sempre)
 - Atraso que pega mais de uma cliente ("atrasei 30 min", "empurra todo mundo"): pergunte se é só a próxima ou todas a partir
   de tal hora; mostre a lista (nome: de → para) e, com o sim, use atrasar_agenda (a_partir = a hora da 1ª que vai mudar).
   Depois pergunte "Aviso elas?".
-- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias): resumo de 1 linha + "Pode?".
+- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias ou horas): resumo de 1 linha + "Pode?".
   Grave só depois do sim.
 - Se a ferramenta responder NÃO MARQUEI / NÃO REAGENDEI com o motivo (encavala, almoço, fora do horário, dia sem atender,
   ela já tem horário), conte o motivo em 1 frase e ofereça as saídas: outro horário (use horarios_livres e sugira 2 ou 3),
@@ -174,6 +185,10 @@ AGENDA (siga sempre)
 - Concluir (o ✓ do app): concluir com servico só se ela fez OUTRO serviço no lugar do marcado e extras com os serviços
   que fez A MAIS ("fez selagem também" → extras = selagem). Valor só se ela disser.
 - "Chegou", "tá aqui" (antes de atender): chegou. Engano: chegou com desfazer = sim.
+- Bloquear horas ("hoje não atendo das 14 às 16", "sexta depois das 15h não posso"): bloquear_horario. O dia inteiro é bloquear_dias.
+  Sem hora final, pergunte (ou use o fechamento, se ela disse "depois das 15h"). Se a ferramenta devolver horários marcados nesse período,
+  conte quantos e quem, e pergunte se você pede para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).
+- Se ela perguntar o que bloqueou: ver_bloqueios_horario. Para tirar: desbloquear_horario (com hora_inicio, se o dia tiver mais de um bloqueio).
 - Bloquear dias: se a ferramenta devolver horários marcados nesses dias, conte quantos e quem, e pergunte se você pede
   para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).
 
@@ -453,6 +468,12 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['texto', 'Motivo (ex.: viagem)', 'string']]),
       tool('desbloquear_dias', [3240, 440], 'Tira o bloqueio que cobre um dia (o salão volta a atender). Só use DEPOIS do sim da Gleide.',
         'desbloquear_dias', [['data', 'Um dia do bloqueio, AAAA-MM-DD', 'string']]),
+      tool('bloquear_horario', [3400, 440], 'Marca um período sem atender num dia (ex.: das 14:00 às 16:00): o app e a IA de atendimento param de oferecer esse período. Devolve os horários já marcados nele. Só use DEPOIS do sim da Gleide.',
+        'bloquear_horario', [['data', 'Dia AAAA-MM-DD', 'string'], ['hora_inicio', 'Início HH:mm', 'string'], ['hora_fim', 'Fim HH:mm', 'string'], ['texto', 'Motivo (ex.: médico)', 'string']]),
+      tool('desbloquear_horario', [3560, 440], 'Tira os períodos sem atender de um dia; com hora_inicio, só o que cobre essa hora. Só use DEPOIS do sim da Gleide.',
+        'desbloquear_horario', [['data', 'Dia AAAA-MM-DD', 'string'], ['hora_inicio', 'Uma hora dentro do bloqueio, HH:mm (vazio = todos do dia)', 'string']]),
+      tool('ver_bloqueios_horario', [3720, 440], 'Lista os períodos sem atender de um dia ou, sem data, de hoje em diante.',
+        'ver_bloqueios_horario', [['data', 'Dia AAAA-MM-DD (vazio = de hoje em diante)', 'string']]),
       tool('pausar_ia', [3080, 220], 'Pausa por 12 h (ou reativa) a IA de atendimento para uma cliente, como no app.',
         'pausar_ia', [ID('cliente_id'), ['desfazer', '"sim" para reativar a IA; vazio para pausar', 'string']]),
       tool('editar_cliente', [3240, 220], 'Corrige o nome ou grava o aniversário da cliente. Só use DEPOIS do sim da Gleide.',
@@ -486,7 +507,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Memória (Redis)': { ai_memory: [[{ node: 'Agente assistente', type: 'ai_memory', index: 0 }]] },
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
         'horarios_livres', 'marcar_horario', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
-        'desbloquear_dias', 'pausar_ia', 'editar_cliente', 'avisar_cliente']
+        'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
     },
     settings,
