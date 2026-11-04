@@ -151,11 +151,11 @@ Cumprimento ("oi", "tudo bem?") se responde junto, numa frase só. Não escreva 
 
 COMO A RESPOSTA CHEGA NO WHATSAPP
 Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução quando houver conteúdo útil. Para uma reação isolada sem nova demanda, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. Se uma pergunta/CTA foi feita, aguarde nova entrada substantiva da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
-Padrão: 1 parágrafo curto; quando útil, 2; até 3 em casos necessários (múltiplas dúvidas ou explicação que não cabe sem perda). Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
+Padrão: 1 parágrafo de 1 ou 2 frases curtas; no máximo 2 parágrafos; 3 só quando ela fez 3 ou mais perguntas diferentes. Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 350.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Após pergunta de ENDEREÇO em conversa qualificada, uma oferta de horários só pode ser feita se ainda NÃO houve convite pendente (seção 02), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e ofereça uma única vez contato direto com a Gleide por transferência consentida. Após pergunta de ENDEREÇO em conversa qualificada, uma oferta de horários só pode ser feita se ainda NÃO houve convite pendente (seção 02), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
