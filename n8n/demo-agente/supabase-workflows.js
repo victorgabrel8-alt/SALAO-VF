@@ -291,7 +291,7 @@ Use a ficha como quem já conhece a cliente:
     sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
     sendBody: true, specifyBody: 'json',
     jsonBody: `={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + (${CLI}.nome || 'Cliente') + ' · ' + ${FONE} +
-      '\\n' + (${P}.o_que_precisa || ${P}.motivo || 'Quer falar com você') + (${P}.resumo ? '\\n' + ${P}.resumo : '') +
+      '\\n' + (${P}.o_que_precisa || ${P}.motivo || 'Quer falar com você') +
       '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + ${CLI}.id }) }}`,
     options: {},
   }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput', executeOnce: true }), 'Resposta');
