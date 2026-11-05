@@ -21,6 +21,17 @@ export function bloqueioDoDia(config: Record<string, unknown>, dia: string): Blo
   return lerBloqueios(config).find((b) => dia >= b.de && dia <= b.ate) ?? null;
 }
 
+// Horas sem atender num dia: empresas.config.bloqueios_horario = [{ "dia": "2026-11-10", "inicio": "14:00", "fim": "16:00", "motivo": "Médico" }].
+// A Gleide cria pela assistente; a IA e o app não oferecem esse período. Ver supabase/030_bloqueio_por_horario.sql.
+export type BloqueioHorario = { dia: string; inicio: string; fim: string; motivo: string | null };
+
+export function bloqueiosHorarioDoDia(config: Record<string, unknown>, dia: string): BloqueioHorario[] {
+  const lista = Array.isArray(config.bloqueios_horario) ? config.bloqueios_horario : [];
+  return lista
+    .filter((b): b is BloqueioHorario => b?.dia === dia && typeof b?.inicio === "string" && typeof b?.fim === "string")
+    .sort((a, b) => a.inicio.localeCompare(b.inicio));
+}
+
 // Só os que ainda não passaram (os antigos ficam no config, mas não aparecem)
 export function bloqueiosFuturos(config: Record<string, unknown>): Bloqueio[] {
   const hoje = hojeNoSalao();

@@ -19,12 +19,28 @@ const TEL = "($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.
 // número cadastrado que bate com o telefone t (no WhatsApp, celular antigo de MT pode chegar sem o 9: 5566999990000 → 556699990000)
 const NUMERO_DE = (t) => `(${NUMEROS}.find(n => n === ${t} || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === ${t}) || '')`;
 const A = "$('Extrair dados').first().json";
+// O que a Gleide mandou, em texto: localização, contato e foto também chegam à assistente (antes sumiam no filtro).
+const TEXTO_RECEBIDO = String.raw`={{ (() => {
+  const m = $json.body.data.message || {};
+  const t = m.conversation || m.extendedTextMessage?.text;
+  if (t) return t;
+  const contato = (c) => { const v = String(c?.vcard || ''); const w = v.match(/waid=(\d+)/); const n = v.match(/TEL[^:\n]*:([+\d\s()-]+)/); return (c?.displayName || 'sem nome') + ', telefone ' + (w ? w[1] : n ? n[1].trim() : 'não veio'); };
+  if (m.locationMessage) { const l = m.locationMessage; return '[localização] ' + [l.name, l.address].filter(Boolean).join(', ') + ' https://maps.google.com/?q=' + l.degreesLatitude + ',' + l.degreesLongitude; }
+  if (m.contactMessage) return '[contato] ' + contato(m.contactMessage);
+  if (m.contactsArrayMessage) return '[contatos] ' + (m.contactsArrayMessage.contacts || []).map(contato).join('; ');
+  if (m.imageMessage) return '[foto que não consigo ver] ' + (m.imageMessage.caption || '');
+  if (m.videoMessage) return '[vídeo que não consigo ver] ' + (m.videoMessage.caption || '');
+  if (m.documentMessage) return '[arquivo que não consigo abrir] ' + (m.documentMessage.fileName || '');
+  return '';
+})() }}`;
 
 const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendamento_id', 'resultado', 'tecnica_indicada',
   'tipo_cabelo', 'comprimento_cm', 'gramas', 'valor', 'motivo_nao_fechou', 'proximo_passo', 'data_proximo_passo',
   'observacoes', 'status', 'telefone', 'nome', 'servico', 'inicio', 'texto',
   // agenda pelo WhatsApp (supabase/013)
-  'extras', 'forcar', 'minutos', 'a_partir', 'ate', 'tipo', 'desfazer', 'aniversario'];
+  'extras', 'forcar', 'minutos', 'a_partir', 'ate', 'tipo', 'desfazer', 'aniversario',
+  // horas sem atender (supabase/030)
+  'hora_inicio', 'hora_fim'];
 
 // O que cada ferramenta chama no Supabase: uma função n8n_assistente_* (supabase/004, 006, 011 e 013), pela API
 // com a chave de serviço, como o agente de atendimento. Vazio vira null; o resto vem da IA (texto).
@@ -105,6 +121,15 @@ switch (v('acao')) {
   case 'desbloquear_dias':
     funcao = 'n8n_assistente_desbloquear_dias'; args = { ...base, p_dia: ou(v('data')) };
     break;
+  case 'bloquear_horario':
+    funcao = 'n8n_assistente_bloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')), p_fim: ou(v('hora_fim')), p_motivo: ou(v('texto')) };
+    break;
+  case 'desbloquear_horario':
+    funcao = 'n8n_assistente_desbloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')) };
+    break;
+  case 'ver_bloqueios_horario':
+    funcao = 'n8n_assistente_ver_bloqueios_horario'; args = { ...base, p_dia: ou(v('data')) };
+    break;
   case 'pausar_ia':
     funcao = 'n8n_assistente_pausar_ia'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_pausar: !sim('desfazer') };
     break;
@@ -115,6 +140,14 @@ switch (v('acao')) {
   case 'avisar_cliente':
     funcao = 'n8n_assistente_avisar_cliente'; enviar = true;
     args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_tipo: v('tipo') === 'remarcacao' ? 'remarcacao' : 'aviso', p_texto: ou(v('texto')) };
+    break;
+  case 'cadastrar_cliente':
+    funcao = 'n8n_assistente_cadastrar_cliente';
+    args = { ...base, p_telefone: v('telefone'), p_nome: ou(v('nome')), p_observacoes: ou(v('observacoes')) };
+    break;
+  case 'chamar_cliente':
+    funcao = 'n8n_assistente_chamar_cliente'; enviar = true;
+    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
     break;
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
@@ -127,8 +160,17 @@ Seu trabalho é fazer pelo WhatsApp tudo o que ela faria no app (agenda e fichas
 SEM ela precisar abrir o app nem digitar muito.
 Fale como uma secretária de confiança que já trabalha com ela há anos: curta, calorosa e natural, como num WhatsApp
 entre colegas. Ela é ocupada: no máximo 2 frases curtas por mensagem (o resumo de confirmação pode ter mais linhas),
-sem formalidade, no máximo 1 emoji. Pode usar *negrito* do WhatsApp.
+sem formalidade. Emoji só de vez em quando, nunca em toda mensagem. Pode usar *negrito* do WhatsApp.
 Varie as palavras: não comece toda mensagem do mesmo jeito nem repita a mesma frase de confirmação.
+Terminou o assunto? Pare. Não feche toda mensagem com uma pergunta ou oferta nova.
+Salão: Toda Bonita Mega Hair, Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT. Mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8. Nunca peça o endereço à Gleide.
+
+O QUE É VERDADE (acima de tudo)
+- Só diga que salvou, marcou, anotou ou mandou depois do OK da ferramenta nesta conversa. Sem ferramenta chamada, não aconteceu: diga o que falta. Se ela perguntar se você fez, confira antes de responder.
+- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho: remarcação e cancelamento feitos pela IA, falta, atraso e pedido de orçamento. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.
+- Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.
+- Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.
+- Nunca crie horário que a cliente não pediu. Só marque se a cliente pediu ou se a Gleide disser que combinou com ela.
 Reaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → "Aí sim! 🎉";
 não fechou → "Ah, que pena"). Chame pelo nome de vez em quando, não em toda mensagem.
 Data e hora atual: {{ $now.setZone('America/Cuiaba').toFormat("cccc, dd/MM/yyyy HH:mm", { locale: 'pt-BR' }) }} (America/Cuiaba).
@@ -140,7 +182,7 @@ O QUE VOCÊ FAZ
 - Agenda, igual ao app: ver o dia (agenda_do_dia), ver horários livres (horarios_livres), marcar (marcar_horario),
   reagendar (reagendar), empurrar a agenda quando ela atrasa (atrasar_agenda), cancelar (status_atendimento cancelado),
   apagar horário lançado por engano (excluir_horario), "chegou" (chegou), concluir com o que foi feito (concluir),
-  dias sem atender (bloquear_dias / desbloquear_dias).
+  dias sem atender (bloquear_dias / desbloquear_dias), horas sem atender num dia (bloquear_horario / desbloquear_horario / ver_bloqueios_horario).
 - Fala com a cliente pelo número do salão quando a Gleide pedir: aviso de horário mudado ou o pedido para remarcar
   num imprevisto dela (avisar_cliente).
 - Ficha da cliente: anotar, nome e aniversário (editar_cliente), pausar ou reativar a IA de atendimento para ela (pausar_ia).
@@ -148,6 +190,7 @@ O QUE VOCÊ FAZ
   (cliente que veio sem marcar, anotação sobre a cliente).
 - Responde dúvidas ("quem vem amanhã?", "tenho horário sexta à tarde pra selagem?", "quando a Maria veio?").
 - Só no app (diga isso se ela pedir): excluir cliente, trocar telefone, horário de funcionamento, almoço, mensagens prontas.
+- Pedido de orçamento ou pergunta de cliente: se ela te passar um valor ou resposta sem citar a mensagem do pedido, não diga que enviou. Peça: "Toca em Responder na mensagem do pedido e escreve lá, assim eu passo pra ela."
 
 AGENDA (siga sempre)
 - Ache o horário certo: agenda_do_dia (vazio = hoje) e escolha pela hora/nome, ou buscar_cliente (traz horarios_marcados
@@ -161,7 +204,7 @@ AGENDA (siga sempre)
 - Atraso que pega mais de uma cliente ("atrasei 30 min", "empurra todo mundo"): pergunte se é só a próxima ou todas a partir
   de tal hora; mostre a lista (nome: de → para) e, com o sim, use atrasar_agenda (a_partir = a hora da 1ª que vai mudar).
   Depois pergunte "Aviso elas?".
-- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias): resumo de 1 linha + "Pode?".
+- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias ou horas): resumo de 1 linha + "Pode?".
   Grave só depois do sim.
 - Se a ferramenta responder NÃO MARQUEI / NÃO REAGENDEI com o motivo (encavala, almoço, fora do horário, dia sem atender,
   ela já tem horário), conte o motivo em 1 frase e ofereça as saídas: outro horário (use horarios_livres e sugira 2 ou 3),
@@ -169,11 +212,15 @@ AGENDA (siga sempre)
   se ela disser que quer assim mesmo.
 - Marcar para cliente nova: precisa de nome e telefone com DDD. Se a cliente já tem horário marcado, a ferramenta avisa:
   pergunte se é para mudar aquele (reagendar) ou marcar outro (forcar = sim).
-- Cancelar: status_atendimento cancelado (fica no histórico; o horário pode ser oferecido para outra cliente adiantar).
+- Cancelar: status_atendimento cancelado (fica no histórico).
   excluir_horario só para horário lançado por engano.
 - Concluir (o ✓ do app): concluir com servico só se ela fez OUTRO serviço no lugar do marcado e extras com os serviços
   que fez A MAIS ("fez selagem também" → extras = selagem). Valor só se ela disser.
 - "Chegou", "tá aqui" (antes de atender): chegou. Engano: chegou com desfazer = sim.
+- Bloquear horas ("hoje não atendo das 14 às 16", "sexta depois das 15h não posso"): bloquear_horario. O dia inteiro é bloquear_dias.
+  Sem hora final, pergunte (ou use o fechamento, se ela disse "depois das 15h"). Se a ferramenta devolver horários marcados nesse período,
+  conte quantos e quem, e pergunte se você pede para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).
+- Se ela perguntar o que bloqueou: ver_bloqueios_horario. Para tirar: desbloquear_horario (com hora_inicio, se o dia tiver mais de um bloqueio).
 - Bloquear dias: se a ferramenta devolver horários marcados nesses dias, conte quantos e quem, e pergunte se você pede
   para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).
 
@@ -185,6 +232,17 @@ MENSAGEM PARA A CLIENTE (avisar_cliente)
 - Outro aviso (cancelamento, recado): tipo aviso com o texto que você escrever — curto, carinhoso, em nome do salão,
   sem inventar motivo — e mostre o texto para ela aprovar antes.
 - Se a ferramenta disser que enviou, responda "Avisei ✅". Se der erro no envio, diga que não foi.
+
+FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_cliente)
+- Ela passou um número ou um [contato]: use buscar_cliente. Se pedir só para salvar, cadastrar_cliente na hora, sem pedir confirmação.
+- Nome: só pergunte uma vez. Se ela não souber, cadastre sem nome e não invente apelido.
+- "Entra em contato", "chama ela", "manda o endereço": escreva o texto fazendo exatamente o que ela pediu. Se ela disse para perguntar, o texto pergunta; não afirme que algo foi marcado.
+- Para quem nunca falou com o salão, comece se apresentando: "Oi, Sandra! Aqui é do salão Toda Bonita, da Gleide." Curto, sem inventar motivo.
+- Mostre o texto e pergunte "Posso mandar?". Com o sim: cadastrar_cliente (se ainda não estiver na lista) e chamar_cliente com aquele texto, sem mudar nada.
+- Depois de enviar, diga "Mandei ✅" e que a IA de atendimento continua a conversa quando ela responder.
+- Endereço para a cliente: use o endereço e o mapa do salão. Se a cliente tem horário, chamar_cliente também serve para isso.
+- Mensagens que começam com [localização], [contato], [foto], [vídeo] ou [arquivo] são o que ela mandou. Foto, vídeo e arquivo você não consegue ver: diga isso em uma frase.
+- Na agenda, lembrete diz se o lembrete foi enviado e respondido, e resposta_ao_lembrete traz a resposta dela. "Respondeu" não quer dizer que confirmou: leia a resposta. Nunca diga que ela confirmou ou não confirmou sem olhar isso.
 
 COMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA
 1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.
@@ -223,8 +281,8 @@ REGRAS
   Se não ficou claro, pergunte só "Ela veio?". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.
 - Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra
   já tinha adiantado para aquele horário).
-- Fora o avisar_cliente (sempre ligado a um horário), você não fala com clientes. Se ela pedir "chama a Carla" para outra
-  coisa (retorno, oferta), diga que por enquanto isso você só anota, e grave como próximo passo.
+- Você só fala com clientes por avisar_cliente e chamar_cliente, sempre com o sim da Gleide. Não existe envio agendado: se ela pedir para
+  chamar a cliente num dia futuro, anote e diga que o envio automático ainda não existe.
 - Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
 
@@ -285,14 +343,24 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       evoPost('Mandar para a cliente', [880, -120], 'message/sendText',
         '{ number: JSON.parse($json.data).telefone, text: JSON.parse($json.data).mensagem }',
         { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
-      node('Resposta', 'n8n-nodes-base.set', 3.4, [1100, 0], {
+      // o que a assistente mandou aparece na conversa da cliente no app
+      ifNode('Enviou?', [1100, -120], [cond('e2', '={{ !!$json.key?.id }}')]),
+      rpc('Registrar na conversa', [1320, -200], 'n8n_registrar_saida',
+        `{ p_empresa_id: ${EMPRESA}, p_telefone: JSON.parse($('Executar no banco').first().json.data).telefone, p_conteudo: JSON.parse($('Executar no banco').first().json.data).mensagem, p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $json.key.id }`,
+        { onError: 'continueRegularOutput' }),
+      // WhatsApp não aceitou: o contato sai do banco, senão a IA acha que a cliente recebeu e a Gleide não consegue tentar de novo
+      node('Apagar contato não enviado', 'n8n-nodes-base.httpRequest', 4.2, [1320, -40], {
+        method: 'DELETE', url: "={{ $env.SUPABASE_URL }}/rest/v1/contatos?id=eq.{{ JSON.parse($('Executar no banco').first().json.data).contato_id }}",
+        sendHeaders: true, headerParameters: supaHeaders, options: {},
+      }, { onError: 'continueRegularOutput' }),
+      node('Resposta', 'n8n-nodes-base.set', 3.4, [1540, 0], {
         assignments: { assignments: [str('resposta', `={{ (() => {
   const m = $('Montar chamada').first().json, b = $('Executar no banco').first().json;
   if (m.erro) return 'ERRO: ' + m.erro;
   if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error));
   if (!m.enviar) return 'OK: ' + (b.data || 'feito');
   const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;
-  if (!r || r.error) return 'ERRO: gravei, mas o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + ')';
+  if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';
   return 'OK: mensagem enviada para a cliente: ' + JSON.parse(b.data).mensagem;
 })() }}`)] },
         options: {},
@@ -303,7 +371,10 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Montar chamada': main('Executar no banco'),
       'Executar no banco': main('Mandar para a cliente?'),
       'Mandar para a cliente?': { main: [[{ node: 'Mandar para a cliente', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
-      'Mandar para a cliente': main('Resposta'),
+      'Mandar para a cliente': main('Enviou?'),
+      'Enviou?': { main: [[{ node: 'Registrar na conversa', type: 'main', index: 0 }], [{ node: 'Apagar contato não enviado', type: 'main', index: 0 }]] },
+      'Registrar na conversa': main('Resposta'),
+      'Apagar contato não enviado': main('Resposta'),
     },
     settings: { ...settings, callerPolicy: 'workflowsFromSameOwner' },
   };
@@ -330,14 +401,14 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           { id: 'a-fromMe', name: 'fromMe', value: '={{ $json.body.data.key.fromMe }}', type: 'boolean' },
           str('msgId', '={{ $json.body.data.key.id }}'),
           str('tipo', '={{ $json.body.data.messageType }}'),
-          str('texto', "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || '' }}"),
+          str('texto', TEXTO_RECEBIDO),
         ] },
         options: {},
       }),
       ifNode('Filtro', [440, 0], [
         cond('f1', "={{ $json.evento === 'messages.upsert' && !$json.fromMe }}"),
         cond('f2', "={{ $json.numero !== '' }}"),
-        cond('f3', "={{ $json.tipo === 'audioMessage' || (['conversation', 'extendedTextMessage'].includes($json.tipo) && $json.texto.trim() !== '') }}"),
+        cond('f3', "={{ $json.tipo === 'audioMessage' || $json.texto.trim() !== '' }}"),
       ]),
       ifNode('É áudio?', [660, 0], [cond('au', "={{ $json.tipo === 'audioMessage' }}")]),
       evoPost('Baixar áudio (Evolution)', [880, -120], 'chat/getBase64FromMediaMessage',
@@ -421,7 +492,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         'horarios_livres', [['data', 'Dia AAAA-MM-DD (vazio = hoje)', 'string'],
           ['servico', 'Serviço como a Gleide falou (define a duração)', 'string'],
           ['agendamento_id', 'Se for para reagendar: o agendamento_id que vai mudar (o horário dele não conta como ocupado). Senão vazio', 'string']]),
-      tool('marcar_horario', [2120, 440], 'Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Só use DEPOIS do sim da Gleide.',
+      tool('marcar_horario', [2120, 440], 'Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Só use DEPOIS do sim da Gleide. Nunca use para conseguir falar com uma cliente: para isso existe chamar_cliente.',
         'marcar_horario', [
           ['cliente_id', 'cliente_id de buscar_cliente (vazio se for cliente nova)', 'string'],
           ['nome', 'Nome da cliente nova', 'string'],
@@ -453,11 +524,22 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['texto', 'Motivo (ex.: viagem)', 'string']]),
       tool('desbloquear_dias', [3240, 440], 'Tira o bloqueio que cobre um dia (o salão volta a atender). Só use DEPOIS do sim da Gleide.',
         'desbloquear_dias', [['data', 'Um dia do bloqueio, AAAA-MM-DD', 'string']]),
+      tool('bloquear_horario', [3400, 440], 'Marca um período sem atender num dia (ex.: das 14:00 às 16:00): o app e a IA de atendimento param de oferecer esse período. Devolve os horários já marcados nele. Só use DEPOIS do sim da Gleide.',
+        'bloquear_horario', [['data', 'Dia AAAA-MM-DD', 'string'], ['hora_inicio', 'Início HH:mm', 'string'], ['hora_fim', 'Fim HH:mm', 'string'], ['texto', 'Motivo (ex.: médico)', 'string']]),
+      tool('desbloquear_horario', [3560, 440], 'Tira os períodos sem atender de um dia; com hora_inicio, só o que cobre essa hora. Só use DEPOIS do sim da Gleide.',
+        'desbloquear_horario', [['data', 'Dia AAAA-MM-DD', 'string'], ['hora_inicio', 'Uma hora dentro do bloqueio, HH:mm (vazio = todos do dia)', 'string']]),
+      tool('ver_bloqueios_horario', [3720, 440], 'Lista os períodos sem atender de um dia ou, sem data, de hoje em diante.',
+        'ver_bloqueios_horario', [['data', 'Dia AAAA-MM-DD (vazio = de hoje em diante)', 'string']]),
       tool('pausar_ia', [3080, 220], 'Pausa por 12 h (ou reativa) a IA de atendimento para uma cliente, como no app.',
         'pausar_ia', [ID('cliente_id'), ['desfazer', '"sim" para reativar a IA; vazio para pausar', 'string']]),
       tool('editar_cliente', [3240, 220], 'Corrige o nome ou grava o aniversário da cliente. Só use DEPOIS do sim da Gleide.',
         'editar_cliente', [ID('cliente_id'), ['nome', 'Nome certo (vazio = não muda)', 'string'],
           ['aniversario', 'Aniversário AAAA-MM-DD (se não souber o ano, use 1900) (vazio = não muda)', 'string']]),
+      tool('cadastrar_cliente', [3560, 220], 'Salva uma cliente na lista, sem criar horário e sem mandar mensagem. Se o número já existir, usa a ficha que já existe. Devolve o cliente_id.',
+        'cadastrar_cliente', [['telefone', 'Telefone com DDD', 'string'], ['nome', 'Nome, só se a Gleide disse (vazio se não souber)', 'string'],
+          ['observacoes', 'O que a cliente quer, como a Gleide contou (ex.: quer cabelo vietnamita)', 'string']]),
+      tool('chamar_cliente', [3720, 220], 'Manda pelo número do salão o texto aprovado pela Gleide para uma cliente, sem precisar de horário. Só use DEPOIS do sim da Gleide ao texto exato.',
+        'chamar_cliente', [ID('cliente_id'), ['texto', 'O texto exato que a Gleide aprovou', 'string']]),
       tool('avisar_cliente', [3400, 220], 'Manda mensagem para a cliente pelo número do salão sobre um horário dela. Só use DEPOIS do sim da Gleide.',
         'avisar_cliente', [ID('agendamento_id'),
           ['tipo', '"aviso" (horário mudado, cancelamento, recado) ou "remarcacao" (imprevisto da Gleide: pede para a cliente remarcar)', 'string'],
@@ -486,7 +568,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Memória (Redis)': { ai_memory: [[{ node: 'Agente assistente', type: 'ai_memory', index: 0 }]] },
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
         'horarios_livres', 'marcar_horario', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
-        'desbloquear_dias', 'pausar_ia', 'editar_cliente', 'avisar_cliente']
+        'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente', 'cadastrar_cliente', 'chamar_cliente']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
     },
     settings,

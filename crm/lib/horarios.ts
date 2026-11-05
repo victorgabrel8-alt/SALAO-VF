@@ -1,5 +1,5 @@
 import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
-import { bloqueioDoDia } from "@/lib/bloqueios";
+import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { agoraNoSalao, dataNoSalao, formatarHora, inicioDoDia, somarDias } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 
@@ -88,6 +88,8 @@ export async function conferirHorario(
   }
   const almoco = lerAlmoco(config);
   if (almoco && conflitaComAlmoco(almoco, horaInicio.slice(0, 5), duracaoMin)) return avisoAlmoco(almoco);
+  const horas = bloqueiosHorarioDoDia(config, dia).find((b) => ini < emMinutos(b.fim) && fim > emMinutos(b.inicio));
+  if (horas) return `Esse horário está bloqueado (${horas.inicio} às ${horas.fim}${horas.motivo ? `, ${horas.motivo}` : ""}). Escolha outro horário.`;
   const ocupados = await ocupadosDoDia(empresaId, dia, ignorarId);
   if ("erro" in ocupados) return `Não foi possível conferir a agenda: ${ocupados.erro}`;
   const choque = ocupados.find((o) => ini < o.fim && fim > o.ini);
@@ -109,7 +111,10 @@ export async function horariosLivres(
   const faixa = expediente(config, dia);
   if (!faixa) return [];
   const resultado = await ocupadosDoDia(empresaId, dia, ignorarId);
-  const ocupados = "erro" in resultado ? [] : resultado.map((o) => [o.ini, o.fim] as const);
+  const ocupados = [
+    ...("erro" in resultado ? [] : resultado.map((o) => [o.ini, o.fim] as const)),
+    ...bloqueiosHorarioDoDia(config, dia).map((b) => [emMinutos(b.inicio), emMinutos(b.fim)] as const),
+  ];
   const almoco = lerAlmoco(config);
   const agora = agoraNoSalao();
   const livres: string[] = [];
