@@ -24,33 +24,40 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
   // ---------- Subworkflow da ferramenta ----------
   const P = "$('Recebe pergunta da IA').first().json";
   const FONE = `String(${TEL_BR(`${P}.telefone`)}).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3')`;
+  const ORCAMENTO = `${P}.tipo === 'orcamento_cabelo'`;
   const perguntaWorkflow = {
     name: 'Perguntar para a Gleide',
     nodes: [
       node('Recebe pergunta da IA', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
-        workflowInputs: { values: ['telefone', 'jid', 'nome', 'pergunta', 'contexto'].map((name) => ({ name })) },
+        workflowInputs: { values: ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'].map((name) => ({ name })) },
       }),
       node('Supabase: número de alerta', 'n8n-nodes-base.httpRequest', 4.2, [220, 0], {
         method: 'GET', url: '={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ $env.EMPRESA_ID }}',
         sendHeaders: true, headerParameters: supaHeaders, options: {},
       }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
       enviar('Enviar pergunta à Gleide', [440, 0], '$json.alerta',
-        `'❓ ' + (${P}.nome || 'Cliente') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
-        '\\n\\n↩️ Toque em Responder e escreva a resposta.'`),
+        `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ ') + (${P}.nome || 'Cliente') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
+        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder e escreva a resposta.')`),
       node('Guardar pedido', 'n8n-nodes-base.redis', 1, [660, 0], {
         operation: 'set', key: "=pedido:{{ $json.key?.id || 'falhou' }}", expire: true, ttl: 259200,
-        value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta }) }}`,
+        value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta' }) }}`,
       }, { credentials: REDIS, onError: 'continueRegularOutput' }),
-      node('Resposta', 'n8n-nodes-base.set', 3.4, [880, 0], {
-        assignments: { assignments: [str('resposta', "={{ $('Enviar pergunta à Gleide').first().json.key?.id ? " +
-          "'PERGUNTADO: a Gleide recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Gleide e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Gleide responder, a resposta chega à cliente automaticamente.' : " +
-          "'NÃO PERGUNTADO: não consegui mandar a pergunta agora. Diga com gentileza que não conseguiu confirmar isso agora e não invente a regra. Se a cliente precisar resolver já, use transferir_para_humano.' }}")] },
+      // a assistente precisa saber do pedido: se a Gleide escrever sem citar, ela pede para tocar em Responder
+      node('Memória da assistente', 'n8n-nodes-base.redis', 1, [880, 0], {
+        operation: 'push', list: "=assistente:{{ $('Supabase: número de alerta').first().json.alerta }}", tail: false,
+        messageData: `={{ JSON.stringify({ type: 'ai', data: { content: (${ORCAMENTO} ? 'Pedi à Gleide o orçamento de cabelo de ' : 'Perguntei à Gleide sobre ') + (${P}.nome || 'uma cliente') + ': ' + ${P}.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}`,
+      }, { credentials: REDIS, onError: 'continueRegularOutput' }),
+      node('Resposta', 'n8n-nodes-base.set', 3.4, [1100, 0], {
+        assignments: { assignments: [str('resposta', `={{ $('Enviar pergunta à Gleide').first().json.key?.id ? (${ORCAMENTO} ? ` +
+          "'ORÇAMENTO PEDIDO: a Gleide recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Gleide chega à cliente automaticamente.' : " +
+          "'PERGUNTADO: a Gleide recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Gleide e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Gleide responder, a resposta chega à cliente automaticamente.') : " +
+          "'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.' }}")] },
         options: {},
       }),
     ],
     connections: {
       'Recebe pergunta da IA': main('Supabase: número de alerta'), 'Supabase: número de alerta': main('Enviar pergunta à Gleide'),
-      'Enviar pergunta à Gleide': main('Guardar pedido'), 'Guardar pedido': main('Resposta'),
+      'Enviar pergunta à Gleide': main('Guardar pedido'), 'Guardar pedido': main('Memória da assistente'), 'Memória da assistente': main('Resposta'),
     },
     settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', callerPolicy: 'workflowsFromSameOwner' },
   };
@@ -62,13 +69,22 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
     'filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à ' +
     'cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para reclamação, dor ou pedido de falar com ela, ' +
     'use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou ' +
-    'estimativa: a IA não pergunta valores à Gleide (seção 07).',
-    lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto'],
+    'estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.',
+    lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
-      nome: "={{ $('Montar entrada').first().json.nome }}" },
+      nome: "={{ $('Montar entrada').first().json.nome }}", tipo: 'pergunta' },
     [['pergunta', 'A pergunta direta para a Gleide, até 15 palavras, sem "a cliente quer saber" nem o nome dela (ex.: Pode trazer cachorro de porte grande na avaliação?)', 'string'],
       ['contexto', 'Só o que a Gleide precisa e não está na pergunta, até 8 palavras (ex.: avaliação qui 29/10 9h). Não repita a pergunta. Pode ficar vazio.', 'string']]));
   workflow.connections.perguntar_para_gleide = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
+  workflow.nodes.push(toolSub('pedir_orcamento_cabelo', [3580, 200],
+    'Pede à Gleide o orçamento de uma compra avulsa de cabelo, SEM pausar o atendimento. Use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
+    'Nunca use para cliente que só está pesquisando, para aplicação ou para mão de obra. A Gleide responde pelo WhatsApp e o valor chega sozinho à cliente. Use uma vez por pedido.',
+    lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'],
+    { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
+      nome: "={{ $('Montar entrada').first().json.nome }}", tipo: 'orcamento_cabelo' },
+    [['pergunta', 'O pedido em poucas palavras, só com o que ela informou (ex.: 250 g, 70 cm, vietnamita, castanho escuro, liso). Sem nome e sem frase.', 'string'],
+      ['contexto', 'Só se ela disse: fora da cidade e onde mora (ex.: mora em Peixoto de Azevedo). Pode ficar vazio.', 'string']]));
+  workflow.connections.pedir_orcamento_cabelo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
   // ---------- Principal: resposta da Gleide (mensagem citando a pergunta) ----------
   const E = "$('Extrair dados').first().json";
@@ -88,7 +104,12 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
 const p = JSON.parse($('Pedido: procurar').first().json.pedido);
 const resposta = $('Extrair dados').first().json.texto.trim();
 const nome = String(p.nome || '').trim().split(/\s+/)[0] || '';
-const instrucao = 'Você é a assistente virtual da Gleide, do salão Toda Bonita Mega Hair, conversando pelo WhatsApp com a cliente ' +
+const instrucao = p.tipo === 'orcamento_cabelo' ? 'Você é a assistente virtual da Gleide, do salão Toda Bonita Mega Hair, conversando pelo WhatsApp com a cliente ' +
+  (nome || '') + '. A cliente pediu o orçamento deste cabelo: "' + p.pergunta + '". A Gleide respondeu: "' + resposta + '". ' +
+  'Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, curta (1 ou 2 frases), natural e gentil. ' +
+  'Copie exatamente todos os valores, quantidades e condições que a Gleide escreveu. Não calcule, não arredonde e não acrescente desconto, parcela, prazo, entrega ou estoque. ' +
+  'Não use negrito nem listas, no máximo um emoji. Se a resposta trouxer um valor, termine perguntando só "Quer fechar?". Responda só com a mensagem.' :
+  'Você é a assistente virtual da Gleide, do salão Toda Bonita Mega Hair, conversando pelo WhatsApp com a cliente ' +
   (nome || '') + '. Antes, a cliente perguntou algo que só a Gleide sabia: "' + p.pergunta + '". Você disse que ia confirmar com a Gleide. ' +
   'A Gleide respondeu: "' + resposta + '". Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, ' +
   'curta (1 ou 2 frases), natural e gentil, como uma atendente de verdade. Não invente nada além do que a Gleide disse, ' +
@@ -106,6 +127,12 @@ return [{ json: { ...p, nome, resposta, instrucao } }];
 const p = $('Pedido: preparar').first().json;
 let t = String($input.first().json.candidates?.[0]?.content?.parts?.map((x) => x.text || '').join('') || '').trim();
 t = t.replace(/\*\*(.+?)\*\*/g, '$1').replace(/^["“]|["”]$/g, '').trim();
+if (p.tipo === 'orcamento_cabelo') {
+  // valor é da Gleide: se o texto perdeu ou inventou algum número, manda as palavras dela
+  const numeros = (s) => String(s).match(/\d+(?:[.,]\d+)*/g) || [];
+  const dela = numeros(p.resposta), permitidos = dela.concat(numeros(p.pergunta));
+  if (!t || !dela.every((n) => numeros(t).includes(n)) || !numeros(t).every((n) => permitidos.includes(n))) t = 'A Gleide passou o orçamento: ' + p.resposta;
+}
 if (!t) t = 'Falei com a Gleide sobre isso: ' + p.resposta;
 return [{ json: { ...p, texto: t } }];
 ` }),
