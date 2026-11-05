@@ -3,7 +3,7 @@
   "nome": "Loja Teste",
   "nicho": "manicure",
   "empresa_id": "ff4b7937-1abb-4803-83c8-e0896d94fc9f",
-  "instancia": "loja-teste",
+  "instancia": "karol-manicure",
   "dona": "Ana",
   "cidade": "Sinop",
   "assistente_numeros": [
@@ -86,7 +86,7 @@
       "“O pé e mão fica a partir de R$ [valor da lista].”"
     ],
     [
-      "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: a IA não pergunta valores à Gleide (seção 07).",
+      "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.",
       "use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à Gleide, sem prometer valor."
     ],
     [
@@ -124,6 +124,22 @@
     [
       "não indique técnica, quantidade nem tipo de cabelo;",
       "não indique técnica, formato nem cor;"
+    ],
+    [
+      ", Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT. Mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8. Nunca peça o endereço à Gleide.",
+      ". Se perguntarem o endereço, ele está nos Dados do salão do app. Nunca peça o endereço à Gleide."
+    ],
+    [
+      "(ex.: quer cabelo vietnamita)",
+      "(ex.: quer alongamento em gel)"
+    ],
+    [
+      "como ficou o cabelo com a amiga",
+      "como ficou a cor da unha com a amiga"
+    ],
+    [
+      "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 01. ",
+      ""
     ]
   ]
 }

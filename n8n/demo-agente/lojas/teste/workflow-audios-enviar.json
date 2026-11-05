@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000108",
+      "id": "00000000-0000-4000-8000-000000000110",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -46,7 +46,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000109",
+      "id": "00000000-0000-4000-8000-000000000111",
       "name": "Catálogo de áudios",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -81,7 +81,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000110",
+      "id": "00000000-0000-4000-8000-000000000112",
       "name": "Já enviados a ela",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -116,7 +116,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000111",
+      "id": "00000000-0000-4000-8000-000000000113",
       "name": "Achar áudio",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -129,7 +129,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000112",
+      "id": "00000000-0000-4000-8000-000000000114",
       "name": "Tem áudio?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -163,7 +163,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000113",
+      "id": "00000000-0000-4000-8000-000000000115",
       "name": "Baixar do Storage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -198,7 +198,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000114",
+      "id": "00000000-0000-4000-8000-000000000116",
       "name": "Para base64",
       "type": "n8n-nodes-base.extractFromFile",
       "typeVersion": 1,
@@ -213,7 +213,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000115",
+      "id": "00000000-0000-4000-8000-000000000117",
       "name": "Gravando (blocos de 8s)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -226,7 +226,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000116",
+      "id": "00000000-0000-4000-8000-000000000118",
       "name": "Gravando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -236,7 +236,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -261,7 +261,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000117",
+      "id": "00000000-0000-4000-8000-000000000119",
       "name": "Enviar áudio",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -271,7 +271,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -293,7 +293,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000118",
+      "id": "00000000-0000-4000-8000-000000000120",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -327,7 +327,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000119",
+      "id": "00000000-0000-4000-8000-000000000121",
       "name": "Registrar no CRM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -362,7 +362,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000120",
+      "id": "00000000-0000-4000-8000-000000000122",
       "name": "Resposta (enviado)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -385,7 +385,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000121",
+      "id": "00000000-0000-4000-8000-000000000123",
       "name": "Resposta (sem áudio)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

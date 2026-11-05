@@ -137,6 +137,9 @@ function conferirLoja(workflows, loja, idsGleide) {
     tem('00000000-0000-0000-0000-000000000001', 'tem o id da empresa da Gleide');
     tem(GLEIDE_ASSISTENTE, 'tem o número da Gleide');
     tem('salao-demo', 'tem a instância da Gleide');
+    tem('Papoulas', 'tem o endereço da Gleide');
+    tem('TpCuMzh3PzwPJgQu8', 'tem o mapa da Gleide');
+    if (loja.nicho !== 'mega_hair') tem('pedir_orcamento_cabelo', 'tem a ferramenta de orçamento de cabelo');
     for (const id of idsGleide) tem(id, `aponta para o workflow da Gleide ${id}`);
     const semPrefixo = s.match(new RegExp(`(=|'|"keyPattern":")(${chaves}):(\\{\\{|'|\\*)`, 'g'));
     if (semPrefixo) erros.push(`${nome}: chave do Redis sem o prefixo da loja: ${[...new Set(semPrefixo)].join(' ')}`);
@@ -188,6 +191,13 @@ function dadosDoSalao(workflow) {
 DADOS DO SALÃO (preenchidos pela dona no app; valem mais que qualquer outro texto sobre endereço, horário, pagamento e regras)
 {{ (() => { const c = $('${nome}').first().json.config || {}; const l = c.loja || {}; const t = (v) => (typeof v === 'string' ? v.trim() : ''); const dias = { seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sab: 'sábado', dom: 'domingo' }; const h = c.horario_funcionamento; const hora = (x) => x.replace(/^0/, '').replace(':00', 'h').replace(':', 'h'); const a = c.almoco === null ? null : (c.almoco && c.almoco.inicio ? c.almoco : { inicio: '11:00', fim: '13:00' }); const linhas = []; linhas.push('- Endereço: ' + (t(c.endereco) ? t(c.endereco) + (t(l.referencia) ? ' (' + t(l.referencia) + ')' : '') : 'não cadastrado (não invente; se perguntarem, perguntar_para_gleide)')); if (t(l.instagram)) linhas.push('- Instagram: @' + t(l.instagram).replace(/^@+/, '')); linhas.push('- Funcionamento: ' + (!h ? 'não cadastrado (não diga dias nem horários; a agenda é que diz se tem vaga)' : Object.keys(dias).map((d) => dias[d] + ' ' + (h[d] ? h[d].split('-').map(hora).join(' às ') : 'fechado')).join('; ') + '.' + (a ? ' Almoço todo dia ' + hora(a.inicio) + ' às ' + hora(a.fim) + ', sem atendimento.' : '') + ' A agenda é que diz se tem vaga.')); if (Array.isArray(c.formas_pagamento) && c.formas_pagamento.length) linhas.push('- Pagamento: ' + c.formas_pagamento.join(', ') + (t(l.parcelamento) ? '; parcelamento: ' + t(l.parcelamento) : '; parcelamento: não cadastrado (não informe)')); else linhas.push('- Pagamento: não cadastrado (não informe forma de pagamento; se perguntarem, perguntar_para_gleide)'); if (l.tolerancia_atraso !== null && l.tolerancia_atraso !== undefined && String(l.tolerancia_atraso).trim() !== '' && Number.isFinite(Number(l.tolerancia_atraso))) linhas.push('- Tolerância de atraso: ' + Number(l.tolerancia_atraso) + ' minutos'); if (t(l.cancelamento)) linhas.push('- Cancelamento: ' + t(l.cancelamento)); if (t(l.sinal)) linhas.push('- Sinal: ' + t(l.sinal)); if (t(l.sobre)) linhas.push('- Recado da dona para você: ' + t(l.sobre)); return linhas.join('\\n'); })() }}
 O que não está aqui (sinal, atraso, cancelamento, estacionamento, levar acompanhante…) não está cadastrado: não invente, use perguntar_para_gleide.`;
+}
+
+// Venda avulsa de cabelo só existe em mega hair: as outras lojas ficam sem a ferramenta no agente.
+function tirarOrcamentoCabelo(workflow, loja) {
+  if (loja.nicho === 'mega_hair') return;
+  workflow.nodes = workflow.nodes.filter((nd) => nd.name !== 'pedir_orcamento_cabelo');
+  delete workflow.connections.pedir_orcamento_cabelo;
 }
 
 // workflows que passaram por travarEnvios (conferirLoja confere que todo envio deles passa pela trava)
@@ -247,4 +257,4 @@ function mapaIds(dir, loja) {
   }).filter(([g]) => g);
 }
 
-module.exports = { carregarLoja, paraLoja, conferirLoja, idsDaGleide, mapaIds, dadosDoSalao, travarEnvios, semTrava };
+module.exports = { carregarLoja, paraLoja, conferirLoja, idsDaGleide, mapaIds, dadosDoSalao, travarEnvios, semTrava, tirarOrcamentoCabelo };
