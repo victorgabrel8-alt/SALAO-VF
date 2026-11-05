@@ -86,6 +86,38 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
       ['contexto', 'Só se ela disse: fora da cidade e onde mora (ex.: mora em Peixoto de Azevedo). Pode ficar vazio.', 'string']]));
   workflow.connections.pedir_orcamento_cabelo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
+  // ---------- Avaliação presencial ↔ online: a IA troca sozinha e a Gleide só recebe o aviso (supabase/033) ----------
+  const modalidadeWorkflow = {
+    name: 'IA - Mudar modalidade',
+    nodes: [
+      node('Recebe pedido da IA', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
+        workflowInputs: { values: ['telefone', 'para', 'data_hora_inicio'].map((name) => ({ name })) },
+      }),
+      node('Mudar no banco', 'n8n-nodes-base.httpRequest', 4.2, [220, 0], {
+        method: 'POST', url: '={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_mudar_modalidade', sendHeaders: true, headerParameters: supaHeaders,
+        sendBody: true, specifyBody: 'json',
+        jsonBody: "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: $json.telefone, p_para: $json.para, p_inicio: $json.data_hora_inicio ? $json.data_hora_inicio + '-04:00' : null }) }}",
+        options: {},
+      }, { onError: 'continueRegularOutput' }),
+      node('Resposta', 'n8n-nodes-base.set', 3.4, [440, 0], {
+        assignments: { assignments: [str('resposta', "={{ $json.error ? 'NÃO MUDEI: ' + ($json.error.message || 'a agenda falhou') + '. Não diga que mudou. Se ela precisa disso, use transferir_para_humano.' : ($json.ja ? 'JÁ ESTÁ ' + $json.para + ': ' + $json.quando + '. Só confirme para a cliente.' : 'MUDADO com sucesso: a avaliação de ' + $json.quando + ' agora é ' + $json.para + ', no mesmo horário. A Gleide recebe o aviso sozinha. Confirme em uma frase para a cliente' + ($json.para === 'online' ? ' e lembre que é por ligação de voz no WhatsApp.' : ' e mande o endereço com o link do mapa.')) }}")] },
+        options: {},
+      }),
+    ],
+    connections: { 'Recebe pedido da IA': main('Mudar no banco'), 'Mudar no banco': main('Resposta') },
+    settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', callerPolicy: 'workflowsFromSameOwner' },
+  };
+  const modalidadeIdFile = require('path').join(__dirname, '.workflow-modalidade-id');
+  const lerModalidadeId = () => (require('fs').existsSync(modalidadeIdFile) ? require('fs').readFileSync(modalidadeIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_MODALIDADE');
+  workflow.nodes.push(toolSub('mudar_modalidade', [3800, 200],
+    'Troca a avaliação da cliente entre presencial e online, no mesmo dia e hora. Use quando ela pedir ou aceitar a troca, sem perguntar à Gleide e sem transferir. ' +
+    'Só diga que mudou se a resposta começar com MUDADO. Para mudar o dia ou a hora, use remarcar_agendamento.',
+    lerModalidadeId, ['telefone', 'para', 'data_hora_inicio'],
+    { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
+    [['para', 'online ou presencial', 'string'],
+      ['data_hora_inicio', 'Horário da avaliação, AAAA-MM-DDTHH:mm. Pode ficar vazio se ela só tem uma marcada.', 'string']]));
+  workflow.connections.mudar_modalidade = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
+
   // ---------- Principal: resposta da Gleide (mensagem citando a pergunta) ----------
   const E = "$('Extrair dados').first().json";
   const PD = "$('Pedido: preparar').first().json";
@@ -175,5 +207,5 @@ return [{ json: { ...p, texto: t } }];
   workflow.connections['Pedido: memória (mensagem enviada)'] = main('Pedido: apagar');
   workflow.connections['Pedido: apagar'] = main('Pedido: confirmar à Gleide');
 
-  return { perguntaWorkflow, idFile: require('path').join(__dirname, '.workflow-pergunta-id') };
+  return { perguntaWorkflow, idFile: require('path').join(__dirname, '.workflow-pergunta-id'), modalidadeWorkflow, modalidadeIdFile };
 };

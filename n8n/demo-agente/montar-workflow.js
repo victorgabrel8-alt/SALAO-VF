@@ -155,7 +155,7 @@ Padrão: 1 parágrafo de 1 ou 2 frases curtas; no máximo 2 parágrafos; 3 só q
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 350.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 01. Após pergunta de ENDEREÇO em conversa qualificada, uma oferta de horários só pode ser feita se ainda NÃO houve convite pendente (seção 02), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 01. Pergunta de ENDEREÇO segue LOCALIZAÇÃO COM LINK (seção 09), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
@@ -572,8 +572,8 @@ const nodes = [
     lerPausaId, ['telefone', 'motivo', 'resumo', 'o_que_precisa'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [['motivo', 'Motivo curto, até 12 palavras (ex.: quer avaliação à distância, mora longe)', 'string'],
-      ['resumo', 'Uma frase curta, até 20 palavras, só com o que a Gleide não sabe pelo pedido: nova ou já cliente, horário marcado, o que você já explicou ou enviou (áudio, preço, fotos). Não repita o pedido. Sem diagnóstico.', 'string'],
-      ['o_que_precisa', 'O que a Gleide precisa fazer, direto, até 15 palavras (ex.: Dizer se dá para orientar por foto)', 'string']]),
+      ['resumo', 'Uma frase curta para a ficha da cliente, até 20 palavras: nova ou já cliente, horário marcado, o que você já explicou. Não vai no aviso da Gleide.', 'string'],
+      ['o_que_precisa', 'É a única frase do aviso no WhatsApp da Gleide: o que ela precisa fazer e o motivo, até 10 palavras, sem nome da cliente (ex.: Ver reação no couro cabeludo depois da aplicação)', 'string']]),
 
   // Só áudio nesta resposta ([SEM TEXTO]): não manda balão, só libera a trava
   ifNode('Tem texto pra enviar?', [0, 0], [
@@ -773,13 +773,14 @@ organizar(retomar.retomarWorkflow, 'Retomar conversa', [
 ].join('\n'), 1);
 organizar(alerta.alertaWorkflow, 'Alerta de erro', 'Quando qualquer workflow dá erro, manda um aviso no WhatsApp do número de alerta (no máximo 1 a cada 10 min).', 3);
 organizar(pedidos.perguntaWorkflow, 'Perguntar para a Gleide', 'Chamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Gleide e guarda para repassar a resposta quando ela tocar em Responder.', 1);
+organizar(pedidos.modalidadeWorkflow, 'IA - Mudar modalidade', 'Chamado pelo agente (mudar_modalidade): troca a avaliação entre presencial e online no mesmo horário e deixa o aviso para a Gleide.', 1);
 organizar(retorno.retornoWorkflow, 'Retorno combinado', [
   'A cada 10 min: a cliente combinou de voltar a falar numa data (a IA anota pela anotar_no_crm)? Nessa data, com o salão aberto, o Gemini',
   'escreve um alô leve sobre o que ficou combinado, ou decide não mandar. Vai pelo número do salão, para o CRM (contato retorno) e para a memória da IA.',
 ].join('\n'), 1);
 
 const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow, assistente.pendenciasWorkflow,
-  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow,
+  audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, pedidos.modalidadeWorkflow,
   alerta.alertaWorkflow, workflow];
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
@@ -796,7 +797,7 @@ if (LOJA) {
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 const alertaIdFile = saida(alerta.idFile);
 if (fs.existsSync(alertaIdFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
+  assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, pedidos.modalidadeWorkflow, workflow], fs.readFileSync(alertaIdFile, 'utf8').trim());
 fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
 fs.writeFileSync(saida('workflow-agenda-salao.json'), JSON.stringify(agendaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pausa-salao.json'), JSON.stringify(pausaWorkflow, null, 2));
@@ -812,6 +813,7 @@ fs.writeFileSync(saida('workflow-retomar.json'), JSON.stringify(retomar.retomarW
 fs.writeFileSync(saida('workflow-retorno.json'), JSON.stringify(retorno.retornoWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
+fs.writeFileSync(saida('workflow-modalidade.json'), JSON.stringify(pedidos.modalidadeWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 // Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
@@ -866,7 +868,7 @@ if (process.argv.includes('--enviar')) {
     const alertaId = await upsert(alerta.alertaWorkflow, alerta.idFile);
     await ativar(alertaId); // o n8n só aceita errorWorkflow publicado
     alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
-      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, workflow], alertaId);
+      assistente.pendenciasWorkflow, audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, pedidos.modalidadeWorkflow, workflow], alertaId);
     const agendaId = await upsert(agendaWorkflow, agendaIdFile);
     // n8n 2.x: subworkflow também precisa estar publicado (ativo) para ser chamado
     if (process.argv.includes('--ativar')) await ativar(agendaId);
@@ -900,7 +902,9 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(retornoId);
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
-    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId, pedir_orcamento_cabelo: perguntaId };
+    const modalidadeId = await upsert(pedidos.modalidadeWorkflow, pedidos.modalidadeIdFile);
+    if (process.argv.includes('--ativar')) await ativar(modalidadeId);
+    const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId, pedir_orcamento_cabelo: perguntaId, mudar_modalidade: modalidadeId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
     const id = await upsert(workflow, path.join(dir, '.workflow-id'));
