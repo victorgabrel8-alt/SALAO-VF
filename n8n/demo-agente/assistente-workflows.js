@@ -288,6 +288,8 @@ REGRAS
 
 module.exports = ({ env, node, str, main, toolSub, workflow }) => {
   const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };
+  // A mesma senha do webhook do WhatsApp (header x-webhook-token): fica na credencial do n8n, não no Git.
+  const SENHA_WEBHOOK = { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } };
   const GEMINI = env.N8N_GEMINI_CRED_ID ? { googlePalmApi: { id: env.N8N_GEMINI_CRED_ID, name: 'Google Gemini(PaLM) Api account' } } : {};
   const EVO = '={{ $env.EVOLUTION_URL }}';
   const apikey = { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] };
@@ -319,8 +321,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
     node('Repassar para a assistente', 'n8n-nodes-base.httpRequest', 4.2, [660, -600], {
       // 127.0.0.1 e não "localhost": dentro do n8n o localhost vira ::1 (IPv6) e a chamada falhava (ECONNREFUSED)
       method: 'POST', url: 'http://127.0.0.1:5678/webhook/assistente-gleide',
+      authentication: 'genericCredentialType', genericAuthType: 'httpHeaderAuth',
       sendBody: true, specifyBody: 'json', jsonBody: "={{ JSON.stringify($('Webhook Evolution').item.json.body) }}", options: {},
-    }, { onError: 'continueRegularOutput' }),
+    }, { credentials: SENHA_WEBHOOK, onError: 'continueRegularOutput' }),
   );
   const depois = workflow.connections['Extrair dados'].main[0][0].node;
   workflow.connections['Extrair dados'] = main('É a Gleide (assistente)?');
@@ -390,7 +393,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
     name: 'Assistente da Gleide',
     nodes: [
       node('Webhook assistente', 'n8n-nodes-base.webhook', 2, [0, 0],
-        { httpMethod: 'POST', path: 'assistente-gleide', options: {} }, { webhookId: '5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a80' }),
+        { httpMethod: 'POST', path: 'assistente-gleide', authentication: 'headerAuth', options: {} },
+        { webhookId: '5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a80', credentials: SENHA_WEBHOOK }),
       node('Extrair dados', 'n8n-nodes-base.set', 3.4, [220, 0], {
         assignments: { assignments: [
           str('evento', '={{ $json.body.event }}'),
