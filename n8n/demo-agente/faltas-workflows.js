@@ -115,6 +115,7 @@ if (!ms.length) return [];
 const linha = (m) => {
   const n = '*' + (m.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';
   const serv = m.servico ? ' (' + m.servico.toLowerCase().replace(/\s*[–-]\s*mão de obra$/, '') + ')' : '';
+  if (m.tipo === 'mudou_modalidade') return '🔁 ' + n + ' mudou a avaliação de ' + m.de_texto + ' para *' + m.para_texto + '*.';
   return m.tipo === 'cancelou'
     ? '❌ ' + n + ' cancelou o horário de ' + m.de_texto + serv + '.'
     : '📅 ' + n + ' mudou o horário de ' + m.de_texto + ' para *' + m.para_texto + '*' + serv + '.';
