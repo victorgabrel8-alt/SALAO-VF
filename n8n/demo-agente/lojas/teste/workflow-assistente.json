@@ -8955,7 +8955,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000314",
+      "id": "00000000-0000-4000-8000-000000000318",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -8979,7 +8979,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000315",
+      "id": "00000000-0000-4000-8000-000000000319",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -8992,7 +8992,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000316",
+      "id": "00000000-0000-4000-8000-000000000320",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -9026,7 +9026,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000317",
+      "id": "00000000-0000-4000-8000-000000000321",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -9046,7 +9046,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000318",
+      "id": "00000000-0000-4000-8000-000000000322",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -9059,7 +9059,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000319",
+      "id": "00000000-0000-4000-8000-000000000323",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -9081,7 +9081,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000320",
+      "id": "00000000-0000-4000-8000-000000000324",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,

@@ -215,7 +215,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + ($('Supabase: pausar IA').first().json.nome || 'Cliente') + ' · ' + String($('Supabase: pausar IA').first().json.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') +\n      '\\n' + ($('Recebe pedido do agente').first().json.o_que_precisa || $('Recebe pedido do agente').first().json.motivo || 'Quer falar com você') + ($('Recebe pedido do agente').first().json.resumo ? '\\n' + $('Recebe pedido do agente').first().json.resumo : '') +\n      '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + $('Supabase: pausar IA').first().json.id }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + ($('Supabase: pausar IA').first().json.nome || 'Cliente') + ' · ' + String($('Supabase: pausar IA').first().json.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') +\n      '\\n' + ($('Recebe pedido do agente').first().json.o_que_precisa || $('Recebe pedido do agente').first().json.motivo || 'Quer falar com você') +\n      '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + $('Supabase: pausar IA').first().json.id }) }}",
         "options": {}
       },
       "retryOnFail": true,

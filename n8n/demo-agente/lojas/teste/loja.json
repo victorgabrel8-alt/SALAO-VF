@@ -12,7 +12,15 @@
   "permitidos": [
     "556699270860"
   ],
+  "catalogo_pdf": {
+    "arquivo": "ff4b7937-1abb-4803-83c8-e0896d94fc9f/catalogo.pdf",
+    "nome": "Catalogo Carol Ferreira.pdf"
+  },
   "trocas": [
+    [
+      "const isQuimica = /(progressiva|botox capilar|selagem|colora[cç][aã]o|mechas|luzes|hidrata[cç][aã]o|reconstru[cç][aã]o)/i.test(nome);",
+      "const isQuimica = false;"
+    ],
     [
       "Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor (preto, castanho escuro, castanho claro, loiro, ruivo, grisalho) e se tem mechas, luzes ou reflexos; textura e curvatura (liso; ondulado; cacheado com cachos abertos/largos; cacheado com cachos fechados/pequenos; crespo); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo.",
       "Uma cliente de um estúdio de unhas (manicure e pedicure) mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o estúdio: se parecem as unhas da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); mão ou pé; comprimento e formato das unhas (curtas, médias, longas; quadrada, redonda, amendoada, bailarina, stiletto); se parecem naturais, esmaltação comum, esmaltação em gel ou alongamento; cor e acabamento (brilho, fosco, francesinha, degradê, glitter, pedrarias, desenhos). Se a luz, o ângulo ou o enquadramento não deixam ver as unhas direito, diga isso. Não avalie saúde da unha nem da pele."
@@ -102,7 +110,7 @@
       "(ex.: unha inchada depois do alongamento)"
     ],
     [
-      "(ex.: Dizer se dá para orientar por foto)",
+      "(ex.: Ver reação no couro cabeludo depois da aplicação)",
       "(ex.: Ver a foto da unha e dizer se precisa voltar)"
     ],
     [

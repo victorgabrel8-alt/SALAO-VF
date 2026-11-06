@@ -788,6 +788,7 @@ if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
   lojas.dadosDoSalao(workflow);
   lojas.tirarOrcamentoCabelo(workflow, LOJA);
+  if (LOJA.catalogo_pdf) require('./catalogo-pdf.js')({ node, str, toolSub, main, workflow, enviarWorkflow: catalogo.enviarWorkflow, idFile: catalogo.idFile, loja: LOJA, organizar });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
@@ -819,7 +820,7 @@ fs.writeFileSync(saida('workflow-retomar.json'), JSON.stringify(retomar.retomarW
 fs.writeFileSync(saida('workflow-retorno.json'), JSON.stringify(retorno.retornoWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
-fs.writeFileSync(saida('workflow-modalidade.json'), JSON.stringify(pedidos.modalidadeWorkflow, null, 2));
+if (!LOJA || LOJA.nicho === 'mega_hair') fs.writeFileSync(saida('workflow-modalidade.json'), JSON.stringify(pedidos.modalidadeWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 // Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
@@ -908,8 +909,10 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(retornoId);
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
-    const modalidadeId = await upsert(pedidos.modalidadeWorkflow, pedidos.modalidadeIdFile);
-    if (process.argv.includes('--ativar')) await ativar(modalidadeId);
+    // presencial/online é da avaliação de mega hair: as outras lojas não têm a ferramenta nem o workflow
+    const temModalidade = !LOJA || LOJA.nicho === 'mega_hair';
+    const modalidadeId = temModalidade ? await upsert(pedidos.modalidadeWorkflow, pedidos.modalidadeIdFile) : null;
+    if (temModalidade && process.argv.includes('--ativar')) await ativar(modalidadeId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId, pedir_orcamento_cabelo: perguntaId, mudar_modalidade: modalidadeId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));

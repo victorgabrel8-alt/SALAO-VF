@@ -17,6 +17,7 @@
 //   trocas        [["texto", "novo"], …]         textos do nicho (ex.: "salão de mega hair"), escritos como no
 //                                                código (com "Gleide": a troca pelo nome da dona vem depois).
 //                                                Troca que não acha o texto para o gerador (o código mudou)
+//   catalogo_pdf  {"arquivo", "nome"}            opcional: PDF no bucket "catalogos" que a IA manda (catalogo-pdf.js)
 //
 // Só nas lojas (a Gleide não muda):
 //   - "DADOS DO SALÃO" no fim do prompt, lido a cada mensagem de empresas.config (tela Dados do salão do app);
@@ -139,7 +140,10 @@ function conferirLoja(workflows, loja, idsGleide) {
     tem('salao-demo', 'tem a instância da Gleide');
     tem('Papoulas', 'tem o endereço da Gleide');
     tem('TpCuMzh3PzwPJgQu8', 'tem o mapa da Gleide');
-    if (loja.nicho !== 'mega_hair') tem('pedir_orcamento_cabelo', 'tem a ferramenta de orçamento de cabelo');
+    if (loja.nicho !== 'mega_hair') {
+      tem('pedir_orcamento_cabelo', 'tem a ferramenta de orçamento de cabelo');
+      if (wf.nodes.some((nd) => nd.name === 'mudar_modalidade')) erros.push(`${nome}: tem a ferramenta de presencial/online da avaliação`);
+    }
     for (const id of idsGleide) tem(id, `aponta para o workflow da Gleide ${id}`);
     const semPrefixo = s.match(new RegExp(`(=|'|"keyPattern":")(${chaves}):(\\{\\{|'|\\*)`, 'g'));
     if (semPrefixo) erros.push(`${nome}: chave do Redis sem o prefixo da loja: ${[...new Set(semPrefixo)].join(' ')}`);
@@ -193,11 +197,13 @@ DADOS DO SALÃO (preenchidos pela dona no app; valem mais que qualquer outro tex
 O que não está aqui (sinal, atraso, cancelamento, estacionamento, levar acompanhante…) não está cadastrado: não invente, use perguntar_para_gleide.`;
 }
 
-// Venda avulsa de cabelo só existe em mega hair: as outras lojas ficam sem a ferramenta no agente.
+// Venda avulsa de cabelo e avaliação presencial/online só existem em mega hair: as outras lojas ficam sem
+// essas ferramentas no agente.
 function tirarOrcamentoCabelo(workflow, loja) {
   if (loja.nicho === 'mega_hair') return;
-  workflow.nodes = workflow.nodes.filter((nd) => nd.name !== 'pedir_orcamento_cabelo');
-  delete workflow.connections.pedir_orcamento_cabelo;
+  const soMegaHair = ['pedir_orcamento_cabelo', 'mudar_modalidade'];
+  workflow.nodes = workflow.nodes.filter((nd) => !soMegaHair.includes(nd.name));
+  for (const nome of soMegaHair) delete workflow.connections[nome];
 }
 
 // workflows que passaram por travarEnvios (conferirLoja confere que todo envio deles passa pela trava)

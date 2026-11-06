@@ -2,8 +2,8 @@
   "name": "[Loja Teste] IA - Retorno combinado",
   "nodes": [
     {
-      "id": "00000000-0000-4000-9000-000000000015",
-      "name": "Nota 15",
+      "id": "00000000-0000-4000-9000-000000000016",
+      "name": "Nota 16",
       "type": "n8n-nodes-base.stickyNote",
       "typeVersion": 1,
       "position": [
