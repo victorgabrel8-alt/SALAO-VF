@@ -91,7 +91,7 @@
     ],
     [
       "“A manutenção fica a partir de R$ 350.”",
-      "“O pé e mão fica a partir de R$ [valor da lista].”"
+      "“O pé e mão fica R$ [preço fixo confirmado na lista].” (ou “a partir de R$ ...” apenas se a lista marcar preço inicial)."
     ],
     [
       "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.",
@@ -148,6 +148,10 @@
     [
       "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 01. ",
       ""
+    ],
+    [
+      "Pergunta de ENDEREÇO segue LOCALIZAÇÃO COM LINK (seção 09), sem consultar agenda até aceite.",
+      "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
     ]
   ]
 }
