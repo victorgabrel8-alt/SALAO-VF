@@ -2950,10 +2950,18 @@
       "parameters": {
         "method": "POST",
         "url": "http://127.0.0.1:5678/webhook/teste-assistente-gleide",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify($('Webhook Evolution').item.json.body) }}",
         "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
       },
       "onError": "continueRegularOutput"
     },

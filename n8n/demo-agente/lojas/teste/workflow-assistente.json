@@ -29,9 +29,16 @@
       "parameters": {
         "httpMethod": "POST",
         "path": "teste-assistente-gleide",
+        "authentication": "headerAuth",
         "options": {}
       },
-      "webhookId": "84a12ce7-6b34-4718-835c-fb54564e08f3"
+      "webhookId": "84a12ce7-6b34-4718-835c-fb54564e08f3",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
     },
     {
       "id": "00000000-0000-4000-8000-000000000159",

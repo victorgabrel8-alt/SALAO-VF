@@ -869,6 +869,7 @@ if (process.argv.includes('--enviar')) {
     const a = await fetch(`${base}/${id}/activate`, { method: 'POST', headers });
     const ab = await a.json();
     console.log(a.ok ? `  ativo: ${ab.active}` : `  erro ao ativar: ${JSON.stringify(ab)}`);
+    return a.ok;
   };
   (async () => {
     // alerta primeiro: os outros workflows apontam para ele em settings.errorWorkflow
@@ -889,10 +890,8 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(ferramentasId);
     for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = ferramentasId;
     fs.writeFileSync(saida('workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
-    for (const [wf, arq] of [[assistente.assistenteWorkflow, '.workflow-assistente-id'], [assistente.pendenciasWorkflow, '.workflow-assistente-pendencias-id']]) {
-      const wid = await upsert(wf, path.join(dir, arq));
-      if (process.argv.includes('--ativar')) await ativar(wid);
-    }
+    const pendenciasId = await upsert(assistente.pendenciasWorkflow, path.join(dir, '.workflow-assistente-pendencias-id'));
+    if (process.argv.includes('--ativar')) await ativar(pendenciasId);
     // áudios prontos: o subworkflow da tool enviar_audio e o webhook de transcrever
     const audiosId = await upsert(audios.enviarWorkflow, audios.idFile);
     if (process.argv.includes('--ativar')) await ativar(audiosId);
@@ -917,7 +916,15 @@ if (process.argv.includes('--enviar')) {
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
     const id = await upsert(workflow, path.join(dir, '.workflow-id'));
-    if (process.argv.includes('--ativar')) await ativar(id);
+    // A assistente vai depois do principal: o webhook dela pede senha e é o principal que manda a senha.
+    // Nesta ordem nenhuma mensagem da Gleide é recusada durante o envio. Se o principal não ativar, a
+    // assistente fica como está: com senha ela recusaria o principal antigo, sem aviso nenhum.
+    if (process.argv.includes('--ativar') && !(await ativar(id))) {
+      console.error('O principal não ativou: NÃO enviei a assistente. Resolva e rode de novo.');
+      process.exit(1);
+    }
+    const assistenteId = await upsert(assistente.assistenteWorkflow, path.join(dir, '.workflow-assistente-id'));
+    if (process.argv.includes('--ativar')) await ativar(assistenteId);
     // loja: a IA já lê a tela Dados do salão; liga o aviso da tela (config.ia_usa_dados_loja), sem mexer no resto do config
     if (LOJA) {
       const supa = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
