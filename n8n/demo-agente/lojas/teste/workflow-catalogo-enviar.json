@@ -122,7 +122,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

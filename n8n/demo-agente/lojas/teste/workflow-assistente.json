@@ -204,7 +204,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/chat/getBase64FromMediaMessage/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/getBase64FromMediaMessage/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -2881,7 +2881,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/chat/markMessageAsRead/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/markMessageAsRead/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -2938,7 +2938,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -8964,7 +8964,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

@@ -236,7 +236,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -271,7 +271,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'loja-teste' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

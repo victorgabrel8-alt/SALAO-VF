@@ -122,7 +122,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ 'caroline-ferreira' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -348,6 +348,7 @@
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7aHIAbHbumNK2pbn"
   }
 }

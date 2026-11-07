@@ -236,7 +236,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'caroline-ferreira' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/sendPresence/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -271,7 +271,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'caroline-ferreira' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendWhatsAppAudio/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -561,6 +561,7 @@
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "7aHIAbHbumNK2pbn"
   }
 }
