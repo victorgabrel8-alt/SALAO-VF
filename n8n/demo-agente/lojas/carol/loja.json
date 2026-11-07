@@ -152,6 +152,14 @@
     [
       "Pergunta de ENDEREÇO segue LOCALIZAÇÃO COM LINK (seção 09), sem consultar agenda até aceite.",
       "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
+    ],
+    [
+      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.",
+      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Se há pedido em outra linha, atenda a esse pedido e não acrescente pergunta genérica. Se TODAS as linhas forem apenas cumprimentos sem pedido, conduza com uma única pergunta de descoberta (seção 02). Não escreva os números [1], [2] na resposta."
+    ],
+    [
+      "Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp.",
+      "Para uma REAÇÃO ISOLADA DE ENCERRAMENTO sem nova demanda (como \"ok\", \"obrigada\", \"blz\"), depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. EXCEÇÃO OBRIGATÓRIA: \"oi\", \"olá\", \"boa tarde\", \"bom dia\", \"boa noite\" e cumprimentos semelhantes SEM outro pedido, quando usados para iniciar ou retomar contato, NÃO são reações de encerramento e NÃO recebem [[NAO_ENVIAR]]; responda e conduza com uma única pergunta de descoberta (seção 02)."
     ]
   ]
 }
