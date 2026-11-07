@@ -32,7 +32,8 @@ ON CONFLICT (telefone) DO UPDATE SET
     'dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente. ' +
     // retorno combinado (supabase/028): a rotina "IA - Retorno combinado" manda um alô nessa data
     'Quando a cliente combinar de voltar a falar numa data ("semana que vem te falo", "segunda ou terça te aviso", "depois do dia 10 eu vejo"), ' +
-    'preencha data_retorno e assunto_retorno. A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.',
+    'preencha data_retorno e assunto_retorno. Sem dia ou prazo dito por ela ("entro em contato", "vou ver", "depois te falo"), deixe vazio: nunca invente uma data. ' +
+    'A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.',
     lerCrmId, ['telefone', 'nome', 'interesse', 'resumo', 'data_retorno', 'assunto_retorno'],
     // .first(): o .item perdia o fio até "Montar entrada" (ex.: mensagem que esperou a IA terminar outra)
     // e a anotação chegava sem telefone, sem ir para lugar nenhum
@@ -41,7 +42,7 @@ ON CONFLICT (telefone) DO UPDATE SET
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "selagem")', 'string'],
       ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 12x. Casamento em dezembro.")', 'string'],
       ['nome', 'Nome da cliente, se ela disse (senão deixe vazio)', 'string'],
-      ['data_retorno', 'Só se ela combinou de voltar a falar: a data AAAA-MM-DD, calculada pela data atual ("semana que vem" = segunda da semana que vem; "segunda ou terça" = a mais tarde das duas). Senão deixe vazio', 'string'],
+      ['data_retorno', 'Só se ELA disse um dia ou prazo: a data AAAA-MM-DD, calculada pela data atual ("semana que vem" = segunda da semana que vem; "segunda ou terça" = a mais tarde das duas). "Entro em contato", "vou ver" ou "depois" sem dia: deixe vazio', 'string'],
       ['assunto_retorno', 'Só com data_retorno: o que ela ficou de contar ou decidir, curto (ex.: "como ficou o cabelo com a amiga", "se recebeu o salário")', 'string'],
     ]));
   workflow.connections.anotar_no_crm = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
