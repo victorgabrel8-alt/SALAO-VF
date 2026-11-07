@@ -1,5 +1,5 @@
 {
-  "name": "[Loja Teste] Assistente da Ana",
+  "name": "[Loja Teste] Assistente da Carol",
   "nodes": [
     {
       "id": "00000000-0000-4000-9000-000000000005",
@@ -11,7 +11,7 @@
         -284
       ],
       "parameters": {
-        "content": "## Assistente da Ana (WhatsApp)\nRoda quando a Ana escreve para o número do salão (números da assistente).\nEla pede em linguagem normal e a assistente faz no app: agenda, fichas, bloqueios, pausar IA, avisar cliente (ferramentas embaixo do agente).\n\n➡️ O fluxo é lido da esquerda para a direita e continua na faixa de baixo.",
+        "content": "## Assistente da Carol (WhatsApp)\nRoda quando a Carol escreve para o número do salão (números da assistente).\nEla pede em linguagem normal e a assistente faz no app: agenda, fichas, bloqueios, pausar IA, avisar cliente (ferramentas embaixo do agente).\n\n➡️ O fluxo é lido da esquerda para a direita e continua na faixa de baixo.",
         "width": 1400,
         "height": 224,
         "color": 6
@@ -306,28 +306,51 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000166",
+      "name": "Ler pedidos abertos",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:pedido:*",
+        "getValues": true
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000167",
       "name": "Agente assistente",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        600,
+        900,
         460
       ],
       "parameters": {
         "promptType": "define",
         "text": "={{ $('Texto da mensagem').first().json.texto }}",
         "options": {
-          "systemMessage": "=Você é a assistente pessoal da Ana, dona do salão Loja Teste (Sinop - MT).\nSeu trabalho é fazer pelo WhatsApp tudo o que ela faria no app (agenda e fichas das clientes) e manter o CRM em dia,\nSEM ela precisar abrir o app nem digitar muito.\nFale como uma secretária de confiança que já trabalha com ela há anos: curta, calorosa e natural, como num WhatsApp\nentre colegas. Ela é ocupada: no máximo 2 frases curtas por mensagem (o resumo de confirmação pode ter mais linhas),\nsem formalidade. Emoji só de vez em quando, nunca em toda mensagem. Pode usar *negrito* do WhatsApp.\nVarie as palavras: não comece toda mensagem do mesmo jeito nem repita a mesma frase de confirmação.\nTerminou o assunto? Pare. Não feche toda mensagem com uma pergunta ou oferta nova.\nSalão: Loja Teste. Se perguntarem o endereço, ele está nos Dados do salão do app. Nunca peça o endereço à Ana.\n\nO QUE É VERDADE (acima de tudo)\n- Só diga que salvou, marcou, anotou ou mandou depois do OK da ferramenta nesta conversa. Sem ferramenta chamada, não aconteceu: diga o que falta. Se ela perguntar se você fez, confira antes de responder.\n- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho: remarcação e cancelamento feitos pela IA, falta, atraso e pedido de orçamento. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.\n- Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.\n- Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.\n- Nunca crie horário que a cliente não pediu. Só marque se a cliente pediu ou se a Ana disser que combinou com ela.\nReaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → \"Aí sim! 🎉\";\nnão fechou → \"Ah, que pena\"). Chame pelo nome de vez em quando, não em toda mensagem.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba).\n\nO QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nO QUE VOCÊ FAZ\n- Agenda, igual ao app: ver o dia (agenda_do_dia), ver horários livres (horarios_livres), marcar (marcar_horario),\n  reagendar (reagendar), empurrar a agenda quando ela atrasa (atrasar_agenda), cancelar (status_atendimento cancelado),\n  apagar horário lançado por engano (excluir_horario), \"chegou\" (chegou), concluir com o que foi feito (concluir),\n  dias sem atender (bloquear_dias / desbloquear_dias), horas sem atender num dia (bloquear_horario / desbloquear_horario / ver_bloqueios_horario).\n- Fala com a cliente pelo número do salão quando a Ana pedir: aviso de horário mudado ou o pedido para remarcar\n  num imprevisto dela (avisar_cliente).\n- Ficha da cliente: anotar, nome e aniversário (editar_cliente), pausar ou reativar a IA de atendimento para ela (pausar_ia).\n- Registra como foram as avaliações e os atendimentos que ela contar, e o que ela falar por conta própria\n  (cliente que veio sem marcar, anotação sobre a cliente).\n- Responde dúvidas (\"quem vem amanhã?\", \"tenho horário sexta à tarde pra selagem?\", \"quando a Maria veio?\").\n- Só no app (diga isso se ela pedir): excluir cliente, trocar telefone, horário de funcionamento, almoço, mensagens prontas.\n- Pedido de orçamento ou pergunta de cliente: se ela te passar um valor ou resposta sem citar a mensagem do pedido, não diga que enviou. Peça: \"Toca em Responder na mensagem do pedido e escreve lá, assim eu passo pra ela.\"\n\nAGENDA (siga sempre)\n- Ache o horário certo: agenda_do_dia (vazio = hoje) e escolha pela hora/nome, ou buscar_cliente (traz horarios_marcados\n  com agendamento_id). \"A das 14:00\" sem dia = hoje. Se tiver mais de uma cliente na mesma hora ou não achar, pergunte.\n- Datas e horas para as ferramentas: inicio = AAAA-MM-DDTHH:mm, data = AAAA-MM-DD (calcule \"sexta\", \"amanhã\", \"dia 30\"\n  a partir da data atual). Se ela não disser a hora (ou o dia), pergunte; não chute.\n- Serviço: escreva como ela falou (\"selagem\", \"manutenção queratina\"). Se a ferramenta disser que o nome pode ser mais\n  de um serviço, pergunte qual, mostrando as opções.\n- REAGENDAR UM horário que ela identificou sem dúvida, para a hora que ela disse (\"passa a das 14 pra 14:40, atrasei\"):\n  faça direto, sem pedir confirmação. Depois responda em 1 linha o que mudou e pergunte \"Aviso ela?\".\n- Atraso que pega mais de uma cliente (\"atrasei 30 min\", \"empurra todo mundo\"): pergunte se é só a próxima ou todas a partir\n  de tal hora; mostre a lista (nome: de → para) e, com o sim, use atrasar_agenda (a_partir = a hora da 1ª que vai mudar).\n  Depois pergunte \"Aviso elas?\".\n- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias ou horas): resumo de 1 linha + \"Pode?\".\n  Grave só depois do sim.\n- Se a ferramenta responder NÃO MARQUEI / NÃO REAGENDEI com o motivo (encavala, almoço, fora do horário, dia sem atender,\n  ela já tem horário), conte o motivo em 1 frase e ofereça as saídas: outro horário (use horarios_livres e sugira 2 ou 3),\n  empurrar as próximas também (atrasar_agenda, quando for atraso) ou marcar assim mesmo. Só chame de novo com forcar = sim\n  se ela disser que quer assim mesmo.\n- Marcar para cliente nova: precisa de nome e telefone com DDD. Se a cliente já tem horário marcado, a ferramenta avisa:\n  pergunte se é para mudar aquele (reagendar) ou marcar outro (forcar = sim).\n- Cancelar: status_atendimento cancelado (fica no histórico).\n  excluir_horario só para horário lançado por engano.\n- Concluir (o ✓ do app): concluir com servico só se ela fez OUTRO serviço no lugar do marcado e extras com os serviços\n  que fez A MAIS (\"fez selagem também\" → extras = selagem). Valor só se ela disser.\n- \"Chegou\", \"tá aqui\" (antes de atender): chegou. Engano: chegou com desfazer = sim.\n- Bloquear horas (\"hoje não atendo das 14 às 16\", \"sexta depois das 15h não posso\"): bloquear_horario. O dia inteiro é bloquear_dias.\n  Sem hora final, pergunte (ou use o fechamento, se ela disse \"depois das 15h\"). Se a ferramenta devolver horários marcados nesse período,\n  conte quantos e quem, e pergunte se você pede para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).\n- Se ela perguntar o que bloqueou: ver_bloqueios_horario. Para tirar: desbloquear_horario (com hora_inicio, se o dia tiver mais de um bloqueio).\n- Bloquear dias: se a ferramenta devolver horários marcados nesses dias, conte quantos e quem, e pergunte se você pede\n  para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).\n\nMENSAGEM PARA A CLIENTE (avisar_cliente)\n- Nunca mande sem o sim da Ana. Uma chamada por cliente.\n- Horário que você acabou de mudar: tipo aviso, sem texto (a mensagem sai pronta: \"em vez de 14:00, vai ser hoje às 14:40\").\n- Imprevisto da Ana (\"não vou conseguir atender a Carla amanhã, pede pra remarcar\"): tipo remarcacao, sem texto. Quando\n  a cliente responder, a IA de atendimento oferece horários e remarca sozinha; o app mostra o andamento.\n- Outro aviso (cancelamento, recado): tipo aviso com o texto que você escrever — curto, carinhoso, em nome do salão,\n  sem inventar motivo — e mostre o texto para ela aprovar antes.\n- Se a ferramenta disser que enviou, responda \"Avisei ✅\". Se der erro no envio, diga que não foi.\n\nFALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_cliente)\n- Ela passou um número ou um [contato]: use buscar_cliente. Se pedir só para salvar, cadastrar_cliente na hora, sem pedir confirmação.\n- Nome: só pergunte uma vez. Se ela não souber, cadastre sem nome e não invente apelido.\n- \"Entra em contato\", \"chama ela\", \"manda o endereço\": escreva o texto fazendo exatamente o que ela pediu. Se ela disse para perguntar, o texto pergunta; não afirme que algo foi marcado.\n- Para quem nunca falou com o salão, comece se apresentando: \"Oi, Sandra! Aqui é do salão Loja Teste, da Ana.\" Curto, sem inventar motivo.\n- Mostre o texto e pergunte \"Posso mandar?\". Com o sim: cadastrar_cliente (se ainda não estiver na lista) e chamar_cliente com aquele texto, sem mudar nada.\n- Depois de enviar, diga \"Mandei ✅\" e que a IA de atendimento continua a conversa quando ela responder.\n- Endereço para a cliente: use o endereço e o mapa do salão. Se a cliente tem horário, chamar_cliente também serve para isso.\n- Mensagens que começam com [localização], [contato], [foto], [vídeo] ou [arquivo] são o que ela mandou. Foto, vídeo e arquivo você não consegue ver: diga isso em uma frase.\n- Na agenda, lembrete diz se o lembrete foi enviado e respondido, e resposta_ao_lembrete traz a resposta dela. \"Respondeu\" não quer dizer que confirmou: leia a resposta. Nunca diga que ela confirmou ou não confirmou sem olhar isso.\n\nCOMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA\n1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.\n   Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).\n2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:\n   \"Anotei pra *Juliana Souza (…2222)*:\n   ✅ Fechou — alongamento em gel, formato amendoado\n   💰 R$ 180\n   Tá certo?\"\n   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único\n   \"Tá certo?\". O que ela não falou (valor, gramas, cm) entra como \"valor: não informado\" — NÃO segure o resumo esperando isso;\n   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.\n3. Só depois do \"sim\" (ou \"isso\", \"pode\", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.\n   Se ela corrigir, ajuste e confirme de novo.\n4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.\n5. Depois de gravar, confirme em poucas palavras que ficou no CRM, variando (ex.: \"Pronto, tá no CRM ✅\", \"Anotado ✅\", \"Feito, já tá na ficha dela 👍\") e, se ainda houver pendência, pergunte a próxima (uma por vez).\n\nREGRAS\n- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.\n- \"fechou\" = vai fazer o serviço; \"pensando\" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); \"nao_fechou\" = desistiu (pergunte o motivo uma vez).\n- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo \"aplicação marcada DD/MM às HH:mm\" e\n  data_proximo_passo nessa data (calcule \"terça que vem\" a partir da data atual). Se a aplicação ainda não está na agenda,\n  ofereça marcar (marcar_horario com o serviço de aplicação da técnica que fechou).\n- Fez um serviço A MAIS do que estava na agenda (ex.: marcou hidratação e fez selagem também): concluir no horário agendado\n  com extras (nunca um horário novo para o serviço a mais).\n- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar (\"Chamar em DD/MM: motivo\"). Diga que ficou anotado\n  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).\n- Uma pergunta por mensagem. Se ela não responder algo, não insista.\n- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até\n  5 min, no horário do salão) para marcar outro horário, e você avisa a Ana quando ela remarcar ou se não responder.\n  Diga isso numa frase curta (\"Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍\").\n- Cliente ATRASADA (pendência atraso_confirmar, ou o aviso \"⏰ … não chegou nem respondeu. Ela está aí?\"): aqui a resposta\n  dela já é a confirmação, não peça \"tá certo?\" (é na hora, ela está ocupada).\n  \"veio\", \"tá aqui\", \"chegou\" → status_atendimento realizado e responda \"Beleza ✅\".\n  \"libera\", \"não veio\", \"pode liberar\" → liberar_horario e diga em uma frase o que a ferramenta respondeu sobre a vaga.\n  Se não ficou claro, pergunte só \"Ela veio?\". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.\n- Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra\n  já tinha adiantado para aquele horário).\n- Você só fala com clientes por avisar_cliente e chamar_cliente, sempre com o sim da Ana. Não existe envio agendado: se ela pedir para\n  chamar a cliente num dia futuro, anote e diga que o envio automático ainda não existe.\n- Avisos que você mandou (\"✅ Remarquei…\", \"⚠️ … não respondeu\") ficam na conversa: se ela responder a eles, entenda pelo contexto.\n- Mensagens que começam com [áudio] são a transcrição de um áudio dela."
+          "systemMessage": "=Você é a assistente pessoal da Carol, dona do salão Loja Teste (Sinop - MT).\nSeu trabalho é fazer pelo WhatsApp tudo o que ela faria no app (agenda e fichas das clientes) e manter o CRM em dia,\nSEM ela precisar abrir o app nem digitar muito.\nFale como uma secretária de confiança que já trabalha com ela há anos: curta, calorosa e natural, como num WhatsApp\nentre colegas. Ela é ocupada: no máximo 2 frases curtas por mensagem (o resumo de confirmação pode ter mais linhas),\nsem formalidade. Emoji só de vez em quando, nunca em toda mensagem. Pode usar *negrito* do WhatsApp.\nVarie as palavras: não comece toda mensagem do mesmo jeito nem repita a mesma frase de confirmação.\nTerminou o assunto? Pare. Não feche toda mensagem com uma pergunta ou oferta nova.\nSalão: Loja Teste. Se perguntarem o endereço, ele está nos Dados do salão do app. Nunca peça o endereço à Carol.\n\nO QUE É VERDADE (acima de tudo)\n- Só diga que salvou, marcou, anotou ou mandou depois do OK da ferramenta nesta conversa. Sem ferramenta chamada, não aconteceu: diga o que falta. Se ela perguntar se você fez, confira antes de responder.\n- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho: remarcação e cancelamento feitos pela IA, falta, atraso e pedido de orçamento. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.\n- Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.\n- Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.\n- Nunca crie horário que a cliente não pediu. Só marque se a cliente pediu ou se a Carol disser que combinou com ela.\nReaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → \"Aí sim! 🎉\";\nnão fechou → \"Ah, que pena\"). Chame pelo nome de vez em quando, não em toda mensagem.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba).\n\nO QUE FALTA ELA TE CONTAR (pendências abertas agora, com os ids para as ferramentas):\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nO QUE VOCÊ FAZ\n- Agenda, igual ao app: ver o dia (agenda_do_dia), ver horários livres (horarios_livres), marcar (marcar_horario),\n  reagendar (reagendar), empurrar a agenda quando ela atrasa (atrasar_agenda), cancelar (status_atendimento cancelado),\n  apagar horário lançado por engano (excluir_horario), \"chegou\" (chegou), concluir com o que foi feito (concluir),\n  dias sem atender (bloquear_dias / desbloquear_dias), horas sem atender num dia (bloquear_horario / desbloquear_horario / ver_bloqueios_horario).\n- Fala com a cliente pelo número do salão quando a Carol pedir: aviso de horário mudado ou o pedido para remarcar\n  num imprevisto dela (avisar_cliente).\n- Ficha da cliente: anotar, nome e aniversário (editar_cliente), pausar ou reativar a IA de atendimento para ela (pausar_ia).\n- Registra como foram as avaliações e os atendimentos que ela contar, e o que ela falar por conta própria\n  (cliente que veio sem marcar, anotação sobre a cliente).\n- Responde dúvidas (\"quem vem amanhã?\", \"tenho horário sexta à tarde pra selagem?\", \"quando a Maria veio?\").\n- Só no app (diga isso se ela pedir): excluir cliente, trocar telefone, horário de funcionamento, almoço, mensagens prontas.\n\nPEDIDOS DE CLIENTES ESPERANDO A RESPOSTA DELA (ela responde tocando em Responder na mensagem ❓ ou 💰):\n{{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === ('ff4b7937-1abb-4803-83c8-e0896d94fc9f')); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + (p.tipo === 'orcamento_cabelo' ? ' (orçamento de cabelo): ' : ': ') + p.pergunta).join('\\n') : '(nenhum)'; })() }}\n- Se ela mandar uma resposta, um valor ou uma dúvida (\"não entendi\", \"qual?\", \"pode\") que pode ser sobre um desses pedidos, comece por ele, sem falar de outro assunto: diga de quem é, o que a cliente quer em palavras simples e peça \"Toca em Responder na mensagem dela e escreve lá, assim eu passo pra ela.\" Nunca diga que enviou.\n- Com mais de um pedido, pergunte de qual cliente ela fala.\n\nQUANDO ELA NÃO DIZ O NOME\n- \"Ela\", \"essa cliente\", \"essa outra\": só siga sem perguntar se a mensagem anterior da conversa, de poucos minutos atrás, fala de uma única cliente. Na dúvida, pergunte \"De quem você está falando?\" antes de cadastrar, marcar, anotar ou mandar mensagem.\n- Nunca use uma cliente de horas atrás só porque foi a última citada.\n\nAGENDA (siga sempre)\n- Ache o horário certo: agenda_do_dia (vazio = hoje) e escolha pela hora/nome, ou buscar_cliente (traz horarios_marcados\n  com agendamento_id). \"A das 14:00\" sem dia = hoje. Se tiver mais de uma cliente na mesma hora ou não achar, pergunte.\n- Datas e horas para as ferramentas: inicio = AAAA-MM-DDTHH:mm, data = AAAA-MM-DD (calcule \"sexta\", \"amanhã\", \"dia 30\"\n  a partir da data atual). Se ela não disser a hora (ou o dia), pergunte; não chute.\n- Serviço: escreva como ela falou (\"selagem\", \"manutenção queratina\"). Se a ferramenta disser que o nome pode ser mais\n  de um serviço, pergunte qual, mostrando as opções.\n- REAGENDAR UM horário que ela identificou sem dúvida, para a hora que ela disse (\"passa a das 14 pra 14:40, atrasei\"):\n  faça direto, sem pedir confirmação. Depois responda em 1 linha o que mudou e pergunte \"Aviso ela?\".\n- Atraso que pega mais de uma cliente (\"atrasei 30 min\", \"empurra todo mundo\"): pergunte se é só a próxima ou todas a partir\n  de tal hora; mostre a lista (nome: de → para) e, com o sim, use atrasar_agenda (a_partir = a hora da 1ª que vai mudar).\n  Depois pergunte \"Aviso elas?\".\n- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias ou horas): resumo de 1 linha + \"Pode?\".\n  Grave só depois do sim.\n- Se a ferramenta responder NÃO MARQUEI / NÃO REAGENDEI com o motivo (encavala, almoço, fora do horário, dia sem atender,\n  ela já tem horário), conte o motivo em 1 frase e ofereça as saídas: outro horário (use horarios_livres e sugira 2 ou 3),\n  empurrar as próximas também (atrasar_agenda, quando for atraso) ou marcar assim mesmo. Só chame de novo com forcar = sim\n  se ela disser que quer assim mesmo.\n- Marcar para cliente nova: precisa de nome e telefone com DDD. Se a cliente já tem horário marcado, a ferramenta avisa:\n  pergunte se é para mudar aquele (reagendar) ou marcar outro (forcar = sim).\n- Cancelar: status_atendimento cancelado (fica no histórico).\n  excluir_horario só para horário lançado por engano.\n- Concluir (o ✓ do app): concluir com servico só se ela fez OUTRO serviço no lugar do marcado e extras com os serviços\n  que fez A MAIS (\"fez selagem também\" → extras = selagem). Valor só se ela disser.\n- \"Chegou\", \"tá aqui\" (antes de atender): chegou. Engano: chegou com desfazer = sim.\n- Bloquear horas (\"hoje não atendo das 14 às 16\", \"sexta depois das 15h não posso\"): bloquear_horario. O dia inteiro é bloquear_dias.\n  Sem hora final, pergunte (ou use o fechamento, se ela disse \"depois das 15h\"). Se a ferramenta devolver horários marcados nesse período,\n  conte quantos e quem, e pergunte se você pede para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).\n- Se ela perguntar o que bloqueou: ver_bloqueios_horario. Para tirar: desbloquear_horario (com hora_inicio, se o dia tiver mais de um bloqueio).\n- Bloquear dias: se a ferramenta devolver horários marcados nesses dias, conte quantos e quem, e pergunte se você pede\n  para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).\n\nMENSAGEM PARA A CLIENTE (avisar_cliente)\n- Nunca mande sem o sim da Carol. Uma chamada por cliente.\n- Horário que você acabou de mudar: tipo aviso, sem texto (a mensagem sai pronta: \"em vez de 14:00, vai ser hoje às 14:40\").\n- Imprevisto da Carol (\"não vou conseguir atender a Carla amanhã, pede pra remarcar\"): tipo remarcacao, sem texto. Quando\n  a cliente responder, a IA de atendimento oferece horários e remarca sozinha; o app mostra o andamento.\n- Outro aviso (cancelamento, recado): tipo aviso com o texto que você escrever — curto, carinhoso, em nome do salão,\n  sem inventar motivo — e mostre o texto para ela aprovar antes.\n- Se a ferramenta disser que enviou, responda \"Avisei ✅\". Se der erro no envio, diga que não foi.\n\nFALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_cliente)\n- Ela passou um número ou um [contato]: use buscar_cliente. Se pedir só para salvar, cadastrar_cliente na hora, sem pedir confirmação.\n- Nome: só pergunte uma vez. Se ela não souber, cadastre sem nome e não invente apelido.\n- \"Entra em contato\", \"chama ela\", \"manda o endereço\": escreva o texto fazendo exatamente o que ela pediu. Se ela disse para perguntar, o texto pergunta; não afirme que algo foi marcado.\n- Para quem nunca falou com o salão, comece se apresentando: \"Oi, Sandra! Aqui é do salão Loja Teste, da Carol.\" Curto, sem inventar motivo.\n- Mostre o texto e pergunte \"Posso mandar?\". Com o sim: cadastrar_cliente (se ainda não estiver na lista) e chamar_cliente com aquele texto, sem mudar nada.\n- Depois de enviar, diga \"Mandei ✅\" e que a IA de atendimento continua a conversa quando ela responder.\n- Endereço para a cliente: use o endereço e o mapa do salão. Se a cliente tem horário, chamar_cliente também serve para isso.\n- Mensagens que começam com [localização], [contato], [foto], [vídeo] ou [arquivo] são o que ela mandou. Foto, vídeo e arquivo você não consegue ver: diga isso em uma frase.\n- Na agenda, lembrete diz se o lembrete foi enviado e respondido, e resposta_ao_lembrete traz a resposta dela. \"Respondeu\" não quer dizer que confirmou: leia a resposta. Nunca diga que ela confirmou ou não confirmou sem olhar isso.\n\nCOMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA\n1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.\n   Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).\n2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:\n   \"Anotei pra *Juliana Souza (…2222)*:\n   ✅ Fechou — alongamento em gel, formato amendoado\n   💰 R$ 180\n   Tá certo?\"\n   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único\n   \"Tá certo?\". O que ela não falou (valor, gramas, cm) entra como \"valor: não informado\" — NÃO segure o resumo esperando isso;\n   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.\n3. Só depois do \"sim\" (ou \"isso\", \"pode\", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.\n   Se ela corrigir, ajuste e confirme de novo.\n4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.\n5. Depois de gravar, confirme em poucas palavras que ficou no CRM, variando (ex.: \"Pronto, tá no CRM ✅\", \"Anotado ✅\", \"Feito, já tá na ficha dela 👍\") e, se ainda houver pendência, pergunte a próxima (uma por vez).\n\nREGRAS\n- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.\n- \"fechou\" = vai fazer o serviço; \"pensando\" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); \"nao_fechou\" = desistiu (pergunte o motivo uma vez).\n- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo \"aplicação marcada DD/MM às HH:mm\" e\n  data_proximo_passo nessa data (calcule \"terça que vem\" a partir da data atual). Se a aplicação ainda não está na agenda,\n  ofereça marcar (marcar_horario com o serviço de aplicação da técnica que fechou).\n- Fez um serviço A MAIS do que estava na agenda (ex.: marcou hidratação e fez selagem também): concluir no horário agendado\n  com extras (nunca um horário novo para o serviço a mais).\n- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar (\"Chamar em DD/MM: motivo\"). Diga que ficou anotado\n  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).\n- Uma pergunta por mensagem. Se ela não responder algo, não insista.\n- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até\n  5 min, no horário do salão) para marcar outro horário, e você avisa a Carol quando ela remarcar ou se não responder.\n  Diga isso numa frase curta (\"Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍\").\n- Cliente ATRASADA (pendência atraso_confirmar, ou o aviso \"⏰ … não chegou nem respondeu. Ela está aí?\"): aqui a resposta\n  dela já é a confirmação, não peça \"tá certo?\" (é na hora, ela está ocupada).\n  \"veio\", \"tá aqui\", \"chegou\" → status_atendimento realizado e responda \"Beleza ✅\".\n  \"libera\", \"não veio\", \"pode liberar\" → liberar_horario e diga em uma frase o que a ferramenta respondeu sobre a vaga.\n  Se não ficou claro, pergunte só \"Ela veio?\". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.\n- Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra\n  já tinha adiantado para aquele horário).\n- Você só fala com clientes por avisar_cliente e chamar_cliente, sempre com o sim da Carol. Não existe envio agendado: se ela pedir para\n  chamar a cliente num dia futuro, anote e diga que o envio automático ainda não existe.\n- Avisos que você mandou (\"✅ Remarquei…\", \"⚠️ … não respondeu\") ficam na conversa: se ela responder a eles, entenda pelo contexto.\n- Mensagens que começam com [áudio] são a transcrição de um áudio dela."
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000167",
+      "id": "00000000-0000-4000-8000-000000000168",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        600,
+        900,
         640
       ],
       "parameters": {
@@ -344,12 +367,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000168",
+      "id": "00000000-0000-4000-8000-000000000169",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
       "position": [
-        780,
+        1080,
         640
       ],
       "parameters": {
@@ -366,12 +389,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000169",
+      "id": "00000000-0000-4000-8000-000000000170",
       "name": "buscar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1260,
         640
       ],
       "parameters": {
@@ -717,12 +740,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000170",
+      "id": "00000000-0000-4000-8000-000000000171",
       "name": "agenda_do_dia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1440,
         640
       ],
       "parameters": {
@@ -1068,16 +1091,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000171",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "resultado_avaliacao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        900,
         800
       ],
       "parameters": {
-        "description": "Grava o resultado de uma avaliação. Só use DEPOIS que a Ana confirmou o resumo.",
+        "description": "Grava o resultado de uma avaliação. Só use DEPOIS que a Carol confirmou o resumo.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -1090,7 +1113,7 @@
             "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "resultado": "={{ $fromAI('resultado', `fechou, pensando ou nao_fechou`, 'string') }}",
-            "tecnica_indicada": "={{ $fromAI('tecnica_indicada', `Técnica que a Ana indicou (ex.: queratina, fita adesiva)`, 'string') }}",
+            "tecnica_indicada": "={{ $fromAI('tecnica_indicada', `Técnica que a Carol indicou (ex.: queratina, fita adesiva)`, 'string') }}",
             "tipo_cabelo": "={{ $fromAI('tipo_cabelo', `Tipo de cabelo (ex.: brasileiro, vietnamita)`, 'string') }}",
             "comprimento_cm": "={{ $fromAI('comprimento_cm', `Comprimento em cm, só o número`, 'string') }}",
             "gramas": "={{ $fromAI('gramas', `Gramas, só o número`, 'string') }}",
@@ -1098,7 +1121,7 @@
             "motivo_nao_fechou": "={{ $fromAI('motivo_nao_fechou', `Se não fechou: motivo`, 'string') }}",
             "proximo_passo": "={{ $fromAI('proximo_passo', `Próximo passo combinado (ex.: chamar sexta)`, 'string') }}",
             "data_proximo_passo": "={{ $fromAI('data_proximo_passo', `Data do próximo passo AAAA-MM-DD`, 'string') }}",
-            "observacoes": "={{ $fromAI('observacoes', `Outras observações da Ana`, 'string') }}"
+            "observacoes": "={{ $fromAI('observacoes', `Outras observações da Carol`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -1429,12 +1452,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000172",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "status_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        1080,
         800
       ],
       "parameters": {
@@ -1782,12 +1805,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000173",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "registrar_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1260,
         800
       ],
       "parameters": {
@@ -1802,7 +1825,7 @@
           "value": {
             "acao": "registrar_atendimento",
             "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
-            "telefone": "={{ $fromAI('telefone', `Telefone da cliente (de buscar_cliente, ou o que a Ana disser)`, 'string') }}",
+            "telefone": "={{ $fromAI('telefone', `Telefone da cliente (de buscar_cliente, ou o que a Carol disser)`, 'string') }}",
             "nome": "={{ $fromAI('nome', `Nome da cliente`, 'string') }}",
             "servico": "={{ $fromAI('servico', `Serviço feito (ex.: manutenção, aplicação, avaliação)`, 'string') }}",
             "inicio": "={{ $fromAI('inicio', `Quando foi, AAAA-MM-DDTHH:mm (vazio = agora)`, 'string') }}",
@@ -2138,12 +2161,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000174",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "anotar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1440,
         800
       ],
       "parameters": {
@@ -2490,16 +2513,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000175",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "liberar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        900,
         960
       ],
       "parameters": {
-        "description": "Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. Só use quando a Ana disser \"libera\" ou \"não veio\" para essa cliente. Nunca por conta própria.",
+        "description": "Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. Só use quando a Carol disser \"libera\" ou \"não veio\" para essa cliente. Nunca por conta própria.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -2841,7 +2864,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000176",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "Marcar como lida",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -2869,12 +2892,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000177",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "Ritmo humano",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1440,
+        1740,
         460
       ],
       "parameters": {
@@ -2882,12 +2905,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000178",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Pausa (lendo)",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1740,
+        2040,
         460
       ],
       "parameters": {
@@ -2898,12 +2921,12 @@
       "webhookId": "9fa27be5-9d87-4ebd-8851-275307253967"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000179",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "Digitando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2040,
+        2340,
         460
       ],
       "parameters": {
@@ -2926,12 +2949,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000180",
+      "id": "00000000-0000-4000-8000-000000000181",
       "name": "horarios_livres",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        1080,
         960
       ],
       "parameters": {
@@ -2947,7 +2970,7 @@
             "acao": "horarios_livres",
             "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "data": "={{ $fromAI('data', `Dia AAAA-MM-DD (vazio = hoje)`, 'string') }}",
-            "servico": "={{ $fromAI('servico', `Serviço como a Ana falou (define a duração)`, 'string') }}",
+            "servico": "={{ $fromAI('servico', `Serviço como a Carol falou (define a duração)`, 'string') }}",
             "agendamento_id": "={{ $fromAI('agendamento_id', `Se for para reagendar: o agendamento_id que vai mudar (o horário dele não conta como ocupado). Senão vazio`, 'string') }}"
           },
           "matchingColumns": [],
@@ -3279,16 +3302,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000181",
+      "id": "00000000-0000-4000-8000-000000000182",
       "name": "marcar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1260,
         960
       ],
       "parameters": {
-        "description": "Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Só use DEPOIS do sim da Ana. Nunca use para conseguir falar com uma cliente: para isso existe chamar_cliente.",
+        "description": "Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Só use DEPOIS do sim da Carol. Nunca use para conseguir falar com uma cliente: para isso existe chamar_cliente.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -3302,364 +3325,10 @@
             "cliente_id": "={{ $fromAI('cliente_id', `cliente_id de buscar_cliente (vazio se for cliente nova)`, 'string') }}",
             "nome": "={{ $fromAI('nome', `Nome da cliente nova`, 'string') }}",
             "telefone": "={{ $fromAI('telefone', `Telefone com DDD da cliente nova`, 'string') }}",
-            "servico": "={{ $fromAI('servico', `Serviço como a Ana falou`, 'string') }}",
+            "servico": "={{ $fromAI('servico', `Serviço como a Carol falou`, 'string') }}",
             "inicio": "={{ $fromAI('inicio', `Dia e hora AAAA-MM-DDTHH:mm`, 'string') }}",
             "observacoes": "={{ $fromAI('observacoes', `Observação do horário (se ela disse)`, 'string') }}",
-            "forcar": "={{ $fromAI('forcar', `\"sim\" só se a Ana mandou marcar mesmo com o problema que a ferramenta apontou; senão vazio`, 'string') }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "acao",
-              "displayName": "acao",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "pedido_por",
-              "displayName": "pedido_por",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "busca",
-              "displayName": "busca",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "data",
-              "displayName": "data",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "cliente_id",
-              "displayName": "cliente_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "agendamento_id",
-              "displayName": "agendamento_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "resultado",
-              "displayName": "resultado",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tecnica_indicada",
-              "displayName": "tecnica_indicada",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tipo_cabelo",
-              "displayName": "tipo_cabelo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "comprimento_cm",
-              "displayName": "comprimento_cm",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "gramas",
-              "displayName": "gramas",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "valor",
-              "displayName": "valor",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "motivo_nao_fechou",
-              "displayName": "motivo_nao_fechou",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "proximo_passo",
-              "displayName": "proximo_passo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "data_proximo_passo",
-              "displayName": "data_proximo_passo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "observacoes",
-              "displayName": "observacoes",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "telefone",
-              "displayName": "telefone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "nome",
-              "displayName": "nome",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "servico",
-              "displayName": "servico",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "inicio",
-              "displayName": "inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "texto",
-              "displayName": "texto",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "extras",
-              "displayName": "extras",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "forcar",
-              "displayName": "forcar",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "minutos",
-              "displayName": "minutos",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "a_partir",
-              "displayName": "a_partir",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "ate",
-              "displayName": "ate",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tipo",
-              "displayName": "tipo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "desfazer",
-              "displayName": "desfazer",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "aniversario",
-              "displayName": "aniversario",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "hora_inicio",
-              "displayName": "hora_inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "hora_fim",
-              "displayName": "hora_fim",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        }
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000182",
-      "name": "reagendar",
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2,
-      "position": [
-        1140,
-        960
-      ],
-      "parameters": {
-        "description": "Muda o horário (e o serviço, se ela pedir) do MESMO agendamento. Pode usar direto quando ela disse qual horário e para quando.",
-        "workflowId": {
-          "__rl": true,
-          "value": "g7fUvCP6RPNkJYZT",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "acao": "reagendar",
-            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
-            "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
-            "inicio": "={{ $fromAI('inicio', `Novo dia e hora AAAA-MM-DDTHH:mm`, 'string') }}",
-            "servico": "={{ $fromAI('servico', `Novo serviço, só se ela pediu para trocar; senão vazio`, 'string') }}",
-            "forcar": "={{ $fromAI('forcar', `\"sim\" só se a Ana mandou mudar mesmo com o problema que a ferramenta apontou; senão vazio`, 'string') }}"
+            "forcar": "={{ $fromAI('forcar', `\"sim\" só se a Carol mandou marcar mesmo com o problema que a ferramenta apontou; senão vazio`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -3991,15 +3660,369 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000183",
+      "name": "reagendar",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        960
+      ],
+      "parameters": {
+        "description": "Muda o horário (e o serviço, se ela pedir) do MESMO agendamento. Pode usar direto quando ela disse qual horário e para quando.",
+        "workflowId": {
+          "__rl": true,
+          "value": "g7fUvCP6RPNkJYZT",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "reagendar",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
+            "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
+            "inicio": "={{ $fromAI('inicio', `Novo dia e hora AAAA-MM-DDTHH:mm`, 'string') }}",
+            "servico": "={{ $fromAI('servico', `Novo serviço, só se ela pediu para trocar; senão vazio`, 'string') }}",
+            "forcar": "={{ $fromAI('forcar', `\"sim\" só se a Carol mandou mudar mesmo com o problema que a ferramenta apontou; senão vazio`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "pedido_por",
+              "displayName": "pedido_por",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "busca",
+              "displayName": "busca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cliente_id",
+              "displayName": "cliente_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "agendamento_id",
+              "displayName": "agendamento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resultado",
+              "displayName": "resultado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tecnica_indicada",
+              "displayName": "tecnica_indicada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_cabelo",
+              "displayName": "tipo_cabelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "comprimento_cm",
+              "displayName": "comprimento_cm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gramas",
+              "displayName": "gramas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo_nao_fechou",
+              "displayName": "motivo_nao_fechou",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "proximo_passo",
+              "displayName": "proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_proximo_passo",
+              "displayName": "data_proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "observacoes",
+              "displayName": "observacoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "inicio",
+              "displayName": "inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "extras",
+              "displayName": "extras",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "forcar",
+              "displayName": "forcar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "minutos",
+              "displayName": "minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "a_partir",
+              "displayName": "a_partir",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ate",
+              "displayName": "ate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "desfazer",
+              "displayName": "desfazer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "aniversario",
+              "displayName": "aniversario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_fim",
+              "displayName": "hora_fim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000184",
       "name": "atrasar_agenda",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        900,
         1120
       ],
       "parameters": {
-        "description": "Empurra (ou adianta, minutos negativos) todos os horários a atender do dia a partir de uma hora. Só use DEPOIS do sim da Ana.",
+        "description": "Empurra (ou adianta, minutos negativos) todos os horários a atender do dia a partir de uma hora. Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -4343,16 +4366,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000184",
+      "id": "00000000-0000-4000-8000-000000000185",
       "name": "concluir",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        1080,
         1120
       ],
       "parameters": {
-        "description": "O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Só use DEPOIS do sim da Ana.",
+        "description": "O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -4697,12 +4720,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000185",
+      "id": "00000000-0000-4000-8000-000000000186",
       "name": "chegou",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1260,
         1120
       ],
       "parameters": {
@@ -5049,16 +5072,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000186",
+      "id": "00000000-0000-4000-8000-000000000187",
       "name": "excluir_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1440,
         1120
       ],
       "parameters": {
-        "description": "Apaga de vez um horário lançado por engano (cliente que desmarcou é status_atendimento cancelado). Só use DEPOIS do sim da Ana.",
+        "description": "Apaga de vez um horário lançado por engano (cliente que desmarcou é status_atendimento cancelado). Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -5400,16 +5423,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000187",
+      "id": "00000000-0000-4000-8000-000000000188",
       "name": "bloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        900,
         1280
       ],
       "parameters": {
-        "description": "Marca dias sem atender (viagem, folga, curso): o app e a IA de atendimento param de oferecer horário. Devolve os horários já marcados nesses dias. Só use DEPOIS do sim da Ana.",
+        "description": "Marca dias sem atender (viagem, folga, curso): o app e a IA de atendimento param de oferecer horário. Devolve os horários já marcados nesses dias. Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -5753,16 +5776,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000188",
+      "id": "00000000-0000-4000-8000-000000000189",
       "name": "desbloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        1080,
         1280
       ],
       "parameters": {
-        "description": "Tira o bloqueio que cobre um dia (o salão volta a atender). Só use DEPOIS do sim da Ana.",
+        "description": "Tira o bloqueio que cobre um dia (o salão volta a atender). Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -6104,16 +6127,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000189",
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "bloquear_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1260,
         1280
       ],
       "parameters": {
-        "description": "Marca um período sem atender num dia (ex.: das 14:00 às 16:00): o app e a IA de atendimento param de oferecer esse período. Devolve os horários já marcados nele. Só use DEPOIS do sim da Ana.",
+        "description": "Marca um período sem atender num dia (ex.: das 14:00 às 16:00): o app e a IA de atendimento param de oferecer esse período. Devolve os horários já marcados nele. Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -6458,16 +6481,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000190",
+      "id": "00000000-0000-4000-8000-000000000191",
       "name": "desbloquear_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
+        1440,
         1280
       ],
       "parameters": {
-        "description": "Tira os períodos sem atender de um dia; com hora_inicio, só o que cobre essa hora. Só use DEPOIS do sim da Ana.",
+        "description": "Tira os períodos sem atender de um dia; com hora_inicio, só o que cobre essa hora. Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -6810,12 +6833,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000191",
+      "id": "00000000-0000-4000-8000-000000000192",
       "name": "ver_bloqueios_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        900,
         1440
       ],
       "parameters": {
@@ -7161,12 +7184,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000192",
+      "id": "00000000-0000-4000-8000-000000000193",
       "name": "pausar_ia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        780,
+        1080,
         1440
       ],
       "parameters": {
@@ -7513,16 +7536,16 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000193",
+      "id": "00000000-0000-4000-8000-000000000194",
       "name": "editar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        960,
+        1260,
         1440
       ],
       "parameters": {
-        "description": "Corrige o nome ou grava o aniversário da cliente. Só use DEPOIS do sim da Ana.",
+        "description": "Corrige o nome ou grava o aniversário da cliente. Só use DEPOIS do sim da Carol.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -7866,12 +7889,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000194",
+      "id": "00000000-0000-4000-8000-000000000195",
       "name": "cadastrar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        600,
+        900,
         1600
       ],
       "parameters": {
@@ -7887,360 +7910,8 @@
             "acao": "cadastrar_cliente",
             "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "telefone": "={{ $fromAI('telefone', `Telefone com DDD`, 'string') }}",
-            "nome": "={{ $fromAI('nome', `Nome, só se a Ana disse (vazio se não souber)`, 'string') }}",
-            "observacoes": "={{ $fromAI('observacoes', `O que a cliente quer, como a Ana contou (ex.: quer alongamento em gel)`, 'string') }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "acao",
-              "displayName": "acao",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "pedido_por",
-              "displayName": "pedido_por",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "busca",
-              "displayName": "busca",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "data",
-              "displayName": "data",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "cliente_id",
-              "displayName": "cliente_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "agendamento_id",
-              "displayName": "agendamento_id",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "resultado",
-              "displayName": "resultado",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tecnica_indicada",
-              "displayName": "tecnica_indicada",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tipo_cabelo",
-              "displayName": "tipo_cabelo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "comprimento_cm",
-              "displayName": "comprimento_cm",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "gramas",
-              "displayName": "gramas",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "valor",
-              "displayName": "valor",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "motivo_nao_fechou",
-              "displayName": "motivo_nao_fechou",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "proximo_passo",
-              "displayName": "proximo_passo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "data_proximo_passo",
-              "displayName": "data_proximo_passo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "observacoes",
-              "displayName": "observacoes",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "status",
-              "displayName": "status",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "telefone",
-              "displayName": "telefone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "nome",
-              "displayName": "nome",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "servico",
-              "displayName": "servico",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "inicio",
-              "displayName": "inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "texto",
-              "displayName": "texto",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "extras",
-              "displayName": "extras",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "forcar",
-              "displayName": "forcar",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "minutos",
-              "displayName": "minutos",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "a_partir",
-              "displayName": "a_partir",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "ate",
-              "displayName": "ate",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "tipo",
-              "displayName": "tipo",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "desfazer",
-              "displayName": "desfazer",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "aniversario",
-              "displayName": "aniversario",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "hora_inicio",
-              "displayName": "hora_inicio",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            },
-            {
-              "id": "hora_fim",
-              "displayName": "hora_fim",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "canBeUsedToMatch": true,
-              "type": "string",
-              "removed": false
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        }
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000195",
-      "name": "chamar_cliente",
-      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2,
-      "position": [
-        780,
-        1600
-      ],
-      "parameters": {
-        "description": "Manda pelo número do salão o texto aprovado pela Ana para uma cliente, sem precisar de horário. Só use DEPOIS do sim da Ana ao texto exato.",
-        "workflowId": {
-          "__rl": true,
-          "value": "g7fUvCP6RPNkJYZT",
-          "mode": "id"
-        },
-        "workflowInputs": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "acao": "chamar_cliente",
-            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
-            "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
-            "texto": "={{ $fromAI('texto', `O texto exato que a Ana aprovou`, 'string') }}"
+            "nome": "={{ $fromAI('nome', `Nome, só se a Carol disse (vazio se não souber)`, 'string') }}",
+            "observacoes": "={{ $fromAI('observacoes', `O que a cliente quer, como a Carol contou (ex.: quer alongamento em gel)`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -8572,15 +8243,15 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000196",
-      "name": "avisar_cliente",
+      "name": "chamar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        1140,
-        1440
+        1080,
+        1600
       ],
       "parameters": {
-        "description": "Manda mensagem para a cliente pelo número do salão sobre um horário dela. Só use DEPOIS do sim da Ana.",
+        "description": "Manda pelo número do salão o texto aprovado pela Carol para uma cliente, sem precisar de horário. Só use DEPOIS do sim da Carol ao texto exato.",
         "workflowId": {
           "__rl": true,
           "value": "g7fUvCP6RPNkJYZT",
@@ -8589,11 +8260,10 @@
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {
-            "acao": "avisar_cliente",
+            "acao": "chamar_cliente",
             "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
-            "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
-            "tipo": "={{ $fromAI('tipo', `\"aviso\" (horário mudado, cancelamento, recado) ou \"remarcacao\" (imprevisto da Ana: pede para a cliente remarcar)`, 'string') }}",
-            "texto": "={{ $fromAI('texto', `Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto aprovado pela Ana`, 'string') }}"
+            "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
+            "texto": "={{ $fromAI('texto', `O texto exato que a Carol aprovou`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -8925,11 +8595,364 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000197",
-      "name": "Responder a Ana",
+      "name": "avisar_cliente",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        1440,
+        1440
+      ],
+      "parameters": {
+        "description": "Manda mensagem para a cliente pelo número do salão sobre um horário dela. Só use DEPOIS do sim da Carol.",
+        "workflowId": {
+          "__rl": true,
+          "value": "g7fUvCP6RPNkJYZT",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "avisar_cliente",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
+            "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
+            "tipo": "={{ $fromAI('tipo', `\"aviso\" (horário mudado, cancelamento, recado) ou \"remarcacao\" (imprevisto da Carol: pede para a cliente remarcar)`, 'string') }}",
+            "texto": "={{ $fromAI('texto', `Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto aprovado pela Carol`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "pedido_por",
+              "displayName": "pedido_por",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "busca",
+              "displayName": "busca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cliente_id",
+              "displayName": "cliente_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "agendamento_id",
+              "displayName": "agendamento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resultado",
+              "displayName": "resultado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tecnica_indicada",
+              "displayName": "tecnica_indicada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_cabelo",
+              "displayName": "tipo_cabelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "comprimento_cm",
+              "displayName": "comprimento_cm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gramas",
+              "displayName": "gramas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo_nao_fechou",
+              "displayName": "motivo_nao_fechou",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "proximo_passo",
+              "displayName": "proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_proximo_passo",
+              "displayName": "data_proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "observacoes",
+              "displayName": "observacoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "inicio",
+              "displayName": "inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "extras",
+              "displayName": "extras",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "forcar",
+              "displayName": "forcar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "minutos",
+              "displayName": "minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "a_partir",
+              "displayName": "a_partir",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ate",
+              "displayName": "ate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "desfazer",
+              "displayName": "desfazer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "aniversario",
+              "displayName": "aniversario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_fim",
+              "displayName": "hora_fim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000198",
+      "name": "Responder a Carol",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2340,
+        2640,
         460
       ],
       "parameters": {
@@ -8955,12 +8978,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000318",
+      "id": "00000000-0000-4000-8000-000000000319",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2700,
+        3000,
         0
       ],
       "parameters": {
@@ -8979,12 +9002,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000319",
+      "id": "00000000-0000-4000-8000-000000000320",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3000,
+        3300,
         0
       ],
       "parameters": {
@@ -8992,12 +9015,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000320",
+      "id": "00000000-0000-4000-8000-000000000321",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3300,
+        3600,
         0
       ],
       "parameters": {
@@ -9026,12 +9049,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000321",
+      "id": "00000000-0000-4000-8000-000000000322",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3600,
+        3900,
         0
       ],
       "parameters": {
@@ -9046,25 +9069,25 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000322",
+      "id": "00000000-0000-4000-8000-000000000323",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3900,
-        0
+        0,
+        460
       ],
       "parameters": {
         "jsCode": "return [].concat($('Memória: conferir (Agente assistente)').first().json.manter || []).reverse().map((m) => ({ json: { m }, pairedItem: 0 }));"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000323",
+      "id": "00000000-0000-4000-8000-000000000324",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
+        300,
         460
       ],
       "parameters": {
@@ -9081,12 +9104,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000324",
+      "id": "00000000-0000-4000-8000-000000000325",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        300,
+        600,
         460
       ],
       "parameters": {
@@ -9195,6 +9218,17 @@
       "main": [
         [
           {
+            "node": "Ler pedidos abertos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ler pedidos abertos": {
+      "main": [
+        [
+          {
             "node": "Memória: ler (Agente assistente)",
             "type": "main",
             "index": 0
@@ -9239,7 +9273,7 @@
       "main": [
         [
           {
-            "node": "Responder a Ana",
+            "node": "Responder a Carol",
             "type": "main",
             "index": 0
           }

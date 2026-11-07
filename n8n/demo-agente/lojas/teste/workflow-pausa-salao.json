@@ -11,7 +11,7 @@
         -258
       ],
       "parameters": {
-        "content": "## Transferir para a Ana\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou o assunto precisa da Ana.\nPausa a IA 12 h para a cliente, salva o resumo na ficha e avisa a Ana no WhatsApp (número de alerta do app).\nMande #ia na conversa para devolver à IA.",
+        "content": "## Transferir para a Carol\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou o assunto precisa da Carol.\nPausa a IA 12 h para a cliente, salva o resumo na ficha e avisa a Carol no WhatsApp (número de alerta do app).\nMande #ia na conversa para devolver à IA.",
         "width": 1400,
         "height": 198,
         "color": 3
@@ -83,7 +83,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "TRANSFERIDO: a Ana recebeu o resumo no WhatsApp e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora numa frase gentil que passou o assunto pra Ana e que ela responde por aqui (ex.: \"Vou confirmar com a Ana se pode trazer seu cachorro, ela te responde por aqui, tá?\" ou \"Vou passar sua conversa pra Ana, ela te chama por aqui 😊\"), sem prometer prazo e sem falar em equipe.",
+              "value": "TRANSFERIDO: a Carol recebeu o resumo no WhatsApp e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora numa frase gentil que passou o assunto pra Carol e que ela responde por aqui (ex.: \"Vou confirmar com a Carol se pode trazer seu cachorro, ela te responde por aqui, tá?\" ou \"Vou passar sua conversa pra Carol, ela te chama por aqui 😊\"), sem prometer prazo e sem falar em equipe.",
               "type": "string"
             }
           ]
@@ -194,7 +194,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000094",
-      "name": "Avisar a Ana (WhatsApp)",
+      "name": "Avisar a Carol (WhatsApp)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -274,14 +274,14 @@
       "main": [
         [
           {
-            "node": "Avisar a Ana (WhatsApp)",
+            "node": "Avisar a Carol (WhatsApp)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Avisar a Ana (WhatsApp)": {
+    "Avisar a Carol (WhatsApp)": {
       "main": [
         [
           {

@@ -11,7 +11,7 @@
         -206
       ],
       "parameters": {
-        "content": "## Assistente - Ferramentas\nExecuta no banco o que a assistente da Ana pediu (funções n8n_assistente_* do Supabase) e devolve o resultado.",
+        "content": "## Assistente - Ferramentas\nExecuta no banco o que a assistente da Carol pediu (funções n8n_assistente_* do Supabase) e devolve o resultado.",
         "width": 1400,
         "height": 146,
         "color": 6

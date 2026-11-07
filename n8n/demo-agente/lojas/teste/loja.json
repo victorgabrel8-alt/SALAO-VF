@@ -4,7 +4,7 @@
   "nicho": "manicure",
   "empresa_id": "ff4b7937-1abb-4803-83c8-e0896d94fc9f",
   "instancia": "karol-manicure",
-  "dona": "Ana",
+  "dona": "Carol",
   "cidade": "Sinop",
   "assistente_numeros": [
     "5500000000001"
@@ -98,12 +98,12 @@
       "use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à Gleide, sem prometer valor."
     ],
     [
-      "(ex.: Pode trazer cachorro de porte grande na avaliação?)",
-      "(ex.: Pode trazer a filha de 5 anos junto?)"
+      "(ex.: Pode levar cachorro de porte grande na avaliação?; Pode passar aí sem marcar horário?)",
+      "(ex.: Pode trazer a filha de 5 anos junto?; Pode passar aí sem marcar horário?)"
     ],
     [
-      "(ex.: avaliação qui 29/10 9h)",
-      "(ex.: pé e mão qui 29/10 9h)"
+      "(ex.: trabalha em hospital, sem horário fixo)",
+      "(ex.: casamento no sábado, quer gel nude)"
     ],
     [
       "(ex.: quer avaliação à distância, mora longe)",
