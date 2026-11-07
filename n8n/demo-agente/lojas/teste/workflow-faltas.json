@@ -11,7 +11,7 @@
         -232
       ],
       "parameters": {
-        "content": "## Faltas, atrasos e vagas\nA cada 5 min (8h–20h): chama quem faltou ou está atrasada, oferece vaga que abriu para quem tem horário depois,\ne conta para a Carol o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).",
+        "content": "## Faltas, atrasos e vagas\nA cada 5 min (8h–20h): chama quem faltou ou está atrasada, oferece vaga que abriu para quem tem horário depois,\ne conta para a Caroline o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).",
         "width": 1400,
         "height": 172,
         "color": 1
@@ -421,7 +421,7 @@
         400
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ' ' + nome : '') + '! ';\n  const texto = l.online\n    ? oi + 'Sua avaliação online é ' + quando(l.inicio) + ' 💛 A Carol te liga por áudio aqui no WhatsApp. Posso confirmar?'\n    : oi + 'Seu horário é ' + quando(l.inicio) + (l.servico ? ' (' + l.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '') +\n      ' aqui no salão' + (l.endereco ? ', ' + l.endereco : '') + ' 💛 Posso confirmar?';\n  return { json: { ...l, texto } };\n});\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ' ' + nome : '') + '! ';\n  const texto = l.online\n    ? oi + 'Sua avaliação online é ' + quando(l.inicio) + ' 💛 A Caroline te liga por áudio aqui no WhatsApp. Posso confirmar?'\n    : oi + 'Seu horário é ' + quando(l.inicio) + (l.servico ? ' (' + l.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '') +\n      ' aqui no salão' + (l.endereco ? ', ' + l.endereco : '') + ' 💛 Posso confirmar?';\n  return { json: { ...l, texto } };\n});\n"
       }
     },
     {
@@ -575,7 +575,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000227",
-      "name": "Perguntar à Carol (atraso)",
+      "name": "Perguntar à Caroline (atraso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -704,7 +704,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000232",
-      "name": "Avisar a Carol (conflito)",
+      "name": "Avisar a Caroline (conflito)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -1097,7 +1097,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000246",
-      "name": "Avisos para a Carol",
+      "name": "Avisos para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -1137,12 +1137,12 @@
         1400
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.contato_id);\nif (!as.length) return [];\nconst linha = (a) => {\n  const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  if (a.situacao === 'remarcou') {\n    const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';\n    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';\n    return a.tipo === 'falta'\n      ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'\n      : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';\n  }\n  return a.tipo === 'falta'\n    ? '⚠️ ' + n + ' não respondeu sobre a falta de ' + quando(a.horario_original) + '. Quer chamar você mesma?'\n    : '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';\n};\nconst texto = as.map(linha).join('\\n');\nconst itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens,\n  // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a Carol responder\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.contato_id);\nif (!as.length) return [];\nconst linha = (a) => {\n  const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  if (a.situacao === 'remarcou') {\n    const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';\n    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';\n    return a.tipo === 'falta'\n      ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'\n      : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';\n  }\n  return a.tipo === 'falta'\n    ? '⚠️ ' + n + ' não respondeu sobre a falta de ' + quando(a.horario_original) + '. Quer chamar você mesma?'\n    : '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';\n};\nconst texto = as.map(linha).join('\\n');\nconst itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens,\n  // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a Caroline responder\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
       "id": "00000000-0000-4000-8000-000000000248",
-      "name": "Mandar para a Carol",
+      "name": "Mandar para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -1328,8 +1328,8 @@
       }
     },
     {
-      "id": "db7a8c13-cee1-4c57-8030-475da301ef20",
-      "name": "Trava de teste: Perguntar à Carol (atraso)",
+      "id": "59b9a357-a8f0-4552-8127-d5a2898d74df",
+      "name": "Trava de teste: Perguntar à Caroline (atraso)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -1362,8 +1362,8 @@
       }
     },
     {
-      "id": "0338a51c-1476-4718-8d31-a1d7faed66c1",
-      "name": "Trava de teste: Avisar a Carol (conflito)",
+      "id": "4354dea4-261a-4fb9-88cd-744bac43e6f2",
+      "name": "Trava de teste: Avisar a Caroline (conflito)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -1464,8 +1464,8 @@
       }
     },
     {
-      "id": "8e771c23-1194-4e57-8a61-384a70e82617",
-      "name": "Trava de teste: Mandar para a Carol",
+      "id": "987d4df1-1717-4a09-833a-ffd1b3b9e82f",
+      "name": "Trava de teste: Mandar para a Caroline",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
@@ -1549,7 +1549,7 @@
             "index": 0
           },
           {
-            "node": "Avisos para a Carol",
+            "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
           }
@@ -1595,7 +1595,7 @@
             "index": 0
           },
           {
-            "node": "Avisos para a Carol",
+            "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
           }
@@ -1705,14 +1705,14 @@
       "main": [
         [
           {
-            "node": "Trava de teste: Perguntar à Carol (atraso)",
+            "node": "Trava de teste: Perguntar à Caroline (atraso)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Perguntar à Carol (atraso)": {
+    "Perguntar à Caroline (atraso)": {
       "main": [
         [
           {
@@ -1749,14 +1749,14 @@
       "main": [
         [
           {
-            "node": "Trava de teste: Avisar a Carol (conflito)",
+            "node": "Trava de teste: Avisar a Caroline (conflito)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Avisar a Carol (conflito)": {
+    "Avisar a Caroline (conflito)": {
       "main": [
         [
           {
@@ -1921,7 +1921,7 @@
         ]
       ]
     },
-    "Avisos para a Carol": {
+    "Avisos para a Caroline": {
       "main": [
         [
           {
@@ -1936,14 +1936,14 @@
       "main": [
         [
           {
-            "node": "Trava de teste: Mandar para a Carol",
+            "node": "Trava de teste: Mandar para a Caroline",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Mandar para a Carol": {
+    "Mandar para a Caroline": {
       "main": [
         [
           {
@@ -2001,11 +2001,11 @@
         []
       ]
     },
-    "Trava de teste: Perguntar à Carol (atraso)": {
+    "Trava de teste: Perguntar à Caroline (atraso)": {
       "main": [
         [
           {
-            "node": "Perguntar à Carol (atraso)",
+            "node": "Perguntar à Caroline (atraso)",
             "type": "main",
             "index": 0
           }
@@ -2013,11 +2013,11 @@
         []
       ]
     },
-    "Trava de teste: Avisar a Carol (conflito)": {
+    "Trava de teste: Avisar a Caroline (conflito)": {
       "main": [
         [
           {
-            "node": "Avisar a Carol (conflito)",
+            "node": "Avisar a Caroline (conflito)",
             "type": "main",
             "index": 0
           }
@@ -2049,11 +2049,11 @@
         []
       ]
     },
-    "Trava de teste: Mandar para a Carol": {
+    "Trava de teste: Mandar para a Caroline": {
       "main": [
         [
           {
-            "node": "Mandar para a Carol",
+            "node": "Mandar para a Caroline",
             "type": "main",
             "index": 0
           }

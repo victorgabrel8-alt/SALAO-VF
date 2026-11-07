@@ -134,7 +134,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Recebe pedido da IA').first().json.jid, mediatype: 'document', mimetype: 'application/pdf', media: $env.SUPABASE_URL + '/storage/v1' + $json.signedURL, fileName: \"Catalogo Carol Ferreira.pdf\", delay: 1500 }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Recebe pedido da IA').first().json.jid, mediatype: 'document', mimetype: 'application/pdf', media: $env.SUPABASE_URL + '/storage/v1' + $json.signedURL, fileName: \"Catalogo Studio Caroline Ferreira.pdf\", delay: 1500 }) }}",
         "options": {
           "timeout": 60000
         }

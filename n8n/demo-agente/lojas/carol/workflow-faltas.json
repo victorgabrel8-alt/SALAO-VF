@@ -1,0 +1,2071 @@
+{
+  "name": "[Studio Caroline Ferreira] IA - Faltas e avisos",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000011",
+      "name": "Nota 11",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -232
+      ],
+      "parameters": {
+        "content": "## Faltas, atrasos e vagas\nA cada 5 min (8h–20h): chama quem faltou ou está atrasada, oferece vaga que abriu para quem tem horário depois,\ne conta para a Caroline o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).",
+        "width": 1400,
+        "height": 172,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000207",
+      "name": "A cada 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000208",
+      "name": "Horário do salão?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "h1",
+              "leftValue": "={{ $now.setZone('America/Cuiaba').hour >= 8 && $now.setZone('America/Cuiaba').hour < 20 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000209",
+      "name": "Disparar agora (teste)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "carol-faltas-avisos",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "e43c11ca-ec3f-471b-89b0-7b38056f8ac8",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000210",
+      "name": "Faltas para chamar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_faltas_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000211",
+      "name": "Mensagem da falta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((f) => f.agendamento_id).map((f) => {\n  const nome = primeiro(f.nome);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + '! Sentimos sua falta ' + quando(f.inicio) +\n    ' 💛 Aconteceu alguma coisa? Se quiser, já vejo outro horário pra você.';\n  return { json: { ...f, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000212",
+      "name": "Mandar para a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000213",
+      "name": "Enviou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000214",
+      "name": "Registrar chamada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_chamada_falta",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_agendamento_id: $('Mensagem da falta').item.json.agendamento_id, p_mensagem: $('Mensagem da falta').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000215",
+      "name": "Atrasos para chamar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000216",
+      "name": "Mensagem do atraso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((a) => a.agendamento_id).map((a) => {\n  const nome = primeiro(a.nome);\n  const texto = a.etapa === 1\n    ? 'Oi' + (nome ? ' ' + nome : '') + '! Seu horário aqui no salão era ' + quando(a.inicio) + ' 💛 Está a caminho?'\n    : (nome ? nome + ', c' : 'C') + 'onseguiu vir? Se hoje não der, me avisa que eu vejo outro horário pra você, sem problema 💛';\n  return { json: { ...a, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000217",
+      "name": "Chamar a atrasada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000218",
+      "name": "Chamou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000219",
+      "name": "Registrar chamada do atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_chamada_atraso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_agendamento_id: $('Mensagem do atraso').item.json.agendamento_id, p_mensagem: $('Mensagem do atraso').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000220",
+      "name": "Lembretes para mandar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_lembretes_para_mandar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000221",
+      "name": "Mensagem do lembrete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ' ' + nome : '') + '! ';\n  const texto = l.online\n    ? oi + 'Sua avaliação online é ' + quando(l.inicio) + ' 💛 A Caroline te liga por áudio aqui no WhatsApp. Posso confirmar?'\n    : oi + 'Seu horário é ' + quando(l.inicio) + (l.servico ? ' (' + l.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '') +\n      ' aqui no salão' + (l.endereco ? ', ' + l.endereco : '') + ' 💛 Posso confirmar?';\n  return { json: { ...l, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000222",
+      "name": "Lembrar a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000223",
+      "name": "Lembrou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "l1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000224",
+      "name": "Registrar lembrete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_lembrete",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_agendamento_id: $('Mensagem do lembrete').item.json.agendamento_id, p_mensagem: $('Mensagem do lembrete').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000225",
+      "name": "Atrasos para confirmar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_confirmar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000226",
+      "name": "Mensagem veio ou libera",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        600
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ('5500000000002' || '5500000000002').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000227",
+      "name": "Perguntar à Caroline (atraso)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000228",
+      "name": "Guardar pergunta do atraso",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        600
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=carol:assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
+        "messageData": "={{ $('Mensagem veio ou libera').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000229",
+      "name": "Marcar atraso perguntado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000230",
+      "name": "Conflitos de atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_conflitos_atraso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000231",
+      "name": "Mensagem do conflito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        800
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst cs = $input.all().map((i) => i.json).filter((c) => c.contato_id);\nif (!cs.length) return [];\nconst n = (s) => '*' + (s || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\nconst texto = cs.map((c) => '⚠️ ' + n(c.nome_atrasada) + ' (' + quando(c.horario_atrasada) + ') apareceu, mas ' + n(c.nome_adiantou) +\n  ' já adiantou para ' + quando(c.novo_horario) + '. As duas estão no mesmo horário: como quer resolver?').join('\\n');\nconst itens = cs.map((c) => ({ id: c.contato_id, situacao: 'conflito' }));\nconst numeros = ('5500000000002' || '5500000000002').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000232",
+      "name": "Avisar a Caroline (conflito)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000233",
+      "name": "Guardar aviso do conflito",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        800
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=carol:assistente:{{ $('Mensagem do conflito').item.json.tel }}",
+        "messageData": "={{ $('Mensagem do conflito').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000234",
+      "name": "Marcar conflito avisado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_avisado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_itens: $('Mensagem do conflito').item.json.itens }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000235",
+      "name": "Vagas para oferecer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_vagas_para_oferecer",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000236",
+      "name": "Mensagem da vaga",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n// uma oferta por cliente por vez, mesmo se abriram duas vagas antes do horário dela\nconst vistas = new Set();\nreturn $input.all().map((i) => i.json).filter((v) => v.vaga_id && !vistas.has(v.cliente_id) && vistas.add(v.cliente_id)).map((v) => {\n  const nome = primeiro(v.nome);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + '! Abriu um horário ' + quando(v.vaga_inicio) + ', antes do seu (' + quando(v.inicio_atual) +\n    ') 💛 Se quiser adiantar, é só me falar que eu já troco pra você. Se preferir manter o seu, tudo certo também!';\n  return { json: { ...v, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000237",
+      "name": "Oferecer para a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000238",
+      "name": "Ofereceu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        1000
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "v1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000239",
+      "name": "Registrar oferta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_oferta_vaga",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_vaga_id: $('Mensagem da vaga').item.json.vaga_id, p_agendamento_id: $('Mensagem da vaga').item.json.agendamento_id, p_mensagem: $('Mensagem da vaga').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000240",
+      "name": "Mudanças da IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_mudancas_para_avisar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000241",
+      "name": "Mensagem da mudança",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "\nconst ms = $input.all().map((i) => i.json).filter((m) => m.mudanca_id);\nif (!ms.length) return [];\nconst linha = (m) => {\n  const n = '*' + (m.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  const serv = m.servico ? ' (' + m.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '';\n  if (m.tipo === 'mudou_modalidade') return '🔁 ' + n + ' mudou a avaliação de ' + m.de_texto + ' para *' + m.para_texto + '*.';\n  return m.tipo === 'cancelou'\n    ? '❌ ' + n + ' cancelou o horário de ' + m.de_texto + serv + '.'\n    : '📅 ' + n + ' mudou o horário de ' + m.de_texto + ' para *' + m.para_texto + '*' + serv + '.';\n};\nconst texto = ms.map(linha).join('\\n');\nconst ids = ms.map((m) => m.mudanca_id);\nconst numeros = ('5500000000002' || '5500000000002').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000242",
+      "name": "Avisar a mudança",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000243",
+      "name": "Avisou a mudança?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        1200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "m1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000244",
+      "name": "Guardar a mudança na memória",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        1200
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=carol:assistente:{{ $('Mensagem da mudança').item.json.tel }}",
+        "messageData": "={{ $('Mensagem da mudança').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000245",
+      "name": "Marcar mudança avisada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_mudancas_avisadas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_ids: $('Mensagem da mudança').item.json.ids }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000246",
+      "name": "Avisos para a Caroline",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        1400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_avisos_para_gleide",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000247",
+      "name": "Mensagem do aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1400
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.contato_id);\nif (!as.length) return [];\nconst linha = (a) => {\n  const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  if (a.situacao === 'remarcou') {\n    const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';\n    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';\n    return a.tipo === 'falta'\n      ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'\n      : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';\n  }\n  return a.tipo === 'falta'\n    ? '⚠️ ' + n + ' não respondeu sobre a falta de ' + quando(a.horario_original) + '. Quer chamar você mesma?'\n    : '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';\n};\nconst texto = as.map(linha).join('\\n');\nconst itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));\nconst numeros = ('5500000000002' || '5500000000002').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens,\n  // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a Caroline responder\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000248",
+      "name": "Mandar para a Caroline",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000249",
+      "name": "Guardar na memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        1400
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=carol:assistente:{{ $('Mensagem do aviso').item.json.tel }}",
+        "messageData": "={{ $('Mensagem do aviso').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000250",
+      "name": "Marcar avisado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        1400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_avisado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_itens: $('Mensagem do aviso').item.json.itens }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "fdc92c5a-aa10-4b43-8596-ecadf348ac9e",
+      "name": "Trava de teste: Mandar para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "6a4e3172-12a1-4919-883c-6ae03cec4d6d",
+      "name": "Trava de teste: Chamar a atrasada",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c0f09adc-c1b8-44f7-81d7-dca25c5e6144",
+      "name": "Trava de teste: Lembrar a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b2585b00-2596-4771-8961-3ee92cde6651",
+      "name": "Trava de teste: Perguntar à Caroline (atraso)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b38fa753-2456-4ccf-8c02-6397f2ed10ba",
+      "name": "Trava de teste: Avisar a Caroline (conflito)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        680
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "9371173d-60b1-4f87-8841-ed9661fc114b",
+      "name": "Trava de teste: Oferecer para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        880
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e410afb6-47b4-4c27-8a70-e57a9f6da059",
+      "name": "Trava de teste: Avisar a mudança",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        1080
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7de39d24-7f3d-429b-854c-8b5ad4d17463",
+      "name": "Trava de teste: Mandar para a Caroline",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        1280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "A cada 5 min": {
+      "main": [
+        [
+          {
+            "node": "Horário do salão?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Horário do salão?": {
+      "main": [
+        [
+          {
+            "node": "Mudanças da IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lembretes para mandar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para confirmar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Conflitos de atraso",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Faltas para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vagas para oferecer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Avisos para a Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste)": {
+      "main": [
+        [
+          {
+            "node": "Mudanças da IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lembretes para mandar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para confirmar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Conflitos de atraso",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Faltas para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vagas para oferecer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Avisos para a Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembretes para mandar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do lembrete": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Lembrar a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrar a cliente": {
+      "main": [
+        [
+          {
+            "node": "Lembrou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atrasos para chamar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do atraso": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Chamar a atrasada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar a atrasada": {
+      "main": [
+        [
+          {
+            "node": "Chamou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar chamada do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atrasos para confirmar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem veio ou libera",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem veio ou libera": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Perguntar à Caroline (atraso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perguntar à Caroline (atraso)": {
+      "main": [
+        [
+          {
+            "node": "Guardar pergunta do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar pergunta do atraso": {
+      "main": [
+        [
+          {
+            "node": "Marcar atraso perguntado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conflitos de atraso": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do conflito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do conflito": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Avisar a Caroline (conflito)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a Caroline (conflito)": {
+      "main": [
+        [
+          {
+            "node": "Guardar aviso do conflito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar aviso do conflito": {
+      "main": [
+        [
+          {
+            "node": "Marcar conflito avisado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faltas para chamar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem da falta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem da falta": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Enviou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar chamada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vagas para oferecer": {
+      "main": [
+        [
+          {
+            "node": "Mensagem da vaga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem da vaga": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Oferecer para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oferecer para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Ofereceu?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ofereceu?": {
+      "main": [
+        [
+          {
+            "node": "Registrar oferta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mudanças da IA": {
+      "main": [
+        [
+          {
+            "node": "Mensagem da mudança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem da mudança": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Avisar a mudança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a mudança": {
+      "main": [
+        [
+          {
+            "node": "Avisou a mudança?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisou a mudança?": {
+      "main": [
+        [
+          {
+            "node": "Guardar a mudança na memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar a mudança na memória": {
+      "main": [
+        [
+          {
+            "node": "Marcar mudança avisada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisos para a Caroline": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do aviso": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Mandar para a Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar para a Caroline": {
+      "main": [
+        [
+          {
+            "node": "Guardar na memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar na memória da assistente": {
+      "main": [
+        [
+          {
+            "node": "Marcar avisado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trava de teste: Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Chamar a atrasada": {
+      "main": [
+        [
+          {
+            "node": "Chamar a atrasada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Lembrar a cliente": {
+      "main": [
+        [
+          {
+            "node": "Lembrar a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Perguntar à Caroline (atraso)": {
+      "main": [
+        [
+          {
+            "node": "Perguntar à Caroline (atraso)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Avisar a Caroline (conflito)": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Caroline (conflito)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Oferecer para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Oferecer para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Avisar a mudança": {
+      "main": [
+        [
+          {
+            "node": "Avisar a mudança",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Mandar para a Caroline": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  }
+}

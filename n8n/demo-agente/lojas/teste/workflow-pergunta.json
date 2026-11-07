@@ -1,5 +1,5 @@
 {
-  "name": "[Loja Teste] Perguntar para a Carol",
+  "name": "[Loja Teste] Perguntar para a Caroline",
   "nodes": [
     {
       "id": "00000000-0000-4000-9000-000000000014",
@@ -11,7 +11,7 @@
         -206
       ],
       "parameters": {
-        "content": "## Perguntar para a Carol\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Carol e guarda para repassar a resposta quando ela tocar em Responder.",
+        "content": "## Perguntar para a Caroline\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Caroline e guarda para repassar a resposta quando ela tocar em Responder.",
         "width": 1400,
         "height": 146,
         "color": 1
@@ -83,7 +83,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000285",
-      "name": "Enviar pergunta à Carol",
+      "name": "Enviar pergunta à Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -150,7 +150,7 @@
         "operation": "push",
         "list": "=teste:assistente:{{ $('Supabase: número de alerta').first().json.alerta }}",
         "tail": false,
-        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'Pedi à Carol o orçamento de cabelo de ' : 'Perguntei à Carol sobre ') + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'Pedi à Caroline o orçamento de cabelo de ' : 'Perguntei à Caroline sobre ') + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
       },
       "credentials": {
         "redis": {
@@ -175,7 +175,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ $('Enviar pergunta à Carol').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'ORÇAMENTO PEDIDO: a Carol recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Carol chega à cliente automaticamente.' : 'PERGUNTADO: a Carol recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Carol e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Carol responder, a resposta chega à cliente automaticamente.') : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.' }}",
+              "value": "={{ $('Enviar pergunta à Caroline').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'ORÇAMENTO PEDIDO: a Caroline recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Caroline chega à cliente automaticamente.' : 'PERGUNTADO: a Caroline recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Caroline e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Caroline responder, a resposta chega à cliente automaticamente.') : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.' }}",
               "type": "string"
             }
           ]
@@ -200,14 +200,14 @@
       "main": [
         [
           {
-            "node": "Enviar pergunta à Carol",
+            "node": "Enviar pergunta à Caroline",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Enviar pergunta à Carol": {
+    "Enviar pergunta à Caroline": {
       "main": [
         [
           {

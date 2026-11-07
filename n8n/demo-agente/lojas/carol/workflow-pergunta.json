@@ -1,0 +1,250 @@
+{
+  "name": "[Studio Caroline Ferreira] Perguntar para a Caroline",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000014",
+      "name": "Nota 14",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Perguntar para a Caroline\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Caroline e guarda para repassar a resposta quando ela tocar em Responder.",
+        "width": 1400,
+        "height": 146,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000283",
+      "name": "Recebe pergunta da IA",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "jid"
+            },
+            {
+              "name": "nome"
+            },
+            {
+              "name": "pergunta"
+            },
+            {
+              "name": "contexto"
+            },
+            {
+              "name": "tipo"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000284",
+      "name": "Supabase: número de alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000285",
+      "name": "Enviar pergunta à Caroline",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'caroline-ferreira' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.') }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000286",
+      "name": "Guardar pedido",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=carol:pedido:{{ $json.key?.id || 'falhou' }}",
+        "expire": true,
+        "ttl": 259200,
+        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta, tipo: $('Recebe pergunta da IA').first().json.tipo || 'pergunta', empresa: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000287",
+      "name": "Memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=carol:assistente:{{ $('Supabase: número de alerta').first().json.alerta }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'Pedi à Caroline o orçamento de cabelo de ' : 'Perguntei à Caroline sobre ') + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000288",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $('Enviar pergunta à Caroline').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'ORÇAMENTO PEDIDO: a Caroline recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Caroline chega à cliente automaticamente.' : 'PERGUNTADO: a Caroline recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Caroline e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Caroline responder, a resposta chega à cliente automaticamente.') : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Recebe pergunta da IA": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: número de alerta": {
+      "main": [
+        [
+          {
+            "node": "Enviar pergunta à Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar pergunta à Caroline": {
+      "main": [
+        [
+          {
+            "node": "Guardar pedido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar pedido": {
+      "main": [
+        [
+          {
+            "node": "Memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória da assistente": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
