@@ -36,11 +36,11 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
         sendHeaders: true, headerParameters: supaHeaders, options: {},
       }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
       enviar('Enviar pergunta à Gleide', [440, 0], '$json.alerta',
-        `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ ') + (${P}.nome || 'Cliente') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
-        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder e escreva a resposta.')`),
+        `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + (${P}.nome || 'sem nome') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
+        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')`),
       node('Guardar pedido', 'n8n-nodes-base.redis', 1, [660, 0], {
         operation: 'set', key: "=pedido:{{ $json.key?.id || 'falhou' }}", expire: true, ttl: 259200,
-        value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta' }) }}`,
+        value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta', empresa: $env.EMPRESA_ID }) }}`,
       }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       // a assistente precisa saber do pedido: se a Gleide escrever sem citar, ela pede para tocar em Responder
       node('Memória da assistente', 'n8n-nodes-base.redis', 1, [880, 0], {
@@ -65,7 +65,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
   // ---------- Ferramenta no agente ----------
   workflow.nodes.push(toolSub('perguntar_para_gleide', [3360, 200],
     'Pergunta à Gleide uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança ' +
-    'sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Coisas de bom senso (levar o ' +
+    'sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Nunca use para agendamento: dia, horário, ' +
+    'passar sem marcar, plantão ou falta de tempo você resolve sozinha. Coisas de bom senso (levar o ' +
     'filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à ' +
     'cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para reclamação, dor ou pedido de falar com ela, ' +
     'use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou ' +
@@ -73,8 +74,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
       nome: "={{ $('Montar entrada').first().json.nome }}", tipo: 'pergunta' },
-    [['pergunta', 'A pergunta direta para a Gleide, até 15 palavras, sem "a cliente quer saber" nem o nome dela (ex.: Pode trazer cachorro de porte grande na avaliação?)', 'string'],
-      ['contexto', 'Só o que a Gleide precisa e não está na pergunta, até 8 palavras (ex.: avaliação qui 29/10 9h). Não repita a pergunta. Pode ficar vazio.', 'string']]));
+    [['pergunta', 'O que a cliente quer saber, em palavras simples, até 12 palavras, sem o nome dela (ex.: Pode levar cachorro de porte grande na avaliação?; Pode passar aí sem marcar horário?)', 'string'],
+      ['contexto', 'O motivo, se ajudar a Gleide a decidir, até 8 palavras, sem o nome da cliente e sem dado de saúde que não importe (ex.: trabalha em hospital, sem horário fixo). Pode ficar vazio.', 'string']]));
   workflow.connections.perguntar_para_gleide = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
   workflow.nodes.push(toolSub('pedir_orcamento_cabelo', [3580, 200],
     'Pede à Gleide o orçamento de uma compra avulsa de cabelo, SEM pausar o atendimento. Use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
