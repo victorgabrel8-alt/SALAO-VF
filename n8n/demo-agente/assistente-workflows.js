@@ -190,7 +190,15 @@ O QUE VOCÊ FAZ
   (cliente que veio sem marcar, anotação sobre a cliente).
 - Responde dúvidas ("quem vem amanhã?", "tenho horário sexta à tarde pra selagem?", "quando a Maria veio?").
 - Só no app (diga isso se ela pedir): excluir cliente, trocar telefone, horário de funcionamento, almoço, mensagens prontas.
-- Pedido de orçamento ou pergunta de cliente: se ela te passar um valor ou resposta sem citar a mensagem do pedido, não diga que enviou. Peça: "Toca em Responder na mensagem do pedido e escreve lá, assim eu passo pra ela."
+
+PEDIDOS DE CLIENTES ESPERANDO A RESPOSTA DELA (ela responde tocando em Responder na mensagem ❓ ou 💰):
+{{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === (${EMPRESA})); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + (p.tipo === 'orcamento_cabelo' ? ' (orçamento de cabelo): ' : ': ') + p.pergunta).join('\\n') : '(nenhum)'; })() }}
+- Se ela mandar uma resposta, um valor ou uma dúvida ("não entendi", "qual?", "pode") que pode ser sobre um desses pedidos, comece por ele, sem falar de outro assunto: diga de quem é, o que a cliente quer em palavras simples e peça "Toca em Responder na mensagem dela e escreve lá, assim eu passo pra ela." Nunca diga que enviou.
+- Com mais de um pedido, pergunte de qual cliente ela fala.
+
+QUANDO ELA NÃO DIZ O NOME
+- "Ela", "essa cliente", "essa outra": só siga sem perguntar se a mensagem anterior da conversa, de poucos minutos atrás, fala de uma única cliente. Na dúvida, pergunte "De quem você está falando?" antes de cadastrar, marcar, anotar ou mandar mensagem.
+- Nunca use uma cliente de horas atrás só porque foi a última citada.
 
 AGENDA (siga sempre)
 - Ache o horário certo: agenda_do_dia (vazio = hoje) e escolha pela hora/nome, ou buscar_cliente (traz horarios_marcados
@@ -431,6 +439,10 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       }),
       rpc('Ler pendências', [1540, 0], 'n8n_assistente_pendencias_texto', `{ p_empresa_id: ${EMPRESA} }`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
+      // pedidos da IA que a Gleide ainda não respondeu (somem do Redis quando ela responde ou em 3 dias)
+      node('Ler pedidos abertos', 'n8n-nodes-base.redis', 1, [1650, -140], {
+        operation: 'keys', keyPattern: 'pedido:*', getValues: true,
+      }, { credentials: REDIS, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       node('Agente assistente', '@n8n/n8n-nodes-langchain.agent', 3.1, [1760, 0], {
         promptType: 'define', text: "={{ $('Texto da mensagem').first().json.texto }}",
         options: { systemMessage: '=' + PROMPT },
@@ -563,7 +575,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Transcrever (Gemini)': main('Texto da mensagem'),
       'Texto da mensagem': main('Marcar como lida'),
       'Marcar como lida': main('Ler pendências'),
-      'Ler pendências': main('Agente assistente'),
+      'Ler pendências': main('Ler pedidos abertos'),
+      'Ler pedidos abertos': main('Agente assistente'),
       'Agente assistente': main('Ritmo humano'),
       'Ritmo humano': main('Pausa (lendo)'),
       'Pausa (lendo)': main('Digitando...'),

@@ -36,11 +36,11 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
         sendHeaders: true, headerParameters: supaHeaders, options: {},
       }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
       enviar('Enviar pergunta à Gleide', [440, 0], '$json.alerta',
-        `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ ') + (${P}.nome || 'Cliente') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
-        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder e escreva a resposta.')`),
+        `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + (${P}.nome || 'sem nome') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
+        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')`),
       node('Guardar pedido', 'n8n-nodes-base.redis', 1, [660, 0], {
         operation: 'set', key: "=pedido:{{ $json.key?.id || 'falhou' }}", expire: true, ttl: 259200,
-        value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta' }) }}`,
+        value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta', empresa: $env.EMPRESA_ID }) }}`,
       }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       // a assistente precisa saber do pedido: se a Gleide escrever sem citar, ela pede para tocar em Responder
       node('Memória da assistente', 'n8n-nodes-base.redis', 1, [880, 0], {
@@ -65,7 +65,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
   // ---------- Ferramenta no agente ----------
   workflow.nodes.push(toolSub('perguntar_para_gleide', [3360, 200],
     'Pergunta à Gleide uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança ' +
-    'sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Coisas de bom senso (levar o ' +
+    'sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Nunca use para agendamento: dia, horário, ' +
+    'passar sem marcar, plantão ou falta de tempo você resolve sozinha. Coisas de bom senso (levar o ' +
     'filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à ' +
     'cliente sozinha. Use quando não for preciso a Gleide assumir a conversa. Para reclamação, dor ou pedido de falar com ela, ' +
     'use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou ' +
@@ -73,8 +74,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
       nome: "={{ $('Montar entrada').first().json.nome }}", tipo: 'pergunta' },
-    [['pergunta', 'A pergunta direta para a Gleide, até 15 palavras, sem "a cliente quer saber" nem o nome dela (ex.: Pode trazer cachorro de porte grande na avaliação?)', 'string'],
-      ['contexto', 'Só o que a Gleide precisa e não está na pergunta, até 8 palavras (ex.: avaliação qui 29/10 9h). Não repita a pergunta. Pode ficar vazio.', 'string']]));
+    [['pergunta', 'O que a cliente quer saber, em palavras simples, até 12 palavras, sem o nome dela (ex.: Pode levar cachorro de porte grande na avaliação?; Pode passar aí sem marcar horário?)', 'string'],
+      ['contexto', 'O motivo, se ajudar a Gleide a decidir, até 8 palavras, sem o nome da cliente e sem dado de saúde que não importe (ex.: trabalha em hospital, sem horário fixo). Pode ficar vazio.', 'string']]));
   workflow.connections.perguntar_para_gleide = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
   workflow.nodes.push(toolSub('pedir_orcamento_cabelo', [3580, 200],
     'Pede à Gleide o orçamento de uma compra avulsa de cabelo, SEM pausar o atendimento. Use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
@@ -85,6 +86,38 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
     [['pergunta', 'O pedido em poucas palavras, só com o que ela informou (ex.: 250 g, 70 cm, vietnamita, castanho escuro, liso). Sem nome e sem frase.', 'string'],
       ['contexto', 'Só se ela disse: fora da cidade e onde mora (ex.: mora em Peixoto de Azevedo). Pode ficar vazio.', 'string']]));
   workflow.connections.pedir_orcamento_cabelo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
+
+  // ---------- Avaliação presencial ↔ online: a IA troca sozinha e a Gleide só recebe o aviso (supabase/033) ----------
+  const modalidadeWorkflow = {
+    name: 'IA - Mudar modalidade',
+    nodes: [
+      node('Recebe pedido da IA', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
+        workflowInputs: { values: ['telefone', 'para', 'data_hora_inicio'].map((name) => ({ name })) },
+      }),
+      node('Mudar no banco', 'n8n-nodes-base.httpRequest', 4.2, [220, 0], {
+        method: 'POST', url: '={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_mudar_modalidade', sendHeaders: true, headerParameters: supaHeaders,
+        sendBody: true, specifyBody: 'json',
+        jsonBody: "={{ JSON.stringify({ p_empresa_id: $env.EMPRESA_ID, p_telefone: $json.telefone, p_para: $json.para, p_inicio: $json.data_hora_inicio ? $json.data_hora_inicio + '-04:00' : null }) }}",
+        options: {},
+      }, { onError: 'continueRegularOutput' }),
+      node('Resposta', 'n8n-nodes-base.set', 3.4, [440, 0], {
+        assignments: { assignments: [str('resposta', "={{ $json.error ? 'NÃO MUDEI: ' + ($json.error.message || 'a agenda falhou') + '. Não diga que mudou. Se ela precisa disso, use transferir_para_humano.' : ($json.ja ? 'JÁ ESTÁ ' + $json.para + ': ' + $json.quando + '. Só confirme para a cliente.' : 'MUDADO com sucesso: a avaliação de ' + $json.quando + ' agora é ' + $json.para + ', no mesmo horário. A Gleide recebe o aviso sozinha. Confirme em uma frase para a cliente' + ($json.para === 'online' ? ' e lembre que é por ligação de voz no WhatsApp.' : ' e mande o endereço com o link do mapa.')) }}")] },
+        options: {},
+      }),
+    ],
+    connections: { 'Recebe pedido da IA': main('Mudar no banco'), 'Mudar no banco': main('Resposta') },
+    settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', callerPolicy: 'workflowsFromSameOwner' },
+  };
+  const modalidadeIdFile = require('path').join(__dirname, '.workflow-modalidade-id');
+  const lerModalidadeId = () => (require('fs').existsSync(modalidadeIdFile) ? require('fs').readFileSync(modalidadeIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_MODALIDADE');
+  workflow.nodes.push(toolSub('mudar_modalidade', [3800, 200],
+    'Troca a avaliação da cliente entre presencial e online, no mesmo dia e hora. Use quando ela pedir ou aceitar a troca, sem perguntar à Gleide e sem transferir. ' +
+    'Só diga que mudou se a resposta começar com MUDADO. Para mudar o dia ou a hora, use remarcar_agendamento.',
+    lerModalidadeId, ['telefone', 'para', 'data_hora_inicio'],
+    { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
+    [['para', 'online ou presencial', 'string'],
+      ['data_hora_inicio', 'Horário da avaliação, AAAA-MM-DDTHH:mm. Pode ficar vazio se ela só tem uma marcada.', 'string']]));
+  workflow.connections.mudar_modalidade = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
   // ---------- Principal: resposta da Gleide (mensagem citando a pergunta) ----------
   const E = "$('Extrair dados').first().json";
@@ -175,5 +208,5 @@ return [{ json: { ...p, texto: t } }];
   workflow.connections['Pedido: memória (mensagem enviada)'] = main('Pedido: apagar');
   workflow.connections['Pedido: apagar'] = main('Pedido: confirmar à Gleide');
 
-  return { perguntaWorkflow, idFile: require('path').join(__dirname, '.workflow-pergunta-id') };
+  return { perguntaWorkflow, idFile: require('path').join(__dirname, '.workflow-pergunta-id'), modalidadeWorkflow, modalidadeIdFile };
 };
