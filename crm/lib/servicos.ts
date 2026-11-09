@@ -54,10 +54,10 @@ export async function buscarMaisUsados(empresaId: string, limite = 5): Promise<s
 }
 
 // Os botões de cima: os mais usados que ainda estão ativos; completa com os primeiros da lista
-// (loja nova, sem histórico)
+// (loja nova, sem histórico), deixando por último os avulsos por unidade (cada unha, cada pé)
 export function servicosDeAtalho(servicos: ServicoEscolha[], maisUsados: string[], limite = 5): ServicoEscolha[] {
   const usados = maisUsados.map((id) => servicos.find((s) => s.id === id)).filter((s): s is ServicoEscolha => !!s);
-  const resto = servicos.filter((s) => !usados.includes(s));
+  const resto = servicos.filter((s) => !usados.includes(s)).sort((a, b) => Number(!!a.unidade) - Number(!!b.unidade));
   return [...usados, ...resto].slice(0, limite);
 }
 
