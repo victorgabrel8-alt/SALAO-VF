@@ -109,7 +109,7 @@
             {
               "id": "a-permitido",
               "name": "permitido",
-              "value": "={{ !'556699270860' || '556699270860'.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) }}",
+              "value": "={{ !'' || ''.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) }}",
               "type": "boolean"
             }
           ]
@@ -2924,7 +2924,7 @@
           "conditions": [
             {
               "id": "g1",
-              "leftValue": "={{ (('5500000000002' || '5500000000002').split(',').map(s => s.trim()).filter(Boolean).find(n => n === $json.telefone || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === $json.telefone) || '') !== '' }}",
+              "leftValue": "={{ (('5593991144926' || '5593991144926').split(',').map(s => s.trim()).filter(Boolean).find(n => n === $json.telefone || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === $json.telefone) || '') !== '' }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",

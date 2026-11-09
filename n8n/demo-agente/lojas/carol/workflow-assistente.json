@@ -73,7 +73,7 @@
             {
               "id": "a-numero",
               "name": "numero",
-              "value": "={{ (('5500000000002' || '5500000000002').split(',').map(s => s.trim()).filter(Boolean).find(n => n === ($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0] || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === ($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) || '') }}",
+              "value": "={{ (('5593991144926' || '5593991144926').split(',').map(s => s.trim()).filter(Boolean).find(n => n === ($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0] || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === ($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) || '') }}",
               "type": "string"
             },
             {

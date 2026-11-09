@@ -447,40 +447,6 @@
         "options": {}
       },
       "onError": "continueRegularOutput"
-    },
-    {
-      "id": "6f75a974-af94-460f-8666-68530198cdbf",
-      "name": "Trava de teste: Mandar para a cliente",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        2400,
-        -120
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "trava1",
-              "leftValue": "={{ ['556699270860','5500000000002'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      }
     }
   ],
   "connections": {
@@ -576,7 +542,7 @@
       "main": [
         [
           {
-            "node": "Trava de teste: Mandar para a cliente",
+            "node": "Mandar para a cliente",
             "type": "main",
             "index": 0
           }
@@ -643,18 +609,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "Trava de teste: Mandar para a cliente": {
-      "main": [
-        [
-          {
-            "node": "Mandar para a cliente",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
       ]
     }
   },
