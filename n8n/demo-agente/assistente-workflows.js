@@ -65,11 +65,29 @@ switch (v('acao')) {
     funcao = 'n8n_assistente_agenda_do_dia'; args = { ...base, p_data: ou(v('data')) };
     break;
   case 'resultado_avaliacao': {
-    const inteiro = (k) => { const n = num(k); return n === null ? '' : String(Math.trunc(n)); };
-    const d = { resultado: v('resultado'), tecnica_indicada: v('tecnica_indicada'), tipo_cabelo: v('tipo_cabelo'),
-      comprimento_cm: inteiro('comprimento_cm'), gramas: inteiro('gramas'), valor_orcado: num('valor') === null ? '' : String(num('valor')),
-      motivo_nao_fechou: v('motivo_nao_fechou'), proximo_passo: v('proximo_passo'), data_proximo_passo: v('data_proximo_passo'),
-      observacoes: v('observacoes') };
+    // o que ela não disse fica vazio: a IA mandava "0" e "não informado" (teste de 09/11/2026), e isso gravaria valor zero na ficha
+    const inteiro = (k) => { const n = num(k); return n === null || n <= 0 ? '' : String(Math.trunc(n)); };
+    const texto = (k) => (/^(n[ãa]o informad[oa]|n[ãa]o sei|sem|nenhum|-|0)$/i.test(v(k)) ? '' : v(k));
+    // data só no formato AAAA-MM-DD: "fevereiro" ou "início de fevereiro" ia para o banco e travava a gravação inteira
+    // (09/11/2026). Texto que não é data vai junto do próximo passo.
+    // aceita AAAA-MM-DD ou DD/MM/AAAA, e só data que existe (2027-02-31 travava a gravação no banco)
+    const dataValida = (t) => {
+      let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/), a, mes, d;
+      if (m) { a = +m[1]; mes = +m[2]; d = +m[3]; } else if ((m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) { d = +m[1]; mes = +m[2]; a = +m[3]; } else return '';
+      const x = new Date(Date.UTC(a, mes - 1, d));
+      return x.getUTCFullYear() === a && x.getUTCMonth() === mes - 1 && x.getUTCDate() === d ? x.toISOString().slice(0, 10) : '';
+    };
+    // próximo passo é sempre no futuro: "fevereiro" gravado com o ano que já passou vai para o ano seguinte
+    const hojeCuiaba = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
+    let dataProx = dataValida(v('data_proximo_passo'));
+    if (dataProx && dataProx < hojeCuiaba) dataProx = dataValida(String(+dataProx.slice(0, 4) + 1) + dataProx.slice(4));
+    const dataOk = dataProx !== '';
+    const passo = [v('proximo_passo'), dataOk || !v('data_proximo_passo') ? '' : '(' + v('data_proximo_passo') + ')'].filter(Boolean).join(' ');
+    const resultado = { 'fechou': 'fechou', 'pensando': 'pensando', 'nao_fechou': 'nao_fechou', 'não fechou': 'nao_fechou', 'nao fechou': 'nao_fechou' }[v('resultado').toLowerCase()] || v('resultado');
+    const d = { resultado, tecnica_indicada: texto('tecnica_indicada'), tipo_cabelo: texto('tipo_cabelo'),
+      comprimento_cm: inteiro('comprimento_cm'), gramas: inteiro('gramas'), valor_orcado: num('valor') === null || num('valor') <= 0 ? '' : String(num('valor')),
+      motivo_nao_fechou: texto('motivo_nao_fechou'), proximo_passo: passo, data_proximo_passo: dataProx,
+      observacoes: texto('observacoes') };
     funcao = 'n8n_assistente_resultado_avaliacao'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_dados: d };
     break;
   }
@@ -149,6 +167,13 @@ switch (v('acao')) {
     funcao = 'n8n_assistente_chamar_cliente'; enviar = true;
     args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
     break;
+  // regras que a Gleide manda guardar ("a partir de agora, sempre…", supabase/034)
+  case 'guardar_regra':
+    funcao = 'n8n_assistente_guardar_regra'; args = { ...base, p_texto: v('texto') };
+    break;
+  case 'tirar_regra':
+    funcao = 'n8n_assistente_tirar_regra'; args = { ...base, p_qual: v('texto') };
+    break;
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
 }
@@ -171,6 +196,28 @@ O QUE É VERDADE (acima de tudo)
 - Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.
 - Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.
 - Nunca crie horário que a cliente não pediu. Só marque se a cliente pediu ou se a Gleide disser que combinou com ela.
+- Se ela perguntar se você fez algo, responda pelo que as ferramentas devolveram nesta conversa; se não lembrar, diga que vai conferir e confira (agenda_do_dia ou buscar_cliente).
+
+REGRAS FIXAS QUE A GLEIDE TE PASSOU (valem sempre, acima do resto, até ela mandar tirar):
+{{ (() => { const t = $('Ler regras').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}
+- Quando ela disser "a partir de agora", "sempre que", "nunca mais", "de hoje em diante" sobre o SEU jeito de trabalhar, use guardar_regra
+  com a regra em uma frase e confirme curto ("Combinado, guardei: …"). Para tirar, tirar_regra.
+- Se o pedido for sobre a IA de atendimento das clientes (ex.: "me consulta antes de marcar horário", "não fala preço"), você NÃO
+  consegue mudar isso. Diga com franqueza em uma frase: "Isso é a IA que atende as clientes, eu não consigo mudar daqui. Avisa o
+  Victor que ele ajusta." Nunca diga "pode deixar" para algo que não depende de você.
+
+COMO ENTENDER O QUE ELA ESCREVE
+- Ela manda em pedaços. Quando chegar "Ela mandou N mensagens seguidas", junte tudo como UM pedido antes de agir:
+  "16992438819" + "fala com esta cliente" + "ela quer ver mega" + "Dalila" = cadastrar Dalila nesse número e mandar um oi sobre mega.
+  Faça UMA resposta para o conjunto, nunca uma por pedaço.
+- Resposta curta ("sim", "não", "ok", "pode", "isso", "certo", 👍) responde à SUA última pergunta. Se a sua última mensagem não terminou
+  em pergunta, ou fez duas perguntas, pergunte qual ela quer dizer em poucas palavras. "Não" nunca autoriza gravar nada.
+- Erro de digitação é comum ("Ia" pode ser "Já", "vidio" é vídeo, "comgiando" é confirmando): entenda pelo sentido; na dúvida, pergunte.
+- Assunto de outro dia só volta se ELA puxar. Um "Oi" dela pede só "Oi! Em que posso ajudar?" (ou a pendência mais urgente de hoje),
+  nunca a cobrança de um assunto de ontem.
+- Telefone: o salão é de Sinop (DDD 66). Se ela mandar número com outro DDD ou sem DDD, confirme antes de cadastrar
+  ("É (16) 99243-8819 mesmo, ou (66)?"). Antes de cadastrar, procure pelo nome com buscar_cliente para não duplicar.
+
 Reaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → "Aí sim! 🎉";
 não fechou → "Ah, que pena"). Chame pelo nome de vez em quando, não em toda mensagem.
 Data e hora atual: {{ $now.setZone('America/Cuiaba').toFormat("cccc, dd/MM/yyyy HH:mm", { locale: 'pt-BR' }) }} (America/Cuiaba).
@@ -232,13 +279,23 @@ AGENDA (siga sempre)
 - Bloquear dias: se a ferramenta devolver horários marcados nesses dias, conte quantos e quem, e pergunte se você pede
   para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).
 
+QUANDO ELA MANDA FALAR COM A CLIENTE, MANDE (pedido do Victor, 09/11/2026)
+- "Manda mensagem pra ela", "fala com a Dalila", "avisa ela", "chama ela", "confirma o horário delas", "manda o endereço":
+  a ordem dela JÁ É o sim. Escreva o texto e mande na hora (chamar_cliente ou avisar_cliente), sem perguntar "Posso mandar?".
+  Depois responda curto com o que foi: "Mandei pra *Dalila* ✅: "Oi, Dalila! Aqui é do salão…"".
+- Só pergunte antes de mandar quando faltar algo que você não consegue decidir: de qual cliente ela fala, o número (ou o DDD
+  está estranho), ou o assunto da mensagem (ela disse "manda mensagem pra ela" sem dizer sobre o quê e não dá para saber pela conversa).
+  Uma pergunta só, curta. Com a resposta, mande.
+- Se ela mesma ditou o texto ("manda isso: …"), mande exatamente esse texto.
+- Você sugeriu mandar algo por conta própria (ela não pediu)? Aí sim pergunte "Mando?" antes.
+
 MENSAGEM PARA A CLIENTE (avisar_cliente)
-- Nunca mande sem o sim da Gleide. Uma chamada por cliente.
+- Uma chamada por cliente. Mande quando ela pediu (ver acima); se foi ideia sua, pergunte antes.
 - Horário que você acabou de mudar: tipo aviso, sem texto (a mensagem sai pronta: "em vez de 14:00, vai ser hoje às 14:40").
 - Imprevisto da Gleide ("não vou conseguir atender a Carla amanhã, pede pra remarcar"): tipo remarcacao, sem texto. Quando
   a cliente responder, a IA de atendimento oferece horários e remarca sozinha; o app mostra o andamento.
 - Outro aviso (cancelamento, recado): tipo aviso com o texto que você escrever — curto, carinhoso, em nome do salão,
-  sem inventar motivo — e mostre o texto para ela aprovar antes.
+  sem inventar motivo. Se ela pediu, mande e mostre o que foi; se foi ideia sua, mostre antes e pergunte.
 - Se a ferramenta disser que enviou, responda "Avisei ✅". Se der erro no envio, diga que não foi.
 
 FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_cliente)
@@ -246,8 +303,8 @@ FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_clien
 - Nome: só pergunte uma vez. Se ela não souber, cadastre sem nome e não invente apelido.
 - "Entra em contato", "chama ela", "manda o endereço": escreva o texto fazendo exatamente o que ela pediu. Se ela disse para perguntar, o texto pergunta; não afirme que algo foi marcado.
 - Para quem nunca falou com o salão, comece se apresentando: "Oi, Sandra! Aqui é do salão Toda Bonita, da Gleide." Curto, sem inventar motivo.
-- Mostre o texto e pergunte "Posso mandar?". Com o sim: cadastrar_cliente (se ainda não estiver na lista) e chamar_cliente com aquele texto, sem mudar nada.
-- Depois de enviar, diga "Mandei ✅" e que a IA de atendimento continua a conversa quando ela responder.
+- Ela pediu para falar com a cliente: cadastrar_cliente (se ainda não estiver na lista) e chamar_cliente com o texto, na hora, sem perguntar.
+- Depois de enviar, diga "Mandei ✅", mostre o texto em uma linha e diga que a IA de atendimento continua a conversa quando ela responder.
 - Endereço para a cliente: use o endereço e o mapa do salão. Se a cliente tem horário, chamar_cliente também serve para isso.
 - Mensagens que começam com [localização], [contato], [foto], [vídeo] ou [arquivo] são o que ela mandou. Foto, vídeo e arquivo você não consegue ver: diga isso em uma frase.
 - Na agenda, lembrete diz se o lembrete foi enviado e respondido, e resposta_ao_lembrete traz a resposta dela. "Respondeu" não quer dizer que confirmou: leia a resposta. Nunca diga que ela confirmou ou não confirmou sem olhar isso.
@@ -271,6 +328,14 @@ COMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA
 REGRAS
 - Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.
 - "fechou" = vai fazer o serviço; "pensando" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); "nao_fechou" = desistiu (pergunte o motivo uma vez).
+- Ainda depende de algo (da cliente ou da Gleide) é "pensando", nunca "fechou". Sempre com proximo_passo e uma data AAAA-MM-DD:
+  nessa data você pergunta para a Gleide como ficou.
+  "Ela vai querer pra fevereiro" → pensando, proximo_passo "chamar para marcar a aplicação", data = primeiro dia útil do mês que ela disse.
+  "Vou procurar o cabelo pra ela" → pensando, proximo_passo "Gleide procurar o cabelo e avisar a cliente", data = daqui a 3 dias
+  (ou o prazo que ela disser). Quando ela disser que achou, ofereça chamar a cliente; se ela mandar chamar, chame na hora.
+  data_proximo_passo é só data, sempre no futuro: "fevereiro" vira o próximo 1º de fevereiro a partir de hoje (nunca um que já passou),
+  "semana que vem" vira a segunda que vem. Campo que ela não disse (valor, cm, gramas, técnica, tipo de cabelo) vai vazio, nunca 0 nem "não informado".
+- Mostre isso no resumo antes de gravar, ex.: "*Elisângela*: ficou pra fevereiro — te pergunto dia 01/02 💬".
 - Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo "aplicação marcada DD/MM às HH:mm" e
   data_proximo_passo nessa data (calcule "terça que vem" a partir da data atual). Se a aplicação ainda não está na agenda,
   ofereça marcar (marcar_horario com o serviço de aplicação da técnica que fechou).
@@ -289,7 +354,7 @@ REGRAS
   Se não ficou claro, pergunte só "Ela veio?". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.
 - Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra
   já tinha adiantado para aquele horário).
-- Você só fala com clientes por avisar_cliente e chamar_cliente, sempre com o sim da Gleide. Não existe envio agendado: se ela pedir para
+- Você só fala com clientes por avisar_cliente e chamar_cliente, quando a Gleide pediu (o pedido dela já vale como sim). Não existe envio agendado: se ela pedir para
   chamar a cliente num dia futuro, anote e diga que o envio automático ainda não existe.
 - Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
@@ -437,16 +502,79 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           `={{ (() => { if (${A}.tipo !== 'audioMessage') return ${A}.texto; const r = ($json.candidates?.[0]?.content?.parts || []).filter(p => !p.thought).map(p => p.text || '').join(' ').trim(); return r ? '[áudio] ' + r : '[áudio que não consegui ouvir]'; })() }}`)] },
         options: {},
       }),
+      // ---- junta as mensagens seguidas (09/11/2026): a Gleide manda em pedaços ("16992438819", "fala com esta
+      // cliente", "Dalila"…) e cada pedaço virava uma resposta e um cadastro. Igual ao atendimento: guarda, espera
+      // 15 s sem mensagem nova dela e responde tudo junto; uma trava evita duas respostas ao mesmo tempo.
+      node('Buffer: guardar', 'n8n-nodes-base.redis', 1, [1320, 120], {
+        // guarda a hora: se uma execução morrer no meio, o Juntar ignora o que tem mais de 10 min
+        operation: 'push', list: `=assist_buffer:{{ ${A}.numero }}`, messageData: "={{ JSON.stringify({ texto: $json.texto, em: Date.now() }) }}", tail: true,
+      }, { credentials: REDIS }),
+      node('Buffer: marcar última', 'n8n-nodes-base.redis', 1, [1380, 120], {
+        operation: 'set', key: `=assist_ultima:{{ ${A}.numero }}`, value: `={{ ${A}.msgId }}`, expire: true, ttl: 180,
+      }, { credentials: REDIS }),
+      node('Aguardar (juntar mensagens)', 'n8n-nodes-base.wait', 1.1, [1400, 120], { resume: 'timeInterval', amount: 15, unit: 'seconds' },
+        { webhookId: '3e4f5a6b-7c8d-4e9f-9a0b-1c2d3e4f5a61' }),
+      node('Buffer: ler última', 'n8n-nodes-base.redis', 1, [1420, 120], {
+        operation: 'get', key: `=assist_ultima:{{ ${A}.numero }}`, propertyName: 'ultima', keyType: 'string', options: {},
+      }, { credentials: REDIS }),
+      ifNode('É a última mensagem?', [1440, 120], [cond('ul', `={{ $json.ultima === ${A}.msgId }}`)]),
+      node('Trava: ler', 'n8n-nodes-base.redis', 1, [1460, 120], {
+        operation: 'get', key: `=assist_processando:{{ ${A}.numero }}`, propertyName: 'processando', keyType: 'string', options: {},
+      }, { credentials: REDIS }),
+      ifNode('Livre?', [1480, 120], [cond('lv', '={{ !$json.processando }}')]),
+      node('Aguardar 3s (respondendo)', 'n8n-nodes-base.wait', 1.1, [1500, 220], { resume: 'timeInterval', amount: 3, unit: 'seconds' },
+        { webhookId: '4f5a6b7c-8d9e-4f0a-8b1c-2d3e4f5a6b72' }),
+      node('Trava: marcar', 'n8n-nodes-base.redis', 1, [1500, 120], {
+        operation: 'set', key: `=assist_processando:{{ ${A}.numero }}`, value: `={{ ${A}.msgId }}`, expire: true, ttl: 180,
+      }, { credentials: REDIS }),
+      node('Buffer: ler mensagens', 'n8n-nodes-base.redis', 1, [1520, 120], {
+        operation: 'get', key: `=assist_buffer:{{ ${A}.numero }}`, propertyName: 'mensagens', keyType: 'list', options: {},
+      }, { credentials: REDIS }),
+      node('Buffer: limpar', 'n8n-nodes-base.redis', 1, [1540, 120], {
+        operation: 'delete', key: `=assist_buffer:{{ ${A}.numero }}`,
+      }, { credentials: REDIS }),
+      node('Juntar mensagens', 'n8n-nodes-base.set', 3.4, [1560, 120], {
+        assignments: { assignments: [str('texto',
+          "={{ (() => { const agora = Date.now(); const ms = [].concat($('Buffer: ler mensagens').first().json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { texto: String(m), em: agora }; }).filter((o) => o.texto.trim() && agora - (Number(o.em) || agora) < 600000).map((o) => o.texto); if (!ms.length) return $('Texto da mensagem').first().json.texto; return ms.length > 1 ? 'Ela mandou ' + ms.length + ' mensagens seguidas (leia como um pedido só):\\n' + ms.map((m, i) => '[' + (i + 1) + '] ' + m).join('\\n') : ms[0]; })() }}")] },
+        options: {},
+      }),
+      node('Trava: liberar', 'n8n-nodes-base.redis', 1, [2200, 0], {
+        operation: 'delete', key: `=assist_processando:{{ ${A}.numero }}`,
+      }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       rpc('Ler pendências', [1540, 0], 'n8n_assistente_pendencias_texto', `{ p_empresa_id: ${EMPRESA} }`,
+        { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
+      // regras fixas que ela mandou guardar (supabase/034): valem até ela mandar tirar
+      rpc('Ler regras', [1600, -60], 'n8n_assistente_regras_texto', `{ p_empresa_id: ${EMPRESA} }`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       // pedidos da IA que a Gleide ainda não respondeu (somem do Redis quando ela responde ou em 3 dias)
       node('Ler pedidos abertos', 'n8n-nodes-base.redis', 1, [1650, -140], {
         operation: 'keys', keyPattern: 'pedido:*', getValues: true,
       }, { credentials: REDIS, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       node('Agente assistente', '@n8n/n8n-nodes-langchain.agent', 3.1, [1760, 0], {
-        promptType: 'define', text: "={{ $('Texto da mensagem').first().json.texto }}",
-        options: { systemMessage: '=' + PROMPT },
-      }),
+        promptType: 'define', text: "={{ $('Juntar mensagens').first().json.texto }}",
+        // returnIntermediateSteps: dá para ver depois o que ela executou, e o "Conferir resposta" usa para não dizer que mandou sem ter mandado
+        options: { systemMessage: '=' + PROMPT, returnIntermediateSteps: true },
+      // Gemini falhou: tenta de novo; se ainda falhar, segue sem resposta (o Conferir manda "deu um erro, pode repetir?")
+      // e a trava é liberada no fim, em vez de ficar presa 3 min
+      }, { retryOnFail: true, maxTries: 2, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
+      // Ela dizia "Avisei ✅" / "Mandei" sem ter chamado a ferramenta de envio (05/11/2026: nada saiu para a Sandra).
+      // Se a resposta afirma envio e nenhuma ferramenta de envio deu certo nesta vez, troca por uma resposta honesta.
+      node('Conferir resposta', 'n8n-nodes-base.code', 2, [1860, 0], { jsCode: [
+        "const ag = $('Agente assistente').first().json;",
+        "let texto = String(ag.output || '').trim();",
+        "const passos = Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : [];",
+        // a ferramenta responde "OK: mensagem enviada…" ou "ERRO: …" (nó Resposta das Ferramentas); o texto da cliente vem junto,
+        // então só o começo da resposta diz se saiu
+        // a ferramenta pode voltar como texto ou como JSON ({"resposta":"OK: …"} ou [{…}])
+        "const lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };",
+        "const enviou = passos.some((s) => ['chamar_cliente', 'avisar_cliente'].includes(s.action?.tool) && /^\\s*OK\\b/i.test(lerResposta(s.observation)));",
+        "const afirma = /\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada|já (falei|chamei) com ela/i.test(texto);",
+        "const passado = /\\b(ontem|mais cedo|já tinha)\\b/i.test(texto);",
+        "let corrigida = false;",
+        "if (afirma && !enviou && !passado) { texto = 'Ainda não mandei nada pra ela, Gleide. Quer que eu mande agora? Me confirma o texto que eu envio.'; corrigida = true; }",
+        "if (!texto) texto = 'Desculpa, deu um erro aqui. Pode repetir?';",
+        "return [{ json: { texto: texto.replace(/\\*\\*(.+?)\\*\\*/g, '*$1*'), corrigida, ferramentas: passos.map((s) => s.action?.tool) } }];",
+      ].join('\n') }),
       node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [1640, 220], {
         modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.2 },
       }, { credentials: GEMINI }),
@@ -464,7 +592,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['tipo_cabelo', 'Tipo de cabelo (ex.: brasileiro, vietnamita)', 'string'],
           ['comprimento_cm', 'Comprimento em cm, só o número', 'string'],
           ['gramas', 'Gramas, só o número', 'string'],
-          ['valor', 'Valor orçado em reais, só o número (ex.: 2800)', 'string'],
+          ['valor', 'Valor orçado em reais, só o número (ex.: 2800). Vazio se ela não disse (nunca 0)', 'string'],
           ['motivo_nao_fechou', 'Se não fechou: motivo', 'string'],
           ['proximo_passo', 'Próximo passo combinado (ex.: chamar sexta)', 'string'],
           ['data_proximo_passo', 'Data do próximo passo AAAA-MM-DD', 'string'],
@@ -493,8 +621,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       // lendo: 1,5 s + um pouco pelo tamanho do que ela mandou (áudio conta mais), até 4 s
       // digitando: ~30 ms por letra, entre 2 e 8 s (o WhatsApp apaga o "digitando…" em ~10 s)
       node('Ritmo humano', 'n8n-nodes-base.code', 2, [1900, -120], { jsCode: [
-        "const dela = String($('Texto da mensagem').first().json.texto || '');",
-        "const texto = String($json.output || '');",
+        "const dela = String($('Juntar mensagens').first().json.texto || '');",
+        "const texto = String($json.texto || '');",
         "const pausa = Math.min(4, 1.5 + dela.length / 120 + (dela.startsWith('[áudio]') ? 1 : 0));",
         "const delay = Math.round(Math.min(8000, Math.max(2000, texto.length * 30)));",
         'return [{ json: { pausa, delay } }];',
@@ -554,16 +682,21 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       tool('cadastrar_cliente', [3560, 220], 'Salva uma cliente na lista, sem criar horário e sem mandar mensagem. Se o número já existir, usa a ficha que já existe. Devolve o cliente_id.',
         'cadastrar_cliente', [['telefone', 'Telefone com DDD', 'string'], ['nome', 'Nome, só se a Gleide disse (vazio se não souber)', 'string'],
           ['observacoes', 'O que a cliente quer, como a Gleide contou (ex.: quer cabelo vietnamita)', 'string']]),
-      tool('chamar_cliente', [3720, 220], 'Manda pelo número do salão o texto aprovado pela Gleide para uma cliente, sem precisar de horário. Só use DEPOIS do sim da Gleide ao texto exato.',
-        'chamar_cliente', [ID('cliente_id'), ['texto', 'O texto exato que a Gleide aprovou', 'string']]),
-      tool('avisar_cliente', [3400, 220], 'Manda mensagem para a cliente pelo número do salão sobre um horário dela. Só use DEPOIS do sim da Gleide.',
+      tool('chamar_cliente', [3720, 220], 'Manda pelo número do salão uma mensagem para uma cliente, sem precisar de horário. Use quando a Gleide pediu para falar com a cliente (o pedido dela já é o sim).',
+        'chamar_cliente', [ID('cliente_id'), ['texto', 'O texto da mensagem (o que a Gleide ditou, ou o que você escreveu fazendo o que ela pediu)', 'string']]),
+      tool('avisar_cliente', [3400, 220], 'Manda mensagem para a cliente pelo número do salão sobre um horário dela. Use quando a Gleide pediu (o pedido dela já é o sim).',
         'avisar_cliente', [ID('agendamento_id'),
           ['tipo', '"aviso" (horário mudado, cancelamento, recado) ou "remarcacao" (imprevisto da Gleide: pede para a cliente remarcar)', 'string'],
-          ['texto', 'Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto aprovado pela Gleide', 'string']]),
+          ['texto', 'Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto da mensagem', 'string']]),
+      // regras fixas (supabase/034): o que ela pede para valer "a partir de agora" no jeito da ASSISTENTE trabalhar
+      tool('guardar_regra', [3880, 220], 'Guarda uma regra fixa que a Gleide pediu para você seguir sempre ("a partir de agora…", "sempre que…", "nunca mais…"). Fica valendo até ela pedir para tirar. Só para o jeito de VOCÊ trabalhar; regra para a IA de atendimento das clientes você não consegue mudar.',
+        'guardar_regra', [['texto', 'A regra, curta e clara, como ela pediu (ex.: "antes de marcar qualquer horário novo, mostrar o resumo e esperar o ok")', 'string']]),
+      tool('tirar_regra', [3880, 440], 'Tira uma regra fixa que a Gleide não quer mais.',
+        'tirar_regra', [['texto', 'O número da regra (1, 2…) ou um pedaço do texto dela', 'string']]),
       evoPost('Responder a Gleide', [2000, 0], 'message/sendText',
         // **negrito** de markdown aparece com os asteriscos no WhatsApp: vira *negrito*
         // a resposta vem do agente (o $json que chega aqui é o do "digitando…")
-        `{ number: ${A}.jid, text: ($('Agente assistente').first().json.output || 'Desculpa, deu um erro aqui. Pode repetir?').replace(/\\*\\*(.+?)\\*\\*/g, '*$1*').trim() }`,
+        `{ number: ${A}.jid, text: $('Conferir resposta').first().json.texto }`,
         { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
     ],
     connections: {
@@ -573,19 +706,37 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'É áudio?': { main: [[{ node: 'Baixar áudio (Evolution)', type: 'main', index: 0 }], [{ node: 'Texto da mensagem', type: 'main', index: 0 }]] },
       'Baixar áudio (Evolution)': main('Transcrever (Gemini)'),
       'Transcrever (Gemini)': main('Texto da mensagem'),
-      'Texto da mensagem': main('Marcar como lida'),
+      'Texto da mensagem': main('Buffer: guardar'),
+      'Buffer: guardar': main('Buffer: marcar última'),
+      'Buffer: marcar última': main('Aguardar (juntar mensagens)'),
+      'Aguardar (juntar mensagens)': main('Buffer: ler última'),
+      'Buffer: ler última': main('É a última mensagem?'),
+      // não é a última: outra execução (a da mensagem mais nova) responde tudo junto
+      'É a última mensagem?': { main: [[{ node: 'Trava: ler', type: 'main', index: 0 }], []] },
+      'Trava: ler': main('Livre?'),
+      // respondendo outra rajada dela: espera 3 s e confere de novo se ainda é a última
+      'Livre?': { main: [[{ node: 'Trava: marcar', type: 'main', index: 0 }], [{ node: 'Aguardar 3s (respondendo)', type: 'main', index: 0 }]] },
+      'Aguardar 3s (respondendo)': main('Buffer: ler última'),
+      'Trava: marcar': main('Buffer: ler mensagens'),
+      'Buffer: ler mensagens': main('Buffer: limpar'),
+      'Buffer: limpar': main('Juntar mensagens'),
+      'Juntar mensagens': main('Marcar como lida'),
       'Marcar como lida': main('Ler pendências'),
-      'Ler pendências': main('Ler pedidos abertos'),
+      'Ler pendências': main('Ler regras'),
+      'Ler regras': main('Ler pedidos abertos'),
       'Ler pedidos abertos': main('Agente assistente'),
-      'Agente assistente': main('Ritmo humano'),
+      'Agente assistente': main('Conferir resposta'),
+      'Conferir resposta': main('Ritmo humano'),
       'Ritmo humano': main('Pausa (lendo)'),
       'Pausa (lendo)': main('Digitando...'),
       'Digitando...': main('Responder a Gleide'),
+      'Responder a Gleide': main('Trava: liberar'),
       'Gemini Flash': { ai_languageModel: [[{ node: 'Agente assistente', type: 'ai_languageModel', index: 0 }]] },
       'Memória (Redis)': { ai_memory: [[{ node: 'Agente assistente', type: 'ai_memory', index: 0 }]] },
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
         'horarios_livres', 'marcar_horario', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
-        'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente', 'cadastrar_cliente', 'chamar_cliente']
+        'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente', 'cadastrar_cliente', 'chamar_cliente',
+        'guardar_regra', 'tirar_regra']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
     },
     settings,
