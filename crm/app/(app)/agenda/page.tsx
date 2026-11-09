@@ -10,6 +10,7 @@ import { Observacao } from "@/components/Observacao";
 import {
   buscarAtendimentosDoDia,
   buscarDiasComHorario,
+  comQuantidade,
   confirmarAtendimento,
   corDaProfissional,
   desfazerConfirmacao,
@@ -243,7 +244,8 @@ export default function AgendaPage() {
       erro = await excluirAtendimento(a.id);
     } else {
       const extras = feitosJunto(a);
-      const nomes = (a.extras ?? []).join(", ");
+      // Só os que entraram no ✓: os escolhidos junto ao marcar o horário ficam
+      const nomes = (a.extrasDaConfirmacao ?? []).join(", ");
       if (nomes && !(await perguntar(`Voltar para "a atender"? O que foi feito junto (${nomes}) sai deste horário.`, { confirmar: "Desfazer" }))) return;
       erro = await desfazerConfirmacao(empresa.id, a, extras);
     }
@@ -850,7 +852,7 @@ function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento
 // os outros ficam recolhidos em "+ 5 serviços" e aparecem ao tocar
 function ServicosDoHorario({ atendimento: a }: { atendimento: Atendimento }) {
   const [aberto, setAberto] = useState(false);
-  const principal = a.servicos ? nomeCurto(a.servicos.nome) : "Não informado";
+  const principal = a.servicos ? comQuantidade(nomeCurto(a.servicos.nome), a.quantidade) : "Não informado";
   const extras = (a.extras ?? []).map(nomeCurto);
   if (!extras.length) return principal;
   return (
