@@ -53,7 +53,8 @@ export function FolhaConfirmar({
   aoFechar: () => void;
 }) {
   const [tela, setTela] = useState<Tela>("pergunta");
-  const [escolhidos, setEscolhidos] = useState<string[]>(a.servico_id ? [a.servico_id] : []);
+  // Já vem marcado o que estava no horário: o principal e os escolhidos junto ao marcar (supabase/034)
+  const [escolhidos, setEscolhidos] = useState<string[]>([...(a.servico_id ? [a.servico_id] : []), ...(a.extrasMarcados ?? [])]);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState("");
   // Salvou: mostra o selo por um instante e fecha
