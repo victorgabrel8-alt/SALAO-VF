@@ -15,11 +15,18 @@ export type Atendimento = {
   google_event_id: string | null;
   profissional_id: string | null;
   servico_id: string | null;
+  // Unidades do serviço principal (ex.: 2 unhas de reposição). 1 nos serviços comuns (supabase/034)
+  quantidade?: number;
   observacoes: string | null;
   clientes: { id: string; nome: string | null; telefone: string; etiquetas: string[]; observacoes: string | null } | null;
   servicos: { nome: string } | null;
   // Serviços a mais feitos no mesmo horário (ver comExtras)
   extras?: string[];
+  // Dos serviços a mais: os que entraram no ✓ ("O que ela fez?"), que o desfazer tira
+  extrasDaConfirmacao?: string[];
+  // Dos serviços a mais: os escolhidos junto ao registrar/marcar o horário (ids dos serviços).
+  // Ficam no desfazer e já vêm marcados no "O que ela fez?" (supabase/034)
+  extrasMarcados?: string[];
   // Horários "feito junto" do jeito antigo, escondidos dentro deste (ver comExtras)
   juntos?: Atendimento[];
 };
@@ -33,9 +40,14 @@ export function naoAtendida(a: Pick<Atendimento, "status" | "inicio"> & { chegou
   return a.status === "agendado" && !a.chegou_em && agora > Date.parse(a.inicio) + MINUTOS_PARA_NAO_ATENDIDA * 60_000;
 }
 
+// "Reposição (cada unha) ×3": a quantidade só aparece quando passa de 1
+export function comQuantidade(nome: string, quantidade?: number | null): string {
+  return quantidade && quantidade > 1 ? `${nome} ×${quantidade}` : nome;
+}
+
 // Todos os serviços do horário, um por linha (para os detalhes do horário)
-export function nomeDosServicos(a: Pick<Atendimento, "servicos" | "extras">, semServico = "Serviço não informado"): string {
-  return [a.servicos?.nome ?? semServico, ...(a.extras ?? [])].join("\n");
+export function nomeDosServicos(a: Pick<Atendimento, "servicos" | "extras" | "quantidade">, semServico = "Serviço não informado"): string {
+  return [a.servicos ? comQuantidade(a.servicos.nome, a.quantidade) : semServico, ...(a.extras ?? [])].join("\n");
 }
 
 // Nome curto para o cartão: "Aplicação de mega hair – queratina" -> "Aplicação queratina",
@@ -49,8 +61,8 @@ export function nomeCurto(nome: string): string {
 }
 
 // Cartão da agenda: só o serviço principal, curto, e quantos mais: "Selagem +2"
-export function resumoDosServicos(a: Pick<Atendimento, "servicos" | "extras">): string {
-  const principal = a.servicos ? nomeCurto(a.servicos.nome) : "Serviço não informado";
+export function resumoDosServicos(a: Pick<Atendimento, "servicos" | "extras" | "quantidade">): string {
+  const principal = a.servicos ? comQuantidade(nomeCurto(a.servicos.nome), a.quantidade) : "Serviço não informado";
   const mais = a.extras?.length ?? 0;
   return mais ? `${principal} +${mais}` : principal;
 }
@@ -80,33 +92,51 @@ async function comExtras(lista: Atendimento[]): Promise<Atendimento[]> {
   const atendimentos = lista
     .filter((x) => !antigos.includes(x))
     .map((a) => ({ ...a, juntos: antigos.filter((x) => principalDe(x)?.id === a.id) }));
-  const porHorario: Record<string, string[]> = {};
+  const marcados: Record<string, { ids: string[]; nomes: string[] }> = {};
+  const daConfirmacao: Record<string, string[]> = {};
   if (atendimentos.length) {
     const { data, error } = await supabase()
       .from("atendimento_servicos")
-      .select("agendamento_id, servicos (nome)")
+      .select("agendamento_id, servico_id, quantidade, marcado_junto, servicos (nome)")
       .in("agendamento_id", atendimentos.map((a) => a.id));
     // Sem a tabela (007 ainda não rodou) segue só com as observações
     if (!error) {
-      for (const x of (data ?? []) as unknown as { agendamento_id: string; servicos: { nome: string } | null }[]) {
-        if (x.servicos) (porHorario[x.agendamento_id] ??= []).push(x.servicos.nome);
+      for (const x of (data ?? []) as unknown as {
+        agendamento_id: string;
+        servico_id: string;
+        quantidade: number | null;
+        marcado_junto: boolean | null;
+        servicos: { nome: string } | null;
+      }[]) {
+        if (!x.servicos) continue;
+        const nome = comQuantidade(x.servicos.nome, x.quantidade);
+        if (x.marcado_junto) {
+          const m = (marcados[x.agendamento_id] ??= { ids: [], nomes: [] });
+          m.ids.push(x.servico_id);
+          m.nomes.push(nome);
+        } else (daConfirmacao[x.agendamento_id] ??= []).push(nome);
       }
     }
   }
-  return atendimentos.map((a) => ({
-    ...a,
-    extras: [
-      ...(porHorario[a.id] ?? []),
+  return atendimentos.map((a) => {
+    const confirmacao = [
+      ...(daConfirmacao[a.id] ?? []),
       ...extrasDaObservacao(a.observacoes),
       ...(a.juntos ?? []).map((x) => x.servicos?.nome ?? SEM_SERVICO),
-    ],
-  }));
+    ];
+    return {
+      ...a,
+      extras: [...(marcados[a.id]?.nomes ?? []), ...confirmacao],
+      extrasDaConfirmacao: confirmacao,
+      extrasMarcados: marcados[a.id]?.ids ?? [],
+    };
+  });
 }
 
 // Sem valores: o painel do salão controla atendimentos, não dinheiro (a tabela de preços
 // fica com a profissional e a IA)
 const CAMPOS =
-  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
+  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, quantidade, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
 
 // Atendimentos de um dia (no fuso do salão), em ordem de horário
 export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {
@@ -191,10 +221,24 @@ export async function marcarChegou(id: string, chegou = true) {
 //   calcula pelo dias_retorno) e a IA enxerga o que foi feito de verdade.
 // Trocou o serviço? O que estava marcado fica anotado ("Marcado era: Hidratação") para o desfazer
 // conseguir voltar.
+// Horário marcado com vários serviços (supabase/034): no "Fez outra coisa", os que ela não fez
+// saem do horário e os que continuam não são gravados de novo.
 export async function confirmarAtendimento(empresaId: string, a: Atendimento, servicoIds: string[] = []) {
   const db = supabase();
-  const [primeiro, ...extras] = [...new Set(servicoIds)];
+  const [primeiro, ...escolhidosAMais] = [...new Set(servicoIds)];
   const trocou = primeiro && primeiro !== a.servico_id;
+  const jaMarcados = a.extrasMarcados ?? [];
+  const extras = escolhidosAMais.filter((id) => !jaMarcados.includes(id));
+  const naoFez = primeiro ? jaMarcados.filter((id) => !escolhidosAMais.includes(id)) : [];
+  if (naoFez.length) {
+    const { error } = await db
+      .from("atendimento_servicos")
+      .delete()
+      .eq("agendamento_id", a.id)
+      .eq("marcado_junto", true)
+      .in("servico_id", naoFez);
+    if (error) return error.message;
+  }
   const { error } = await db
     .from("agendamentos")
     .update({
@@ -247,15 +291,16 @@ export function feitosJunto(a: Atendimento) {
   return a.juntos ?? [];
 }
 
-// Desfaz o ✓: volta para "a atender", tira os serviços a mais e, se o serviço foi trocado
-// no "Fez outra coisa", volta o que estava marcado.
+// Desfaz o ✓: volta para "a atender", tira os serviços a mais que entraram no ✓ e, se o serviço
+// foi trocado no "Fez outra coisa", volta o que estava marcado. Os escolhidos junto ao marcar o
+// horário (marcado_junto, supabase/034) ficam: eles fazem parte do horário.
 export async function desfazerConfirmacao(empresaId: string, a: Atendimento, extras: Atendimento[]) {
   const db = supabase();
   if (extras.length) {
     const { error } = await db.from("agendamentos").delete().in("id", extras.map((x) => x.id));
     if (error) return error.message;
   }
-  const { error: erroExtras } = await db.from("atendimento_servicos").delete().eq("agendamento_id", a.id);
+  const { error: erroExtras } = await db.from("atendimento_servicos").delete().eq("agendamento_id", a.id).eq("marcado_junto", false);
   if (erroExtras && !tabelaNaoExiste(erroExtras)) return erroExtras.message;
   const linhas = (a.observacoes ?? "").split("\n").filter((l) => !l.startsWith(TAMBEM_FEZ));
   const era = linhas.findLast((l) => l.startsWith(MARCADO_ERA))?.slice(MARCADO_ERA.length);
@@ -291,7 +336,8 @@ export async function excluirAtendimento(id: string) {
 
 // Reagendar: muda o horário do mesmo atendimento e volta para "agendado" (ex.: ela faltou e
 // remarcou). O horário antigo fica anotado nas observações ("Reagendado de 20/10 às 13:00").
-// fim = null faz o banco recalcular o fim pela duração do serviço.
+// fim = null faz o banco recalcular o fim: pela duração do serviço, ou pela soma de todos os
+// serviços do horário quando ele tem serviços a mais ou quantidade (supabase/034).
 export async function reagendar(a: Atendimento, novoInicio: string) {
   const anotacao = `Reagendado de ${formatarData(a.inicio).slice(0, 5)} às ${formatarHora(a.inicio)}`;
   const { error } = await supabase()

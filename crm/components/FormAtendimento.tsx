@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { EscolherServicos } from "@/components/EscolherServicos";
 import { Folha } from "@/components/Folha";
 import { conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
 import { buscarParecidas, horariosMarcadosDaCliente, type ClienteParecida, type HorarioMarcado } from "@/lib/duplicidade";
@@ -21,9 +22,16 @@ import {
 } from "@/lib/formato";
 import { conferirHorario } from "@/lib/horarios";
 import { useAgora } from "@/lib/relogio";
+import {
+  buscarMaisUsados,
+  buscarServicosAtivos,
+  ordenarParaGravar,
+  somarEscolhidos,
+  type Escolhido,
+  type ServicoEscolha,
+} from "@/lib/servicos";
 import { supabase } from "@/lib/supabase/client";
 
-type Servico = { id: string; nome: string; dias_retorno: number | null; duracao_min: number };
 type ClienteBusca = { id: string; nome: string | null; telefone: string; etiquetas: string[] };
 
 // "registrar": cliente que já foi atendida (chegou sem agendar) -> grava como realizado, padrão agora.
@@ -62,7 +70,8 @@ export function FormAtendimento({
   const agora = agoraNoSalao();
   const agoraMs = useAgora();
 
-  const [servicos, setServicos] = useState<Servico[]>([]);
+  const [servicos, setServicos] = useState<ServicoEscolha[]>([]);
+  const [maisUsados, setMaisUsados] = useState<string[]>([]);
 
   const [busca, setBusca] = useState("");
   const [resultados, setResultados] = useState<ClienteBusca[]>([]);
@@ -71,7 +80,9 @@ export function FormAtendimento({
   const [nomeNova, setNomeNova] = useState("");
   const [telefoneNova, setTelefoneNova] = useState("");
 
-  const [servicoId, setServicoId] = useState("");
+  // Vários serviços num horário só: o 1º de ordenarParaGravar vira o principal (agendamentos) e os
+  // outros vão para atendimento_servicos, cada um com a sua quantidade (supabase/010 e 034)
+  const [escolhidos, setEscolhidos] = useState<Escolhido[]>([]);
   const [data, setData] = useState(dia ?? agora.data);
   const [hora, setHora] = useState(horaInicial ?? (modo === "registrar" ? agora.hora : "09:00"));
 
@@ -79,24 +90,28 @@ export function FormAtendimento({
   const [salvando, setSalvando] = useState(false);
   const [aviso, setAviso] = useState<Aviso | null>(null);
 
-  const servico = servicos.find((s) => s.id === servicoId);
+  const ordem = ordenarParaGravar(escolhidos, servicos);
+  const [principal, ...extras] = ordem;
+  const escolhidosDados = ordem.map((e) => servicos.find((s) => s.id === e.id)).filter((s): s is ServicoEscolha => !!s);
+  // Tempo do horário: a soma de todos os serviços (com a quantidade). Sem serviço, 1 h como antes
+  const minutosTotal = somarEscolhidos(escolhidos, servicos).minutos || 60;
+  // Um serviço só, uma unidade: o banco calcula o fim como sempre. Mais que isso: o app grava o fim
+  const variosOuQuantidade = extras.length > 0 || (principal?.quantidade ?? 1) > 1;
   const almocoDoSalao = lerAlmoco(empresa.config);
   // O celular deixa apagar o dia ou a hora: sem os dois, nada de contas com data (quebravam a tela)
   const quandoValido = dataValida(data) && horaValida(hora);
-  const retornoPrevisto = quandoValido && servico?.dias_retorno ? somarDias(data, servico.dias_retorno) : null;
+  const terminaAs =
+    quandoValido && escolhidos.length
+      ? formatarHora(new Date(Date.parse(instanteNoSalao(data, hora.slice(0, 5))) + minutosTotal * 60_000).toISOString())
+      : null;
   // Registrar com hora que ainda não chegou = horário marcado (a próxima cliente), não atendimento feito
   const noFuturo = quandoValido && Date.parse(instanteNoSalao(data, hora.slice(0, 5))) > agoraMs;
   // Vai entrar na agenda como horário a atender (e não como atendimento já feito)
   const vaiAgendar = modo === "agendar" || noFuturo;
 
   useEffect(() => {
-    const db = supabase();
-    db.from("servicos")
-      .select("id, nome, dias_retorno, duracao_min")
-      .eq("empresa_id", empresa.id)
-      .eq("ativo", true)
-      .order("nome")
-      .then(({ data }) => setServicos((data ?? []) as Servico[]));
+    buscarServicosAtivos(empresa.id).then(setServicos);
+    buscarMaisUsados(empresa.id).then(setMaisUsados);
   }, [empresa.id]);
 
   // Busca por nome ou telefone enquanto a dona digita
@@ -172,8 +187,8 @@ export function FormAtendimento({
       setErro("Escolha a cliente.");
       return;
     }
-    if (!servicoId) {
-      setErro("Escolha o serviço.");
+    if (!principal) {
+      setErro("Escolha pelo menos um serviço.");
       return;
     }
     if (!quandoValido) {
@@ -188,7 +203,7 @@ export function FormAtendimento({
     // Horário a atender: confere a agenda (salão aberto, expediente, almoço e sem encavalar com
     // outra cliente). Registrar um atendimento que já aconteceu continua liberado.
     if (vaiAgendar) {
-      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, servico?.duracao_min ?? 60);
+      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, minutosTotal);
       if (problema) {
         setSalvando(false);
         setErro(problema);
@@ -222,30 +237,52 @@ export function FormAtendimento({
       return;
     }
     const realizado = modo === "registrar" && !noFuturo;
-    const base = {
-      empresa_id: empresa.id,
-      cliente_id: clienteId,
-      servico_id: servicoId,
-      // Sem escolha de profissional no app da dona
-      profissional_id: null,
-      origem: "manual",
-    };
-    const novos = [
-      {
-        ...base,
-        inicio: instanteNoSalao(data, hora.slice(0, 5)),
+    const inicio = instanteNoSalao(data, hora.slice(0, 5));
+    const db = supabase();
+    const { data: criado, error } = await db
+      .from("agendamentos")
+      .insert({
+        empresa_id: empresa.id,
+        cliente_id: clienteId,
+        servico_id: principal.id,
+        quantidade: principal.quantidade,
+        // Sem escolha de profissional no app da dona
+        profissional_id: null,
+        origem: "manual",
+        inicio,
+        // Vários serviços: o fim é a soma de todos. Um só: o banco calcula, como sempre
+        ...(variosOuQuantidade ? { fim: new Date(Date.parse(inicio) + minutosTotal * 60_000).toISOString() } : {}),
         status: realizado ? "realizado" : "agendado",
-        // Sem valor: o app não controla dinheiro
+        // Sem valor: o app não controla dinheiro (o total aparece só para a dona conferir)
         valor: null,
-      },
-    ];
-    const { error } = await supabase().from("agendamentos").insert(novos);
-    setSalvando(false);
+      })
+      .select("id")
+      .single();
     if (error) {
+      setSalvando(false);
       setErro(`Não foi possível salvar: ${error.message}`);
       return;
     }
+    const erroExtras = await gravarExtras(criado.id);
+    if (erroExtras) {
+      // Não deixa o horário pela metade (só com o principal)
+      await db.from("agendamentos").delete().eq("id", criado.id);
+      setSalvando(false);
+      setErro(`Não foi possível salvar os serviços: ${erroExtras}`);
+      return;
+    }
+    setSalvando(false);
     aoSalvar();
+  }
+
+  // Os serviços a mais do horário, cada um com a sua quantidade
+  async function gravarExtras(agendamentoId: string): Promise<string | undefined> {
+    if (!extras.length) return undefined;
+    const { error } = await supabase()
+      .from("atendimento_servicos")
+      .insert(extras.map((e) => ({ empresa_id: empresa.id, agendamento_id: agendamentoId, servico_id: e.id, quantidade: e.quantidade, marcado_junto: true })),
+      );
+    return error?.message;
   }
 
   // "Mudar esse horário": o horário que já existia passa para a hora (e o serviço) escolhidos,
@@ -255,7 +292,7 @@ export function FormAtendimento({
     setErro("");
     // O horário que muda não conta como ocupado (ele mesmo sai de onde estava)
     if (vaiAgendar) {
-      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, servico?.duracao_min ?? 60, h.id);
+      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, minutosTotal, h.id);
       if (problema) {
         setSalvando(false);
         setAviso(null);
@@ -266,12 +303,24 @@ export function FormAtendimento({
     const novoInicio = instanteNoSalao(data, hora.slice(0, 5));
     const mudou = Date.parse(h.inicio) !== Date.parse(novoInicio);
     const anotacao = `Reagendado de ${formatarData(h.inicio).slice(0, 5)} às ${formatarHora(h.inicio)}`;
-    const { error } = await supabase()
+    const db = supabase();
+    // O horário passa a ter a lista nova inteira: os serviços a mais antigos saem e entram os novos.
+    // Isso vem antes de mudar o horário: com fim = null, o banco soma o tempo de todos (supabase/034).
+    const { error: erroTirar } = await db.from("atendimento_servicos").delete().eq("agendamento_id", h.id);
+    const erroExtras = erroTirar?.message ?? (await gravarExtras(h.id));
+    if (erroExtras) {
+      setSalvando(false);
+      setAviso(null);
+      setErro(`Não foi possível mudar os serviços do horário: ${erroExtras}`);
+      return;
+    }
+    const { error } = await db
       .from("agendamentos")
       .update({
         inicio: novoInicio,
         fim: null,
-        servico_id: servicoId,
+        servico_id: principal.id,
+        quantidade: principal.quantidade,
         status: modo === "registrar" && !noFuturo ? "realizado" : "agendado",
         ...(mudou ? { observacoes: [h.observacoes, anotacao].filter(Boolean).join("\n") } : {}),
       })
@@ -288,8 +337,6 @@ export function FormAtendimento({
 
   const campo =
     "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
-  const chip = (ativo: boolean) =>
-    `h-11 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-neutral-100 text-neutral-800"}`;
 
   return (
     <Folha rotulo={modo === "registrar" ? "Registrar atendimento" : "Novo horário"} aoFechar={aoFechar} className="space-y-5 bg-white px-4">
@@ -363,17 +410,8 @@ export function FormAtendimento({
         )}
       </section>
 
-      {/* Serviço */}
-      <section className="space-y-2">
-        <h3 className="text-lg font-semibold">Serviço</h3>
-        <div className="flex flex-wrap gap-2">
-          {servicos.map((s) => (
-            <button key={s.id} onClick={() => setServicoId(s.id)} aria-pressed={servicoId === s.id} className={chip(servicoId === s.id)}>
-              {s.nome}
-            </button>
-          ))}
-        </div>
-      </section>
+      {/* Serviços */}
+      <EscolherServicos servicos={servicos} maisUsados={maisUsados} escolhidos={escolhidos} aoMudar={setEscolhidos} />
 
       {/* Quando */}
       <section className="grid grid-cols-2 gap-3">
@@ -386,10 +424,11 @@ export function FormAtendimento({
           <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={campo} />
         </label>
       </section>
+      {terminaAs && <p className="-mt-3 text-neutral-600">Termina às {terminaAs}</p>}
       {/* Aviso na hora, antes de salvar */}
       {vaiAgendar &&
         almocoDoSalao &&
-        conflitaComAlmoco(almocoDoSalao, hora.slice(0, 5), servico?.duracao_min ?? 60) && (
+        conflitaComAlmoco(almocoDoSalao, hora.slice(0, 5), minutosTotal) && (
           <p className="-mt-3 text-sm font-medium text-amber-700">
             Cai no almoço ({almocoDoSalao.inicio} às {almocoDoSalao.fim}).
           </p>
@@ -403,21 +442,22 @@ export function FormAtendimento({
       )}
 
       {/* Retorno: só informa a data; quem chama a cliente quando chegar a hora é a IA */}
-      {modo === "registrar" && !noFuturo && servico && (
+      {/* Cada serviço tem o próprio retorno: a IA chama pelo que vence primeiro */}
+      {modo === "registrar" && !noFuturo && escolhidosDados.length > 0 && (
         <section className="space-y-1 rounded-xl border border-neutral-200 p-3">
           <h3 className="text-lg font-semibold">Retorno</h3>
-          {retornoPrevisto ? (
-            <>
-              <p className="text-lg">
-                Ela deve voltar em <strong>{formatarData(retornoPrevisto)}</strong> ({prazo(retornoPrevisto)})
-              </p>
-              <p className="text-sm text-neutral-500">
-                {servico.nome} tem retorno de {servico.dias_retorno} dias. A IA chama a cliente quando a data chegar.
-              </p>
-            </>
+          {escolhidosDados.length === 1 ? (
+            <RetornoDoServico servico={escolhidosDados[0]} data={quandoValido ? data : null} />
           ) : (
-            <p className="text-neutral-600">{servico.nome} não tem retorno programado.</p>
+            <ul className="space-y-1">
+              {escolhidosDados.map((s) => (
+                <li key={s.id}>
+                  <RetornoDoServico servico={s} data={quandoValido ? data : null} curto />
+                </li>
+              ))}
+            </ul>
           )}
+          {escolhidosDados.some((s) => s.dias_retorno) && <p className="text-sm text-neutral-500">A IA chama a cliente quando a data chegar.</p>}
         </section>
       )}
 
@@ -539,5 +579,29 @@ export function FormAtendimento({
         </button>
       )}
     </Folha>
+  );
+}
+
+// "Ela deve voltar em 20/11 (em 10 dias)". curto: uma linha por serviço, quando são vários
+function RetornoDoServico({ servico, data, curto = false }: { servico: ServicoEscolha; data: string | null; curto?: boolean }) {
+  const volta = data && servico.dias_retorno ? somarDias(data, servico.dias_retorno) : null;
+  if (curto) {
+    return (
+      <p>
+        <span className="font-semibold">{servico.nome}:</span>{" "}
+        {volta ? `${formatarData(volta).slice(0, 5)} (${prazo(volta)})` : <span className="text-neutral-500">sem retorno</span>}
+      </p>
+    );
+  }
+  if (!volta) return <p className="text-neutral-600">{servico.nome} não tem retorno programado.</p>;
+  return (
+    <>
+      <p className="text-lg">
+        Ela deve voltar em <strong>{formatarData(volta)}</strong> ({prazo(volta)})
+      </p>
+      <p className="text-sm text-neutral-500">
+        {servico.nome} tem retorno de {servico.dias_retorno} dias.
+      </p>
+    </>
   );
 }

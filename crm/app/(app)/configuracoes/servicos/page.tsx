@@ -24,7 +24,16 @@ type Servico = {
   dias_retorno: number | null;
   ativo: boolean;
   a_partir_de: boolean;
+  // Vazio = cobrado por serviço; "unha", "pé" = por unidade (preço e tempo de UMA unidade), supabase/034
+  unidade: string | null;
 };
+
+// Como o serviço é cobrado. No registro do atendimento, os por unidade ganham [–][+]
+const UNIDADES: { valor: string | null; nome: string }[] = [
+  { valor: null, nome: "Por serviço" },
+  { valor: "unha", nome: "Por unha" },
+  { valor: "pé", nome: "Por pé" },
+];
 
 function preco(valor: number | null, aPartirDe = false): string {
   if (valor === null) return "sem preço";
@@ -53,7 +62,7 @@ const DURACOES = Array.from({ length: 16 }, (_, i) => (i + 1) * 30);
 async function buscarServicos(empresaId: string): Promise<{ servicos: Servico[] } | { erro: string }> {
   const { data, error } = await supabase()
     .from("servicos")
-    .select("id, nome, categoria, preco, duracao_min, dias_retorno, ativo, a_partir_de")
+    .select("id, nome, categoria, preco, duracao_min, dias_retorno, ativo, a_partir_de, unidade")
     .eq("empresa_id", empresaId)
     .order("nome");
   if (error) return { erro: error.message };
@@ -160,7 +169,10 @@ function Lista({ servicos, categorias, aoTocar }: { servicos: Servico[]; categor
           <button onClick={() => aoTocar(s)} className="flex w-full items-center gap-3 px-3.5 py-3 text-left active:bg-campo">
             <span className="flex min-w-0 flex-1 flex-col">
               <span className={`text-[16px] leading-snug font-semibold ${s.ativo ? "" : "text-texto-2 line-through"}`}>{nomeCurto(s.nome, s.categoria, categorias)}</span>
-              <span className="text-[13px] text-texto-2">{duracao(s.duracao_min)}</span>
+              <span className="text-[13px] text-texto-2">
+                {duracao(s.duracao_min)}
+                {s.unidade ? ` · por ${s.unidade}` : ""}
+              </span>
             </span>
             <span className="flex shrink-0 flex-col items-end">
               {s.a_partir_de && !!s.preco && <span className="text-[11px] text-texto-2">a partir de</span>}
@@ -187,6 +199,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
   const [minutos, setMinutos] = useState(String(servico?.duracao_min ?? 60));
   const [retorno, setRetorno] = useState(servico?.dias_retorno ? String(servico.dias_retorno) : "");
   const [aPartirDe, setAPartirDe] = useState(servico?.a_partir_de ?? true);
+  const [unidade, setUnidade] = useState<string | null>(servico?.unidade ?? null);
   // Tipo e retorno quase nunca mudam: ficam escondidos em "Mais opções" (no serviço novo, aparecem)
   const [maisOpcoes, setMaisOpcoes] = useState(!servico);
   const [salvando, setSalvando] = useState(false);
@@ -211,7 +224,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
     if (p !== null && (!Number.isFinite(p) || p < 0)) return setErro("Preço inválido. Use só números, ex.: 150 ou 89,90.");
     if (!Number.isInteger(d) || d < 15 || d > 600) return setErro("Escolha a duração.");
     if (r !== null && (!Number.isInteger(r) || r < 1 || r > 365)) return setErro("O retorno precisa ser entre 1 e 365 dias (ou vazio).");
-    gravar({ nome: n, categoria, preco: p, duracao_min: d, dias_retorno: r, a_partir_de: aPartirDe });
+    gravar({ nome: n, categoria, preco: p, duracao_min: d, dias_retorno: r, a_partir_de: aPartirDe, unidade });
   }
 
   async function trocarAtivo() {
@@ -301,6 +314,24 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
                   </button>
                 ))}
               </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <span className="rotulo text-texto-2">Cobrado</span>
+              <div className="flex flex-wrap gap-2">
+                {[...UNIDADES, ...(unidade && !UNIDADES.some((u) => u.valor === unidade) ? [{ valor: unidade, nome: `Por ${unidade}` }] : [])].map((u) => (
+                  <button
+                    key={u.valor ?? "servico"}
+                    onClick={() => setUnidade(u.valor)}
+                    aria-pressed={unidade === u.valor}
+                    className={`h-10 rounded-full px-4 text-[14px] font-semibold transition-colors ${unidade === u.valor ? "chip-ativo" : "bg-card text-texto borda-suave"}`}
+                  >
+                    {u.nome}
+                  </button>
+                ))}
+              </div>
+              {unidade && (
+                <span className="text-[13px] text-texto-2">Preço e duração de 1 {unidade}. No atendimento você escolhe quantas.</span>
+              )}
             </div>
             <label className="flex flex-col gap-1.5">
               <span className="rotulo text-texto-2">Cliente volta depois de quantos dias</span>
