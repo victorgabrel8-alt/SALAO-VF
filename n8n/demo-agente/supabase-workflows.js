@@ -140,7 +140,9 @@ else if (alo.mensagem && alo.tipo === 'lembrete') {
   if (alo.agendamentos?.status === 'agendado' && alo.agendamentos?.inicio && alo.horario_original &&
       +dia(alo.agendamentos.inicio) === +dia(alo.horario_original) && dia(alo.horario_original) > DateTime.now()) linhas.push('ALÔ DE LEMBRETE: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' você lembrou do horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat("cccc, dd/LL 'às' HH:mm") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat("yyyy-LL-dd'T'HH:mm") + ')' : '?') +
-  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.');
+  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.' +
+  // conversa da Lizete (08/11): respondeu à noite e a IA disse "hoje" para o horário do dia seguinte
+  (alo.horario_original ? (() => { const n = Math.round(dia(alo.horario_original).startOf('day').diff(DateTime.now().setZone(TZ).startOf('day'), 'days').days); return ' Esse horário é ' + (n === 0 ? 'HOJE' : n === 1 ? 'AMANHÃ' : 'daqui a ' + n + ' dias') + ': fale assim com ela.'; })() : ''));
 }
 // vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)
 else if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +

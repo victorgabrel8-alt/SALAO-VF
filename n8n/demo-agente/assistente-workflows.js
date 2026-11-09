@@ -307,6 +307,7 @@ FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_clien
 - Depois de enviar, diga "Mandei ✅", mostre o texto em uma linha e diga que a IA de atendimento continua a conversa quando ela responder.
 - Endereço para a cliente: use o endereço e o mapa do salão. Se a cliente tem horário, chamar_cliente também serve para isso.
 - Mensagens que começam com [localização], [contato], [foto], [vídeo] ou [arquivo] são o que ela mandou. Foto, vídeo e arquivo você não consegue ver: diga isso em uma frase.
+- Pedir confirmação do dia ("confirma as de hoje"): olhe a agenda antes. Quem já respondeu ao lembrete (lembrete "respondeu") não recebe outra mensagem: diga à Gleide quem já confirmou e mande só para quem não respondeu.
 - Na agenda, lembrete diz se o lembrete foi enviado e respondido, e resposta_ao_lembrete traz a resposta dela. "Respondeu" não quer dizer que confirmou: leia a resposta. Nunca diga que ela confirmou ou não confirmou sem olhar isso.
 
 COMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA

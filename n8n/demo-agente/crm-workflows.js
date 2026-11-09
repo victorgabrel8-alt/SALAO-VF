@@ -42,7 +42,7 @@ ON CONFLICT (telefone) DO UPDATE SET
       ['interesse', 'O que ela quer, curto (ex.: "mega hair queratina, cabelo vietnamita 60 cm", "selagem")', 'string'],
       ['resumo', 'Resumo de 1-2 frases da conversa até agora (ex.: "Achou caro, quer parcelar em 12x. Casamento em dezembro.")', 'string'],
       ['nome', 'Nome da cliente, se ela disse (senão deixe vazio)', 'string'],
-      ['data_retorno', 'Só se ELA disse um dia ou prazo: a data AAAA-MM-DD, calculada pela data atual ("semana que vem" = segunda da semana que vem; "segunda ou terça" = a mais tarde das duas). "Entro em contato", "vou ver" ou "depois" sem dia: deixe vazio', 'string'],
+      ['data_retorno', 'Só se ELA disse um dia ou prazo: a data AAAA-MM-DD, calculada pela data atual ("semana que vem" = segunda da semana que vem; "segunda ou terça" = a mais tarde das duas). "Entro em contato", "vou ver" ou "depois" sem dia: deixe vazio. Se ela acabou de marcar horário, deixe vazio: o lembrete do horário já cuida disso', 'string'],
       ['assunto_retorno', 'Só com data_retorno: o que ela ficou de contar ou decidir, curto (ex.: "como ficou o cabelo com a amiga", "se recebeu o salário")', 'string'],
     ]));
   workflow.connections.anotar_no_crm = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
