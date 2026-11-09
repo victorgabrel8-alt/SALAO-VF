@@ -1,4 +1,4 @@
--- 034: regras que a Gleide passa para a assistente ("a partir de agora, sempre…") ficam guardadas.
+-- 035: regras que a Gleide passa para a assistente ("a partir de agora, sempre…") ficam guardadas.
 -- Antes ficavam só na memória da conversa (3 dias no Redis) e sumiam.
 -- Só soma: três funções novas; a lista fica em empresas.config.assistente_regras = [{ texto, em }].
 

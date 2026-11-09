@@ -167,7 +167,7 @@ switch (v('acao')) {
     funcao = 'n8n_assistente_chamar_cliente'; enviar = true;
     args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
     break;
-  // regras que a Gleide manda guardar ("a partir de agora, sempre…", supabase/034)
+  // regras que a Gleide manda guardar ("a partir de agora, sempre…", supabase/035)
   case 'guardar_regra':
     funcao = 'n8n_assistente_guardar_regra'; args = { ...base, p_texto: v('texto') };
     break;
@@ -543,7 +543,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       rpc('Ler pendências', [1540, 0], 'n8n_assistente_pendencias_texto', `{ p_empresa_id: ${EMPRESA} }`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
-      // regras fixas que ela mandou guardar (supabase/034): valem até ela mandar tirar
+      // regras fixas que ela mandou guardar (supabase/035): valem até ela mandar tirar
       rpc('Ler regras', [1600, -60], 'n8n_assistente_regras_texto', `{ p_empresa_id: ${EMPRESA} }`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       // pedidos da IA que a Gleide ainda não respondeu (somem do Redis quando ela responde ou em 3 dias)
@@ -688,7 +688,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         'avisar_cliente', [ID('agendamento_id'),
           ['tipo', '"aviso" (horário mudado, cancelamento, recado) ou "remarcacao" (imprevisto da Gleide: pede para a cliente remarcar)', 'string'],
           ['texto', 'Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto da mensagem', 'string']]),
-      // regras fixas (supabase/034): o que ela pede para valer "a partir de agora" no jeito da ASSISTENTE trabalhar
+      // regras fixas (supabase/035): o que ela pede para valer "a partir de agora" no jeito da ASSISTENTE trabalhar
       tool('guardar_regra', [3880, 220], 'Guarda uma regra fixa que a Gleide pediu para você seguir sempre ("a partir de agora…", "sempre que…", "nunca mais…"). Fica valendo até ela pedir para tirar. Só para o jeito de VOCÊ trabalhar; regra para a IA de atendimento das clientes você não consegue mudar.',
         'guardar_regra', [['texto', 'A regra, curta e clara, como ela pediu (ex.: "antes de marcar qualquer horário novo, mostrar o resumo e esperar o ok")', 'string']]),
       tool('tirar_regra', [3880, 440], 'Tira uma regra fixa que a Gleide não quer mais.',
