@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000344",
+      "id": "00000000-0000-4000-8000-000000000361",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -40,7 +40,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000345",
+      "id": "00000000-0000-4000-8000-000000000362",
       "name": "URL assinada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -78,7 +78,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000346",
+      "id": "00000000-0000-4000-8000-000000000363",
       "name": "Gerou URL?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -112,7 +112,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000347",
+      "id": "00000000-0000-4000-8000-000000000364",
       "name": "Enviar PDF",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -146,7 +146,7 @@
       "waitBetweenTries": 2000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000348",
+      "id": "00000000-0000-4000-8000-000000000365",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -180,7 +180,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000349",
+      "id": "00000000-0000-4000-8000-000000000366",
       "name": "Registrar no CRM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -215,7 +215,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000350",
+      "id": "00000000-0000-4000-8000-000000000367",
       "name": "Resposta (enviado)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -238,7 +238,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000351",
+      "id": "00000000-0000-4000-8000-000000000368",
       "name": "Resposta (falhou)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
