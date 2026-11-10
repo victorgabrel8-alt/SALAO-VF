@@ -253,5 +253,6 @@
       "Use transferir_para_humano se a cliente precisar resolver já."
     ]
   ],
-  "memoria_horas": 12
+  "memoria_horas": 12,
+  "sinal_pix": true
 }

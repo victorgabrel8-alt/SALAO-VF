@@ -22,6 +22,7 @@ import {
   nomeCurto,
   reagendar,
   resumoDosServicos,
+  textoDoSinal,
   ultimoReagendamento,
   type Atendimento,
   type StatusAtendimento,
@@ -654,6 +655,9 @@ function ItemLinhaDoTempo({
           {resumoDosServicos(a)} · {duracao(min)}
           {a.origem === "ia" && " · IA"}
         </span>
+        {textoDoSinal(a) && (
+          <span className="w-fit rounded-full bg-salvia px-2 py-0.5 text-[11px] font-bold text-salvia-texto">{textoDoSinal(a)}</span>
+        )}
         {/* Também nos concluídos: é lá que costuma ficar o horário em dobro */}
         {vezesNoDia > 1 && (
           <span className="w-fit rounded-full bg-rose px-2 py-0.5 text-[11px] font-bold text-rose-texto">
@@ -819,6 +823,7 @@ function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento
     ["Situação", ROTULO_STATUS[a.status]],
     ...(reagendado ? ([["Reagendado", reagendado.replace("Reagendado de ", "era ")]] as [string, string][]) : []),
     ...(a.origem === "ia" ? ([["Marcado por", "IA"]] as [string, string][]) : []),
+    ...(textoDoSinal(a) ? ([["Sinal", textoDoSinal(a)!.replace(/^Sinal /, "")]] as [string, string][]) : []),
   ];
   return (
     <div className="rounded-[22px] bg-card p-[18px]">

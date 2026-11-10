@@ -788,6 +788,8 @@ if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
   lojas.dadosDoSalao(workflow);
   lojas.tirarOrcamentoCabelo(workflow, LOJA);
+  // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
+  if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
   // memória da conversa mais curta na loja (loja.json: memoria_horas): quem volta depois disso começa conversa nova
   if (LOJA.memoria_horas) {
     const mem = workflow.nodes.find((nd) => nd.name === 'Memória (Redis)');
