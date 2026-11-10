@@ -50,7 +50,7 @@ module.exports = ({ node, str, toolSub, main, workflow, enviarWorkflow, idFile, 
       options: { timeout: 15000 },
     }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
     resposta('Resposta (enviado)', 'FOTOS ENVIADAS: a cliente acabou de receber o catálogo em PDF, com serviços, preços, formatos de alongamento, formas de pagamento e endereço. NÃO repita nem resuma o conteúdo e NÃO pergunte automaticamente de agendamento. Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).'),
-    resposta('Resposta (falhou)', 'CATÁLOGO NÃO ENVIADO (falha no envio). Responda em texto, curto, sem dizer que mandou e sem prometer mandar depois.'),
+    resposta('Resposta (falhou)', 'CATÁLOGO NÃO ENVIADO (falha no envio). Diga em uma frase curta que não conseguiu mandar o arquivo agora, sem prometer mandar depois. Não ofereça horário nem elogie o trabalho para compensar: se ela perguntou preço, passe o preço em texto; se não, espere o que ela disser.'),
   ];
   enviarWorkflow.connections = {
     'Recebe pedido da IA': main('URL assinada'),

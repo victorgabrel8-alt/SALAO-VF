@@ -252,7 +252,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "CATÁLOGO NÃO ENVIADO (falha no envio). Responda em texto, curto, sem dizer que mandou e sem prometer mandar depois.",
+              "value": "CATÁLOGO NÃO ENVIADO (falha no envio). Diga em uma frase curta que não conseguiu mandar o arquivo agora, sem prometer mandar depois. Não ofereça horário nem elogie o trabalho para compensar: se ela perguntou preço, passe o preço em texto; se não, espere o que ela disser.",
               "type": "string"
             }
           ]

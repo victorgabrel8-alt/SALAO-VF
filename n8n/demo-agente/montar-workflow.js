@@ -794,6 +794,16 @@ if (LOJA) {
     if (!mem) throw new Error('memoria_horas: não achei o nó "Memória (Redis)"');
     mem.parameters.sessionTTL = Math.round(Number(LOJA.memoria_horas) * 3600);
   }
+  // negrito do WhatsApp é *um asterisco*: o "**texto**" do Markdown que a IA às vezes escreve vira "*texto*" antes de enviar
+  const negrito = ".replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*')";
+  for (const [wf, no, de] of [
+    [workflow, 'Quebrar mensagens', ".replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim();"],
+    [assistente.assistenteWorkflow, 'Conferir resposta', "let texto = String(ag.output || '').trim();"],
+  ]) {
+    const nd = wf.nodes.find((n) => n.name === no);
+    if (!nd || !nd.parameters.jsCode.includes(de)) throw new Error(`negrito: o código de "${no}" mudou`);
+    nd.parameters.jsCode = nd.parameters.jsCode.replace(de, de.replace(/;$/, '') + negrito + ';');
+  }
   // prompt próprio da assistente da dona (lojas/<slug>/<prompt_assistente>), com as mesmas expressões do código
   if (LOJA.prompt_assistente) {
     const txt = fs.readFileSync(path.join(LOJA.pasta, LOJA.prompt_assistente), 'utf8').replace(/\r\n/g, '\n').trim();
