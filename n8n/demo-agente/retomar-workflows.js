@@ -59,6 +59,8 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
     '- não indique técnica, quantidade nem tipo de cabelo, e não ofereça "explicar qual técnica a Gleide recomenda": quem define isso é a Gleide na avaliação;',
     '- não afirme estoque, cor ou textura disponível, nem resultado ("tem uns pretos lindos", "temos aqui no salão", "tem liso e ondulado", "ia ficar perfeito em você"); o catálogo é do fornecedor: fale dele só como catálogo, sem dizer que o salão tem aquele cabelo;',
     '- sem exagero nem superlativo ("maravilhoso", "lindíssimo", "um mais lindo que o outro", "perfeito");',
+    // conversa da Claudineia (08/11): o alô falou em "preencher essas falhas"
+    '- nunca diga que o mega preenche falhas, recupera, resolve a queda ou devolve o volume: isso depende do fio e quem vê é a Gleide;',
     '- não sugira dia nem plano que ela não mencionou ("aproveitar o sábado", "passar aqui hoje");',
     '- se ela já disse que usa mega ou conhece a técnica, nada de explicação de iniciante;',
     '- não prometa passar foto ou mensagem para a Gleide nem que ela vai dar retorno (o alô não encaminha nada);',
