@@ -18,6 +18,8 @@
 //                                                código (com "Gleide": a troca pelo nome da dona vem depois).
 //                                                Troca que não acha o texto para o gerador (o código mudou)
 //   catalogo_pdf  {"arquivo", "nome"}            opcional: PDF no bucket "catalogos" que a IA manda (catalogo-pdf.js)
+//   prompt_assistente "arquivo.txt"              opcional: prompt próprio da assistente da dona (na pasta da loja)
+//   memoria_horas 12                             opcional: a IA esquece a conversa depois de X horas sem mensagem (padrão 7 dias)
 //
 // Só nas lojas (a Gleide não muda):
 //   - "DADOS DO SALÃO" no fim do prompt, lido a cada mensagem de empresas.config (tela Dados do salão do app);
