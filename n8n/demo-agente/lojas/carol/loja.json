@@ -155,6 +155,10 @@
     [
       "manutenção do seu mega hair, quer que eu veja um horário?",
       "manutenção do seu alongamento, quer que eu veja um horário?"
+    ],
+    [
+      "Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.",
+      "Use transferir_para_humano se a cliente precisar resolver já."
     ]
   ]
 }
