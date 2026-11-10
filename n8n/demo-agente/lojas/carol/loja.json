@@ -49,7 +49,7 @@
       "valores e durações; se houver divergência"
     ],
     [
-      "(sem lista atualizada: não invente preço; use seção 09 apenas para base geral da mão de obra e durações)",
+      "(sem lista atualizada: não invente preço; use seção 04 apenas para base geral da mão de obra e durações)",
       "(sem lista atualizada: não informe preço nem duração; diga que a Gleide confirma)"
     ],
     [
@@ -113,7 +113,7 @@
       "(ex.: Ver a foto da unha e dizer se precisa voltar)"
     ],
     [
-      "use a seção 09 apenas para durações e base geral de mão de obra autorizada, nunca para inventar preço específico",
+      "use a seção 04 apenas para durações e base geral de mão de obra autorizada, nunca para inventar preço específico",
       "não informe preço nem duração que não estejam na lista"
     ],
     [
@@ -133,11 +133,11 @@
       "como ficou a cor da unha com a amiga"
     ],
     [
-      "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 01. ",
+      "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. ",
       ""
     ],
     [
-      "Pergunta de ENDEREÇO segue LOCALIZAÇÃO COM LINK (seção 09), sem consultar agenda até aceite.",
+      "Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático).",
       "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
     ],
     [
