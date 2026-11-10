@@ -14,6 +14,7 @@
     "arquivo": "26a5d3eb-e8e4-4ed8-b206-095095292fdd/catalogo.pdf",
     "nome": "Catalogo Studio Caroline Ferreira.pdf"
   },
+  "prompt_assistente": "prompt-assistente.txt",
   "trocas": [
     [
       "const isQuimica = /(progressiva|botox capilar|selagem|colora[cç][aã]o|mechas|luzes|hidrata[cç][aã]o|reconstru[cç][aã]o)/i.test(nome);",
@@ -120,20 +121,8 @@
       "Os serviços"
     ],
     [
-      "✅ Fechou — queratina, vietnamita 70 cm, 150 g",
-      "✅ Fechou — alongamento em gel, formato amendoado"
-    ],
-    [
-      "💰 R$ 2.800",
-      "💰 R$ 180"
-    ],
-    [
       "não indique técnica, quantidade nem tipo de cabelo;",
       "não indique técnica, formato nem cor;"
-    ],
-    [
-      ", Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT. Mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8. Nunca peça o endereço à Gleide.",
-      ". Se perguntarem o endereço, ele está nos Dados do salão do app. Nunca peça o endereço à Gleide."
     ],
     [
       "(ex.: quer cabelo vietnamita)",
@@ -158,6 +147,14 @@
     [
       "Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp.",
       "Para uma REAÇÃO ISOLADA DE ENCERRAMENTO sem nova demanda (como \"ok\", \"obrigada\", \"blz\"), depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. EXCEÇÃO OBRIGATÓRIA: \"oi\", \"olá\", \"boa tarde\", \"bom dia\", \"boa noite\" e cumprimentos semelhantes SEM outro pedido, quando usados para iniciar ou retomar contato, NÃO são reações de encerramento e NÃO recebem [[NAO_ENVIAR]]; responda e conduza com uma única pergunta de descoberta (seção 02)."
+    ],
+    [
+      "(nome, se já tem mega hair, qual serviço fez)",
+      "(nome, qual serviço fez)"
+    ],
+    [
+      "manutenção do seu mega hair, quer que eu veja um horário?",
+      "manutenção do seu alongamento, quer que eu veja um horário?"
     ]
   ]
 }

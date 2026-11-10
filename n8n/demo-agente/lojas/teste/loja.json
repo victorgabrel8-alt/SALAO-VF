@@ -10,12 +10,43 @@
     "5500000000001"
   ],
   "permitidos": [
-    "556699270860"
+    "556699270860",
+    "5566900000010",
+    "5566900000011",
+    "5566900000012",
+    "5566900000013",
+    "5566900000014",
+    "5566900000015",
+    "5566900000016",
+    "5566900000017",
+    "5566900000018",
+    "5566900000019",
+    "5566900000020",
+    "5566900000021",
+    "5566900000022",
+    "5566900000023",
+    "5566900000024",
+    "5566900000025",
+    "5566900000026",
+    "5566900000027",
+    "5566900000028",
+    "5566900000029",
+    "5566900000030",
+    "5566900000031",
+    "5566900000032",
+    "5566900000033",
+    "5566900000034",
+    "5566900000035",
+    "5566900000036",
+    "5566900000037",
+    "5566900000038",
+    "5566900000039"
   ],
   "catalogo_pdf": {
     "arquivo": "ff4b7937-1abb-4803-83c8-e0896d94fc9f/catalogo.pdf",
     "nome": "Catalogo Studio Caroline Ferreira.pdf"
   },
+  "prompt_assistente": "prompt-assistente.txt",
   "trocas": [
     [
       "const isQuimica = /(progressiva|botox capilar|selagem|colora[cç][aã]o|mechas|luzes|hidrata[cç][aã]o|reconstru[cç][aã]o)/i.test(nome);",
@@ -90,7 +121,7 @@
       "const COMUNS = new Set('unha unhas mao maos pe pes quero"
     ],
     [
-      "“A manutenção fica a partir de R$ 350.”",
+      "“A manutenção fica R$ 150 por tela.”",
       "“O pé e mão fica R$ [preço fixo confirmado na lista].” (ou “a partir de R$ ...” apenas se a lista marcar preço inicial)."
     ],
     [
@@ -122,20 +153,8 @@
       "Os serviços"
     ],
     [
-      "✅ Fechou — queratina, vietnamita 70 cm, 150 g",
-      "✅ Fechou — alongamento em gel, formato amendoado"
-    ],
-    [
-      "💰 R$ 2.800",
-      "💰 R$ 180"
-    ],
-    [
       "não indique técnica, quantidade nem tipo de cabelo;",
       "não indique técnica, formato nem cor;"
-    ],
-    [
-      ", Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT. Mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8. Nunca peça o endereço à Gleide.",
-      ". Se perguntarem o endereço, ele está nos Dados do salão do app. Nunca peça o endereço à Gleide."
     ],
     [
       "(ex.: quer cabelo vietnamita)",
@@ -152,6 +171,22 @@
     [
       "Pergunta de ENDEREÇO segue LOCALIZAÇÃO COM LINK (seção 09), sem consultar agenda até aceite.",
       "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
+    ],
+    [
+      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.",
+      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Se há pedido em outra linha, atenda a esse pedido e não acrescente pergunta genérica. Se TODAS as linhas forem apenas cumprimentos sem pedido, conduza com uma única pergunta de descoberta (seção 02). Não escreva os números [1], [2] na resposta."
+    ],
+    [
+      "Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp.",
+      "Para uma REAÇÃO ISOLADA DE ENCERRAMENTO sem nova demanda (como \"ok\", \"obrigada\", \"blz\"), depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. EXCEÇÃO OBRIGATÓRIA: \"oi\", \"olá\", \"boa tarde\", \"bom dia\", \"boa noite\" e cumprimentos semelhantes SEM outro pedido, quando usados para iniciar ou retomar contato, NÃO são reações de encerramento e NÃO recebem [[NAO_ENVIAR]]; responda e conduza com uma única pergunta de descoberta (seção 02)."
+    ],
+    [
+      "(nome, se já tem mega hair, qual serviço fez)",
+      "(nome, qual serviço fez)"
+    ],
+    [
+      "manutenção do seu mega hair, quer que eu veja um horário?",
+      "manutenção do seu alongamento, quer que eu veja um horário?"
     ]
   ]
 }

@@ -788,6 +788,16 @@ if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
   lojas.dadosDoSalao(workflow);
   lojas.tirarOrcamentoCabelo(workflow, LOJA);
+  // prompt próprio da assistente da dona (lojas/<slug>/<prompt_assistente>), com as mesmas expressões do código
+  if (LOJA.prompt_assistente) {
+    const txt = fs.readFileSync(path.join(LOJA.pasta, LOJA.prompt_assistente), 'utf8').replace(/\r\n/g, '\n').trim();
+    const faltam = ['Ler regras', 'Ler pendências', 'Ler pedidos abertos'].filter((no) => !txt.includes(`$('${no}')`));
+    if (faltam.length) throw new Error(`prompt_assistente: faltam as expressões de ${faltam.join(', ')}`);
+    if (!txt.includes(LOJA.empresa_id)) throw new Error('prompt_assistente: não tem o empresa_id desta loja');
+    const ag = assistente.assistenteWorkflow.nodes.find((nd) => nd.name === 'Agente assistente');
+    if (!ag) throw new Error('prompt_assistente: não achei o nó "Agente assistente"');
+    ag.parameters.options.systemMessage = '=' + txt;
+  }
   if (LOJA.catalogo_pdf) require('./catalogo-pdf.js')({ node, str, toolSub, main, workflow, enviarWorkflow: catalogo.enviarWorkflow, idFile: catalogo.idFile, loja: LOJA, organizar });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
