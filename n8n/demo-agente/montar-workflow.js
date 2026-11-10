@@ -155,7 +155,7 @@ Padrão: 1 parágrafo de 1 ou 2 frases curtas; no máximo 2 parágrafos; 3 só q
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica R$ 150 por tela.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 01. Pergunta de ENDEREÇO segue LOCALIZAÇÃO COM LINK (seção 09), sem consultar agenda até aceite. Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático). Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
