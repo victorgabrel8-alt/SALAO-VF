@@ -94,6 +94,7 @@ module.exports = ({ node, workflow, agendaWorkflow, loja }) => {
     "'- Todo horário NOVO precisa de um sinal de R$ ' + f(s.valor) + ' por Pix, que é descontado do valor do serviço no dia.', " +
     "'- Ordem: a cliente escolheu o horário e você já tem serviço e nome -> numa mensagem curta diga que para garantir o horário é um sinal de R$ ' + f(s.valor) + ' no Pix, descontado no dia, e peça o print do comprovante; mande a chave sozinha em outra mensagem (use ---) para ela copiar: ' + (s.chave || '(chave não cadastrada: use transferir_para_humano)') + (nome ? ' (em nome de ' + nome + ')' : '') + '.', " +
     "'- Quando chegar [foto da cliente] COMPROVANTE PIX, chame criar_agendamento na hora com o horário que ela escolheu, sem perguntar mais nada. Quem confere o comprovante é o sistema: não diga que está certo antes do AGENDADO.', " +
+    "'- Antes do AGENDADO o horário NÃO está reservado: nunca diga reservei, guardei, separei ou marquei. Diga que o horário fica garantido quando o comprovante chegar.', " +
     "'- Já paguei sem a foto não vale: peça o print do comprovante. Nunca chame criar_agendamento antes de o comprovante chegar.', " +
     "'- Se voltar NÃO AGENDADO, siga o que a resposta disser, sem acusar a cliente. Se voltar AGENDADO, confirme serviço, dia e hora e diga que o sinal já fica descontado no dia.', " +
     "'- Remarcar não pede sinal novo: o sinal vai junto para o novo horário.'" +
