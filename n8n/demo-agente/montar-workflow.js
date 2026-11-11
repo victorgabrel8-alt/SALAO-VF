@@ -790,6 +790,8 @@ if (LOJA) {
   lojas.tirarOrcamentoCabelo(workflow, LOJA);
   // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
   if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
+  // Google Agenda da dona também ocupa horário (google-agenda.js), até as clientes dela estarem todas no app
+  if (LOJA.google_agenda) require('./google-agenda.js')({ node, agendaWorkflow, env });
   // memória da conversa mais curta na loja (loja.json: memoria_horas): quem volta depois disso começa conversa nova
   if (LOJA.memoria_horas) {
     const mem = workflow.nodes.find((nd) => nd.name === 'Memória (Redis)');

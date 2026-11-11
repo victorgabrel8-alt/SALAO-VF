@@ -159,5 +159,6 @@
     ]
   ],
   "memoria_horas": 12,
-  "sinal_pix": true
+  "sinal_pix": true,
+  "google_agenda": true
 }
