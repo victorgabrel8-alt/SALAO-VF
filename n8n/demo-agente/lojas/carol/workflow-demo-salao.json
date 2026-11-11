@@ -4004,7 +4004,7 @@
         "operation": "set",
         "key": "=carol:preco_pendente:{{ $('Extrair dados').first().json.telefone }}",
         "keyType": "string",
-        "value": "={{ $json.precoPendenteDepois ?? (String($('Preço: ler pendência').first().json.pendente || '') === '1' ? '1' : '0') }}",
+        "value": "={{ ($('Descarte: preparar').isExecuted && $('Descarte: preparar').first().json.precoVolta) ? '1' : ($json.precoPendenteDepois ?? (String($('Preço: ler pendência').first().json.pendente || '') === '1' ? '1' : '0')) }}",
         "expire": true,
         "ttl": 43200
       },

@@ -59,7 +59,8 @@ module.exports = ({ node, REDIS, D }) => (wf) => {
   }, { credentials: REDIS, executeOnce: true, onError: 'continueRegularOutput' });
   // resposta sem texto (só áudio/aceno) não tem o campo: o lembrete fica como estava
   wf.nodes.push(gravar('Preço: gravar pendência',
-    "={{ $json.precoPendenteDepois ?? (String($('Preço: ler pendência').first().json.pendente || '') === '1' ? '1' : '0') }}"));
+    // este ramo pode rodar antes ou depois do descarte: se o balão com valor foi descartado, fica ligado
+    "={{ ($('Descarte: preparar').isExecuted && $('Descarte: preparar').first().json.precoVolta) ? '1' : ($json.precoPendenteDepois ?? (String($('Preço: ler pendência').first().json.pendente || '') === '1' ? '1' : '0')) }}"));
   const depois = wf.connections['Quebrar mensagens']?.main?.[0];
   if (!depois || !depois.length) throw new Error('preco-pendente: o Quebrar mensagens não tem saída');
   depois.push({ node: 'Preço: gravar pendência', type: 'main', index: 0 });
