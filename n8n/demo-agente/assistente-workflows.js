@@ -40,7 +40,9 @@ const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendament
   // agenda pelo WhatsApp (supabase/013)
   'extras', 'forcar', 'minutos', 'a_partir', 'ate', 'tipo', 'desfazer', 'aniversario',
   // horas sem atender (supabase/030)
-  'hora_inicio', 'hora_fim'];
+  'hora_inicio', 'hora_fim',
+  // fechou esperando o cabelo (supabase/038)
+  'dias_chegada', 'dias_confeccao'];
 
 // O que cada ferramenta chama no Supabase: uma função n8n_assistente_* (supabase/004, 006, 011 e 013), pela API
 // com a chave de serviço, como o agente de atendimento. Vazio vira null; o resto vem da IA (texto).
@@ -81,9 +83,20 @@ switch (v('acao')) {
     const hojeCuiaba = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
     let dataProx = dataValida(v('data_proximo_passo'));
     if (dataProx && dataProx < hojeCuiaba) dataProx = dataValida(String(+dataProx.slice(0, 4) + 1) + dataProx.slice(4));
-    const dataOk = dataProx !== '';
-    const passo = [v('proximo_passo'), dataOk || !v('data_proximo_passo') ? '' : '(' + v('data_proximo_passo') + ')'].filter(Boolean).join(' ');
     const resultado = { 'fechou': 'fechou', 'pensando': 'pensando', 'nao_fechou': 'nao_fechou', 'não fechou': 'nao_fechou', 'nao fechou': 'nao_fechou' }[v('resultado').toLowerCase()] || v('resultado');
+    // fechou esperando o cabelo (supabase/038): a data de perguntar de novo é calculada aqui, não pela IA:
+    // hoje + dias para o cabelo chegar + dias de confecção + 1 de folga. "5 a 7 dias" conta o maior.
+    const dias = (k) => { const ns = (v(k).match(/\d+/g) || []).map(Number).filter((n) => n > 0 && n <= 120); return ns.length ? Math.max(...ns) : 0; };
+    const chegada = dias('dias_chegada'), confeccao = dias('dias_confeccao');
+    let prazo = '';
+    if (resultado === 'fechou' && !dataProx && (chegada || confeccao)) {
+      const x = new Date(hojeCuiaba + 'T12:00:00Z');
+      x.setUTCDate(x.getUTCDate() + chegada + confeccao + 1);
+      dataProx = x.toISOString().slice(0, 10);
+      prazo = '(' + [chegada ? 'cabelo chega em ~' + chegada + ' dias' : '', confeccao ? 'confecção ' + confeccao + ' dias' : ''].filter(Boolean).join(' + ') + ')';
+    }
+    const dataOk = dataProx !== '';
+    const passo = [v('proximo_passo'), prazo, dataOk || !v('data_proximo_passo') ? '' : '(' + v('data_proximo_passo') + ')'].filter(Boolean).join(' ');
     const d = { resultado, tecnica_indicada: texto('tecnica_indicada'), tipo_cabelo: texto('tipo_cabelo'),
       comprimento_cm: inteiro('comprimento_cm'), gramas: inteiro('gramas'), valor_orcado: num('valor') === null || num('valor') <= 0 ? '' : String(num('valor')),
       motivo_nao_fechou: texto('motivo_nao_fechou'), proximo_passo: passo, data_proximo_passo: dataProx,
@@ -327,19 +340,20 @@ COMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA
 2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:
    "Anotei pra *Juliana Souza (…2222)*:
    ✅ Fechou — queratina, vietnamita 70 cm, 150 g
-   💰 R$ 2.800
+   📦 Cabelo chega em ~7 dias + 3 de confecção
    Tá certo?"
    Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único
-   "Tá certo?". O que ela não falou (valor, gramas, cm) entra como "valor: não informado" — NÃO segure o resumo esperando isso;
-   no fim do resumo, numa frase só, diga que se ela souber os valores pode mandar junto.
+   "Tá certo?". O que ela não falou (valor, gramas, cm) fica de fora — NÃO segure o resumo esperando isso
+   e não peça valor.
 3. Só depois do "sim" (ou "isso", "pode", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.
    Se ela corrigir, ajuste e confirme de novo.
 4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.
 5. Depois de gravar, confirme em poucas palavras que ficou no CRM, variando (ex.: "Pronto, tá no CRM ✅", "Anotado ✅", "Feito, já tá na ficha dela 👍") e, se ainda houver pendência, pergunte a próxima (uma por vez).
 
 REGRAS
-- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Faltou algo importante (ex.: fechou mas não falou o valor)? Pergunte UMA vez; se ela não souber, grave sem.
+- Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Não pergunte valor: se ela falar, grave; se não, siga sem.
 - "fechou" = vai fazer o serviço; "pensando" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); "nao_fechou" = desistiu (pergunte o motivo uma vez).
+- A cliente decidiu e só falta o cabelo chegar ou ser confeccionado: é "fechou" (veja FECHOU abaixo).
 - Ainda depende de algo (da cliente ou da Gleide) é "pensando", nunca "fechou". Sempre com proximo_passo e uma data AAAA-MM-DD:
   nessa data você pergunta para a Gleide como ficou.
   "Ela vai querer pra fevereiro" → pensando, proximo_passo "chamar para marcar a aplicação", data = primeiro dia útil do mês que ela disse.
@@ -351,6 +365,16 @@ REGRAS
 - Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo "aplicação marcada DD/MM às HH:mm" e
   data_proximo_passo nessa data (calcule "terça que vem" a partir da data atual). Se a aplicação ainda não está na agenda,
   ofereça marcar (marcar_horario com o serviço de aplicação da técnica que fechou).
+- FECHOU sem aplicação na agenda: antes do resumo, pergunte numa mensagem só (uma vez) o que ficou combinado com a cliente
+  e quando ela volta. Se depende do cabelo: "O cabelo já tá aí? Se não, chega em uns quantos dias? Vai precisar confeccionar?
+  Quantos dias?". Grave fechou com proximo_passo = o combinado (ex.: "aplicação queratina 70 cm, cabelo vem pela
+  transportadora"), dias_chegada e dias_confeccao com os números que ela disse e data_proximo_passo VAZIA: o sistema calcula
+  o dia (chegada + confecção + 1) e devolve em data_proximo_passo; depois de gravar, diga esse dia ("te pergunto dia DD/MM"). Se ela já disser o dia da
+  aplicação, ofereça marcar. Se ela não souber prazo nenhum, use dias_chegada 7. Não insista na mesma conversa.
+- Pendência [fechou_sem_data]: chegou o dia de saber se o cabelo chegou. Se já tem dia, ofereça marcar a aplicação
+  (marcar_horario). Se ainda não chegou, pergunte a nova previsão e grave fechou de novo com dias_chegada/dias_confeccao
+  novos (sem previsão: dias_chegada 5). Ela respondeu "depois eu vejo"? Tudo bem, não cobre de novo agora: o sistema
+  pergunta de novo em 3 dias.
 - Fez um serviço A MAIS do que estava na agenda (ex.: marcou hidratação e fez selagem também): concluir no horário agendado
   com extras (nunca um horário novo para o serviço a mais).
 - Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar ("Chamar em DD/MM: motivo"). Diga que ficou anotado
@@ -606,8 +630,10 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['gramas', 'Gramas, só o número', 'string'],
           ['valor', 'Valor orçado em reais, só o número (ex.: 2800). Vazio se ela não disse (nunca 0)', 'string'],
           ['motivo_nao_fechou', 'Se não fechou: motivo', 'string'],
-          ['proximo_passo', 'Próximo passo combinado (ex.: chamar sexta)', 'string'],
-          ['data_proximo_passo', 'Data do próximo passo AAAA-MM-DD', 'string'],
+          ['proximo_passo', 'Próximo passo combinado (ex.: chamar sexta). Se fechou: o que ficou combinado com a cliente', 'string'],
+          ['data_proximo_passo', 'Data do próximo passo AAAA-MM-DD. Se fechou esperando o cabelo, deixe vazio e use dias_chegada/dias_confeccao', 'string'],
+          ['dias_chegada', 'Se fechou e o cabelo ainda vai chegar: em quantos dias chega, só o número (o maior, se ela disse "5 a 7")', 'string'],
+          ['dias_confeccao', 'Se fechou e precisa confeccionar: quantos dias de confecção, só o número', 'string'],
           ['observacoes', 'Outras observações da Gleide', 'string']]),
       tool('status_atendimento', [2440, 220], 'Marca um horário como realizado (veio), faltou ou cancelado. Só use DEPOIS da confirmação.',
         'status_atendimento', [ID('agendamento_id'),
@@ -773,7 +799,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('Montar mensagem', 'n8n-nodes-base.code', 2, [660, 100], { jsCode: String.raw`
 const ps = $input.all().map((i) => i.json).filter((p) => p.tipo);
 if (!ps.length) return [];
-const nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');
+// "Roseli de Souza" vira "Roseli Souza" (antes saía "Roseli de")
+const nome = (p) => (p.nome || 'cliente').split(' ').filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2).join(' ');
 // "hoje às 18:27", "ontem às 18:27" ou "20/10 às 18:27": sem o dia, um horário de ontem confunde
 const diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });
 const hora = (p) => {
@@ -788,6 +815,10 @@ const linha = (p) => {
   if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';
   if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';
   if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';
+  // supabase/038: fechou e a aplicação ainda não está na agenda
+  if (p.tipo === 'fechou_sem_data') return p.proximo_passo
+    ? '• *' + nome(p) + '* fechou — ' + p.proximo_passo + '. O cabelo já chegou? Já dá pra marcar a aplicação?'
+    : '• *' + nome(p) + '* fechou. O que ficou combinado e quando ela volta? Se depende do cabelo: chega em quantos dias e precisa confeccionar?';
   return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';
 };
 const texto = 'Oi, Gleide! Pra deixar o CRM em dia:\n' + ps.map(linha).join('\n') + '\n\nPode responder em áudio, do seu jeito 🙂';
