@@ -127,7 +127,9 @@ const ini = dia.startOf('day'), fim = ini.plus({ days: 1 });
 const eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y]) => x < fim && y > ini).sort((p, q) => p[0] - q[0]);
 const hh = (d) => d.toFormat('HH:mm');
 const lista = eventos.map(([x, y, t, todo]) => '- ' + (todo ? 'dia inteiro' : hh(x) + ' às ' + hh(y)) + ': ' + t).join(NL);
-return [{ json: { texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (clientes que ainda não estão no app; conta como ocupado, junto com o app):' + NL +
+// minutos do dia ocupados na Google (a Resposta tira de horarios_livres o que encavala)
+const ocupados = eventos.map(([x, y]) => [Math.max(0, x.diff(ini, 'minutes').minutes), Math.min(1440, y.diff(ini, 'minutes').minutes)]);
+return [{ json: { ocupados, texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (clientes que ainda não estão no app; conta como ocupado, junto com o app):' + NL +
   (lista || '- nada marcado na Google neste dia') + NL +
   'Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona confirmar.' } }];
 ` }),
@@ -144,5 +146,11 @@ return [{ json: { texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.setLocale('
   const r = achar('Resposta').parameters.assignments.assignments[0];
   const m = /^=\{\{ ([\s\S]*) \}\}$/.exec(r.value);
   if (!m) throw new Error('google_agenda (assistente): a Resposta mudou');
-  r.value = `={{ (${m[1]}) + ($('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json.texto : '') }}`;
+  // horarios_livres: tira os inícios que, com a duração do serviço, encavalam com a Google
+  r.value = `={{ (() => { let base = (${m[1]}); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; ` +
+    "if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { " +
+    "const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; " +
+    "if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); " +
+    "if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } " +
+    "base = 'OK: ' + JSON.stringify(o); } catch (e) {} } return base + (g.texto || ''); })() }}";
 };
