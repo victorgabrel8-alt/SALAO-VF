@@ -964,6 +964,15 @@ if (process.argv.includes('--enviar')) {
       if (emp.config?.ia_usa_dados_loja !== true) {
         const r = await fetch(rota, { method: 'PATCH', headers: supa, body: JSON.stringify({ config: { ...emp.config, ia_usa_dados_loja: true } }) });
         console.log(r.ok ? 'Dados do salão: config.ia_usa_dados_loja ligado' : `erro ao ligar config.ia_usa_dados_loja: ${r.status}`);
+        emp.config = { ...emp.config, ia_usa_dados_loja: true };
+      }
+      // o banco só deixa a assistente mexer na agenda com o número da dona em config.assistente_numeros
+      // (assistente_autorizado): os números do loja.json entram lá, sem tirar os que já estão
+      const tem = Array.isArray(emp.config?.assistente_numeros) ? emp.config.assistente_numeros : [];
+      const faltam = (LOJA.assistente_numeros || []).filter((n) => !tem.includes(n));
+      if (faltam.length) {
+        const r = await fetch(rota, { method: 'PATCH', headers: supa, body: JSON.stringify({ config: { ...emp.config, assistente_numeros: [...tem, ...faltam] } }) });
+        console.log(r.ok ? `Assistente: ${faltam.join(', ')} liberado(s) no banco` : `erro ao liberar a assistente no banco: ${r.status}`);
       }
     }
   })();
