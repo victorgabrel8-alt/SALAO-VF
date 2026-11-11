@@ -1,5 +1,5 @@
 {
-  "name": "[Studio Caroline Ferreira] Catálogo - Enviar PDF",
+  "name": "[Studio Caroline Ferreira] Catálogo - Enviar link",
   "nodes": [
     {
       "id": "00000000-0000-4000-9000-000000000017",
@@ -11,7 +11,7 @@
         -206
       ],
       "parameters": {
-        "content": "## Catálogo - Enviar PDF\nChamado pelo agente (enviar_catalogo) quando a cliente pede o catálogo: gera uma URL assinada do PDF no Storage e manda pela Evolution como documento.",
+        "content": "## Catálogo - Enviar link\nChamado pelo agente (enviar_catalogo) quando a cliente pede o catálogo: manda o link do catálogo do WhatsApp do studio.",
         "width": 1400,
         "height": 146,
         "color": 1
@@ -40,8 +40,8 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000362",
-      "name": "URL assinada",
+      "id": "00000000-0000-4000-8000-000000000369",
+      "name": "Enviar link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -50,79 +50,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/storage/v1/object/sign/catalogos/26a5d3eb-e8e4-4ed8-b206-095095292fdd/catalogo.pdf",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ expiresIn: 3600 }) }}",
-        "options": {
-          "timeout": 15000
-        }
-      },
-      "onError": "continueRegularOutput",
-      "alwaysOutputData": true,
-      "retryOnFail": true,
-      "maxTries": 2,
-      "waitBetweenTries": 1000
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000363",
-      "name": "Gerou URL?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        600,
-        0
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "Gerou URL?",
-              "leftValue": "={{ !!$json.signedURL }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000364",
-      "name": "Enviar PDF",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        900,
-        0
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendMedia/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -134,7 +62,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $('Recebe pedido da IA').first().json.jid, mediatype: 'document', mimetype: 'application/pdf', media: $env.SUPABASE_URL + '/storage/v1' + $json.signedURL, fileName: \"Catalogo Studio Caroline Ferreira.pdf\", delay: 1500 }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $('Recebe pedido da IA').first().json.jid, text: \"Aqui está o catálogo do studio:\\nhttps://wa.me/c/556696380737\", linkPreview: true, delay: 1500 }) }}",
         "options": {
           "timeout": 60000
         }
@@ -151,7 +79,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1200,
+        600,
         0
       ],
       "parameters": {
@@ -185,7 +113,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1500,
+        900,
         0
       ],
       "parameters": {
@@ -206,7 +134,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_telefone: (() => { const d = String($('Recebe pedido da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: '📄 Catálogo em PDF enviado', p_autor: 'ia', p_tipo: 'outro', p_wa_message_id: $json.key.id }) }}",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_telefone: (() => { const d = String($('Recebe pedido da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: 'Aqui está o catálogo do studio:\\nhttps://wa.me/c/556696380737', p_autor: 'ia', p_tipo: 'outro', p_wa_message_id: $json.key.id }) }}",
         "options": {
           "timeout": 15000
         }
@@ -220,7 +148,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1800,
+        1200,
         0
       ],
       "parameters": {
@@ -229,7 +157,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "FOTOS ENVIADAS: a cliente acabou de receber o catálogo em PDF, com serviços, preços, formatos de alongamento, formas de pagamento e endereço. NÃO repita nem resuma o conteúdo e NÃO pergunte automaticamente de agendamento. Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).",
+              "value": "FOTOS ENVIADAS: a cliente acabou de receber o link do catálogo do studio no WhatsApp, com os serviços e fotos. NÃO repita o link nem resuma o catálogo e NÃO pergunte automaticamente de agendamento. Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).",
               "type": "string"
             }
           ]
@@ -243,7 +171,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1500,
+        900,
         200
       ],
       "parameters": {
@@ -252,7 +180,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "CATÁLOGO NÃO ENVIADO (falha no envio). Diga em uma frase curta que não conseguiu mandar o arquivo agora, sem prometer mandar depois. Não ofereça horário nem elogie o trabalho para compensar: se ela perguntou preço, passe o preço em texto; se não, espere o que ela disser.",
+              "value": "CATÁLOGO NÃO ENVIADO (falha no envio). Diga em uma frase curta que não conseguiu mandar o catálogo agora, sem prometer mandar depois. Não ofereça horário nem elogie o trabalho para compensar: se ela perguntou preço, passe o preço em texto; se não, espere o que ela disser.",
               "type": "string"
             }
           ]
@@ -266,43 +194,14 @@
       "main": [
         [
           {
-            "node": "URL assinada",
+            "node": "Enviar link",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "URL assinada": {
-      "main": [
-        [
-          {
-            "node": "Gerou URL?",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Gerou URL?": {
-      "main": [
-        [
-          {
-            "node": "Enviar PDF",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "Resposta (falhou)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Enviar PDF": {
+    "Enviar link": {
       "main": [
         [
           {

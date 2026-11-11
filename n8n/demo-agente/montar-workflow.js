@@ -816,7 +816,7 @@ if (LOJA) {
     if (!ag) throw new Error('prompt_assistente: não achei o nó "Agente assistente"');
     ag.parameters.options.systemMessage = '=' + txt;
   }
-  if (LOJA.catalogo_pdf) require('./catalogo-pdf.js')({ node, str, toolSub, main, workflow, enviarWorkflow: catalogo.enviarWorkflow, idFile: catalogo.idFile, loja: LOJA, organizar });
+  if (LOJA.catalogo_pdf || LOJA.catalogo_link) require('./catalogo-pdf.js')({ node, str, toolSub, main, workflow, enviarWorkflow: catalogo.enviarWorkflow, idFile: catalogo.idFile, loja: LOJA, organizar });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

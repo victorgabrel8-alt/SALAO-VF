@@ -18,6 +18,7 @@
 //                                                código (com "Gleide": a troca pelo nome da dona vem depois).
 //                                                Troca que não acha o texto para o gerador (o código mudou)
 //   catalogo_pdf  {"arquivo", "nome"}            opcional: PDF no bucket "catalogos" que a IA manda (catalogo-pdf.js)
+//   catalogo_link "https://wa.me/c/<número>"       opcional: no lugar do PDF, a IA manda o link do catálogo do WhatsApp
 //   prompt_assistente "arquivo.txt"              opcional: prompt próprio da assistente da dona (na pasta da loja)
 //   memoria_horas 12                             opcional: a IA esquece a conversa depois de X horas sem mensagem (padrão 7 dias)
 //   sinal_pix true                               opcional: sinal por Pix para reservar (sinal-pix.js); valores e liga/desliga em config.loja.sinal_pix
