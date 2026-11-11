@@ -729,6 +729,8 @@ memoriaJanela(assistente.assistenteWorkflow, 'Agente assistente', REDIS);
 
 // resposta no ritmo da cliente: espera a rajada e não manda resposta velha (ver resposta-velha.js)
 require('./resposta-velha.js')({ node, main, ifNode, cond, REDIS, D })(workflow);
+// preço pedido e ainda não entregue: o filtro de preço não apaga e o balão descartado volta (preco-pendente.js)
+require('./preco-pendente.js')({ node, REDIS, D })(workflow);
 
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');

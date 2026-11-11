@@ -784,7 +784,7 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1500,
+        1800,
         4800
       ],
       "parameters": {
@@ -876,7 +876,7 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1800,
+        2100,
         4800
       ],
       "parameters": {
@@ -893,7 +893,7 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2100,
+        2400,
         4800
       ],
       "parameters": {
@@ -915,7 +915,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2400,
+        2700,
         4800
       ],
       "parameters": {
@@ -949,7 +949,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2700,
+        3000,
         4800
       ],
       "parameters": {
@@ -1251,11 +1251,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3840,
+        4140,
         2780
       ],
       "parameters": {
-        "jsCode": "const jid = $('Montar entrada').first().json.jid;\n// caractere invisível (espaço de largura zero) não é texto: em 27/10 a IA respondeu só isso e saiu um balão em branco\nlet t = ($input.first().json.output || '').replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim().replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*');\n// Prompt: se o áudio respondeu tudo, a IA não escreve nada. Áudio enviado + resposta vazia = não manda balão\n// (sem isso cairia na mensagem de erro lá embaixo). [SEM TEXTO] também vale, se a IA usar.\nconst passos = $input.first().json.intermediateSteps || [];\n// fotos do catálogo enviadas também são resposta: se elas responderam tudo, a IA pode não escrever nada\nconst audioEnviado = passos.some(p => (p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || ''))) ||\n  (p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || ''))));\n// Prompt v7.3: [[NAO_ENVIAR]] = a cliente só mandou um aceno (ok, assim) e a IA escolheu ficar quieta. Nunca vai pro WhatsApp\nconst semTexto = /\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/i.test(t);\nt = t.replace(/\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/gi, '').trim();\nif ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];\n// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)\nt = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');\n// Cumprimento (pedido do Victor, 26/10): devolve o MESMO que a cliente usou ('Boa tarde' às 17h59 → 'Boa tarde',\n// não 'Boa noite' porque o relógio virou); se ela não cumprimentou, vale a hora do salão.\nconst hSalao = $now.setZone('America/Cuiaba').hour;\nconst dela = (String($('Montar entrada').first().json.texto_cliente || '').match(/bom dia|boa tarde|boa noite/gi) || []).pop();\nconst cumprimento = dela ? dela.toLowerCase() : hSalao < 12 ? 'bom dia' : hSalao < 18 ? 'boa tarde' : 'boa noite';\nt = t.replace(/^(\\s*(?:(?:oi|olá)[^.!?\\n]{0,25}[!,.]\\s*)?)(bom dia|boa tarde|boa noite)/i, (m, antes, g) => antes + (g[0] === g[0].toUpperCase() ? cumprimento[0].toUpperCase() + cumprimento.slice(1) : cumprimento));\n// Cumprimenta UMA vez: se a IA já respondeu esta cliente nas últimas 3 h, tira o 'Oi, Victor! Boa tarde.' / 'Boa noite!' do\n// começo (26/10: 'Boa tarde' e o áudio 30 s depois viraram duas respostas, cada uma com cumprimento)\nconst jaFalou = ($('Sobre esta cliente').first().json.texto || '').match(/Você já conversou com ela hoje \\(sua última resposta foi às (\\d\\d):(\\d\\d)/);\nif (jaFalou) {\n  const ultima = $now.setZone('America/Cuiaba').set({ hour: +jaFalou[1], minute: +jaFalou[2] });\n  if ($now.diff(ultima, 'hours').hours < 3) {\n    const semOi = t.replace(/^\\s*(?:(?:oi|olá)(?:,\\s*[^.!?\\n]{1,25})?[!.,]\\s*)?(?:(?:bom dia|boa tarde|boa noite)(?:,\\s*[^.!?\\n]{1,25})?[!.]\\s*)?/i, '').trim();\n    if (semOi) t = semOi[0].toUpperCase() + semOi.slice(1);\n  }\n}\n// já conversaram hoje (ficha): tira a reapresentação que a IA às vezes ainda põe ('Sou a assistente virtual da Caroline.')\nif (/Você já conversou com ela hoje/.test($('Sobre esta cliente').first().json.texto || '')) {\n  const semApresentacao = t.replace(/(^|[.!?]\\s+|\\n)\\s*((Eu )?sou a assistente virtual( da Caroline)?( Vieira)?|Aqui é a assistente( virtual)?( da Caroline)?)[^.!?\\n]*[.!?]?/gi, '$1').trim();\n  if (semApresentacao) t = semApresentacao;\n}\n// sem negrito/markdown: mensagem de gente não tem *asterisco*\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');\n// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)\nconst semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Loja Teste/gi, '').trim();\nif (semRobo) t = semRobo;\n// sobras de chatbot no fim (humanizer §22): fecho automático que não diz nada; só sai se sobrar texto\n// \"Qualquer dúvida, estou à disposição.\" sai inteira: a frase do \"qualquer dúvida\" vem antes da do \"disposição\" (senão sobrava \"Qualquer dúvida,.\")\nconst semFecho = t.replace(/\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').replace(/[\\s,;:]+$/, '').trim();\nif (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';\n// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente\nt = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));\n// regra da Caroline: valor de serviço só quando a cliente pergunta preço (prompt v5). Se ela não perguntou, tira\n// as frases com valor ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô\n// \"e a selagem?\" logo depois de um preço também é pergunta de preço (a IA só fala valor se fizer sentido)\nconst msgCliente = $('Montar entrada').first().json.texto_cliente || '';\nconst pediuPreco = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela)/i.test(msgCliente) || /^\\s*e (a|o|as|os|pra|para|no|na)\\b[^?]{0,40}\\?\\s*$/i.test(msgCliente);\nconst FRASES = /(?<=[.!?😊😉🥰])\\s+/u;\nconst QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;\n// valor em dinheiro: R$ 160, R$160,00 ou 350 reais\nconst VALOR = /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i;\n// limpa linha por linha: o quadro da agenda vem uma linha por período e precisa chegar assim\nconst limpar = (p) => p.split('\\n').map(limparLinha).filter(Boolean).join('\\n');\nconst limparLinha = (p) => {\n  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));\n  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a\n  // cliente recebe \"algum desses horários?\" sem horário nenhum\n  if (!pediuPreco) fs = fs.map(f => {\n    if (!VALOR.test(f)) return f;\n    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?(?:a partir de\\s+)?(?:R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?|\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais)/gi, '').replace(/\\s+,/g, ',').replace(/^[\\s,;:–-]+/, '').trim().replace(/^\\p{Ll}/u, (l) => l.toUpperCase());\n    return !VALOR.test(s) && !/R\\$/.test(s) && QUANDO.test(s) ? s : '';\n  }).filter(Boolean);\n  if (!pediuPreco) fs = fs.filter(f => !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));\n  return fs.join(' ').trim();\n};\n// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;\n// parágrafo sem número continua respondendo a mesma mensagem do anterior\nt = t.replace(/\\s*\\[(\\d{1,2})\\]\\s*/g, '\\n\\n[$1] ').trim();\nlet ref = 0;\nlet paragrafos = t.split(/\\n\\s*\\n/).map(s => { const m = s.trim().match(/^\\[(\\d{1,2})\\]\\s*/); if (m) ref = Number(m[1]); return { t: s.trim().slice(m ? m[0].length : 0).trim(), ref }; }).filter(p => p.t);\nconst limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);\n// só sobra §§ (marca do ---) = a limpeza tirou todo o texto: fica a resposta como veio\nif (limpos.some(p => p.t !== '§§')) paragrafos = limpos;\n// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta\nconst falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor\nif (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];\n// Como gente manda no WhatsApp (pedido do Victor, 26/10): um balão por parágrafo, na ordem, no máximo 2.\n// Parágrafo minúsculo (menos de 25 letras, ex.: 'Oi, Maria!') gruda no seguinte; parágrafo enorme (mais de\n// 300 letras) é cortado entre frases; se passar de 3, os do fim se juntam no 3º. O --- da IA conta como parágrafo.\nconst ps = paragrafos.filter(p => p.t !== '§§').map(p => p.t);\nlet baloes = [];\nlet junto = '';\nfor (const p of ps) {\n  junto = junto ? junto + '\\n\\n' + p : p;\n  if (junto.length >= 25) { baloes.push({ t: junto, ref: 0 }); junto = ''; }\n}\nif (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }\nconst cortar = (t) => {\n  if (t.length <= 300 || t.includes('\\n')) return [t]; // quadro do dia (em linhas) vai inteiro\n  const fs = t.split(FRASES);\n  if (fs.length < 2) return [t];\n  let a = '', i = 0;\n  while (i < fs.length - 1 && (a + ' ' + fs[i]).trim().length < t.length / 2) a = (a + ' ' + fs[i++]).trim();\n  if (!a) a = fs[i++];\n  return [a, fs.slice(i).join(' ').trim()].filter(Boolean);\n};\nbaloes = baloes.flatMap((b) => cortar(b.t).map((t) => ({ t, ref: 0 })));\n// no máximo 2 balões (26/10: 3 balões era texto demais)\nif (baloes.length > 2) baloes = [baloes[0], { t: baloes.slice(1).map(b => b.t).join('\\n\\n'), ref: 0 }];\nbaloes = baloes.filter(b => b.t);\n// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10)\nbaloes.forEach(b => { b.t = b.t.replace(/(https?:\\/\\/\\S*?)[.,;:!?]+(?=\\s|$)/g, '$1'); });\n// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai\n// depois de outra e ficaria solta): cita a última mensagem do bloco\nlet msgs = [];\ntry { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}\nconst esperou = $('Aguardar 3s (IA respondendo)').isExecuted;\nconst citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');\n// Ritmo de gente (pedido do Victor, 25/10): o tempo depende do tamanho do texto.\n// pausa = 'pensando' antes do 'digitando…' (a leitura já foi feita antes, em Leitura: …): 1º balão 1-3 s;\n//         balões seguintes 1-2,5 s (respiro entre uma mensagem e outra).\n// delay = tempo de 'digitando…': 65-90 ms por letra (uns 12 caracteres por segundo, alguém rápido no celular),\n//         no mínimo 2,5 s e no máximo 22 s. Ex.: 40 letras ≈ 3 s; 120 ≈ 9 s; 250 ≈ 19 s.\nconst ale = (a, b) => a + Math.random() * (b - a);\nreturn baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, citar: citarDe({ ref }, i),\n  pausa: Math.round((i === 0 ? ale(1, 3) : ale(1, 2.5)) * 10) / 10,\n  delay: Math.round(Math.min(22000, Math.max(2500, texto.length * ale(65, 90)))) } }));"
+        "jsCode": "const jid = $('Montar entrada').first().json.jid;\n// caractere invisível (espaço de largura zero) não é texto: em 27/10 a IA respondeu só isso e saiu um balão em branco\nlet t = ($('Agente IA').first().json.output || '').replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim().replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*');\n// Prompt: se o áudio respondeu tudo, a IA não escreve nada. Áudio enviado + resposta vazia = não manda balão\n// (sem isso cairia na mensagem de erro lá embaixo). [SEM TEXTO] também vale, se a IA usar.\nconst passos = $('Agente IA').first().json.intermediateSteps || [];\n// fotos do catálogo enviadas também são resposta: se elas responderam tudo, a IA pode não escrever nada\nconst audioEnviado = passos.some(p => (p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || ''))) ||\n  (p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || ''))));\n// Prompt v7.3: [[NAO_ENVIAR]] = a cliente só mandou um aceno (ok, assim) e a IA escolheu ficar quieta. Nunca vai pro WhatsApp\nconst semTexto = /\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/i.test(t);\nt = t.replace(/\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/gi, '').trim();\nif ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];\n// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)\nt = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');\n// Cumprimento (pedido do Victor, 26/10): devolve o MESMO que a cliente usou ('Boa tarde' às 17h59 → 'Boa tarde',\n// não 'Boa noite' porque o relógio virou); se ela não cumprimentou, vale a hora do salão.\nconst hSalao = $now.setZone('America/Cuiaba').hour;\nconst dela = (String($('Montar entrada').first().json.texto_cliente || '').match(/bom dia|boa tarde|boa noite/gi) || []).pop();\nconst cumprimento = dela ? dela.toLowerCase() : hSalao < 12 ? 'bom dia' : hSalao < 18 ? 'boa tarde' : 'boa noite';\nt = t.replace(/^(\\s*(?:(?:oi|olá)[^.!?\\n]{0,25}[!,.]\\s*)?)(bom dia|boa tarde|boa noite)/i, (m, antes, g) => antes + (g[0] === g[0].toUpperCase() ? cumprimento[0].toUpperCase() + cumprimento.slice(1) : cumprimento));\n// Cumprimenta UMA vez: se a IA já respondeu esta cliente nas últimas 3 h, tira o 'Oi, Victor! Boa tarde.' / 'Boa noite!' do\n// começo (26/10: 'Boa tarde' e o áudio 30 s depois viraram duas respostas, cada uma com cumprimento)\nconst jaFalou = ($('Sobre esta cliente').first().json.texto || '').match(/Você já conversou com ela hoje \\(sua última resposta foi às (\\d\\d):(\\d\\d)/);\nif (jaFalou) {\n  const ultima = $now.setZone('America/Cuiaba').set({ hour: +jaFalou[1], minute: +jaFalou[2] });\n  if ($now.diff(ultima, 'hours').hours < 3) {\n    const semOi = t.replace(/^\\s*(?:(?:oi|olá)(?:,\\s*[^.!?\\n]{1,25})?[!.,]\\s*)?(?:(?:bom dia|boa tarde|boa noite)(?:,\\s*[^.!?\\n]{1,25})?[!.]\\s*)?/i, '').trim();\n    if (semOi) t = semOi[0].toUpperCase() + semOi.slice(1);\n  }\n}\n// já conversaram hoje (ficha): tira a reapresentação que a IA às vezes ainda põe ('Sou a assistente virtual da Caroline.')\nif (/Você já conversou com ela hoje/.test($('Sobre esta cliente').first().json.texto || '')) {\n  const semApresentacao = t.replace(/(^|[.!?]\\s+|\\n)\\s*((Eu )?sou a assistente virtual( da Caroline)?( Vieira)?|Aqui é a assistente( virtual)?( da Caroline)?)[^.!?\\n]*[.!?]?/gi, '$1').trim();\n  if (semApresentacao) t = semApresentacao;\n}\n// sem negrito/markdown: mensagem de gente não tem *asterisco*\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');\n// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)\nconst semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Loja Teste/gi, '').trim();\nif (semRobo) t = semRobo;\n// sobras de chatbot no fim (humanizer §22): fecho automático que não diz nada; só sai se sobrar texto\n// \"Qualquer dúvida, estou à disposição.\" sai inteira: a frase do \"qualquer dúvida\" vem antes da do \"disposição\" (senão sobrava \"Qualquer dúvida,.\")\n// só quando o fecho é a frase inteira: no meio da frase (\"Quando decidir ou se precisar, é só me chamar\") cortava e sobrava \"Quando decidir ou.\" (10/11)\nconst semFecho = t.replace(/(^|[.!?\\n])\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '$1').replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').replace(/[\\s,;:]+$/, '').trim();\nif (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';\n// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente\nt = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));\n// regra da Caroline: valor de serviço só quando a cliente pergunta preço (prompt v5). Se ela não perguntou, tira\n// as frases com valor ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô\n// \"e a selagem?\" logo depois de um preço também é pergunta de preço (a IA só fala valor se fizer sentido)\nconst msgCliente = $('Montar entrada').first().json.texto_cliente || '';\n// \"só queria saber o total\", \"me dá uma base\", \"dá pra parcelar?\" também são pergunta de preço (10/11: a resposta saía sem o valor)\nlet precoPendente = false;\ntry { precoPendente = String($('Preço: ler pendência').first().json.pendente || '') === '1'; } catch (e) {}\nconst pediuPrecoAgora = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela|\\btotal\\b|uma base|uma ideia|uma no[cç][ãa]o|m[ée]dia|pagar|pagamento|parcel|investimento)/i.test(msgCliente) || /^\\s*e (a|o|as|os|pra|para|no|na)\\b[^?]{0,40}\\?\\s*$/i.test(msgCliente);\nconst pediuPreco = pediuPrecoAgora || precoPendente;\nconst FRASES = /(?<=[.!?😊😉🥰])\\s+/u;\nconst QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;\n// valor em dinheiro: R$ 160, R$160,00 ou 350 reais\nconst VALOR = /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i;\n// limpa linha por linha: o quadro da agenda vem uma linha por período e precisa chegar assim\nconst limpar = (p) => p.split('\\n').map(limparLinha).filter(Boolean).join('\\n');\nconst limparLinha = (p) => {\n  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));\n  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a\n  // cliente recebe \"algum desses horários?\" sem horário nenhum\n  if (!pediuPreco) fs = fs.map(f => {\n    if (!VALOR.test(f)) return f;\n    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?(?:a partir de\\s+)?(?:R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?|\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais)/gi, '').replace(/\\s+,/g, ',').replace(/^[\\s,;:–-]+/, '').trim().replace(/^\\p{Ll}/u, (l) => l.toUpperCase());\n    return !VALOR.test(s) && !/R\\$/.test(s) && QUANDO.test(s) ? s : '';\n  }).filter(Boolean);\n  if (!pediuPreco) fs = fs.filter(f => !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));\n  return fs.join(' ').trim();\n};\n// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;\n// parágrafo sem número continua respondendo a mesma mensagem do anterior\nt = t.replace(/\\s*\\[(\\d{1,2})\\]\\s*/g, '\\n\\n[$1] ').trim();\nlet ref = 0;\nlet paragrafos = t.split(/\\n\\s*\\n/).map(s => { const m = s.trim().match(/^\\[(\\d{1,2})\\]\\s*/); if (m) ref = Number(m[1]); return { t: s.trim().slice(m ? m[0].length : 0).trim(), ref }; }).filter(p => p.t);\nconst limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);\n// só sobra §§ (marca do ---) = a limpeza tirou todo o texto: fica a resposta como veio\nif (limpos.some(p => p.t !== '§§')) paragrafos = limpos;\n// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta\nconst falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor\nif (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];\n// Como gente manda no WhatsApp (pedido do Victor, 26/10): um balão por parágrafo, na ordem, no máximo 2.\n// Parágrafo minúsculo (menos de 25 letras, ex.: 'Oi, Maria!') gruda no seguinte; parágrafo enorme (mais de\n// 300 letras) é cortado entre frases; se passar de 3, os do fim se juntam no 3º. O --- da IA conta como parágrafo.\nconst ps = paragrafos.filter(p => p.t !== '§§').map(p => p.t);\nlet baloes = [];\nlet junto = '';\nfor (const p of ps) {\n  junto = junto ? junto + '\\n\\n' + p : p;\n  if (junto.length >= 25) { baloes.push({ t: junto, ref: 0 }); junto = ''; }\n}\nif (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }\nconst cortar = (t) => {\n  if (t.length <= 300 || t.includes('\\n')) return [t]; // quadro do dia (em linhas) vai inteiro\n  const fs = t.split(FRASES);\n  if (fs.length < 2) return [t];\n  let a = '', i = 0;\n  while (i < fs.length - 1 && (a + ' ' + fs[i]).trim().length < t.length / 2) a = (a + ' ' + fs[i++]).trim();\n  if (!a) a = fs[i++];\n  return [a, fs.slice(i).join(' ').trim()].filter(Boolean);\n};\nbaloes = baloes.flatMap((b) => cortar(b.t).map((t) => ({ t, ref: 0 })));\n// no máximo 2 balões (26/10: 3 balões era texto demais)\nif (baloes.length > 2) baloes = [baloes[0], { t: baloes.slice(1).map(b => b.t).join('\\n\\n'), ref: 0 }];\nbaloes = baloes.filter(b => b.t);\n// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10)\nbaloes.forEach(b => { b.t = b.t.replace(/(https?:\\/\\/\\S*?)[.,;:!?]+(?=\\s|$)/g, '$1'); });\n// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai\n// depois de outra e ficaria solta): cita a última mensagem do bloco\nlet msgs = [];\ntry { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}\nconst esperou = $('Aguardar 3s (IA respondendo)').isExecuted;\nconst citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');\n// Ritmo de gente (pedido do Victor, 25/10): o tempo depende do tamanho do texto.\n// pausa = 'pensando' antes do 'digitando…' (a leitura já foi feita antes, em Leitura: …): 1º balão 1-3 s;\n//         balões seguintes 1-2,5 s (respiro entre uma mensagem e outra).\n// delay = tempo de 'digitando…': 65-90 ms por letra (uns 12 caracteres por segundo, alguém rápido no celular),\n//         no mínimo 2,5 s e no máximo 22 s. Ex.: 40 letras ≈ 3 s; 120 ≈ 9 s; 250 ≈ 19 s.\nconst ale = (a, b) => a + Math.random() * (b - a);\nconst levaValor = baloes.some((b) => /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i.test(b.t));\nconst precoPendenteDepois = !falhou && pediuPreco && !levaValor ? '1' : (falhou && precoPendente ? '1' : '0');\nreturn baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, precoPendenteDepois, citar: citarDe({ ref }, i),\n  pausa: Math.round((i === 0 ? ale(1, 3) : ale(1, 2.5)) * 10) / 10,\n  delay: Math.round(Math.min(22000, Math.max(2500, texto.length * ale(65, 90)))) } }));"
       }
     },
     {
@@ -1996,7 +1996,7 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        4140,
+        4440,
         2780
       ],
       "parameters": {
@@ -2030,8 +2030,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        4440,
-        2780
+        0,
+        3940
       ],
       "parameters": {
         "options": {}
@@ -2043,7 +2043,7 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        0,
+        300,
         4140
       ],
       "parameters": {
@@ -2059,7 +2059,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        300,
+        600,
         4140
       ],
       "parameters": {
@@ -2072,7 +2072,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        600,
+        900,
         4140
       ],
       "parameters": {
@@ -2107,7 +2107,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1800,
+        2100,
         4340
       ],
       "parameters": {
@@ -2525,7 +2525,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2100,
+        2400,
         4340
       ],
       "parameters": {
@@ -2966,7 +2966,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000306",
+      "id": "00000000-0000-4000-8000-000000000307",
       "name": "perguntar_para_gleide",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3060,7 +3060,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000312",
+      "id": "00000000-0000-4000-8000-000000000313",
       "name": "Pedido: procurar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3084,7 +3084,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000313",
+      "id": "00000000-0000-4000-8000-000000000314",
       "name": "É resposta da Caroline?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3118,7 +3118,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000314",
+      "id": "00000000-0000-4000-8000-000000000315",
       "name": "Pedido: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3131,7 +3131,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000315",
+      "id": "00000000-0000-4000-8000-000000000316",
       "name": "Pedido: escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3161,7 +3161,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000316",
+      "id": "00000000-0000-4000-8000-000000000317",
       "name": "Pedido: texto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3174,7 +3174,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000317",
+      "id": "00000000-0000-4000-8000-000000000318",
       "name": "Pedido: enviar à cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3206,7 +3206,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000318",
+      "id": "00000000-0000-4000-8000-000000000319",
       "name": "Pedido: registrar saída",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3238,7 +3238,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000319",
+      "id": "00000000-0000-4000-8000-000000000320",
       "name": "Pedido: memória (resposta da Caroline)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3261,7 +3261,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000320",
+      "id": "00000000-0000-4000-8000-000000000321",
       "name": "Pedido: memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3284,7 +3284,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000321",
+      "id": "00000000-0000-4000-8000-000000000322",
       "name": "Pedido: apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3305,7 +3305,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000322",
+      "id": "00000000-0000-4000-8000-000000000323",
       "name": "Pedido: confirmar à Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3337,7 +3337,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000323",
+      "id": "00000000-0000-4000-8000-000000000324",
       "name": "Pedido: seguir normal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3350,12 +3350,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000327",
+      "id": "00000000-0000-4000-8000-000000000328",
       "name": "IA falhou? (alerta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        4140,
+        4440,
         2980
       ],
       "parameters": {
@@ -3384,13 +3384,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000328",
+      "id": "00000000-0000-4000-8000-000000000329",
       "name": "Avisar Victor (IA falhou)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4440,
-        2980
+        0,
+        4140
       ],
       "parameters": {
         "method": "POST",
@@ -3416,7 +3416,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000329",
+      "id": "00000000-0000-4000-8000-000000000330",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3440,7 +3440,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000330",
+      "id": "00000000-0000-4000-8000-000000000331",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3453,7 +3453,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000331",
+      "id": "00000000-0000-4000-8000-000000000332",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3487,7 +3487,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000332",
+      "id": "00000000-0000-4000-8000-000000000333",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3507,7 +3507,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000333",
+      "id": "00000000-0000-4000-8000-000000000334",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3520,7 +3520,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000334",
+      "id": "00000000-0000-4000-8000-000000000335",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3542,7 +3542,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000335",
+      "id": "00000000-0000-4000-8000-000000000336",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3556,7 +3556,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000343",
+      "id": "00000000-0000-4000-8000-000000000344",
       "name": "Rajada: ler fila",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3580,12 +3580,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000344",
+      "id": "00000000-0000-4000-8000-000000000345",
       "name": "Resposta velha: ler fila",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        900,
+        1200,
         4140
       ],
       "parameters": {
@@ -3605,12 +3605,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000345",
+      "id": "00000000-0000-4000-8000-000000000346",
       "name": "Resposta velha: descartes",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1200,
+        1500,
         4140
       ],
       "parameters": {
@@ -3630,12 +3630,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000346",
+      "id": "00000000-0000-4000-8000-000000000347",
       "name": "Resposta velha?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1500,
+        1800,
         4140
       ],
       "parameters": {
@@ -3664,12 +3664,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000347",
+      "id": "00000000-0000-4000-8000-000000000348",
       "name": "Descarte: contar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1800,
+        2100,
         4140
       ],
       "parameters": {
@@ -3689,12 +3689,12 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000348",
+      "id": "00000000-0000-4000-8000-000000000349",
       "name": "Descarte: memória ler",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2100,
+        2400,
         4140
       ],
       "parameters": {
@@ -3713,25 +3713,25 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000349",
+      "id": "00000000-0000-4000-8000-000000000350",
       "name": "Descarte: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2400,
+        2700,
         4140
       ],
       "parameters": {
-        "jsCode": "// memória: [0] = mais nova (LPUSH). Uma interação = mensagem dela (human) + resposta (ai, e ferramentas)\nconst lista = [].concat($('Descarte: memória ler').first().json.memoria || []);\nconst baloes = $('Quebrar mensagens').all().map((i) => i.json.texto);\nconst atual = $('Um balão por vez').first().json.texto;\nconst saiu = Math.max(0, baloes.indexOf(atual));\nconst tipo = (s) => { try { return JSON.parse(s).type; } catch (e) { return ''; } };\nlet manter = lista;\nlet devolver = [];\nif (saiu === 0) {\n  // nada chegou nela: esta interação sai da memória e as mensagens dela voltam para a fila\n  const i = lista.findIndex((s) => tipo(s) === 'human');\n  if (i >= 0) manter = lista.slice(i + 1);\n  try { devolver = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) { devolver = []; }\n} else if (tipo(lista[0]) === 'ai') {\n  // parte chegou: a memória fica só com os balões que ela recebeu\n  const m = JSON.parse(lista[0]);\n  m.data = Object.assign({}, m.data, { content: baloes.slice(0, saiu).join('\\n\\n') });\n  manter = [JSON.stringify(m)].concat(lista.slice(1));\n}\nreturn [{ json: { saiu, mexer: lista.length > 0 && manter !== lista, manter, devolver }, pairedItem: 0 }];"
+        "jsCode": "// memória: [0] = mais nova (LPUSH). Uma interação = mensagem dela (human) + resposta (ai, e ferramentas)\nconst lista = [].concat($('Descarte: memória ler').first().json.memoria || []);\nconst baloes = $('Quebrar mensagens').all().map((i) => i.json.texto);\nconst atual = $('Um balão por vez').first().json.texto;\nconst saiu = Math.max(0, baloes.indexOf(atual));\nconst tipo = (s) => { try { return JSON.parse(s).type; } catch (e) { return ''; } };\nlet manter = lista;\nlet devolver = [];\nif (saiu === 0) {\n  // nada chegou nela: esta interação sai da memória e as mensagens dela voltam para a fila\n  const i = lista.findIndex((s) => tipo(s) === 'human');\n  if (i >= 0) manter = lista.slice(i + 1);\n  try { devolver = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) { devolver = []; }\n} else if (tipo(lista[0]) === 'ai') {\n  // parte chegou: a memória fica só com os balões que ela recebeu\n  const m = JSON.parse(lista[0]);\n  m.data = Object.assign({}, m.data, { content: baloes.slice(0, saiu).join('\\n\\n') });\n  manter = [JSON.stringify(m)].concat(lista.slice(1));\n}\nconst precoVolta = baloes.slice(saiu).some((b) => /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i.test(String(b || '')));\nreturn [{ json: { precoVolta, saiu, mexer: lista.length > 0 && manter !== lista, manter, devolver }, pairedItem: 0 }];"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000350",
+      "id": "00000000-0000-4000-8000-000000000351",
       "name": "Descarte: mexer na memória?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2700,
+        3000,
         4140
       ],
       "parameters": {
@@ -3760,12 +3760,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000351",
+      "id": "00000000-0000-4000-8000-000000000352",
       "name": "Descarte: memória apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3000,
+        3300,
         4140
       ],
       "parameters": {
@@ -3780,12 +3780,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000352",
+      "id": "00000000-0000-4000-8000-000000000353",
       "name": "Descarte: sobrou memória?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3300,
+        3600,
         4140
       ],
       "parameters": {
@@ -3814,12 +3814,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000353",
+      "id": "00000000-0000-4000-8000-000000000354",
       "name": "Descarte: memória itens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3600,
+        3900,
         4140
       ],
       "parameters": {
@@ -3827,13 +3827,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000354",
+      "id": "00000000-0000-4000-8000-000000000355",
       "name": "Descarte: memória regravar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3900,
-        4140
+        0,
+        5000
       ],
       "parameters": {
         "operation": "push",
@@ -3849,12 +3849,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000355",
+      "id": "00000000-0000-4000-8000-000000000356",
       "name": "Descarte: memória pronta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
+        300,
         5000
       ],
       "parameters": {
@@ -3863,12 +3863,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000356",
+      "id": "00000000-0000-4000-8000-000000000357",
       "name": "Descarte: devolver mensagens?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        300,
+        600,
         5000
       ],
       "parameters": {
@@ -3897,12 +3897,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000357",
+      "id": "00000000-0000-4000-8000-000000000358",
       "name": "Descarte: fila itens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        600,
+        900,
         5000
       ],
       "parameters": {
@@ -3910,12 +3910,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000358",
+      "id": "00000000-0000-4000-8000-000000000359",
       "name": "Descarte: fila devolver",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        900,
+        1200,
         5000
       ],
       "parameters": {
@@ -3932,12 +3932,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000359",
+      "id": "00000000-0000-4000-8000-000000000360",
       "name": "Descarte: fila pronta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
+        1500,
         5000
       ],
       "parameters": {
@@ -3946,12 +3946,12 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000360",
+      "id": "00000000-0000-4000-8000-000000000361",
       "name": "Descarte: zerar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
+        300,
         3940
       ],
       "parameters": {
@@ -3964,6 +3964,83 @@
           "name": "Redis local"
         }
       },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000362",
+      "name": "Preço: ler pendência",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3840,
+        2780
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:preco_pendente:{{ $('Extrair dados').first().json.telefone }}",
+        "propertyName": "pendente",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000363",
+      "name": "Preço: gravar pendência",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        4440,
+        3180
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:preco_pendente:{{ $('Extrair dados').first().json.telefone }}",
+        "keyType": "string",
+        "value": "={{ $json.precoPendenteDepois ?? (String($('Preço: ler pendência').first().json.pendente || '') === '1' ? '1' : '0') }}",
+        "expire": true,
+        "ttl": 43200
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "executeOnce": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000364",
+      "name": "Descarte: preço pendente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        4340
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:preco_pendente:{{ $('Extrair dados').first().json.telefone }}",
+        "keyType": "string",
+        "value": "={{ $json.precoVolta ? '1' : ($('Quebrar mensagens').first().json.precoPendenteDepois || '0') }}",
+        "expire": true,
+        "ttl": 43200
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "executeOnce": true,
       "onError": "continueRegularOutput"
     },
     {
@@ -4007,7 +4084,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000377",
+      "id": "00000000-0000-4000-8000-000000000381",
       "name": "enviar_catalogo",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4535,7 +4612,7 @@
       "main": [
         [
           {
-            "node": "Quebrar mensagens",
+            "node": "Preço: ler pendência",
             "type": "main",
             "index": 0
           }
@@ -4552,6 +4629,11 @@
           },
           {
             "node": "IA falhou? (alerta)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Preço: gravar pendência",
             "type": "main",
             "index": 0
           }
@@ -5263,6 +5345,11 @@
             "node": "Descarte: mexer na memória?",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Descarte: preço pendente",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -5403,6 +5490,17 @@
         [
           {
             "node": "Trava: liberar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preço: ler pendência": {
+      "main": [
+        [
+          {
+            "node": "Quebrar mensagens",
             "type": "main",
             "index": 0
           }

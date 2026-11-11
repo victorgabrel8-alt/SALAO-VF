@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000216",
+      "id": "00000000-0000-4000-8000-000000000217",
       "name": "A cada 1 h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000217",
+      "id": "00000000-0000-4000-8000-000000000218",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000218",
+      "id": "00000000-0000-4000-8000-000000000219",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000219",
+      "id": "00000000-0000-4000-8000-000000000220",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -129,7 +129,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000220",
+      "id": "00000000-0000-4000-8000-000000000221",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -138,11 +138,11 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\nconst nome = (p) => (p.nome || 'cliente').split(' ').slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = 'Oi, Caroline! Pra deixar o CRM em dia:\\n' + ps.map(linha).join('\\n') + '\\n\\nPode responder em áudio, do seu jeito 🙂';\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\n// \"Roseli de Souza\" vira \"Roseli Souza\" (antes saía \"Roseli de\")\nconst nome = (p) => (p.nome || 'cliente').split(' ').filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  // supabase/038: fechou e a aplicação ainda não está na agenda\n  if (p.tipo === 'fechou_sem_data') return p.proximo_passo\n    ? '• *' + nome(p) + '* fechou — ' + p.proximo_passo + '. O cabelo já chegou? Já dá pra marcar a aplicação?'\n    : '• *' + nome(p) + '* fechou. O que ficou combinado e quando ela volta? Se depende do cabelo: chega em quantos dias e precisa confeccionar?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = 'Oi, Caroline! Pra deixar o CRM em dia:\\n' + ps.map(linha).join('\\n') + '\\n\\nPode responder em áudio, do seu jeito 🙂';\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000221",
+      "id": "00000000-0000-4000-8000-000000000222",
       "name": "Mandar para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -172,7 +172,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000222",
+      "id": "00000000-0000-4000-8000-000000000223",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -194,7 +194,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000223",
+      "id": "00000000-0000-4000-8000-000000000224",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
