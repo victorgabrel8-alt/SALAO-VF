@@ -111,9 +111,15 @@ switch (v('acao')) {
     args = { ...base, p_data: ou(v('data')), p_servico: ou(v('servico')), p_ignorar: ou(v('agendamento_id')) };
     break;
   case 'marcar_horario':
-    funcao = 'n8n_assistente_marcar_horario';
+    // v2 (supabase/037): aceita quanto tempo vai levar ("vou gastar 1h30"); sem minutos vale a duração do cadastro
+    funcao = 'n8n_assistente_marcar_horario_v2';
     args = { ...base, p_cliente_id: ou(v('cliente_id')), p_telefone: ou(v('telefone')), p_nome: ou(v('nome')), p_servico: v('servico'),
-      p_inicio: quando('inicio'), p_observacoes: ou(v('observacoes')), p_forcar: sim('forcar') };
+      p_inicio: quando('inicio'), p_observacoes: ou(v('observacoes')), p_forcar: sim('forcar'),
+      p_duracao_min: num('minutos') === null || num('minutos') <= 0 ? null : Math.round(num('minutos')) };
+    break;
+  case 'ajustar_duracao':
+    funcao = 'n8n_assistente_ajustar_duracao';
+    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_forcar: sim('forcar') };
     break;
   case 'reagendar':
     funcao = 'n8n_assistente_reagendar';
@@ -252,8 +258,13 @@ AGENDA (siga sempre)
   com agendamento_id). "A das 14:00" sem dia = hoje. Se tiver mais de uma cliente na mesma hora ou não achar, pergunte.
 - Datas e horas para as ferramentas: inicio = AAAA-MM-DDTHH:mm, data = AAAA-MM-DD (calcule "sexta", "amanhã", "dia 30"
   a partir da data atual). Se ela não disser a hora (ou o dia), pergunte; não chute.
-- Serviço: escreva como ela falou ("selagem", "manutenção queratina"). Se a ferramenta disser que o nome pode ser mais
-  de um serviço, pergunte qual, mostrando as opções.
+- Serviço: escreva como ela falou ("selagem", "manutenção queratina", "colocação do mega"): a ferramenta entende os
+  jeitos de falar. Se ela devolver "não achei" com a lista dos serviços, escolha VOCÊ o da lista que é o que a Gleide
+  disse e chame de novo com esse nome, sem perguntar; guarde o nome certo para as próximas chamadas desta conversa.
+  Só pergunte qual quando a ferramenta disser que pode ser mais de um, ou quando nenhum da lista servir.
+- Tempo do serviço: se ela disser quanto vai levar ("é rápido, uma hora e meia", "vou gastar 40 minutos"), passe em
+  minutos no campo minutos de marcar_horario; o horário ocupa só esse tempo. Se ela disser isso de um horário já
+  marcado, use ajustar_duracao. Não discuta a duração do cadastro com ela: quem sabe o tempo é a Gleide.
 - REAGENDAR UM horário que ela identificou sem dúvida, para a hora que ela disse ("passa a das 14 pra 14:40, atrasei"):
   faça direto, sem pedir confirmação. Depois responda em 1 linha o que mudou e pergunte "Aviso ela?".
 - Atraso que pega mais de uma cliente ("atrasei 30 min", "empurra todo mundo"): pergunte se é só a próxima ou todas a partir
@@ -645,7 +656,11 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['servico', 'Serviço como a Gleide falou', 'string'],
           ['inicio', 'Dia e hora AAAA-MM-DDTHH:mm', 'string'],
           ['observacoes', 'Observação do horário (se ela disse)', 'string'],
+          ['minutos', 'Quanto tempo vai levar, em minutos, SÓ se a Gleide disse (ex.: "uma hora e meia" = 90); senão vazio (vale o tempo do cadastro)', 'string'],
           ['forcar', '"sim" só se a Gleide mandou marcar mesmo com o problema que a ferramenta apontou; senão vazio', 'string']]),
+      tool('ajustar_duracao', [2440, 660], 'Muda quanto tempo leva um horário JÁ marcado, sem mudar o início (ex.: "a da Vitória vai levar só uma hora e meia"). Pode usar direto quando ela disse qual horário e quanto tempo.',
+        'ajustar_duracao', [ID('agendamento_id'), ['minutos', 'Quanto tempo vai levar, em minutos (ex.: 90)', 'string'],
+          ['forcar', '"sim" só se a Gleide mandou mudar mesmo com o problema que a ferramenta apontou; senão vazio', 'string']]),
       tool('reagendar', [2280, 440], 'Muda o horário (e o serviço, se ela pedir) do MESMO agendamento. Pode usar direto quando ela disse qual horário e para quando.',
         'reagendar', [ID('agendamento_id'),
           ['inicio', 'Novo dia e hora AAAA-MM-DDTHH:mm', 'string'],
@@ -735,7 +750,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Gemini Flash': { ai_languageModel: [[{ node: 'Agente assistente', type: 'ai_languageModel', index: 0 }]] },
       'Memória (Redis)': { ai_memory: [[{ node: 'Agente assistente', type: 'ai_memory', index: 0 }]] },
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
-        'horarios_livres', 'marcar_horario', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
+        'horarios_livres', 'marcar_horario', 'ajustar_duracao', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
         'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente', 'cadastrar_cliente', 'chamar_cliente',
         'guardar_regra', 'tirar_regra']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
