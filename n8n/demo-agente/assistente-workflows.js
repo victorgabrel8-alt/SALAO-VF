@@ -186,6 +186,15 @@ switch (v('acao')) {
     funcao = 'n8n_assistente_chamar_cliente'; enviar = true;
     args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
     break;
+  // "em janeiro dá um toque pra ela" (supabase/039): a IA de atendimento manda o alô nessa data
+  case 'combinar_retorno': {
+    let m = v('data').match(/^(\d{4})-(\d{2})-(\d{2})/), dia = '';
+    if (m) dia = m[1] + '-' + m[2] + '-' + m[3];
+    else if ((m = v('data').match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/))) dia = m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+    funcao = 'n8n_assistente_combinar_retorno';
+    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_data: ou(dia), p_assunto: ou(v('texto')) };
+    break;
+  }
   // regras que a Gleide manda guardar ("a partir de agora, sempre…", supabase/035)
   case 'guardar_regra':
     funcao = 'n8n_assistente_guardar_regra'; args = { ...base, p_texto: v('texto') };
@@ -377,8 +386,14 @@ REGRAS
   pergunta de novo em 3 dias.
 - Fez um serviço A MAIS do que estava na agenda (ex.: marcou hidratação e fez selagem também): concluir no horário agendado
   com extras (nunca um horário novo para o serviço a mais).
-- Pediu para chamar a cliente daqui X dias: calcule a data e grave com anotar ("Chamar em DD/MM: motivo"). Diga que ficou anotado
-  na ficha (o envio automático ainda não existe — não prometa que você vai mandar).
+- Pediu para chamar a cliente NUM DIA FUTURO ("em janeiro dá um toque pra ela", "chama ela daqui 15 dias", "lembra ela dia 20"):
+  é a cliente que recebe, não a Gleide. Use combinar_retorno (uma chamada por cliente) com o dia e o assunto, sem perguntar
+  "posso?". Mês sem dia = primeiro dia útil desse mês (janeiro → 04/01/2027; nunca 01/01, 25/12 ou domingo).
+  Se a cliente estava "pensando", grave também o resultado pensando com data_proximo_passo 3 dias DEPOIS desse dia
+  (aí você pergunta à Gleide como ficou). Responda com o dia e quem manda, ex.: "Combinado ✅ Dia *04/01* (segunda) a IA
+  manda mensagem para a *Monyse* e a *Roseli* perguntando se querem marcar." Se a ferramenta disser que o envio está
+  desligado, diga que ficou anotado mas que a mensagem não sai sozinha.
+- "Te pergunto dia X" confunde: diga sempre QUEM vai falar com QUEM ("eu te lembro aqui", "a IA manda mensagem pra ela").
 - Uma pergunta por mensagem. Se ela não responder algo, não insista.
 - Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até
   5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.
@@ -390,8 +405,12 @@ REGRAS
   Se não ficou claro, pergunte só "Ela veio?". Nunca libere sem ela dizer: sem resposta, o horário continua da cliente.
 - Se ela disser que uma cliente que você liberou apareceu depois, use status_atendimento realizado (o sistema avisa se outra
   já tinha adiantado para aquele horário).
-- Você só fala com clientes por avisar_cliente e chamar_cliente, quando a Gleide pediu (o pedido dela já vale como sim). Não existe envio agendado: se ela pedir para
-  chamar a cliente num dia futuro, anote e diga que o envio automático ainda não existe.
+- Você só fala com clientes por avisar_cliente e chamar_cliente (agora) e combinar_retorno (num dia futuro), quando a
+  Gleide pediu (o pedido dela já vale como sim). "Pode chamar", "pode mandar", "sim, chama" depois de você oferecer = mande
+  NA HORA, sem perguntar de novo. Nunca invente limite ("não consigo agendar tão longe"): se ela quer marcar a cliente para
+  daqui a meses, mande a mensagem perguntando se a cliente quer reservar, ou use combinar_retorno.
+- Ela disse que não entendeu ("não tô entendendo", "como assim?"): explique de novo, em uma ou duas frases simples, o que
+  você anotou e o que vai acontecer (quem manda mensagem para quem e quando). Não se apresente de novo.
 - Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
 
@@ -726,6 +745,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['observacoes', 'O que a cliente quer, como a Gleide contou (ex.: quer cabelo vietnamita)', 'string']]),
       tool('chamar_cliente', [3720, 220], 'Manda pelo número do salão uma mensagem para uma cliente, sem precisar de horário. Use quando a Gleide pediu para falar com a cliente (o pedido dela já é o sim).',
         'chamar_cliente', [ID('cliente_id'), ['texto', 'O texto da mensagem (o que a Gleide ditou, ou o que você escreveu fazendo o que ela pediu)', 'string']]),
+      tool('combinar_retorno', [3720, 440], 'Marca um dia para a IA de atendimento mandar mensagem para a cliente ("dá um toque nela em janeiro", "chama ela dia 20"). Nesse dia a IA manda sozinha, de manhã. Um por cliente: marcar de novo troca a data. Use quando a Gleide pediu (o pedido dela já é o sim).',
+        'combinar_retorno', [ID('cliente_id'), ['data', 'Dia AAAA-MM-DD, depois de hoje e até 120 dias. Mês sem dia ("janeiro") = primeiro dia útil desse mês, nunca feriado', 'string'],
+          ['texto', 'Assunto, para a IA saber o que falar (ex.: disse que voltava em janeiro para colocar o cabelo)', 'string']]),
       tool('avisar_cliente', [3400, 220], 'Manda mensagem para a cliente pelo número do salão sobre um horário dela. Use quando a Gleide pediu (o pedido dela já é o sim).',
         'avisar_cliente', [ID('agendamento_id'),
           ['tipo', '"aviso" (horário mudado, cancelamento, recado) ou "remarcacao" (imprevisto da Gleide: pede para a cliente remarcar)', 'string'],
@@ -778,7 +800,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
         'horarios_livres', 'marcar_horario', 'ajustar_duracao', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
         'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente', 'cadastrar_cliente', 'chamar_cliente',
-        'guardar_regra', 'tirar_regra']
+        'combinar_retorno', 'guardar_regra', 'tirar_regra']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
     },
     settings,
