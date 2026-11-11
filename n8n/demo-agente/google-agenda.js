@@ -97,7 +97,7 @@ module.exports.assistente = ({ node, ferramentasWorkflow: wf }) => {
   wf.nodes.push(
     node('Precisa da Google?', 'n8n-nodes-base.if', 2.2, [0, 0], {
       conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
-        conditions: [{ id: 'g1', leftValue: `={{ ${JSON.stringify(ACOES)}.includes($json.acao || ${M}.acao) && !$json.erro }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' },
+        conditions: [{ id: 'g1', leftValue: `={{ ${JSON.stringify(ACOES.map((a) => 'n8n_assistente_' + a))}.includes($json.funcao) && !$json.erro }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' },
       options: {},
     }),
     node('Google: config', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {

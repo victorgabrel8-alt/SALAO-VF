@@ -385,7 +385,7 @@
           "conditions": [
             {
               "id": "g1",
-              "leftValue": "={{ [\"agenda_do_dia\",\"horarios_livres\",\"marcar_horario\",\"reagendar\"].includes($json.acao || $('Montar chamada').first().json.acao) && !$json.erro }}",
+              "leftValue": "={{ [\"n8n_assistente_agenda_do_dia\",\"n8n_assistente_horarios_livres\",\"n8n_assistente_marcar_horario\",\"n8n_assistente_reagendar\"].includes($json.funcao) && !$json.erro }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
