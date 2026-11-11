@@ -153,7 +153,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/{{ $json.funcao }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/{{ $('Montar chamada').first().json.funcao }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -169,7 +169,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json.args) }}",
+        "jsonBody": "={{ JSON.stringify($('Montar chamada').first().json.args) }}",
         "options": {
           "response": {
             "response": {
@@ -179,7 +179,8 @@
           }
         }
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "executeOnce": true
     },
     {
       "id": "00000000-0000-4000-8000-000000000152",
@@ -356,12 +357,132 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ (() => {\n  const m = $('Montar chamada').first().json, b = $('Executar no banco').first().json;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error));\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';\n  return 'OK: mensagem enviada para a cliente: ' + JSON.parse(b.data).mensagem;\n})() }}",
+              "value": "={{ ((() => {\n  const m = $('Montar chamada').first().json, b = $('Executar no banco').first().json;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error));\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';\n  return 'OK: mensagem enviada para a cliente: ' + JSON.parse(b.data).mensagem;\n})()) + ($('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json.texto : '') }}",
               "type": "string"
             }
           ]
         },
         "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000363",
+      "name": "Precisa da Google?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ [\"agenda_do_dia\",\"horarios_livres\",\"marcar_horario\",\"reagendar\"].includes($json.acao || $('Montar chamada').first().json.acao) && !$json.erro }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000364",
+      "name": "Google: config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000365",
+      "name": "Google: links",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const links = [].concat($input.first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nreturn links.length ? links.map((url) => ({ json: { url } })) : [{ json: { url: '' } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000366",
+      "name": "Google: ler agenda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url || 'https://calendar.google.com/sem-agenda' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000367",
+      "name": "Google: eventos do dia",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    const b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst m = $('Montar chamada').first().json;\nconst NL = String.fromCharCode(10);\nconst a = m.args || {};\nconst links = [].concat($('Google: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nif (!links.length) return [{ json: { texto: '' } }];\nconst respostas = $input.all().map((i) => i.json);\nconst dataTxt = String(a.p_data || a.p_inicio || '').slice(0, 10);\nconst dia = dataTxt ? DateTime.fromISO(dataTxt, { zone: 'America/Cuiaba' }) : DateTime.now().setZone('America/Cuiaba');\nif (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR')))\n  return [{ json: { texto: NL + NL + 'ATENÇÃO: não consegui ler a Google Agenda da dona agora. O resultado acima é só da agenda do app: avise que pode ter cliente marcada na Google que você não está vendo.' } }];\nconst ini = dia.startOf('day'), fim = ini.plus({ days: 1 });\nconst eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y]) => x < fim && y > ini).sort((p, q) => p[0] - q[0]);\nconst hh = (d) => d.toFormat('HH:mm');\nconst lista = eventos.map(([x, y, t, todo]) => '- ' + (todo ? 'dia inteiro' : hh(x) + ' às ' + hh(y)) + ': ' + t).join(NL);\nreturn [{ json: { texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (clientes que ainda não estão no app; conta como ocupado, junto com o app):' + NL +\n  (lista || '- nada marcado na Google neste dia') + NL +\n  'Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona confirmar.' } }];\n"
       }
     },
     {
@@ -415,7 +536,7 @@
       "main": [
         [
           {
-            "node": "Executar no banco",
+            "node": "Precisa da Google?",
             "type": "main",
             "index": 0
           }
@@ -496,6 +617,68 @@
         [
           {
             "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Precisa da Google?": {
+      "main": [
+        [
+          {
+            "node": "Google: config",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar no banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google: config": {
+      "main": [
+        [
+          {
+            "node": "Google: links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google: links": {
+      "main": [
+        [
+          {
+            "node": "Google: ler agenda",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google: ler agenda": {
+      "main": [
+        [
+          {
+            "node": "Google: eventos do dia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google: eventos do dia": {
+      "main": [
+        [
+          {
+            "node": "Executar no banco",
             "type": "main",
             "index": 0
           }
