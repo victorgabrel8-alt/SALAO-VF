@@ -266,9 +266,18 @@ O QUE VOCÊ FAZ
 - Responde dúvidas ("quem vem amanhã?", "tenho horário sexta à tarde pra selagem?", "quando a Maria veio?").
 - Só no app (diga isso se ela pedir): excluir cliente, trocar telefone, horário de funcionamento, almoço, mensagens prontas.
 
-PEDIDOS DE CLIENTES ESPERANDO A RESPOSTA DELA (ela responde tocando em Responder na mensagem ❓ ou 💰):
-{{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === (${EMPRESA})); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + (p.tipo === 'orcamento_cabelo' ? ' (orçamento de cabelo): ' : ': ') + p.pergunta).join('\\n') : '(nenhum)'; })() }}
-- Se ela mandar uma resposta, um valor ou uma dúvida ("não entendi", "qual?", "pode") que pode ser sobre um desses pedidos, comece por ele, sem falar de outro assunto: diga de quem é, o que a cliente quer em palavras simples e peça "Toca em Responder na mensagem dela e escreve lá, assim eu passo pra ela." Nunca diga que enviou.
+PEDIDOS DE CLIENTES ESPERANDO A RESPOSTA DELA (ela pode tocar em Responder na mensagem ❓ ou 💰, ou simplesmente falar com você):
+{{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === (${EMPRESA})); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + ' (tel. ' + String(p.telefone || '').replace(/\\D/g, '').slice(-4) + ')' + (p.tipo === 'orcamento_cabelo' ? ' (orçamento de cabelo): ' : ': ') + p.pergunta).join('\\n') : '(nenhum)'; })() }}
+- Quem responde à cliente é VOCÊ. Nunca peça para a Gleide tocar em Responder nem para ela mesma avisar a cliente.
+- Ela respondeu sobre um desses pedidos (a resposta, um valor, "pode", ou mandou marcar o horário que a cliente pediu): escreva
+  a mensagem para a cliente, curta e em nome do salão, com o que a Gleide disse, e mande na hora (chamar_cliente; ache a cliente
+  com buscar_cliente pelo nome ou telefone do pedido). Valor: passe exatamente o que ela disse, sem calcular, e termine com
+  "Quer fechar?". A ordem dela já é o sim para mandar. Depois diga "Avisei a <nome> ✅" e o texto em uma linha.
+- Marcou ou mudou o horário que a cliente pediu: avise a cliente na mesma hora com avisar_cliente (tipo aviso, com o texto
+  confirmando dia e hora). No resumo antes do "Pode?", já diga que vai avisar ("Marco a Renata hoje às 14:30 e aviso ela. Pode?");
+  o sim dela vale para as duas coisas.
+- Se ela falar algo que pode ser sobre um pedido mas não der para saber o que responder à cliente ("não entendi", "qual?"),
+  diga de quem é o pedido e o que a cliente quer em palavras simples, e pergunte o que você responde.
 - Com mais de um pedido, pergunte de qual cliente ela fala.
 
 QUANDO ELA NÃO DIZ O NOME
@@ -492,7 +501,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
   if (!m.enviar) return 'OK: ' + (b.data || 'feito');
   const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;
   if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';
-  return 'OK: mensagem enviada para a cliente: ' + JSON.parse(b.data).mensagem;
+  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;
 })() }}`)] },
         options: {},
       }),
@@ -630,6 +639,22 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         "if (!texto) texto = 'Desculpa, deu um erro aqui. Pode repetir?';",
         "return [{ json: { texto: texto.replace(/\\*\\*(.+?)\\*\\*/g, '*$1*'), corrigida, ferramentas: passos.map((s) => s.action?.tool) } }];",
       ].join('\n') }),
+      // a assistente mandou mensagem para uma cliente com pedido aberto: o pedido foi respondido, sai da lista
+      // (compara os 8 últimos números do telefone: o pedido às vezes guarda o número sem o 9)
+      node('Pedidos respondidos', 'n8n-nodes-base.code', 2, [2000, -160], { jsCode: [
+        "const passos = $('Agente assistente').first().json.intermediateSteps || [];",
+        "const lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };",
+        "const fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);",
+        "const tels = passos.filter((s) => ['chamar_cliente', 'avisar_cliente'].includes(s.action?.tool)).map((s) => lerResposta(s.observation))",
+        "  .map((r) => (/^\\s*OK\\b[^(]*\\(tel\\. (\\d+)\\)/.exec(r) || [])[1]).filter(Boolean).map(fim8);",
+        "if (!tels.length) return [];",
+        "const abertos = $('Ler pedidos abertos').first().json || {};",
+        "return Object.entries(abertos).filter(([k, v]) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return /^pedido:/.test(k) && p && tels.includes(fim8(p.telefone)); } catch (e) { return false; } })",
+        "  .map(([k]) => ({ json: { chave: k } }));",
+      ].join('\n') }),
+      node('Apagar pedido respondido', 'n8n-nodes-base.redis', 1, [2200, -160], {
+        operation: 'delete', key: '={{ $json.chave }}',
+      }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [1640, 220], {
         modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.2 },
       }, { credentials: GEMINI }),
@@ -790,7 +815,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Ler regras': main('Ler pedidos abertos'),
       'Ler pedidos abertos': main('Agente assistente'),
       'Agente assistente': main('Conferir resposta'),
-      'Conferir resposta': main('Ritmo humano'),
+      'Conferir resposta': { main: [[{ node: 'Ritmo humano', type: 'main', index: 0 }, { node: 'Pedidos respondidos', type: 'main', index: 0 }]] },
+      'Pedidos respondidos': main('Apagar pedido respondido'),
       'Ritmo humano': main('Pausa (lendo)'),
       'Pausa (lendo)': main('Digitando...'),
       'Digitando...': main('Responder a Gleide'),
