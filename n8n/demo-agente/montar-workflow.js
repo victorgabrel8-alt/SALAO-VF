@@ -788,10 +788,17 @@ organizar(retorno.retornoWorkflow, 'Retorno combinado', [
 const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow, assistente.pendenciasWorkflow,
   audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, pedidos.modalidadeWorkflow,
   alerta.alertaWorkflow, workflow];
+// dúvidas que a dona já respondeu viram memória da loja (respostas-aprendidas.js): vale para todas as lojas.
+// Na loja roda dentro do bloco abaixo, depois do prompt próprio da assistente e antes de trocar os nomes.
+const aplicarRespostas = () => require('./respostas-aprendidas.js')({ node, main, GEMINI, workflow,
+  assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow,
+  dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
+if (!LOJA) aplicarRespostas();
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
+  aplicarRespostas();
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   const { erros, avisos } = lojas.conferirLoja(todos, LOJA, idsGleide);
   for (const a of avisos) console.log(`aviso: ${a}`);
