@@ -154,7 +154,7 @@ function selo(a: Atendimento): { rotulo: string; classe: string } {
   if (a.status === "realizado") return { rotulo: "Concluído", classe: "bg-salvia text-salvia-texto" };
   if (a.status === "faltou") return { rotulo: "Faltou", classe: "bg-rose text-rose-texto" };
   if (a.chegou_em) return { rotulo: "Chegou", classe: "bg-ouro text-ouro-texto" };
-  if (naoAtendida(a)) return { rotulo: "Não atendida", classe: "bg-rose text-rose-texto" };
+  if (naoAtendida(a)) return { rotulo: "Falta confirmar", classe: "bg-rose text-rose-texto" };
   if (emAndamento(a)) return { rotulo: "Agora", classe: "bg-grafite text-perola" };
   return { rotulo: "A atender", classe: "bg-taupe text-taupe-texto" };
 }
@@ -261,7 +261,7 @@ export default function InicioPage() {
               >
                 <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
                 <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
-                  {verNaoAtendidas ? "Esconder" : naoAtendidas.length === 1 ? "1 não atendida" : `${naoAtendidas.length} não atendidas`}
+                  {verNaoAtendidas ? "Esconder" : naoAtendidas.length === 1 ? "1 para confirmar" : `${naoAtendidas.length} para confirmar`}
                 </span>
                 <Seta pequena />
               </button>
@@ -360,7 +360,7 @@ export default function InicioPage() {
                     comSelo
                   />
                 ) : (
-                  <p className="rounded-[22px] bg-card borda-suave p-4 text-[15px] text-texto-2">Os horários de hoje já passaram. Veja as não atendidas acima.</p>
+                  <p className="rounded-[22px] bg-card borda-suave p-4 text-[15px] text-texto-2">Os horários de hoje já passaram. Veja acima as que faltam confirmar.</p>
                 )}
               </Secao>
             </>

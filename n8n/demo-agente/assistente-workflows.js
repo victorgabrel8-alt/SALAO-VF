@@ -522,6 +522,10 @@ REGRAS
 - Ela disse que não entendeu ("não tô entendendo", "como assim?"): explique de novo, em uma ou duas frases simples, o que
   você anotou e o que vai acontecer (quem manda mensagem para quem e quando). Não se apresente de novo.
 - Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
+- "📍 … avisou que chegou" é só um aviso: o "Chegou" já está marcado. Não precisa de resposta; se ela disser "ok", 👍.
+- Lista "pra fechar o dia": ela costuma responder tudo junto ("todas vieram", "a Maria não veio, o resto sim", "a das 14 fechou").
+  Grave cada cliente da lista de uma vez (veio → concluir; não veio → status faltou; avaliação → resultado) e responda uma vez só,
+  uma linha por cliente. Quem ela não citou fica como está; não insista.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
 
 module.exports = ({ env, node, str, main, toolSub, workflow }) => {
@@ -993,7 +997,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         // mesma senha do webhook do WhatsApp (header x-webhook-token): sem ela, ninguém dispara de fora
         { webhookId: '6f7a8b9c-0d1e-4f2a-9b3c-4d5e6f7a8b91', credentials: { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } } }),
       // a mesma pendência: na hora, +1 h e +2 h, depois para (a função já filtra, supabase/011)
-      rpc('Pendências novas', [440, 100], 'n8n_assistente_pendencias_novas', `{ p_empresa_id: ${EMPRESA} }`, { onError: 'continueRegularOutput' }),
+      // Às 18h (fim do expediente) a pergunta é uma só, com TODOS os horários de hoje que ficaram sem confirmar,
+      // mesmo os que já foram perguntados (supabase/045). Nas outras horas, as pendências novas de sempre.
+      rpc('Pendências novas', [440, 100], "{{ $now.setZone('America/Cuiaba').hour === 18 ? 'n8n_assistente_pendencias_fim_do_dia' : 'n8n_assistente_pendencias_novas' }}", `{ p_empresa_id: ${EMPRESA} }`, { onError: 'continueRegularOutput' }),
       node('Montar mensagem', 'n8n-nodes-base.code', 2, [660, 100], { jsCode: String.raw`
 const ps = $input.all().map((i) => i.json).filter((p) => p.tipo);
 if (!ps.length) return [];
@@ -1019,7 +1025,9 @@ const linha = (p) => {
     : '• *' + nome(p) + '* fechou. O que ficou combinado e quando ela volta? Se depende do cabelo: chega em quantos dias e precisa confeccionar?';
   return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';
 };
-const texto = 'Oi, Gleide! Me conta pra eu anotar aqui:\n' + ps.map(linha).join('\n') + '\n\nPode responder em áudio, do seu jeito 🙂';
+const fimDoDia = new Date(Date.now() - 4 * 3600e3).getUTCHours() === 18;
+const texto = (fimDoDia ? 'Gleide, pra fechar o dia, só falta me dizer:\n' : 'Oi, Gleide! Me conta pra eu anotar aqui:\n') + ps.map(linha).join('\n') +
+  (fimDoDia ? '\n\nPode responder tudo junto, em áudio 🙂' : '\n\nPode responder em áudio, do seu jeito 🙂');
 ${QUANDO_JS}
 const ids = ps.map((p) => p.pendencia_id);
 const numeros = ${NUMEROS};

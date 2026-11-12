@@ -735,6 +735,10 @@ require('./resposta-velha.js')({ node, main, ifNode, cond, REDIS, D })(workflow)
 require('./preco-pendente.js')({ node, REDIS, D })(workflow);
 
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
+// A cliente avisou que chegou: marca o "Chegou" do horário dela e avisa a dona (ver chegou-workflows.js) Fica por último:
+// os outros módulos (fotos, pedidos…) esperam uma saída só em "Supabase: registrar entrada" ao se encaixarem.
+require('./chegou-workflows.js')({ node, D, workflow, REDIS });
+
 const organizar = require('./layout-n8n.js');
 organizar(workflow, 'Atendimento das clientes (WhatsApp)', [
   'Roda a cada mensagem que chega no WhatsApp do salão (Evolution).',
