@@ -3,8 +3,8 @@
 // oferecido por conta própria, mas se a cliente PEDIR um horário nessa faixa, a IA confere e marca.
 // A faixa fica no banco, em empresas.config.loja.almoco_flexivel = { "inicio": "11:30", "fim": "13:00" }.
 // Não mexe em config.almoco (o app e a assistente continuam como estão). Sem a faixa: nada muda.
-//   - sugestões e quadro de horários livres: sem inícios que encavalam no almoço (se o dia só tiver vaga no
-//     almoço, aí entram, para não dizer que o dia está cheio);
+//   - sugestões e quadro de horários livres: sem inícios que encavalam no almoço, nem com o dia cheio
+//     (dia sem vaga fora do almoço: a resposta avisa que o almoço existe, se ela pedir);
 //   - horário exato pedido pela cliente e criar: valem normalmente (o almoço não bloqueia);
 //   - a consulta avisa a IA da regra.
 
@@ -29,12 +29,12 @@ module.exports = ({ agendaWorkflow }) => {
     'if (p.erro) return saida({ resposta: p.erro });',
   ].join('\n'));
 
-  // vagas oferecidas: primeiro sem o almoço; só se não sobrar nada no dia, com o almoço
-  trocar('const vagasDoDia = (dia) => {', 'const vagasDoDia0 = (dia, comAlmoco) => {');
+  // vagas oferecidas: nunca no almoço (nem com o dia cheio: o almoço é só para quem pede esse horário)
   trocar('if (livre(t, t.plus({ minutes: p.dur }))) v.push(t);',
-    'if (livre(t, t.plus({ minutes: p.dur })) && (comAlmoco || !noAlmocoFlex(t, t.plus({ minutes: p.dur })))) v.push(t);');
-  trocar('    return v;\n  };\n', '    return v;\n  };\n' +
-    '  const vagasDoDia = (dia) => { const v = vagasDoDia0(dia, false); return v.length || !ALMOCO_FLEX ? v : vagasDoDia0(dia, true); };\n');
+    'if (livre(t, t.plus({ minutes: p.dur })) && !noAlmocoFlex(t, t.plus({ minutes: p.dur }))) v.push(t);');
+  // dia sem vaga fora do almoço: a IA fica sabendo que o almoço existe, se a cliente pedir
+  trocar("'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.'",
+    "'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + (ALMOCO_FLEX ? ' fora do almoço (' + ALMOCO_FLEX[0] + ' às ' + ALMOCO_FLEX[1] + ': só se ela pedir um horário nessa faixa; confira o horário exato antes)' : '') + '.'");
 
   // a IA fica sabendo da regra junto com o quadro
   trocar("'OFEREÇA À CLIENTE SÓ ESTES 2 HORÁRIOS: '",
