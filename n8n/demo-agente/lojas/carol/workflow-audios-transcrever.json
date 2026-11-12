@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000124",
+      "id": "00000000-0000-4000-8000-000000000132",
       "name": "Recebe áudio",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -35,7 +35,7 @@
       "webhookId": "7597ee69-d46a-4f56-8447-87d8608a7aad"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000125",
+      "id": "00000000-0000-4000-8000-000000000133",
       "name": "Transcrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -61,7 +61,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000126",
+      "id": "00000000-0000-4000-8000-000000000134",
       "name": "Transcrição",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

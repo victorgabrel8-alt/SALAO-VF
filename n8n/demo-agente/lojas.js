@@ -24,6 +24,7 @@
 //   sinal_pix true                               opcional: sinal por Pix para reservar (sinal-pix.js); valores e liga/desliga em config.loja.sinal_pix
 //   google_agenda true                           opcional: a Google Agenda da dona também ocupa horário (google-agenda.js); link iCal secreto em config.loja.google_agenda_ics
 //   almoco_flexivel true                         opcional: almoço não é oferecido, mas é marcado se a cliente pedir; faixa em config.loja.almoco_flexivel
+//   preco_livre true                             opcional: a IA fala preço e valor do sinal sem a cliente perguntar (sem o filtro de preço da Gleide)
 //
 // Só nas lojas (a Gleide não muda):
 //   - "DADOS DO SALÃO" no fim do prompt, lido a cada mensagem de empresas.config (tela Dados do salão do app);

@@ -797,6 +797,15 @@ if (LOJA) {
   // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
   if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
   // Google Agenda da dona também ocupa horário (google-agenda.js), até as clientes dela estarem todas no app
+  // preco_livre (loja.json): o filtro "valor só quando a cliente pergunta" é regra da Gleide. Na loja de ticket baixo
+  // o preço e o valor do sinal saem sempre (Marcia, 12/11: a IA escreveu "A manicure fica R$ 50" e "sinal de R$ 20"
+  // e o filtro apagou os dois; ela recebeu a chave Pix sem saber quanto pagar)
+  if (LOJA.preco_livre) {
+    const q = workflow.nodes.find((nd) => nd.name === 'Quebrar mensagens');
+    const de = 'const pediuPreco = pediuPrecoAgora || precoPendente;';
+    if (!q || !q.parameters.jsCode.includes(de)) throw new Error('preco_livre: o filtro de preço do "Quebrar mensagens" mudou');
+    q.parameters.jsCode = q.parameters.jsCode.replace(de, 'const pediuPreco = true; // loja com preco_livre');
+  }
   // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
   if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
   if (LOJA.google_agenda) {
