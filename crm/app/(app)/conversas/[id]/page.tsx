@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Etiquetas } from "@/components/Etiquetas";
 import { useEmpresa } from "@/lib/empresa";
@@ -71,7 +71,8 @@ function ConversaCliente() {
   const [versao, setVersao] = useState(0);
   const [salvando, setSalvando] = useState(false);
   const [fotos, setFotos] = useState<Record<string, string>>({});
-  const fim = useRef<HTMLDivElement>(null);
+  const [fotosProntas, setFotosProntas] = useState(false);
+  const [renovar, setRenovar] = useState(0);
 
   useEffect(() => {
     let ativo = true;
@@ -89,13 +90,30 @@ function ConversaCliente() {
     const lista = conversa.mensagens.map(fotoDaMensagem).filter((f) => f !== null);
     if (!lista.length) return;
     let ativo = true;
-    linksDasFotos(lista).then((l) => {
-      if (ativo) setFotos(l);
-    });
+    linksDasFotos(lista)
+      .then((l) => {
+        if (ativo) setFotos(l);
+      })
+      .finally(() => {
+        if (ativo) setFotosProntas(true);
+      });
     return () => {
       ativo = false;
     };
-  }, [conversa]);
+  }, [conversa, renovar]);
+
+  // O link de cada foto vale 6 h: com a tela aberta o dia todo, pede links novos antes de vencer
+  // (linksDasFotos só busca de novo os que estão perto de vencer)
+  useEffect(() => {
+    const t = setInterval(() => setRenovar((v) => v + 1), 20 * 60 * 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  // A foto chega depois do texto e aumenta a conversa: se a dona estava no fim, continua no fim
+  function fotoCarregou() {
+    const falta = document.documentElement.scrollHeight - (window.scrollY + window.innerHeight);
+    if (falta < 700) rolarAteOFim();
+  }
 
   // Mensagem nova chega na hora, sem recarregar
   useTempoReal(["mensagens", "clientes"], empresa.id, () => setVersao((v) => v + 1));
@@ -103,7 +121,7 @@ function ConversaCliente() {
   // Sempre mostra a mensagem mais recente
   const total = conversa && "mensagens" in conversa ? conversa.mensagens.length : 0;
   useEffect(() => {
-    fim.current?.scrollIntoView({ block: "end" });
+    rolarAteOFim();
   }, [total]);
 
   if (!conversa) return <p className="p-4 text-texto-2">Carregando…</p>;
@@ -182,11 +200,11 @@ function ConversaCliente() {
                   {dia === hojeNoSalao() ? "Hoje" : formatarDiaLongo(dia)}
                 </p>
               )}
-              <Balao mensagem={m} primeiro={!mesmoAutor} fotos={fotos} />
+              <Balao mensagem={m} primeiro={!mesmoAutor} fotos={fotos} fotosProntas={fotosProntas} aoCarregarFoto={fotoCarregou} />
             </div>
           );
         })}
-        <div ref={fim} className="h-36" />
+        <div className="h-36" />
       </div>
 
       {/* Ações numa bolha de vidro, acima da barra de abas (70px + 20px de folga) */}
@@ -211,6 +229,12 @@ function ConversaCliente() {
       </div>
     </div>
   );
+}
+
+// Até o fim da página, não só até o fim da lista: embaixo ainda tem a folga da barra de abas, e parando antes
+// a última mensagem ficava escondida atrás dos botões "Pausar IA / Responder no WhatsApp"
+function rolarAteOFim() {
+  window.scrollTo({ top: document.documentElement.scrollHeight });
 }
 
 // Cada autor tem um balão com cor e lado próprios, inspirados no WhatsApp: a cliente num balão
@@ -251,13 +275,27 @@ const AUTOR: Record<
   },
 };
 
-function Balao({ mensagem: m, primeiro, fotos }: { mensagem: Mensagem; primeiro: boolean; fotos: Record<string, string> }) {
+function Balao({
+  mensagem: m,
+  primeiro,
+  fotos,
+  fotosProntas,
+  aoCarregarFoto,
+}: {
+  mensagem: Mensagem;
+  primeiro: boolean;
+  fotos: Record<string, string>;
+  fotosProntas: boolean;
+  aoCarregarFoto: () => void;
+}) {
   const a = AUTOR[m.autor];
   const foto = fotoDaMensagem(m);
   const link = foto ? fotos[chaveDaFoto(foto)] : undefined;
+  // Enquanto o link da foto não chega: um espaço no lugar da foto (sem mostrar o texto que é só para a IA)
+  const esperando = Boolean(foto && !link && !fotosProntas);
   // Com a foto guardada: a imagem no balão, a legenda embaixo e o que a IA entendeu da foto escondido
-  const daFoto = link ? textoDaFoto(m.conteudo) : null;
-  const midia = link ? null : m.tipo === "audio" ? "🎤 Áudio" : m.tipo === "imagem" || foto ? "📷 Foto" : null;
+  const daFoto = link || esperando ? textoDaFoto(m.conteudo) : null;
+  const midia = link || esperando ? null : m.tipo === "audio" ? "🎤 Áudio" : m.tipo === "imagem" || foto ? "📷 Foto" : null;
   const texto = daFoto ? daFoto.legenda : (m.conteudo ?? (midia ? "" : "(mensagem sem texto)"));
   return (
     <div className={`flex ${a.lado}`}>
@@ -273,9 +311,10 @@ function Balao({ mensagem: m, primeiro, fotos }: { mensagem: Mensagem; primeiro:
         {link && (
           <a href={link} target="_blank" rel="noreferrer" className="-mx-1.5 mt-0.5 mb-1 block overflow-hidden rounded-[13px]">
             {/* eslint-disable-next-line @next/next/no-img-element -- link assinado do Storage, muda a cada 6 h */}
-            <img src={link} alt="Foto enviada na conversa" loading="lazy" className="max-h-80 w-60 max-w-full bg-black/5 object-cover" />
+            <img src={link} alt="Foto enviada na conversa" onLoad={aoCarregarFoto} className="max-h-80 w-60 max-w-full bg-black/5 object-cover" />
           </a>
         )}
+        {esperando && <div aria-label="Carregando a foto" className="-mx-1.5 mt-0.5 mb-1 h-60 w-60 max-w-full animate-pulse rounded-[13px] bg-black/10" />}
         {daFoto?.iaViu && (
           <details className="mb-1 text-xs opacity-75">
             <summary className="cursor-pointer font-semibold">O que a IA viu</summary>
