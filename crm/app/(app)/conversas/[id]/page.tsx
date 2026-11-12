@@ -6,6 +6,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { Etiquetas } from "@/components/Etiquetas";
 import { useEmpresa } from "@/lib/empresa";
+import { chaveDaFoto, fotoDaMensagem, linksDasFotos, textoDaFoto } from "@/lib/fotos";
 import { dataNoSalao, formatarData, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, somarDias } from "@/lib/formato";
 import { MOTIVOS_PRECISA, SELO_IA, pausarOuReativarIa, situacaoIa } from "@/lib/ia";
 import { supabase } from "@/lib/supabase/client";
@@ -27,6 +28,7 @@ type Mensagem = {
   autor: "cliente" | "ia" | "humano";
   tipo: "texto" | "audio" | "imagem" | "outro";
   conteudo: string | null;
+  midia: string | null;
   criado_em: string;
 };
 
@@ -43,7 +45,7 @@ async function buscarConversa(clienteId: string): Promise<Conversa> {
     // As últimas 300 mensagens, em ordem de envio
     db
       .from("mensagens")
-      .select("id, autor, tipo, conteudo, criado_em")
+      .select("id, autor, tipo, conteudo, midia, criado_em")
       .eq("cliente_id", clienteId)
       .order("criado_em", { ascending: false })
       .limit(300),
@@ -68,6 +70,7 @@ function ConversaCliente() {
   const [conversa, setConversa] = useState<Conversa | null>(null);
   const [versao, setVersao] = useState(0);
   const [salvando, setSalvando] = useState(false);
+  const [fotos, setFotos] = useState<Record<string, string>>({});
   const fim = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -79,6 +82,20 @@ function ConversaCliente() {
       ativo = false;
     };
   }, [id, versao]);
+
+  // Links das fotos (cliente, dona e catálogo) para mostrar a imagem dentro do balão
+  useEffect(() => {
+    if (!conversa || !("mensagens" in conversa)) return;
+    const lista = conversa.mensagens.map(fotoDaMensagem).filter((f) => f !== null);
+    if (!lista.length) return;
+    let ativo = true;
+    linksDasFotos(lista).then((l) => {
+      if (ativo) setFotos(l);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [conversa]);
 
   // Mensagem nova chega na hora, sem recarregar
   useTempoReal(["mensagens", "clientes"], empresa.id, () => setVersao((v) => v + 1));
@@ -165,7 +182,7 @@ function ConversaCliente() {
                   {dia === hojeNoSalao() ? "Hoje" : formatarDiaLongo(dia)}
                 </p>
               )}
-              <Balao mensagem={m} primeiro={!mesmoAutor} />
+              <Balao mensagem={m} primeiro={!mesmoAutor} fotos={fotos} />
             </div>
           );
         })}
@@ -234,10 +251,14 @@ const AUTOR: Record<
   },
 };
 
-function Balao({ mensagem: m, primeiro }: { mensagem: Mensagem; primeiro: boolean }) {
+function Balao({ mensagem: m, primeiro, fotos }: { mensagem: Mensagem; primeiro: boolean; fotos: Record<string, string> }) {
   const a = AUTOR[m.autor];
-  const midia = m.tipo === "audio" ? "🎤 Áudio" : m.tipo === "imagem" ? "📷 Foto" : null;
-  const texto = m.conteudo ?? (midia ? "" : "(mensagem sem texto)");
+  const foto = fotoDaMensagem(m);
+  const link = foto ? fotos[chaveDaFoto(foto)] : undefined;
+  // Com a foto guardada: a imagem no balão, a legenda embaixo e o que a IA entendeu da foto escondido
+  const daFoto = link ? textoDaFoto(m.conteudo) : null;
+  const midia = link ? null : m.tipo === "audio" ? "🎤 Áudio" : m.tipo === "imagem" || foto ? "📷 Foto" : null;
+  const texto = daFoto ? daFoto.legenda : (m.conteudo ?? (midia ? "" : "(mensagem sem texto)"));
   return (
     <div className={`flex ${a.lado}`}>
       {/* O primeiro balão de cada sequência tem o "rabinho" no canto de cima, como no WhatsApp */}
@@ -249,6 +270,18 @@ function Balao({ mensagem: m, primeiro }: { mensagem: Mensagem; primeiro: boolea
         )}
         {/* Quem respondeu: a IA ou a dona */}
         {a.rotulo && primeiro && <p className={`text-xs font-bold ${a.etiqueta}`}>{a.rotulo}</p>}
+        {link && (
+          <a href={link} target="_blank" rel="noreferrer" className="-mx-1.5 mt-0.5 mb-1 block overflow-hidden rounded-[13px]">
+            {/* eslint-disable-next-line @next/next/no-img-element -- link assinado do Storage, muda a cada 6 h */}
+            <img src={link} alt="Foto enviada na conversa" loading="lazy" className="max-h-80 w-full min-w-40 bg-black/5 object-cover" />
+          </a>
+        )}
+        {daFoto?.iaViu && (
+          <details className="mb-1 text-xs opacity-75">
+            <summary className="cursor-pointer font-semibold">O que a IA viu</summary>
+            <p className="mt-0.5 whitespace-pre-wrap">{daFoto.iaViu}</p>
+          </details>
+        )}
         {midia && <p className="text-xs font-semibold opacity-75">{midia}{m.conteudo && m.tipo === "audio" ? " · transcrição" : ""}</p>}
         <p className="text-[15px] leading-snug whitespace-pre-wrap">
           {texto}
