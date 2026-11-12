@@ -13,7 +13,8 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  // fotos das conversas: link assinado do Storage do Supabase (lib/fotos.ts)
+  `img-src 'self' data: blob: https://${supabase}`,
   "font-src 'self' data:",
   `connect-src 'self' https://${supabase} wss://${supabase}${dev ? " ws:" : ""}`,
   "frame-ancestors 'none'",
