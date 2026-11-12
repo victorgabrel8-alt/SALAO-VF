@@ -811,6 +811,12 @@ if (LOJA) {
     const de = 'const pediuPreco = pediuPrecoAgora || precoPendente;';
     if (!q || !q.parameters.jsCode.includes(de)) throw new Error('preco_livre: o filtro de preço do "Quebrar mensagens" mudou');
     q.parameters.jsCode = q.parameters.jsCode.replace(de, 'const pediuPreco = true; // loja com preco_livre');
+    // resposta da dona a uma pergunta: na Gleide o valor nunca é repassado ("ela explica na avaliação"); aqui o valor
+    // que a dona escreveu vai para a cliente como ela escreveu (teste de 12/11: "fica 180 reais" virava "na avaliação")
+    const pp = workflow.nodes.find((nd) => nd.name === 'Pedido: preparar');
+    const semValor = /NUNCA passe valor[\s\S]*?\(o salão não informa valores por mensagem\)\./;
+    if (!pp || !semValor.test(pp.parameters.jsCode)) throw new Error('preco_livre: a instrução da resposta da dona mudou');
+    pp.parameters.jsCode = pp.parameters.jsCode.replace(semValor, 'Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela.');
   }
   // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
   if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
