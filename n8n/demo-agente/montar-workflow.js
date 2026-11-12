@@ -795,6 +795,8 @@ if (LOJA) {
   // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
   if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
   // Google Agenda da dona também ocupa horário (google-agenda.js), até as clientes dela estarem todas no app
+  // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
+  if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
   if (LOJA.google_agenda) {
     require('./google-agenda.js')({ node, agendaWorkflow });
     require('./google-agenda.js').assistente({ node, ferramentasWorkflow: assistente.ferramentasWorkflow });

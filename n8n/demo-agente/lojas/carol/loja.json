@@ -160,5 +160,6 @@
   ],
   "memoria_horas": 12,
   "sinal_pix": true,
-  "google_agenda": true
+  "google_agenda": true,
+  "almoco_flexivel": true
 }

@@ -558,7 +558,7 @@
       "typeVersion": 1,
       "position": [
         2640,
-        1120
+        1320
       ],
       "parameters": {
         "operation": "delete",
@@ -712,6 +712,40 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000183",
+      "name": "Pedidos respondidos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        1120
+      ],
+      "parameters": {
+        "jsCode": "const passos = $('Agente assistente').first().json.intermediateSteps || [];\nconst lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };\nconst fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);\nconst tels = passos.filter((s) => ['chamar_cliente', 'avisar_cliente'].includes(s.action?.tool)).map((s) => lerResposta(s.observation))\n  .map((r) => (/^\\s*OK\\b[^(]*\\(tel\\. (\\d+)\\)/.exec(r) || [])[1]).filter(Boolean).map(fim8);\nif (!tels.length) return [];\nconst abertos = $('Ler pedidos abertos').first().json || {};\nreturn Object.entries(abertos).filter(([k, v]) => { try { const p = typeof v === 'string' ? JSON.parse(v) : v; return /^pedido:/.test(k) && p && tels.includes(fim8(p.telefone)); } catch (e) { return false; } })\n  .map(([k]) => ({ json: { chave: k } }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000184",
+      "name": "Apagar pedido respondido",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1740,
+        1120
+      ],
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $json.chave }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000185",
       "name": "Gemini Flash",
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
@@ -733,7 +767,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000184",
+      "id": "00000000-0000-4000-8000-000000000186",
       "name": "Memória (Redis)",
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
@@ -755,7 +789,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000185",
+      "id": "00000000-0000-4000-8000-000000000187",
       "name": "buscar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1126,7 +1160,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000186",
+      "id": "00000000-0000-4000-8000-000000000188",
       "name": "agenda_do_dia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1497,7 +1531,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000187",
+      "id": "00000000-0000-4000-8000-000000000189",
       "name": "resultado_avaliacao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -1880,7 +1914,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000188",
+      "id": "00000000-0000-4000-8000-000000000190",
       "name": "status_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2253,7 +2287,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000189",
+      "id": "00000000-0000-4000-8000-000000000191",
       "name": "registrar_atendimento",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -2629,7 +2663,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000190",
+      "id": "00000000-0000-4000-8000-000000000192",
       "name": "anotar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3001,7 +3035,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000191",
+      "id": "00000000-0000-4000-8000-000000000193",
       "name": "liberar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3372,7 +3406,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000192",
+      "id": "00000000-0000-4000-8000-000000000194",
       "name": "Marcar como lida",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3400,26 +3434,26 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000193",
+      "id": "00000000-0000-4000-8000-000000000195",
       "name": "Ritmo humano",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
         1440,
-        1120
+        1320
       ],
       "parameters": {
         "jsCode": "const dela = String($('Juntar mensagens').first().json.texto || '');\nconst texto = String($json.texto || '');\nconst pausa = Math.min(4, 1.5 + dela.length / 120 + (dela.startsWith('[áudio]') ? 1 : 0));\nconst delay = Math.round(Math.min(8000, Math.max(2000, texto.length * 30)));\nreturn [{ json: { pausa, delay } }];"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000194",
+      "id": "00000000-0000-4000-8000-000000000196",
       "name": "Pausa (lendo)",
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
         1740,
-        1120
+        1320
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -3429,13 +3463,13 @@
       "webhookId": "9fa27be5-9d87-4ebd-8851-275307253967"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000195",
+      "id": "00000000-0000-4000-8000-000000000197",
       "name": "Digitando...",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         2040,
-        1120
+        1320
       ],
       "parameters": {
         "method": "POST",
@@ -3457,7 +3491,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000196",
+      "id": "00000000-0000-4000-8000-000000000198",
       "name": "horarios_livres",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3830,7 +3864,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000197",
+      "id": "00000000-0000-4000-8000-000000000199",
       "name": "marcar_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4208,7 +4242,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000198",
+      "id": "00000000-0000-4000-8000-000000000200",
       "name": "ajustar_duracao",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4581,7 +4615,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000199",
+      "id": "00000000-0000-4000-8000-000000000201",
       "name": "reagendar",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4955,7 +4989,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000200",
+      "id": "00000000-0000-4000-8000-000000000202",
       "name": "atrasar_agenda",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -5328,7 +5362,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000201",
+      "id": "00000000-0000-4000-8000-000000000203",
       "name": "concluir",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -5702,7 +5736,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000202",
+      "id": "00000000-0000-4000-8000-000000000204",
       "name": "chegou",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -6074,7 +6108,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000203",
+      "id": "00000000-0000-4000-8000-000000000205",
       "name": "excluir_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -6445,7 +6479,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000204",
+      "id": "00000000-0000-4000-8000-000000000206",
       "name": "bloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -6818,7 +6852,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000205",
+      "id": "00000000-0000-4000-8000-000000000207",
       "name": "desbloquear_dias",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -7189,7 +7223,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000206",
+      "id": "00000000-0000-4000-8000-000000000208",
       "name": "bloquear_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -7563,7 +7597,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000207",
+      "id": "00000000-0000-4000-8000-000000000209",
       "name": "desbloquear_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -7935,7 +7969,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000208",
+      "id": "00000000-0000-4000-8000-000000000210",
       "name": "ver_bloqueios_horario",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -8306,7 +8340,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000209",
+      "id": "00000000-0000-4000-8000-000000000211",
       "name": "pausar_ia",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -8678,7 +8712,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000210",
+      "id": "00000000-0000-4000-8000-000000000212",
       "name": "editar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -9051,7 +9085,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000211",
+      "id": "00000000-0000-4000-8000-000000000213",
       "name": "cadastrar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -9424,7 +9458,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000212",
+      "id": "00000000-0000-4000-8000-000000000214",
       "name": "chamar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -9796,7 +9830,380 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000213",
+      "id": "00000000-0000-4000-8000-000000000215",
+      "name": "combinar_retorno",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        840,
+        2260
+      ],
+      "parameters": {
+        "description": "Marca um dia para a IA de atendimento mandar mensagem para a cliente (\"dá um toque nela em janeiro\", \"chama ela dia 20\"). Nesse dia a IA manda sozinha, de manhã. Um por cliente: marcar de novo troca a data. Use quando a Caroline pediu (o pedido dela já é o sim).",
+        "workflowId": {
+          "__rl": true,
+          "value": "g7fUvCP6RPNkJYZT",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "combinar_retorno",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
+            "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
+            "data": "={{ $fromAI('data', `Dia AAAA-MM-DD, depois de hoje e até 120 dias. Mês sem dia (\"janeiro\") = primeiro dia útil desse mês, nunca feriado`, 'string') }}",
+            "texto": "={{ $fromAI('texto', `Assunto, para a IA saber o que falar (ex.: disse que voltava em janeiro para colocar o cabelo)`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "pedido_por",
+              "displayName": "pedido_por",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "busca",
+              "displayName": "busca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cliente_id",
+              "displayName": "cliente_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "agendamento_id",
+              "displayName": "agendamento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resultado",
+              "displayName": "resultado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tecnica_indicada",
+              "displayName": "tecnica_indicada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_cabelo",
+              "displayName": "tipo_cabelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "comprimento_cm",
+              "displayName": "comprimento_cm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gramas",
+              "displayName": "gramas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo_nao_fechou",
+              "displayName": "motivo_nao_fechou",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "proximo_passo",
+              "displayName": "proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_proximo_passo",
+              "displayName": "data_proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "observacoes",
+              "displayName": "observacoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "inicio",
+              "displayName": "inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "extras",
+              "displayName": "extras",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "forcar",
+              "displayName": "forcar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "minutos",
+              "displayName": "minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "a_partir",
+              "displayName": "a_partir",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ate",
+              "displayName": "ate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "desfazer",
+              "displayName": "desfazer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "aniversario",
+              "displayName": "aniversario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_fim",
+              "displayName": "hora_fim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dias_chegada",
+              "displayName": "dias_chegada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dias_confeccao",
+              "displayName": "dias_confeccao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000216",
       "name": "avisar_cliente",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -10169,13 +10576,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000214",
+      "id": "00000000-0000-4000-8000-000000000217",
       "name": "guardar_regra",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        840,
-        2260
+        300,
+        2420
       ],
       "parameters": {
         "description": "Guarda uma regra fixa que a Caroline pediu para você seguir sempre (\"a partir de agora…\", \"sempre que…\", \"nunca mais…\"). Fica valendo até ela pedir para tirar. Só para o jeito de VOCÊ trabalhar; regra para a IA de atendimento das clientes você não consegue mudar.",
@@ -10540,12 +10947,12 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000215",
+      "id": "00000000-0000-4000-8000-000000000218",
       "name": "tirar_regra",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        300,
+        480,
         2420
       ],
       "parameters": {
@@ -10911,13 +11318,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000216",
+      "id": "00000000-0000-4000-8000-000000000219",
       "name": "Responder a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
         2340,
-        1120
+        1320
       ],
       "parameters": {
         "method": "POST",
@@ -10942,7 +11349,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000337",
+      "id": "00000000-0000-4000-8000-000000000340",
       "name": "Memória: ler (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -10966,7 +11373,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000338",
+      "id": "00000000-0000-4000-8000-000000000341",
       "name": "Memória: conferir (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -10979,7 +11386,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000339",
+      "id": "00000000-0000-4000-8000-000000000342",
       "name": "Memória: cortar? (Agente assistente)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -11013,7 +11420,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000340",
+      "id": "00000000-0000-4000-8000-000000000343",
       "name": "Memória: apagar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -11033,7 +11440,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000341",
+      "id": "00000000-0000-4000-8000-000000000344",
       "name": "Memória: regravar itens (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -11046,7 +11453,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000342",
+      "id": "00000000-0000-4000-8000-000000000345",
       "name": "Memória: regravar (Agente assistente)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -11068,7 +11475,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000343",
+      "id": "00000000-0000-4000-8000-000000000346",
       "name": "Memória: pronta (Agente assistente)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -11367,6 +11774,22 @@
         [
           {
             "node": "Ritmo humano",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Pedidos respondidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedidos respondidos": {
+      "main": [
+        [
+          {
+            "node": "Apagar pedido respondido",
             "type": "main",
             "index": 0
           }
@@ -11704,6 +12127,17 @@
       ]
     },
     "chamar_cliente": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente assistente",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "combinar_retorno": {
       "ai_tool": [
         [
           {
