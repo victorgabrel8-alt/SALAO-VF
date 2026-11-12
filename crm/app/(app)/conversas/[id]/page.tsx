@@ -273,7 +273,7 @@ function Balao({ mensagem: m, primeiro, fotos }: { mensagem: Mensagem; primeiro:
         {link && (
           <a href={link} target="_blank" rel="noreferrer" className="-mx-1.5 mt-0.5 mb-1 block overflow-hidden rounded-[13px]">
             {/* eslint-disable-next-line @next/next/no-img-element -- link assinado do Storage, muda a cada 6 h */}
-            <img src={link} alt="Foto enviada na conversa" loading="lazy" className="max-h-80 w-full min-w-40 bg-black/5 object-cover" />
+            <img src={link} alt="Foto enviada na conversa" loading="lazy" className="max-h-80 w-60 max-w-full bg-black/5 object-cover" />
           </a>
         )}
         {daFoto?.iaViu && (
