@@ -23,6 +23,8 @@ module.exports = ({ assistenteWorkflow, ferramentasWorkflow, minutos }) => {
   trocar("p_duracao_min: num('minutos') === null || num('minutos') <= 0 ? null : Math.round(num('minutos')) };",
     `p_duracao_min: num('minutos') === null || num('minutos') <= 0 ? null : Math.round(num('minutos')), p_bloco_min: ${N} };`);
   trocar("funcao = 'n8n_assistente_reagendar';", "funcao = 'n8n_assistente_reagendar_confirma';");
+  // concluir sem valor dito: o banco grava a soma da tabela, serviço feito + serviços a mais (supabase/046)
+  trocar("funcao = 'n8n_assistente_concluir';", "funcao = 'n8n_assistente_concluir_c';");
   // a Google continua sendo consultada no reagendar
   const g = ferramentasWorkflow.nodes.find((x) => x.name === 'Precisa da Google?');
   if (g) {
