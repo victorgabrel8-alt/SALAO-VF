@@ -822,6 +822,8 @@ if (LOJA) {
     if (!pp || !semValor.test(pp.parameters.jsCode)) throw new Error('preco_livre: a instrução da resposta da dona mudou');
     pp.parameters.jsCode = pp.parameters.jsCode.replace(semValor, 'Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela.');
   }
+  // a IA de atendimento vê o que o salão já mandou à cliente (assistente da dona incluída): contexto-saidas.js
+  if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
   // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
   if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
   if (LOJA.google_agenda) {

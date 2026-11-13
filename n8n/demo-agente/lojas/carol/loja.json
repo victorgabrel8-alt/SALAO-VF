@@ -163,5 +163,6 @@
   "google_agenda": true,
   "almoco_flexivel": true,
   "preco_livre": true,
-  "bloco_minutos": 150
+  "bloco_minutos": 150,
+  "contexto_saidas": true
 }
