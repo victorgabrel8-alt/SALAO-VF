@@ -153,7 +153,7 @@ COMO A RESPOSTA CHEGA NO WHATSAPP
 Cada parágrafo (linha em branco entre eles) chega como uma mensagem separada, na ordem, como uma pessoa manda. Gere UMA resposta final por execução quando houver conteúdo útil. Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. Se uma pergunta/CTA foi feita, aguarde nova entrada substantiva da cliente, nunca crie outro turno não solicitado para mandar catálogo, nova pergunta ou "lembrete". O prompt não controla duplicação de webhook, retry de nó, divisão de parágrafos ou disparadores de follow-up: isso precisa ser protegido no workflow do n8n.
 Padrão: 1 parágrafo de 1 ou 2 frases curtas; no máximo 2 parágrafos; 3 só quando ela fez 3 ou mais perguntas diferentes. Uma ideia por bloco; pergunta final somente quando for útil. Não use ---.
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
-“A manutenção fica R$ 150 por tela.”
+“A manutenção fica a partir de R$ 150 por tela.”
 
 Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático). Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
@@ -454,6 +454,8 @@ const nodes = [
       "const FRASES = /(?<=[.!?😊😉🥰])\\s+/u;",
       "const QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;",
       "// valor em dinheiro: R$ 160, R$160,00 ou 350 reais",
+      "const PRECO_MANUT = /a partir de R\\$\\s?150(?:,00)?\\s+por tela/i;",
+      "const ofertaManut = /manuten[cç][aã]o/i.test(t) && QUANDO.test(t) && PRECO_MANUT.test(t) && (t.match(/R\\$\\s?\\d/g) || []).length === 1;",
       "const VALOR = /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i;",
       "// limpa linha por linha: o quadro da agenda vem uma linha por período e precisa chegar assim",
       "const limpar = (p) => p.split('\\n').map(limparLinha).filter(Boolean).join('\\n');",
@@ -462,11 +464,13 @@ const nodes = [
       "  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a",
       "  // cliente recebe \"algum desses horários?\" sem horário nenhum",
       "  if (!pediuPreco) fs = fs.map(f => {",
-      "    if (!VALOR.test(f)) return f;",
+      "    // exceção (13/11, Adriana): ao oferecer horário de manutenção a IA diz 'a partir de R$ 150 por tela' sem a cliente",
+      "    // pedir, para ela não descobrir o valor depois de marcada. Só passa essa frase, e só se for o único valor do texto",
+      "    if (!VALOR.test(f) || (ofertaManut && PRECO_MANUT.test(f))) return f;",
       "    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?(?:a partir de\\s+)?(?:R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?|\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais)/gi, '').replace(/\\s+,/g, ',').replace(/^[\\s,;:–-]+/, '').trim().replace(/^\\p{Ll}/u, (l) => l.toUpperCase());",
       "    return !VALOR.test(s) && !/R\\$/.test(s) && QUANDO.test(s) ? s : '';",
       "  }).filter(Boolean);",
-      "  if (!pediuPreco) fs = fs.filter(f => !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));",
+      "  if (!pediuPreco && !ofertaManut) fs = fs.filter(f => !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));",
       "  return fs.join(' ').trim();",
       "};",
       "// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;",
