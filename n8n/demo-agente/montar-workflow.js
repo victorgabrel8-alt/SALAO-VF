@@ -530,7 +530,7 @@ const nodes = [
     { acao: 'consultar' },
     [
       ['data', 'Dia desejado no formato AAAA-MM-DD (calcule "amanhã", "sábado" etc. a partir da data atual). Se a cliente pediu um HORÁRIO específico, envie AAAA-MM-DDTHH:mm para verificar exatamente esse horário.', 'string'],
-      ['duracao_minutos', 'Duração do serviço em minutos, conforme a lista de serviços (ex.: 240 para aplicação de mega hair, 120 para manutenção, 30 para avaliação)', 'number'],
+      ['duracao_minutos', 'Duração do serviço em minutos, conforme a lista de serviços (ex.: 240 para aplicação de mega hair, 210 para manutenção, 30 para avaliação)', 'number'],
       ['periodo', 'Período preferido: manha, tarde ou qualquer', 'string'],
     ]),
 
