@@ -164,5 +164,6 @@
   "almoco_flexivel": true,
   "preco_livre": true,
   "bloco_minutos": 150,
-  "contexto_saidas": true
+  "contexto_saidas": true,
+  "assistente_conversas": true
 }

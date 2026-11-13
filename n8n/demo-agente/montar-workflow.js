@@ -860,6 +860,8 @@ if (LOJA) {
   }
   if (LOJA.catalogo_pdf || LOJA.catalogo_link) require('./catalogo-pdf.js')({ node, str, toolSub, main, workflow, enviarWorkflow: catalogo.enviarWorkflow, idFile: catalogo.idFile, loja: LOJA, organizar });
   aplicarRespostas();
+  // a assistente da dona lê as conversas recentes com as clientes antes de agir (assistente-conversas.js); depois do prompt próprio da loja
+  if (LOJA.assistente_conversas) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
