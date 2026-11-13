@@ -63,11 +63,18 @@ return $input.all().map((i) => i.json).filter((a) => a.agendamento_id).map((a) =
 const MENSAGEM_LEMBRETE = QUANDO + String.raw`
 return $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {
   const nome = primeiro(l.nome);
-  const oi = 'Oi' + (nome ? ' ' + nome : '') + '! ';
-  const texto = l.online
-    ? oi + 'Sua avaliação online é ' + quando(l.inicio) + ' 💛 A Gleide te liga por áudio aqui no WhatsApp. Posso confirmar?'
-    : oi + 'Seu horário é ' + quando(l.inicio) + (l.servico ? ' (' + l.servico.toLowerCase().replace(/\s*[–-]\s*mão de obra$/, '') + ')' : '') +
-      ' aqui no salão' + (l.endereco ? ', ' + l.endereco : '') + ' 💛 Posso confirmar?';
+  // 13/11: lembrete com postura (pedido do Victor): horário reservado só para ela, pontualidade, aviso para
+  // desmarcar e a regra do sinal. Tom sóbrio, sem propaganda. Texto da Gleide: outra loja precisa do texto dela.
+  const oi = 'Olá' + (nome ? ', ' + nome : '') + '. Aqui é do Toda Bonita Mega Hair.';
+  const servico = l.servico ? ' (' + l.servico.toLowerCase().replace(/\s*[–-]\s*mão de obra$/, '') + ')' : '';
+  const reserva = l.online
+    ? 'Sua avaliação online com a Gleide está reservada para ' + quando(l.inicio) + '. Ela liga para você por áudio aqui no WhatsApp.'
+    : 'Seu horário com a Gleide está reservado para ' + quando(l.inicio) + servico + '.' + (l.endereco ? ' Estamos na ' + l.endereco + '.' : '');
+  const texto = [oi, reserva,
+    'A Gleide atende uma cliente por vez, e esse período da agenda fica dedicado só a você. Por isso pedimos que ' +
+      (l.online ? 'esteja disponível' : 'chegue') + ' no horário: a partir de 15 minutos de atraso, o atendimento pode precisar ser remarcado.',
+    'Se surgir um imprevisto, basta nos avisar com 24 horas de antecedência e encontramos outro horário. Para este agendamento não há cobrança de sinal. Em caso de falta ou de cancelamento em cima da hora, as próximas reservas passam a ser feitas mediante sinal.',
+    'Posso confirmar a sua presença?'].join('\n\n');
   return { json: { ...l, texto } };
 });
 `;
