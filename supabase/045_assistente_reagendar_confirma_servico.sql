@@ -36,8 +36,10 @@ begin
    order by (lower(nome) = 'manicure') desc, coalesce(duracao_min, 60), nome limit 1;
   if v_plac is null then raise exception 'qual o serviço?'; end if;
   select jsonb_agg(n || ' ' || nome order by n) into v_ops
-    from (select row_number() over (order by categoria nulls last, nome) n, nome from servicos where empresa_id = p_empresa_id and ativo) t
-   where n <= 9;
+    -- os serviços mais marcados da loja primeiro; os outros ela escreve pelo nome
+    from (select row_number() over (order by (select count(*) from agendamentos a where a.servico_id = s.id and a.status <> 'cancelado' and coalesce(a.observacoes, '') !~* 'servi[cç]o n[aã]o confirmado') desc, s.nome) n, s.nome
+            from servicos s where s.empresa_id = p_empresa_id and s.ativo) t
+   where n <= 7;
   v := n8n_assistente_marcar_horario_v2(p_empresa_id, p_pedido_por, p_cliente_id, p_telefone, p_nome, v_plac, p_inicio,
          concat_ws(' ', nullif(trim(coalesce(p_observacoes, '')), ''), 'Serviço não confirmado.', case when p_duracao_min is not null then 'Tempo estipulado pela dona.' end), p_forcar, coalesce(p_duracao_min, p_bloco_min));
   return (v - 'servico') || jsonb_build_object('servico', 'NÃO CONFIRMADO', 'servico_origem', 'nao_confirmado', 'opcoes', v_ops,
