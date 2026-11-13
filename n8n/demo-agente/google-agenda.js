@@ -29,7 +29,10 @@ const lerIcs = (texto) => {
     const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;
     const fimL = e ? lerIcsData(e.val, tz(e)) : null;
     const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;
-    const b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));
+    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));
+    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o
+    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.
+    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });
     const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');
     if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);
   }
