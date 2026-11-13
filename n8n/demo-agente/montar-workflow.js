@@ -827,6 +827,8 @@ if (LOJA) {
   if (LOJA.google_agenda) {
     require('./google-agenda.js')({ node, agendaWorkflow });
     require('./google-agenda.js').assistente({ node, ferramentasWorkflow: assistente.ferramentasWorkflow });
+    // cada cliente ocupa pelo menos bloco_minutos na agenda (bloco-minimo.js); depende da Google já encaixada
+    if (LOJA.bloco_minutos) require('./bloco-minimo.js')({ agendaWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
   }
   // memória da conversa mais curta na loja (loja.json: memoria_horas): quem volta depois disso começa conversa nova
   if (LOJA.memoria_horas) {

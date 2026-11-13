@@ -162,5 +162,6 @@
   "sinal_pix": true,
   "google_agenda": true,
   "almoco_flexivel": true,
-  "preco_livre": true
+  "preco_livre": true,
+  "bloco_minutos": 150
 }
