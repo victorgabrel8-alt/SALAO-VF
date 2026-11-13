@@ -178,7 +178,7 @@
       "const COMUNS = new Set('unha unhas mao maos pe pes quero"
     ],
     [
-      "“A manutenção fica R$ 150 por tela.”",
+      "“A manutenção fica a partir de R$ 150 por tela.”",
       "“O pé e mão fica R$ [preço fixo confirmado na lista].” (ou “a partir de R$ ...” apenas se a lista marcar preço inicial)."
     ],
     [
