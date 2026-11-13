@@ -91,13 +91,13 @@
             {
               "id": "a-tipo",
               "name": "tipo",
-              "value": "={{ $json.body.data.messageType }}",
+              "value": "={{ ($json.body.data.message?.documentMessage || $json.body.data.message?.documentWithCaptionMessage?.message?.documentMessage) && /pdf/i.test(String(($json.body.data.message?.documentMessage || $json.body.data.message?.documentWithCaptionMessage?.message?.documentMessage).mimetype || ($json.body.data.message?.documentMessage || $json.body.data.message?.documentWithCaptionMessage?.message?.documentMessage).fileName || '')) ? 'imageMessage' : $json.body.data.messageType }}",
               "type": "string"
             },
             {
               "id": "a-texto",
               "name": "texto",
-              "value": "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || $json.body.data.message?.imageMessage?.caption || '' }}",
+              "value": "={{ $json.body.data.message?.conversation || $json.body.data.message?.extendedTextMessage?.text || $json.body.data.message?.imageMessage?.caption || ($json.body.data.message?.documentMessage || $json.body.data.message?.documentWithCaptionMessage?.message?.documentMessage)?.caption || '' }}",
               "type": "string"
             },
             {
@@ -2768,7 +2768,7 @@
           "conditions": [
             {
               "id": "f1",
-              "leftValue": "={{ $('Extrair dados').first().json.tipo === 'imageMessage' }}",
+              "leftValue": "={{ $('Extrair dados').first().json.tipo === 'imageMessage' && !/document/i.test(String($('Webhook Evolution').first().json.body?.data?.messageType || '')) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -2899,7 +2899,7 @@
           "conditions": [
             {
               "id": "f1",
-              "leftValue": "={{ $('Extrair dados').first().json.tipo === 'imageMessage' }}",
+              "leftValue": "={{ $('Extrair dados').first().json.tipo === 'imageMessage' && !/document/i.test(String($('Webhook Evolution').first().json.body?.data?.messageType || '')) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",

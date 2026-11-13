@@ -40,6 +40,21 @@ module.exports = ({ node, workflow, agendaWorkflow, loja }) => {
   midia.parameters.jsonBody = trocar(midia.parameters.jsonBody, "? 'Uma cliente de um salão de mega hair mandou esta foto", `? '${FOTO_COMPROVANTE}Uma cliente de um salão de mega hair mandou esta foto`, 'Entender mídia');
   midia.parameters.jsonBody = trocar(midia.parameters.jsonBody, 'Se for print de conversa, comprovante ou outra coisa, diga só o que é.', 'Se for print de conversa ou outra coisa, diga só o que é.', 'Entender mídia');
 
+  // 1b. comprovante em PDF (13/11/2026): o banco manda o comprovante como arquivo e o "Filtro" jogava fora
+  //     (só passava texto, áudio e foto). PDF agora segue o caminho da foto: o Gemini lê PDF do mesmo jeito
+  //     e devolve a mesma linha "COMPROVANTE PIX | ...". Outro tipo de arquivo continua de fora.
+  const DOC = "($json.body.data.message?.documentMessage || $json.body.data.message?.documentWithCaptionMessage?.message?.documentMessage)";
+  const campos = achar(workflow, 'Extrair dados').parameters.assignments.assignments;
+  const campo = (nome) => { const c = campos.find((x) => x.name === nome); if (!c) throw new Error(`sinal_pix: "Extrair dados" sem o campo ${nome}`); return c; };
+  if (campo('tipo').value !== '={{ $json.body.data.messageType }}') throw new Error('sinal_pix: o campo tipo de "Extrair dados" mudou');
+  campo('tipo').value = `={{ ${DOC} && /pdf/i.test(String(${DOC}.mimetype || ${DOC}.fileName || '')) ? 'imageMessage' : $json.body.data.messageType }}`;
+  campo('texto').value = trocar(campo('texto').value, "|| '' }}", `|| ${DOC}?.caption || '' }}`, 'Extrair dados (texto)');
+  // o PDF não é foto: não vai para o Storage como imagem (o app mostraria uma foto quebrada)
+  for (const nome of ['Foto: é foto?', 'Foto (dona): é foto?']) {
+    const c = achar(workflow, nome).parameters.conditions.conditions[0];
+    c.leftValue = trocar(c.leftValue, "=== 'imageMessage' }}", "=== 'imageMessage' && !/document/i.test(String($('Webhook Evolution').first().json.body?.data?.messageType || '')) }}", nome);
+  }
+
   // 2. agenda: conferir o comprovante antes de montar o agendamento
   const conferir = JSON.parse(JSON.stringify(achar(agendaWorkflow, 'Supabase: profissionais')));
   conferir.name = 'Supabase: conferir sinal';
