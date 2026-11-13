@@ -260,5 +260,6 @@
   "oferta_sem_sinal": true,
   "assistente_conversas": true,
   "assistente_fotos": true,
+  "assistente_marcar": true,
   "resumo_noite": "19:00"
 }

@@ -157,7 +157,16 @@ return [{ json: { ocupados, texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.s
     "const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; " +
     "if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); " +
     "if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } " +
-    "base = 'OK: ' + JSON.stringify(o); } catch (e) {} } return base + (g.texto || ''); })() }}";
+    "base = 'OK: ' + JSON.stringify(o); } catch (e) {} } " +
+    // agenda_do_dia: evento da Google na mesma hora (até 30 min) e com primeiro nome parecido com o de um horário do app é a
+    // mesma cliente (13/11: a assistente pediu três vezes o contato de uma cliente que já estava no app com o nome escrito diferente)
+    "let gt = g.texto || ''; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { " +
+    "const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; " +
+    "const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); " +
+    "gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); " +
+    "const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); " +
+    "return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } " +
+    "return base + gt; })() }}";
 };
 
 // usado também pelo resumo da noite (resumo-noite.js)

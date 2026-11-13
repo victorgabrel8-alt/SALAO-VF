@@ -866,6 +866,8 @@ if (LOJA) {
   if (LOJA.assistente_conversas) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   // a assistente da dona lê foto e print (assistente-fotos.js)
   if (LOJA.assistente_fotos) require('./assistente-fotos.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // a assistente marca sem inventar tempo e tira o "serviço não confirmado" quando a dona diz o serviço (assistente-marcar.js)
+  if (LOJA.assistente_marcar) require('./assistente-marcar.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
   // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
   if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
