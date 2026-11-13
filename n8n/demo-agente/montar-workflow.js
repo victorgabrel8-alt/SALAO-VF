@@ -864,6 +864,8 @@ if (LOJA) {
   if (LOJA.assistente_conversas) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   // a assistente da dona lê foto e print (assistente-fotos.js)
   if (LOJA.assistente_fotos) require('./assistente-fotos.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
+  if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

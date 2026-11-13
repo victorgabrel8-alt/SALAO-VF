@@ -1226,6 +1226,199 @@
       "executeOnce": true
     },
     {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e10",
+      "name": "Toda noite (resumo de amanhã)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        2600
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e11",
+      "name": "Resumo: agenda de amanhã",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        2600
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=inicio,fim,status,observacoes,clientes(nome),servicos(nome)&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&status=neq.cancelado&order=inicio&inicio=gte.{{ $now.setZone('America/Cuiaba').plus({ days: 1 }).startOf('day').toUTC().toISO() }}&inicio=lt.{{ $now.setZone('America/Cuiaba').plus({ days: 1 }).startOf('day').plus({ days: 1 }).toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e12",
+      "name": "Resumo: config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        2600
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e13",
+      "name": "Resumo: links da Google",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        720,
+        2600
+      ],
+      "parameters": {
+        "jsCode": "const links = [].concat($input.first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nreturn links.length ? links.map((url) => ({ json: { url } })) : [{ json: { url: '' } }];"
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e14",
+      "name": "Resumo: ler Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        960,
+        2600
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url || 'https://calendar.google.com/sem-agenda' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e15",
+      "name": "Resumo: montar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1180,
+        2600
+      ],
+      "parameters": {
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\nif (!doApp.length && !soGoogleUnicos.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*'];\nfor (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\nif (soGoogleUnicos.length) {\n  linhas.push('', 'Só na Google (ainda não estão no app):');\n  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5500000000001' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e16",
+      "name": "Resumo: mandar para a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        2600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e17",
+      "name": "Resumo: guardar na memória",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1640,
+        2600
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:assistente:{{ $('Resumo: montar').item.json.tel }}",
+        "messageData": "={{ $('Resumo: montar').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
       "id": "c3d42bb0-f464-4cd8-8b92-f9c62bcd1624",
       "name": "Trava de teste: Mandar para a cliente",
       "type": "n8n-nodes-base.if",
@@ -1471,6 +1664,40 @@
       "position": [
         1200,
         1280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "0a1bf6fd-15b3-4841-8334-a50adbfae138",
+      "name": "Trava de teste: Resumo: mandar para a dona",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1400,
+        2480
       ],
       "parameters": {
         "conditions": {
@@ -1965,6 +2192,83 @@
         ]
       ]
     },
+    "Toda noite (resumo de amanhã)": {
+      "main": [
+        [
+          {
+            "node": "Resumo: agenda de amanhã",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: agenda de amanhã": {
+      "main": [
+        [
+          {
+            "node": "Resumo: config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: config": {
+      "main": [
+        [
+          {
+            "node": "Resumo: links da Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: links da Google": {
+      "main": [
+        [
+          {
+            "node": "Resumo: ler Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: ler Google": {
+      "main": [
+        [
+          {
+            "node": "Resumo: montar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: montar": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Resumo: mandar para a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: mandar para a dona": {
+      "main": [
+        [
+          {
+            "node": "Resumo: guardar na memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Trava de teste: Mandar para a cliente": {
       "main": [
         [
@@ -2054,6 +2358,18 @@
         [
           {
             "node": "Mandar para a Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Resumo: mandar para a dona": {
+      "main": [
+        [
+          {
+            "node": "Resumo: mandar para a dona",
             "type": "main",
             "index": 0
           }

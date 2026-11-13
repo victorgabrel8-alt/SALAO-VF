@@ -159,3 +159,6 @@ return [{ json: { ocupados, texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.s
     "if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } " +
     "base = 'OK: ' + JSON.stringify(o); } catch (e) {} } return base + (g.texto || ''); })() }}";
 };
+
+// usado também pelo resumo da noite (resumo-noite.js)
+module.exports.LER_ICS = LER_ICS;
