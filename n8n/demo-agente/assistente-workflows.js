@@ -42,7 +42,11 @@ const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendament
   // horas sem atender (supabase/030)
   'hora_inicio', 'hora_fim',
   // fechou esperando o cabelo (supabase/038)
-  'dias_chegada', 'dias_confeccao'];
+  'dias_chegada', 'dias_confeccao',
+  // preenchido pelo fluxo, não pela IA: 'sim' quando a Gleide já viu a recusa do horário (ver PODE_FORCAR)
+  'pode_forcar',
+  // o nome que a Gleide falou: o fluxo confere se o cliente_id / agendamento_id é mesmo dessa cliente (supabase/044)
+  'cliente_nome'];
 
 // O que cada ferramenta chama no Supabase: uma função n8n_assistente_* (supabase/004, 006, 011 e 013), pela API
 // com a chave de serviço, como o agente de atendimento. Vazio vira null; o resto vem da IA (texto).
@@ -57,11 +61,18 @@ const tel = (t) => { let d = String(t || '').replace(/\D/g, ''); if (d.length ==
 // "2026-10-24T14:40" no fuso do salão (Cuiabá, -04:00 o ano todo)
 const quando = (k) => (v(k) ? v(k) + (/[+-]\d\d:?\d\d$|Z$/.test(v(k)) ? '' : '-04:00') : null);
 const sim = (k) => /^(s|sim|true|1|yes)/i.test(v(k));
+// a IA manda "0" quando a Gleide não disse o valor (12/11/2026: 4 atendimentos ficaram com R$ 0): zero vira vazio
+const valor = () => { const n = num('valor'); return n === null || n <= 0 ? null : n; };
+// "marcar assim mesmo" só vale depois que a Gleide viu o motivo da recusa (o fluxo manda pode_forcar = sim quando
+// houve uma recusa nos últimos 30 min). Em 11/11/2026 a IA forçou um horário sem ninguém pedir.
+const forcar = () => sim('forcar') && sim('pode_forcar');
+const forcarIgnorado = sim('forcar') && !sim('pode_forcar');
 const base = { p_empresa_id: empresa, p_pedido_por: v('pedido_por') };
 let funcao, args, enviar = false;
 switch (v('acao')) {
   case 'buscar_cliente':
-    funcao = 'n8n_assistente_buscar_cliente'; args = { ...base, p_busca: v('busca') };
+    // v2 (supabase/043): acha também nome escrito ou falado diferente do cadastro
+    funcao = 'n8n_assistente_buscar_cliente_v2'; args = { ...base, p_busca: v('busca') };
     break;
   case 'agenda_do_dia':
     funcao = 'n8n_assistente_agenda_do_dia'; args = { ...base, p_data: ou(v('data')) };
@@ -69,7 +80,7 @@ switch (v('acao')) {
   case 'resultado_avaliacao': {
     // o que ela não disse fica vazio: a IA mandava "0" e "não informado" (teste de 09/11/2026), e isso gravaria valor zero na ficha
     const inteiro = (k) => { const n = num(k); return n === null || n <= 0 ? '' : String(Math.trunc(n)); };
-    const texto = (k) => (/^(n[ãa]o informad[oa]|n[ãa]o sei|sem|nenhum|-|0)$/i.test(v(k)) ? '' : v(k));
+    const texto = (k) => (/^(n[ãa]o informad[oa]|n[ãa]o sei|sem|nenhum|-|0([.,]0+)?|pensando|fechou)$/i.test(v(k)) ? '' : v(k));
     // data só no formato AAAA-MM-DD: "fevereiro" ou "início de fevereiro" ia para o banco e travava a gravação inteira
     // (09/11/2026). Texto que não é data vai junto do próximo passo.
     // aceita AAAA-MM-DD ou DD/MM/AAAA, e só data que existe (2027-02-31 travava a gravação no banco)
@@ -106,12 +117,12 @@ switch (v('acao')) {
   }
   case 'status_atendimento':
     funcao = 'n8n_assistente_status_agendamento';
-    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_status: v('status'), p_valor: num('valor') };
+    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_status: v('status'), p_valor: valor() };
     break;
   case 'registrar_atendimento':
     funcao = 'n8n_assistente_registrar_atendimento_nome';
     args = { ...base, p_telefone: tel(v('telefone')), p_nome: v('nome'), p_servico: v('servico'),
-      p_inicio: quando('inicio'), p_valor: num('valor'), p_observacoes: ou(v('observacoes')) };
+      p_inicio: quando('inicio'), p_valor: valor(), p_observacoes: ou(v('observacoes')) };
     break;
   case 'anotar':
     funcao = 'n8n_assistente_anotar_cliente'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };
@@ -127,16 +138,16 @@ switch (v('acao')) {
     // v2 (supabase/037): aceita quanto tempo vai levar ("vou gastar 1h30"); sem minutos vale a duração do cadastro
     funcao = 'n8n_assistente_marcar_horario_v2';
     args = { ...base, p_cliente_id: ou(v('cliente_id')), p_telefone: ou(v('telefone')), p_nome: ou(v('nome')), p_servico: v('servico'),
-      p_inicio: quando('inicio'), p_observacoes: ou(v('observacoes')), p_forcar: sim('forcar'),
+      p_inicio: quando('inicio'), p_observacoes: ou(v('observacoes')), p_forcar: forcar(),
       p_duracao_min: num('minutos') === null || num('minutos') <= 0 ? null : Math.round(num('minutos')) };
     break;
   case 'ajustar_duracao':
     funcao = 'n8n_assistente_ajustar_duracao';
-    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_forcar: sim('forcar') };
+    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_forcar: forcar() };
     break;
   case 'reagendar':
     funcao = 'n8n_assistente_reagendar';
-    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_inicio: quando('inicio'), p_servico: ou(v('servico')), p_forcar: sim('forcar') };
+    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_inicio: quando('inicio'), p_servico: ou(v('servico')), p_forcar: forcar() };
     break;
   case 'atrasar_agenda':
     funcao = 'n8n_assistente_atrasar_agenda';
@@ -144,7 +155,7 @@ switch (v('acao')) {
     break;
   case 'concluir':
     funcao = 'n8n_assistente_concluir';
-    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_servico: ou(v('servico')), p_extras: ou(v('extras')), p_valor: num('valor') };
+    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_servico: ou(v('servico')), p_extras: ou(v('extras')), p_valor: valor() };
     break;
   case 'chegou':
     funcao = 'n8n_assistente_chegou'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_chegou: !sim('desfazer') };
@@ -205,8 +216,45 @@ switch (v('acao')) {
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
 }
-return [{ json: { funcao, args, enviar } }];
+// Antes de gravar ou enviar: o id é mesmo da cliente de quem a Gleide falou? (12/11/2026: o resultado de uma cliente foi
+// para a ficha de outra.) Sem nome, ou em ferramenta que só lê ou que troca o nome, não confere.
+const uuid = (t) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null);
+const semConferir = ['buscar_cliente', 'agenda_do_dia', 'horarios_livres', 'editar_cliente', 'cadastrar_cliente', 'registrar_atendimento'];
+const nomeFalado = semConferir.includes(v('acao')) ? '' : (v('cliente_nome') || (v('acao') === 'marcar_horario' ? v('nome') : ''));
+const conferir = { p_empresa_id: empresa, p_cliente_id: uuid(v('cliente_id')), p_agendamento_id: uuid(v('agendamento_id')), p_nome: nomeFalado };
+return [{ json: { funcao, args, enviar, forcarIgnorado, conferir } }];
 `;
+
+// O que a assistente já fez (12/11/2026). A memória do agente guarda só as falas, não as ferramentas: ela marcava a
+// mesma falta duas vezes, dizia "ainda não mandei" um minuto depois de mandar e não sabia que horas eram.
+// Cada gravação ou envio fica 36 h numa lista no Redis (assist_feitos:<número>) e entra no prompt.
+const ENVIO = ['chamar_cliente', 'avisar_cliente'];
+const ESCRITA = [...ENVIO, 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
+  'marcar_horario', 'ajustar_duracao', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
+  'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'pausar_ia', 'editar_cliente', 'cadastrar_cliente',
+  'combinar_retorno', 'guardar_regra', 'tirar_regra', 'ensinar_resposta', 'tirar_resposta'];
+// "qui 12/11 15:38" no fuso do salão (Cuiabá, -04:00 o ano todo)
+const QUANDO_JS = "const quandoFoi = (ms) => { const d = new Date(ms - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); };";
+const CONTEXTO = [
+  QUANDO_JS,
+  "let lista = []; try { lista = JSON.parse($('Ler feitos').first().json.feitos || '[]'); } catch (e) {}",
+  "const agora = Date.now();",
+  "lista = (Array.isArray(lista) ? lista : []).filter((f) => f && agora - f.em < 36 * 3600e3);",
+  "const texto = lista.length ? lista.map((f) => '- ' + quandoFoi(f.em) + ' ' + f.t + ' (' + f.a + ') → ' + f.r).join('\\n') : '(nada ainda)';",
+  // só deixa "marcar assim mesmo" quando a Gleide já viu a recusa (ver MONTAR_CHAMADA)
+  "const podeForcar = lista.some((f) => agora - f.em < 30 * 60e3 && /NÃO (MARQUEI|REAGENDEI|MUDEI)/.test(f.r)) ? 'sim' : '';",
+  "return [{ json: { lista, texto, podeForcar, agora: '[' + quandoFoi(agora) + ']' } }];",
+].join('\n');
+
+// Esses dois trechos também entram no fim do prompt próprio de uma loja que ainda não os tem (garantirContexto):
+// o fluxo já manda a hora e já guarda o registro para todas as lojas, e o prompt precisa explicar o que são.
+const BLOCO_FEITOS = `O QUE VOCÊ JÁ FEZ (registro do sistema das últimas 36 h: o que foi gravado e enviado de verdade, com a hora)
+{{ $('Contexto').first().json.texto }}
+- Essa lista é a verdade. Se a conversa diz que você fez algo e não está na lista com OK, NÃO foi feito: faça agora (se ela já pediu) e não diga que já estava feito.
+- Já está na lista com OK? Não faça de novo (a mesma falta, o mesmo aviso, o mesmo horário). Se ela repetir o pedido, diga que já está feito.
+- ERRO ou "NÃO MARQUEI" na lista = não aconteceu.`;
+const REGRA_HORA = `- Cada mensagem dela chega com o dia e a hora na frente, assim: [qui 12/11 15:38]. Use para saber o que é de agora e o que é de
+  horas atrás ou de outro dia. Nunca escreva essa marca na sua resposta. Não se despeça ("até amanhã", "bom descanso") nem dê bom dia fora de hora.`;
 
 const PROMPT = `Você é a assistente pessoal da Gleide, dona do salão Toda Bonita Mega Hair (Sinop - MT).
 Seu trabalho é fazer pelo WhatsApp tudo o que ela faria no app (agenda e fichas das clientes) e manter o CRM em dia,
@@ -223,8 +271,16 @@ O QUE É VERDADE (acima de tudo)
 - Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho: remarcação e cancelamento feitos pela IA, falta, atraso e pedido de orçamento. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.
 - Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.
 - Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.
+- Nunca diga "um minutinho", "vou ver e já te falo", "já respondo ela": ou você faz agora, nesta resposta, ou pergunta o que falta.
+  Depois da sua resposta você só age de novo quando ela escrever.
+- cliente_id e agendamento_id: use só o que veio de buscar_cliente ou agenda_do_dia NESTA mensagem, das pendências, ou do registro
+  abaixo com o nome dela (cliente_nome) ao lado. Sem um id com o nome dela, busque antes. Nunca aproveite o id de outra cliente.
+  Preencha sempre cliente_nome com o nome que a Gleide falou: o sistema confere e recusa se o id for de outra pessoa.
 - Nunca crie horário que a cliente não pediu. Só marque se a cliente pediu ou se a Gleide disser que combinou com ela.
-- Se ela perguntar se você fez algo, responda pelo que as ferramentas devolveram nesta conversa; se não lembrar, diga que vai conferir e confira (agenda_do_dia ou buscar_cliente).
+- Se ela perguntar se você fez algo, responda pela lista abaixo (O QUE VOCÊ JÁ FEZ); se não estiver lá, confira (agenda_do_dia ou buscar_cliente) antes de responder.
+- Nunca diga "fico de olho", "te aviso quando ela responder" nem "fico no aguardo". Depois de mandar mensagem para a cliente, o que vale é: a IA de atendimento continua a conversa e a resposta aparece no app.
+
+${BLOCO_FEITOS}
 
 REGRAS FIXAS QUE A GLEIDE TE PASSOU (valem sempre, acima do resto, até ela mandar tirar):
 {{ (() => { const t = $('Ler regras').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}
@@ -238,13 +294,44 @@ COMO ENTENDER O QUE ELA ESCREVE
 - Ela manda em pedaços. Quando chegar "Ela mandou N mensagens seguidas", junte tudo como UM pedido antes de agir:
   "16992438819" + "fala com esta cliente" + "ela quer ver mega" + "Dalila" = cadastrar Dalila nesse número e mandar um oi sobre mega.
   Faça UMA resposta para o conjunto, nunca uma por pedaço.
-- Resposta curta ("sim", "não", "ok", "pode", "isso", "certo", 👍) responde à SUA última pergunta. Se a sua última mensagem não terminou
-  em pergunta, ou fez duas perguntas, pergunte qual ela quer dizer em poucas palavras. "Não" nunca autoriza gravar nada.
+${REGRA_HORA}
+- Resposta curta ("sim", "pode", "isso", "certo") responde à SUA última pergunta. Se você fez duas perguntas, pergunte qual ela quer
+  dizer em poucas palavras. "Não" nunca autoriza gravar nada.
+- "Ok", "tá", "tá bom", "beleza", "obrigada", 👍 depois de uma mensagem sua que NÃO era pergunta = ela só está dizendo que viu. O assunto
+  acabou: responda só "👍" (ou "Por nada!" se ela agradeceu). Não consulte agenda, não puxe outra cliente, não ofereça nada, não pergunte nada.
+- Ela pode falar meio torto, sem pontuação e sem "é": "Angelita e avaliação on-line ?" é "A avaliação da Angelita é online?". Leia pelo
+  sentido mais provável olhando a agenda de hoje e a conversa; só pergunte se houver dois sentidos bem diferentes.
 - Erro de digitação é comum ("Ia" pode ser "Já", "vidio" é vídeo, "comgiando" é confirmando): entenda pelo sentido; na dúvida, pergunte.
 - Assunto de outro dia só volta se ELA puxar. Um "Oi" dela pede só "Oi! Em que posso ajudar?" (ou a pendência mais urgente de hoje),
   nunca a cobrança de um assunto de ontem.
 - Telefone: o salão é de Sinop (DDD 66). Se ela mandar número com outro DDD ou sem DDD, confirme antes de cadastrar
   ("É (16) 99243-8819 mesmo, ou (66)?"). Antes de cadastrar, procure pelo nome com buscar_cliente para não duplicar.
+
+FAÇA DIRETO, SEM PEDIR "PODE?" (ela é ocupada; cada pergunta a mais é uma mensagem a mais para ela)
+- Quando ela conta um fato ou dá uma ordem e dá para saber de qual cliente e de qual horário ela fala, GRAVE NA HORA, na mesma
+  resposta, e depois diga em 1 a 3 linhas o que ficou anotado. Vale para: veio, não veio, chegou, o que foi feito (concluir), como
+  foi a avaliação (ficou de pensar, não fechou, fechou), anotação na ficha, mudar hora ou duração de um horário, e MARCAR horário
+  quando ela disse cliente, dia, hora e serviço ("agenda a Vitória sexta às 8, colocação do mega": marque e diga "Marquei ✅ …").
+- Ela contou várias coisas juntas ("Renata veio, fiz avaliação, ela volta sexta às 13 pra colocar o mega")? Faça TODAS as gravações
+  de uma vez e responda uma vez só.
+- Falta UM dado sem o qual não dá para gravar (a hora, de qual das duas clientes)? Grave o que já dá, e pergunte só esse dado,
+  uma vez, junto na mesma resposta ("Anotei que a Renata veio e fez avaliação ✅ Que horas na sexta?").
+- Não repita em pergunta o que ela acabou de dizer ("Você quer que eu marque…?", "Vou anotar X, tá certo?"). Ela já disse.
+- Errou? Ela avisa e você corrige com a mesma ferramenta. Por isso, depois de gravar, diga claro o que gravou (nome, dia, hora).
+- PERGUNTE ANTES (resumo de 1 linha + "Pode?") só nestes casos: cancelar ou apagar horário, bloquear dias ou horas, empurrar a agenda
+  de várias clientes, liberar o horário de quem não veio quando ela não disse "libera/não veio", marcar em cima de um problema que a
+  ferramenta apontou, e qualquer coisa que seja ideia SUA e não pedido dela.
+- Dúvida real sobre QUEM é a cliente (duas com o mesmo nome, "ela" ou "as duas" sem dar para saber quais pela conversa de agora)
+  sempre se pergunta antes, e não se grava nada no chute: "As duas de agora cedo, a Regi e a Leidyane?".
+
+FALE COMO GENTE, NÃO COMO SISTEMA (ela já disse duas vezes "não tô entendendo o que você tá falando")
+- Proibido para ela: "CRM", "pendência", "status", "próximo passo", "pensando" (como etiqueta), "follow-up", "registro", "ficha técnica",
+  "te pergunto dia X", "retorno" (ela entende como horário marcado). São palavras de dentro do sistema.
+- Diga com as palavras dela: "ficou de pensar", "ficou de dar resposta", "vai voltar em janeiro", "anotei aqui".
+- Lembrete seu para ela: "Segunda eu te lembro de ver com ela." Dia da semana quando for nos próximos 7 dias; data (DD/MM) só mais longe.
+  Não explique o lembrete, não peça autorização para lembrar e não pergunte em que dia lembrar: escolha (3 dias úteis) e diga em meia frase.
+- Uma ideia por linha. Nada de lista com emoji e título para uma coisa só. Sem "Tá certo?" no fim do que já foi gravado.
+- Cliente: primeiro nome basta ("a Leidyane"), a não ser que tenha duas iguais.
 
 Reaja ao que ela contou quando fizer sentido, em poucas palavras e sem exagero (fechou → "Aí sim! 🎉";
 não fechou → "Ah, que pena"). Chame pelo nome de vez em quando, não em toda mensagem.
@@ -273,9 +360,9 @@ PEDIDOS DE CLIENTES ESPERANDO A RESPOSTA DELA (ela pode tocar em Responder na me
   a mensagem para a cliente, curta e em nome do salão, com o que a Gleide disse, e mande na hora (chamar_cliente; ache a cliente
   com buscar_cliente pelo nome ou telefone do pedido). Valor: passe exatamente o que ela disse, sem calcular, e termine com
   "Quer fechar?". A ordem dela já é o sim para mandar. Depois diga "Avisei a <nome> ✅" e o texto em uma linha.
-- Marcou ou mudou o horário que a cliente pediu: avise a cliente na mesma hora com avisar_cliente (tipo aviso, com o texto
-  confirmando dia e hora). No resumo antes do "Pode?", já diga que vai avisar ("Marco a Renata hoje às 14:30 e aviso ela. Pode?");
-  o sim dela vale para as duas coisas.
+- Ela mandou marcar ou mudar o horário que a cliente pediu ("vou fazer um encaixe pra ela", "pode vir"): marque e avise a cliente na
+  mesma hora com avisar_cliente (tipo aviso, com o texto confirmando dia e hora), sem perguntar. Depois diga "Marquei a Renata hoje
+  às 14:30 e avisei ela ✅".
 - Se ela falar algo que pode ser sobre um pedido mas não der para saber o que responder à cliente ("não entendi", "qual?"),
   diga de quem é o pedido e o que a cliente quer em palavras simples, e pergunte o que você responde.
 - Com mais de um pedido, pergunte de qual cliente ela fala.
@@ -301,18 +388,22 @@ AGENDA (siga sempre)
 - Atraso que pega mais de uma cliente ("atrasei 30 min", "empurra todo mundo"): pergunte se é só a próxima ou todas a partir
   de tal hora; mostre a lista (nome: de → para) e, com o sim, use atrasar_agenda (a_partir = a hora da 1ª que vai mudar).
   Depois pergunte "Aviso elas?".
-- Todo o resto que muda a agenda (marcar, cancelar, excluir, concluir, bloquear dias ou horas): resumo de 1 linha + "Pode?".
-  Grave só depois do sim.
+- MARCAR um horário que ela mandou marcar, com cliente, dia, hora e serviço: marque direto (ver FAÇA DIRETO). Faltou a hora ou o
+  serviço? Pergunte só isso. Para saber se cabe, não consulte horarios_livres antes: tente marcar; a ferramenta diz se não der.
+- Cancelar, excluir, bloquear dias ou horas: resumo de 1 linha + "Pode?". Grave só depois do sim.
 - Se a ferramenta responder NÃO MARQUEI / NÃO REAGENDEI com o motivo (encavala, almoço, fora do horário, dia sem atender,
-  ela já tem horário), conte o motivo em 1 frase e ofereça as saídas: outro horário (use horarios_livres e sugira 2 ou 3),
-  empurrar as próximas também (atrasar_agenda, quando for atraso) ou marcar assim mesmo. Só chame de novo com forcar = sim
-  se ela disser que quer assim mesmo.
+  ela já tem horário), conte o motivo em 1 frase, sem chutar ("provavelmente…"), e ofereça as saídas: outro horário (use
+  horarios_livres e sugira 2 ou 3), empurrar as próximas também (atrasar_agenda, quando for atraso) ou marcar assim mesmo.
+  forcar = sim NUNCA na primeira tentativa: só depois de uma recusa da ferramenta que a Gleide viu e respondeu "marca assim mesmo".
+  Se ela disse quanto tempo leva ("é rápido, uma hora e meia"), tente de novo SEM forcar e com minutos: quase sempre passa a caber.
+  Se ela disse só que "é rápido", sem dizer quanto, pergunte "Quanto tempo leva?" em vez de marcar em cima da outra cliente.
 - Marcar para cliente nova: precisa de nome e telefone com DDD. Se a cliente já tem horário marcado, a ferramenta avisa:
   pergunte se é para mudar aquele (reagendar) ou marcar outro (forcar = sim).
 - Cancelar: status_atendimento cancelado (fica no histórico).
   excluir_horario só para horário lançado por engano.
-- Concluir (o ✓ do app): concluir com servico só se ela fez OUTRO serviço no lugar do marcado e extras com os serviços
-  que fez A MAIS ("fez selagem também" → extras = selagem). Valor só se ela disser.
+- "Veio", "atendi", "fiz": use concluir no horário dela. Se ela disse que fez OUTRA coisa no lugar do que estava marcado ("estava
+  manutenção, fiz avaliação"), passe esse serviço em servico: a agenda tem que mostrar o que foi feito de verdade. Serviços feitos
+  A MAIS vão em extras ("fez selagem também" → extras = selagem). Valor só se ela disser; nunca mande 0.
 - "Chegou", "tá aqui" (antes de atender): chegou. Engano: chegou com desfazer = sim.
 - Bloquear horas ("hoje não atendo das 14 às 16", "sexta depois das 15h não posso"): bloquear_horario. O dia inteiro é bloquear_dias.
   Sem hora final, pergunte (ou use o fechamento, se ela disse "depois das 15h"). Se a ferramenta devolver horários marcados nesse período,
@@ -355,22 +446,28 @@ FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_clien
 COMO GRAVAR AVALIAÇÕES E ATENDIMENTOS QUE ELA CONTA
 1. Descubra a cliente. Se ela estiver nas pendências acima, use o cliente_id/agendamento_id de lá.
    Senão, use buscar_cliente. Se vier mais de uma com o mesmo nome, pergunte qual (mostre os 4 últimos dígitos do telefone).
-2. ANTES de gravar, mostre um resumo curto do que vai anotar e pergunte se está certo. Exemplo:
-   "Anotei pra *Juliana Souza (…2222)*:
-   ✅ Fechou — queratina, vietnamita 70 cm, 150 g
-   📦 Cabelo chega em ~7 dias + 3 de confecção
-   Tá certo?"
-   Se ela respondeu VÁRIAS pendências de uma vez (comum em áudio), faça UM resumo só, uma linha por cliente, e peça um único
-   "Tá certo?". O que ela não falou (valor, gramas, cm) fica de fora — NÃO segure o resumo esperando isso
-   e não peça valor.
-3. Só depois do "sim" (ou "isso", "pode", 👍) chame as ferramentas — TODAS as necessárias para o resumo confirmado, uma por cliente/ação.
-   Se ela corrigir, ajuste e confirme de novo.
+   Se buscar_cliente devolver nome_aproximado = true, o nome não bateu certinho (áudio, erro de digitação): se veio UMA só e ela
+   combina com a conversa ou com a agenda de hoje, siga com ela e diga o nome que achou; se veio mais de uma, pergunte qual.
+   Pergunta sobre uma cliente pelo nome ("tem alguma Bruna marcada hoje?"): olhe a agenda E buscar_cliente, e responda com o que
+   achou dela (tem horário tal dia, ou está na lista sem horário), em vez de só "hoje não".
+2. Grave NA HORA o que ela contou (ver FAÇA DIRETO), chamando TODAS as ferramentas necessárias, uma por cliente/ação:
+   veio → concluir; como foi a avaliação → resultado_avaliacao; volta tal dia e hora → marcar_horario.
+   Se ela contou de VÁRIAS clientes de uma vez (comum em áudio), grave todas e responda uma vez só, uma linha por cliente.
+   O que ela não falou (valor, gramas, cm) fica de fora — não segure a gravação esperando isso e não peça valor.
+3. Depois responda curto com o que ficou anotado, do jeito que ela fala. Exemplo:
+   "Anotado ✅ A *Leidyane* veio, fez a avaliação e ficou de dar resposta. Segunda eu te lembro de ver com ela."
+   Se ela corrigir ("não, ela fechou"), grave de novo do jeito certo e diga só "Arrumei ✅ …".
 4. Se a ferramenta devolver ERRO, diga em uma frase que não conseguiu gravar e o motivo. Nunca diga que gravou sem o OK da ferramenta.
-5. Depois de gravar, confirme em poucas palavras que ficou no CRM, variando (ex.: "Pronto, tá no CRM ✅", "Anotado ✅", "Feito, já tá na ficha dela 👍") e, se ainda houver pendência, pergunte a próxima (uma por vez).
+5. Só pergunte antes de gravar quando NÃO der para saber o resultado pelo que ela disse ("as duas fizeram avaliação": grave que
+   vieram e pergunte uma vez "Elas fecharam ou ficaram de pensar?"). Sobrou outra coisa para ela contar? Uma por vez, e só se for de hoje.
 
 REGRAS
 - Nunca invente valor, gramas, técnica, data ou resultado. Use só o que ela disse. Não pergunte valor: se ela falar, grave; se não, siga sem.
-- "fechou" = vai fazer o serviço; "pensando" = ficou de decidir (pergunte quando chamar de novo e grave em data_proximo_passo); "nao_fechou" = desistiu (pergunte o motivo uma vez).
+- "fechou" = vai fazer o serviço; "pensando" = ficou de decidir, de dar resposta, de ver o dinheiro; "nao_fechou" = desistiu (se ela
+  não disse o motivo, grave sem e pergunte o motivo uma vez, depois).
+- "pensando" sem data dita por ela: data_proximo_passo = daqui a 3 dias úteis, sem perguntar. Com data ("volta em janeiro", "semana que
+  vem"): a data que ela disse. Nesse dia VOCÊ lembra a Gleide; diga isso em meia frase ("Segunda eu te lembro dela").
+- "Ainda não fechou, mas disse que vai fechar", "tô aguardando ela": é pensando. Não é fechou.
 - A cliente decidiu e só falta o cabelo chegar ou ser confeccionado: é "fechou" (veja FECHOU abaixo).
 - Ainda depende de algo (da cliente ou da Gleide) é "pensando", nunca "fechou". Sempre com proximo_passo e uma data AAAA-MM-DD:
   nessa data você pergunta para a Gleide como ficou.
@@ -379,32 +476,36 @@ REGRAS
   (ou o prazo que ela disser). Quando ela disser que achou, ofereça chamar a cliente; se ela mandar chamar, chame na hora.
   data_proximo_passo é só data, sempre no futuro: "fevereiro" vira o próximo 1º de fevereiro a partir de hoje (nunca um que já passou),
   "semana que vem" vira a segunda que vem. Campo que ela não disse (valor, cm, gramas, técnica, tipo de cabelo) vai vazio, nunca 0 nem "não informado".
-- Mostre isso no resumo antes de gravar, ex.: "*Elisângela*: ficou pra fevereiro — te pergunto dia 01/02 💬".
-- Avaliação que fechou e já marcou a aplicação: grave o resultado com proximo_passo "aplicação marcada DD/MM às HH:mm" e
-  data_proximo_passo nessa data (calcule "terça que vem" a partir da data atual). Se a aplicação ainda não está na agenda,
-  ofereça marcar (marcar_horario com o serviço de aplicação da técnica que fechou).
-- FECHOU sem aplicação na agenda: antes do resumo, pergunte numa mensagem só (uma vez) o que ficou combinado com a cliente
-  e quando ela volta. Se depende do cabelo: "O cabelo já tá aí? Se não, chega em uns quantos dias? Vai precisar confeccionar?
-  Quantos dias?". Grave fechou com proximo_passo = o combinado (ex.: "aplicação queratina 70 cm, cabelo vem pela
-  transportadora"), dias_chegada e dias_confeccao com os números que ela disse e data_proximo_passo VAZIA: o sistema calcula
-  o dia (chegada + confecção + 1) e devolve em data_proximo_passo; depois de gravar, diga esse dia ("te pergunto dia DD/MM"). Se ela já disser o dia da
-  aplicação, ofereça marcar. Se ela não souber prazo nenhum, use dias_chegada 7. Não insista na mesma conversa.
+- Diga isso depois de gravar, ex.: "*Elisângela* ficou pra fevereiro. Dia 01/02 eu te lembro dela.".
+- "Ela volta sexta às 13 pra colocar o mega" (fechou e já tem dia e hora): grave fechou com proximo_passo "aplicação marcada DD/MM
+  às HH:mm" e data_proximo_passo nessa data, E marque a aplicação (marcar_horario), tudo na mesma resposta. Se ela disse o dia mas
+  não a hora, grave o fechou e pergunte só a hora. Não pergunte do cabelo quando a aplicação já tem dia.
+- FECHOU sem dia para a aplicação: grave fechou NA HORA com o que ela disse (proximo_passo = o combinado; dias_chegada, dias_confeccao e data VAZIOS: não invente prazo e não diga dia de lembrete ainda) e,
+  na mesma resposta, pergunte UMA vez: "O cabelo já tá aí? Se não, chega em quantos dias e precisa confeccionar?". Quando ela
+  responder, grave fechou de novo com dias_chegada e dias_confeccao (os números que ela disse) e data_proximo_passo VAZIA: o sistema
+  calcula o dia (chegada + confecção + 1) e devolve em data_proximo_passo; diga esse dia ("dia DD/MM eu te lembro de ver se o cabelo
+  chegou"). Se ela não responder, não insista.
 - Pendência [fechou_sem_data]: chegou o dia de saber se o cabelo chegou. Se já tem dia, ofereça marcar a aplicação
   (marcar_horario). Se ainda não chegou, pergunte a nova previsão e grave fechou de novo com dias_chegada/dias_confeccao
   novos (sem previsão: dias_chegada 5). Ela respondeu "depois eu vejo"? Tudo bem, não cobre de novo agora: o sistema
   pergunta de novo em 3 dias.
 - Fez um serviço A MAIS do que estava na agenda (ex.: marcou hidratação e fez selagem também): concluir no horário agendado
   com extras (nunca um horário novo para o serviço a mais).
+- Ela só CONTOU que a cliente volta mais para frente ("disse que volta em janeiro", "vai querer pra fevereiro"), sem mandar chamar:
+  grave só o resultado pensando com a data (primeiro dia útil do mês) e diga "Dia 04/01 eu te lembro dela". NÃO use combinar_retorno.
 - Pediu para chamar a cliente NUM DIA FUTURO ("em janeiro dá um toque pra ela", "chama ela daqui 15 dias", "lembra ela dia 20"):
   é a cliente que recebe, não a Gleide. Use combinar_retorno (uma chamada por cliente) com o dia e o assunto, sem perguntar
   "posso?". Mês sem dia = primeiro dia útil desse mês (janeiro → 04/01/2027; nunca 01/01, 25/12 ou domingo).
-  Se a cliente estava "pensando", grave também o resultado pensando com data_proximo_passo 3 dias DEPOIS desse dia
-  (aí você pergunta à Gleide como ficou). Responda com o dia e quem manda, ex.: "Combinado ✅ Dia *04/01* (segunda) a IA
-  manda mensagem para a *Monyse* e a *Roseli* perguntando se querem marcar." Se a ferramenta disser que o envio está
-  desligado, diga que ficou anotado mas que a mensagem não sai sozinha.
+  Se a cliente estava "pensando", grave também o resultado pensando com data_proximo_passo 3 dias DEPOIS desse dia e proximo_passo
+  "ver se ela respondeu à mensagem de DD/MM" (a mensagem ainda vai sair: não escreva que já foi mandada; não mude o motivo que já estava), mas NÃO fale
+  dessa segunda data para ela: uma data só na resposta, a do dia em que a cliente recebe a mensagem. Ex.: "Combinado ✅ Dia *04/01*
+  (segunda) a IA manda mensagem para a *Monyse* e a *Roseli* perguntando se querem marcar." Se a ferramenta disser que o envio está
+  desligado, diga só que ficou anotado para esse dia e que você lembra a Gleide de chamar.
 - "Te pergunto dia X" confunde: diga sempre QUEM vai falar com QUEM ("eu te lembro aqui", "a IA manda mensagem pra ela").
 - Uma pergunta por mensagem. Se ela não responder algo, não insista.
-- Cliente que NÃO veio: depois da confirmação, grave status faltou. A IA de atendimento chama a cliente sozinha (em até
+- "Manda mensagem pras que não vieram", "chama quem faltou": é isso mesmo que a falta faz. Grave status faltou de cada uma e
+  responda, na mesma mensagem, "Anotei a falta das duas ✅ A IA chama elas pra remarcar." Não mande outra mensagem por cima.
+- Cliente que NÃO veio ("fulana não veio", "faltou"): grave status faltou na hora. A IA de atendimento chama a cliente sozinha (em até
   5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.
   Diga isso numa frase curta ("Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍").
 - Cliente ATRASADA (pendência atraso_confirmar, ou o aviso "⏰ … não chegou nem respondeu. Ela está aí?"): aqui a resposta
@@ -476,7 +577,12 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         workflowInputs: { values: CAMPOS.map((name) => ({ name })) },
       }),
       node('Montar chamada', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: MONTAR_CHAMADA }),
-      rpc('Executar no banco', [440, 0], '{{ $json.funcao }}', '$json.args', { texto: true, onError: 'continueRegularOutput' }),
+      rpc('Conferir cliente', [330, -160], 'n8n_assistente_conferir_nome',
+        `($json.conferir || { p_empresa_id: ${EMPRESA}, p_cliente_id: null, p_agendamento_id: null, p_nome: '' })`,
+        { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
+      // erro na conferência (id que não é uuid, banco fora): segue, e a função de verdade é quem reclama
+      ifNode('Cliente confere?', [385, -160], [cond('cc', "={{ !!$json.error || !$json.data || String($json.data).replace(/\"/g, '').trim() === 'ok' }}")]),
+      rpc('Executar no banco', [440, 0], "{{ $('Montar chamada').first().json.funcao }}", "$('Montar chamada').first().json.args", { texto: true, onError: 'continueRegularOutput' }),
       // avisar_cliente: o banco gravou o contato e devolveu telefone + mensagem; manda pelo número do salão.
       // O eco (fromMe) bate com o contato no principal ("É o alô do CRM?") e não pausa a IA da cliente.
       ifNode('Mandar para a cliente?', [660, 0], [cond('e1', "={{ !!$('Montar chamada').first().json.enviar && !$json.error && !!$json.data }}")]),
@@ -495,9 +601,11 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       }, { onError: 'continueRegularOutput' }),
       node('Resposta', 'n8n-nodes-base.set', 3.4, [1540, 0], {
         assignments: { assignments: [str('resposta', `={{ (() => {
-  const m = $('Montar chamada').first().json, b = $('Executar no banco').first().json;
+  const m = $('Montar chamada').first().json;
   if (m.erro) return 'ERRO: ' + m.erro;
-  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error));
+  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }
+  const b = $('Executar no banco').first().json;
+  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Gleide ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');
   if (!m.enviar) return 'OK: ' + (b.data || 'feito');
   const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;
   if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';
@@ -508,7 +616,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
     ],
     connections: {
       'Recebe pedido da assistente': main('Montar chamada'),
-      'Montar chamada': main('Executar no banco'),
+      'Montar chamada': main('Conferir cliente'),
+      'Conferir cliente': main('Cliente confere?'),
+      'Cliente confere?': { main: [[{ node: 'Executar no banco', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
       'Executar no banco': main('Mandar para a cliente?'),
       'Mandar para a cliente?': { main: [[{ node: 'Mandar para a cliente', type: 'main', index: 0 }], [{ node: 'Resposta', type: 'main', index: 0 }]] },
       'Mandar para a cliente': main('Enviou?'),
@@ -522,9 +632,10 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
   // ---------- 3. Agente da assistente ----------
   const ferramentasIdFile = require('path').join(__dirname, '.workflow-assistente-ferramentas-id');
   const lerFerramentasId = () => (require('fs').existsSync(ferramentasIdFile) ? require('fs').readFileSync(ferramentasIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_FERRAMENTAS');
-  const fixo = { pedido_por: `={{ ${A}.numero }}` };
+  const fixo = { pedido_por: `={{ ${A}.numero }}`, pode_forcar: "={{ $('Contexto').first().json.podeForcar }}" };
   const tool = (name, position, description, acao, ia) => toolSub(name, position, description, lerFerramentasId, CAMPOS, { acao, ...fixo }, ia);
   const ID = (q) => [q, `${q} (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string'];
+  const NOME = ['cliente_nome', 'Primeiro nome da cliente de quem a Gleide falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra', 'string'];
 
   const assistenteWorkflow = {
     name: 'Assistente da Gleide',
@@ -614,31 +725,66 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('Ler pedidos abertos', 'n8n-nodes-base.redis', 1, [1650, -140], {
         operation: 'keys', keyPattern: 'pedido:*', getValues: true,
       }, { credentials: REDIS, alwaysOutputData: true, onError: 'continueRegularOutput' }),
+      node('Ler feitos', 'n8n-nodes-base.redis', 1, [1690, -220], {
+        operation: 'get', key: `=assist_feitos:{{ ${A}.numero }}`, propertyName: 'feitos', keyType: 'string', options: {},
+      }, { credentials: REDIS, alwaysOutputData: true, onError: 'continueRegularOutput' }),
+      node('Contexto', 'n8n-nodes-base.code', 2, [1720, -220], { jsCode: CONTEXTO }),
       node('Agente assistente', '@n8n/n8n-nodes-langchain.agent', 3.1, [1760, 0], {
-        promptType: 'define', text: "={{ $('Juntar mensagens').first().json.texto }}",
+        // a hora vai na frente de cada mensagem dela (e fica na memória): sem isso a IA não sabe se a conversa é de agora ou de ontem
+        promptType: 'define', text: "={{ $('Contexto').first().json.agora + ' ' + $('Juntar mensagens').first().json.texto }}",
         // returnIntermediateSteps: dá para ver depois o que ela executou, e o "Conferir resposta" usa para não dizer que mandou sem ter mandado
         options: { systemMessage: '=' + PROMPT, returnIntermediateSteps: true },
       // Gemini falhou: tenta de novo; se ainda falhar, segue sem resposta (o Conferir manda "deu um erro, pode repetir?")
       // e a trava é liberada no fim, em vez de ficar presa 3 min
       }, { retryOnFail: true, maxTries: 2, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
-      // Ela dizia "Avisei ✅" / "Mandei" sem ter chamado a ferramenta de envio (05/11/2026: nada saiu para a Sandra).
-      // Se a resposta afirma envio e nenhuma ferramenta de envio deu certo nesta vez, troca por uma resposta honesta.
+      // Confere a resposta antes de mandar e monta o registro do que foi feito nesta vez.
       node('Conferir resposta', 'n8n-nodes-base.code', 2, [1860, 0], { jsCode: [
         "const ag = $('Agente assistente').first().json;",
+        "const ctx = $('Contexto').first().json;",
+        "const agora = Date.now();",
         "let texto = String(ag.output || '').trim();",
         "const passos = Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : [];",
-        // a ferramenta responde "OK: mensagem enviada…" ou "ERRO: …" (nó Resposta das Ferramentas); o texto da cliente vem junto,
-        // então só o começo da resposta diz se saiu
-        // a ferramenta pode voltar como texto ou como JSON ({"resposta":"OK: …"} ou [{…}])
+        // a ferramenta responde "OK: …" ou "ERRO: …" (nó Resposta das Ferramentas); pode voltar como texto ou como JSON ({"resposta":"OK: …"} ou [{…}])
         "const lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };",
-        "const enviou = passos.some((s) => ['chamar_cliente', 'avisar_cliente'].includes(s.action?.tool) && /^\\s*OK\\b/i.test(lerResposta(s.observation)));",
-        "const afirma = /\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada|já (falei|chamei) com ela/i.test(texto);",
-        "const passado = /\\b(ontem|mais cedo|já tinha)\\b/i.test(texto);",
-        "let corrigida = false;",
-        "if (afirma && !enviou && !passado) { texto = 'Ainda não mandei nada pra ela, Gleide. Quer que eu mande agora? Me confirma o texto que eu envio.'; corrigida = true; }",
-        "if (!texto) texto = 'Desculpa, deu um erro aqui. Pode repetir?';",
-        "return [{ json: { texto: texto.replace(/\\*\\*(.+?)\\*\\*/g, '*$1*'), corrigida, ferramentas: passos.map((s) => s.action?.tool) } }];",
+        "const ENVIO = " + JSON.stringify(ENVIO) + ", ESCRITA = " + JSON.stringify(ESCRITA) + ";",
+        "const ok = (r) => /^\\s*OK\\b/i.test(r);",
+        // o que ela gravou ou mandou nesta vez entra na lista "o que você já fez" da próxima mensagem
+        "const resumo = (i) => Object.entries(i || {}).filter(([k, v]) => !['acao', 'pedido_por', 'pode_forcar'].includes(k) && v !== '' && v != null && String(v) !== '0').map(([k, v]) => k + '=' + String(v).slice(0, 90)).join('; ');",
+        "const novos = passos.filter((s) => ESCRITA.includes(s.action?.tool)).map((s) => ({ em: agora, t: s.action.tool, a: resumo(s.action.toolInput), r: lerResposta(s.observation).replace(/\\s+/g, ' ').slice(0, 240) }));",
+        "const antes = Array.isArray(ctx.lista) ? ctx.lista : [];",
+        "const feitos = antes.concat(novos).slice(-40);",
+        "const haPouco = (nomes, min) => antes.some((f) => nomes.includes(f.t) && ok(f.r) && agora - f.em < min * 60e3);",
+        // Ela dizia "Avisei ✅" / "Mandei" sem ter chamado a ferramenta de envio (05/11/2026: nada saiu para a Sandra).
+        // Se a resposta afirma envio e nenhuma ferramenta de envio deu certo nesta vez (nem nos últimos 20 min: em 10/11
+        // um "Ok" dela depois de um envio de verdade virou "ainda não mandei nada"), troca por uma resposta honesta.
+        "const enviou = novos.some((f) => ENVIO.includes(f.t) && ok(f.r));",
+        "const gravou = novos.some((f) => ok(f.r));",
+        // "ainda não mandei", "não anotei nada" não é afirmar que fez: sai da conta antes de procurar os verbos
+        "const semNegar = texto.replace(/\\b(n[ãa]o|nem|nunca)\\s+(\\S+\\s+){0,2}?(avisei|mandei|enviei|anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/gi, '');",
+        "const afirma = /\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada|já (falei|chamei) com ela/i.test(semNegar);",
+        // o mesmo para gravação (11/11/2026: "Anotei que a Renata veio ✅" sem gravar nada)
+        "const afirmaGravou = /\\b(anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/i.test(semNegar);",
+        "const passado = /\\b(ontem|mais cedo|já tinha|já estava|já está)\\b/i.test(texto);",
+        "let corrigida = false; const original = texto;",
+        "if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) { texto = 'Ainda não mandei nada pra ela, Gleide. Quer que eu mande agora? Me confirma o texto que eu envio.'; corrigida = true; }",
+        "else if (afirmaGravou && !gravou && !haPouco(ESCRITA, 180) && !passado) { texto = 'Opa, ainda não gravei isso, Gleide. Posso gravar agora?'; corrigida = true; }",
+        // promessa que não existe: ela não vê a resposta da cliente nem avisa depois ("fico de olho", "te aviso quando ela responder")
+        "const promessa = (f) => /fico de olho|fico (no aguardo|aguardando)|vou ficar de olho/i.test(f) || (/(te aviso|eu aviso|aviso voc[eê]|te falo|te conto|te chamo)/i.test(f) && /respond/i.test(f));",
+        "if (!corrigida) texto = texto.split('\\n').map((l) => l.split(/(?<=[.!?…])\\s+/).filter((f) => !promessa(f)).join(' ')).join('\\n').replace(/\\n{3,}/g, '\\n\\n').trim();",
+        // a hora que vai na frente das mensagens dela não é para voltar na resposta
+        "texto = texto.replace(/^\\s*\\[(dom|seg|ter|qua|qui|sex|sáb) \\d\\d\\/\\d\\d \\d\\d:\\d\\d\\]\\s*/i, '');",
+        "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';",
+        // a memória do agente guardou a resposta original: uma nota conta o que a Gleide recebeu de verdade
+        "const nota = corrigida ? JSON.stringify({ type: 'ai', data: { content: '(Nota do sistema: a resposta acima NÃO chegou à Gleide, porque dizia que algo foi feito sem a ferramenta ter rodado. Nada foi gravado nem enviado. Ela recebeu: \"' + texto + '\")', additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) : '';",
+        "return [{ json: { texto: texto.replace(/\\*\\*(.+?)\\*\\*/g, '*$1*'), corrigida, original: corrigida ? original : '', nota, feitos: JSON.stringify(feitos), ferramentas: passos.map((s) => s.action?.tool) } }];",
       ].join('\n') }),
+      node('Guardar feitos', 'n8n-nodes-base.redis', 1, [2000, 160], {
+        operation: 'set', key: `=assist_feitos:{{ ${A}.numero }}`, value: "={{ $('Conferir resposta').first().json.feitos }}", expire: true, ttl: 129600,
+      }, { credentials: REDIS, onError: 'continueRegularOutput' }),
+      ifNode('Resposta corrigida?', [2000, 300], [cond('rc', "={{ !!$json.corrigida }}")]),
+      node('Memória: nota da correção', 'n8n-nodes-base.redis', 1, [2200, 300], {
+        operation: 'push', list: `=assistente:{{ ${A}.numero }}`, messageData: "={{ $('Conferir resposta').first().json.nota }}", tail: false,
+      }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       // a assistente mandou mensagem para uma cliente com pedido aberto: o pedido foi respondido, sai da lista
       // (compara os 8 últimos números do telefone: o pedido às vezes guarda o número sem o 9)
       node('Pedidos respondidos', 'n8n-nodes-base.code', 2, [2000, -160], { jsCode: [
@@ -661,12 +807,12 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('Memória (Redis)', '@n8n/n8n-nodes-langchain.memoryRedisChat', 1.5, [1800, 220], {
         sessionIdType: 'customKey', sessionKey: `=assistente:{{ ${A}.numero }}`, sessionTTL: 259200, contextWindowLength: 20,
       }, { credentials: REDIS }),
-      tool('buscar_cliente', [1960, 220], 'Procura clientes pelo nome ou telefone. Devolve id, telefone, status, etapa do funil, pré-avaliação, valor orçado, observações e os horários marcados (com agendamento_id).',
+      tool('buscar_cliente', [1960, 220], 'Procura clientes pelo nome ou telefone; acha também nome escrito ou falado um pouco diferente (aí vem nome_aproximado = true). Devolve id, telefone, status, etapa do funil, pré-avaliação, valor orçado, observações e os horários marcados (com agendamento_id).',
         'buscar_cliente', [['busca', 'Nome (ou parte) ou telefone da cliente', 'string']]),
       tool('agenda_do_dia', [2120, 220], 'Lista os horários de um dia (com agendamento_id, hora, fim, cliente, serviço, status, se chegou e serviços a mais).',
         'agenda_do_dia', [['data', 'Dia AAAA-MM-DD (vazio = hoje)', 'string']]),
-      tool('resultado_avaliacao', [2280, 220], 'Grava o resultado de uma avaliação. Só use DEPOIS que a Gleide confirmou o resumo.',
-        'resultado_avaliacao', [ID('cliente_id'),
+      tool('resultado_avaliacao', [2280, 220], 'Grava como foi uma avaliação que a Gleide contou (fechou, ficou de pensar, não fechou). Use na hora, sem pedir confirmação; gravar de novo corrige a anterior.',
+        'resultado_avaliacao', [ID('cliente_id'), NOME,
           ['resultado', 'fechou, pensando ou nao_fechou', 'string'],
           ['tecnica_indicada', 'Técnica que a Gleide indicou (ex.: queratina, fita adesiva)', 'string'],
           ['tipo_cabelo', 'Tipo de cabelo (ex.: brasileiro, vietnamita)', 'string'],
@@ -679,23 +825,23 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['dias_chegada', 'Se fechou e o cabelo ainda vai chegar: em quantos dias chega, só o número (o maior, se ela disse "5 a 7")', 'string'],
           ['dias_confeccao', 'Se fechou e precisa confeccionar: quantos dias de confecção, só o número', 'string'],
           ['observacoes', 'Outras observações da Gleide', 'string']]),
-      tool('status_atendimento', [2440, 220], 'Marca um horário como realizado (veio), faltou ou cancelado. Só use DEPOIS da confirmação.',
-        'status_atendimento', [ID('agendamento_id'),
+      tool('status_atendimento', [2440, 220], 'Marca um horário como realizado (veio), faltou ou cancelado. Veio ou faltou que a Gleide contou: use na hora. Cancelado: só depois do sim dela.',
+        'status_atendimento', [ID('agendamento_id'), NOME,
           ['status', 'realizado, faltou ou cancelado', 'string'],
-          ['valor', 'Valor cobrado em reais, só o número (se ela disse)', 'string']]),
-      tool('registrar_atendimento', [2600, 220], 'Registra um atendimento que já aconteceu e não estava na agenda (cliente veio sem marcar). Só use DEPOIS da confirmação.',
+          ['valor', 'Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)', 'string']]),
+      tool('registrar_atendimento', [2600, 220], 'Registra um atendimento que já aconteceu e não estava na agenda (cliente veio sem marcar). Use na hora quando a Gleide contar.',
         'registrar_atendimento', [
           ['telefone', 'Telefone da cliente (de buscar_cliente, ou o que a Gleide disser)', 'string'],
           ['nome', 'Nome da cliente', 'string'],
           ['servico', 'Serviço feito (ex.: manutenção, aplicação, avaliação)', 'string'],
           ['inicio', 'Quando foi, AAAA-MM-DDTHH:mm (vazio = agora)', 'string'],
-          ['valor', 'Valor cobrado em reais, só o número', 'string'],
+          ['valor', 'Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)', 'string'],
           ['observacoes', 'Observações', 'string']]),
-      tool('anotar', [2760, 220], 'Acrescenta uma anotação na ficha da cliente (alergia, preferência, combinado). Não apaga as anteriores. Só use DEPOIS da confirmação.',
-        'anotar', [ID('cliente_id'), ['texto', 'A anotação, curta', 'string']]),
+      tool('anotar', [2760, 220], 'Acrescenta uma anotação na ficha da cliente (alergia, preferência, combinado). Não apaga as anteriores. Use na hora quando a Gleide mandar anotar.',
+        'anotar', [ID('cliente_id'), NOME, ['texto', 'A anotação, curta', 'string']]),
       tool('liberar_horario', [2920, 220], 'Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. ' +
         'Só use quando a Gleide disser "libera" ou "não veio" para essa cliente. Nunca por conta própria.',
-        'liberar_horario', [ID('agendamento_id')]),
+        'liberar_horario', [ID('agendamento_id'), NOME]),
       // Ritmo de gente, como no atendimento das clientes: marca como lida, "lê" a mensagem dela,
       // mostra "digitando…" e só então responde (antes a resposta chegava na hora, parecendo robô)
       evoPost('Marcar como lida', [1430, -120], 'chat/markMessageAsRead',
@@ -718,7 +864,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         'horarios_livres', [['data', 'Dia AAAA-MM-DD (vazio = hoje)', 'string'],
           ['servico', 'Serviço como a Gleide falou (define a duração)', 'string'],
           ['agendamento_id', 'Se for para reagendar: o agendamento_id que vai mudar (o horário dele não conta como ocupado). Senão vazio', 'string']]),
-      tool('marcar_horario', [2120, 440], 'Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Só use DEPOIS do sim da Gleide. Nunca use para conseguir falar com uma cliente: para isso existe chamar_cliente.',
+      tool('marcar_horario', [2120, 440], 'Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Use na hora quando a Gleide mandou marcar e disse cliente, dia, hora e serviço; se foi ideia sua, só depois do sim dela. Nunca use para conseguir falar com uma cliente: para isso existe chamar_cliente.',
         'marcar_horario', [
           ['cliente_id', 'cliente_id de buscar_cliente (vazio se for cliente nova)', 'string'],
           ['nome', 'Nome da cliente nova', 'string'],
@@ -727,28 +873,28 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['inicio', 'Dia e hora AAAA-MM-DDTHH:mm', 'string'],
           ['observacoes', 'Observação do horário (se ela disse)', 'string'],
           ['minutos', 'Quanto tempo vai levar, em minutos, SÓ se a Gleide disse (ex.: "uma hora e meia" = 90); senão vazio (vale o tempo do cadastro)', 'string'],
-          ['forcar', '"sim" só se a Gleide mandou marcar mesmo com o problema que a ferramenta apontou; senão vazio', 'string']]),
+          ['forcar', 'Vazio na primeira tentativa, sempre. "sim" só depois que a ferramenta recusou, você contou o motivo à Gleide e ela respondeu que quer assim mesmo', 'string']]),
       tool('ajustar_duracao', [2440, 660], 'Muda quanto tempo leva um horário JÁ marcado, sem mudar o início (ex.: "a da Vitória vai levar só uma hora e meia"). Pode usar direto quando ela disse qual horário e quanto tempo.',
-        'ajustar_duracao', [ID('agendamento_id'), ['minutos', 'Quanto tempo vai levar, em minutos (ex.: 90)', 'string'],
-          ['forcar', '"sim" só se a Gleide mandou mudar mesmo com o problema que a ferramenta apontou; senão vazio', 'string']]),
+        'ajustar_duracao', [ID('agendamento_id'), NOME, ['minutos', 'Quanto tempo vai levar, em minutos (ex.: 90)', 'string'],
+          ['forcar', 'Vazio na primeira tentativa, sempre. "sim" só depois que a ferramenta recusou, você contou o motivo à Gleide e ela respondeu que quer assim mesmo', 'string']]),
       tool('reagendar', [2280, 440], 'Muda o horário (e o serviço, se ela pedir) do MESMO agendamento. Pode usar direto quando ela disse qual horário e para quando.',
-        'reagendar', [ID('agendamento_id'),
+        'reagendar', [ID('agendamento_id'), NOME,
           ['inicio', 'Novo dia e hora AAAA-MM-DDTHH:mm', 'string'],
           ['servico', 'Novo serviço, só se ela pediu para trocar; senão vazio', 'string'],
-          ['forcar', '"sim" só se a Gleide mandou mudar mesmo com o problema que a ferramenta apontou; senão vazio', 'string']]),
+          ['forcar', 'Vazio na primeira tentativa, sempre. "sim" só depois que a ferramenta recusou, você contou o motivo à Gleide e ela respondeu que quer assim mesmo', 'string']]),
       tool('atrasar_agenda', [2440, 440], 'Empurra (ou adianta, minutos negativos) todos os horários a atender do dia a partir de uma hora. Só use DEPOIS do sim da Gleide.',
         'atrasar_agenda', [['minutos', 'Quantos minutos (ex.: 30; negativo adianta)', 'string'],
           ['a_partir', 'Hora HH:mm do primeiro horário que muda', 'string'],
           ['data', 'Dia AAAA-MM-DD (vazio = hoje)', 'string']]),
-      tool('concluir', [2600, 440], 'O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Só use DEPOIS do sim da Gleide.',
-        'concluir', [ID('agendamento_id'),
-          ['servico', 'Só se ela fez OUTRO serviço no lugar do marcado; senão vazio', 'string'],
+      tool('concluir', [2600, 440], 'O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Use na hora quando a Gleide contar que atendeu.',
+        'concluir', [ID('agendamento_id'), NOME,
+          ['servico', 'O serviço que ela fez de verdade, se foi OUTRO no lugar do marcado (ex.: estava manutenção e ela fez avaliação); senão vazio', 'string'],
           ['extras', 'Serviços feitos A MAIS, separados por vírgula (ex.: selagem, hidratação); senão vazio', 'string'],
-          ['valor', 'Valor cobrado em reais, só o número (se ela disse)', 'string']]),
+          ['valor', 'Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)', 'string']]),
       tool('chegou', [2760, 440], 'A cliente chegou ao salão (botão "Chegou" do app): a IA não cobra atraso dela.',
-        'chegou', [ID('agendamento_id'), ['desfazer', '"sim" para desfazer um "chegou" marcado por engano; senão vazio', 'string']]),
+        'chegou', [ID('agendamento_id'), NOME, ['desfazer', '"sim" para desfazer um "chegou" marcado por engano; senão vazio', 'string']]),
       tool('excluir_horario', [2920, 440], 'Apaga de vez um horário lançado por engano (cliente que desmarcou é status_atendimento cancelado). Só use DEPOIS do sim da Gleide.',
-        'excluir_horario', [ID('agendamento_id')]),
+        'excluir_horario', [ID('agendamento_id'), NOME]),
       tool('bloquear_dias', [3080, 440], 'Marca dias sem atender (viagem, folga, curso): o app e a IA de atendimento param de oferecer horário. Devolve os horários já marcados nesses dias. Só use DEPOIS do sim da Gleide.',
         'bloquear_dias', [['data', 'Primeiro dia AAAA-MM-DD', 'string'], ['ate', 'Último dia AAAA-MM-DD (vazio = só um dia)', 'string'],
           ['texto', 'Motivo (ex.: viagem)', 'string']]),
@@ -761,20 +907,20 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       tool('ver_bloqueios_horario', [3720, 440], 'Lista os períodos sem atender de um dia ou, sem data, de hoje em diante.',
         'ver_bloqueios_horario', [['data', 'Dia AAAA-MM-DD (vazio = de hoje em diante)', 'string']]),
       tool('pausar_ia', [3080, 220], 'Pausa por 12 h (ou reativa) a IA de atendimento para uma cliente, como no app.',
-        'pausar_ia', [ID('cliente_id'), ['desfazer', '"sim" para reativar a IA; vazio para pausar', 'string']]),
-      tool('editar_cliente', [3240, 220], 'Corrige o nome ou grava o aniversário da cliente. Só use DEPOIS do sim da Gleide.',
+        'pausar_ia', [ID('cliente_id'), NOME, ['desfazer', '"sim" para reativar a IA; vazio para pausar', 'string']]),
+      tool('editar_cliente', [3240, 220], 'Corrige o nome ou grava o aniversário da cliente, quando a Gleide pedir.',
         'editar_cliente', [ID('cliente_id'), ['nome', 'Nome certo (vazio = não muda)', 'string'],
           ['aniversario', 'Aniversário AAAA-MM-DD (se não souber o ano, use 1900) (vazio = não muda)', 'string']]),
       tool('cadastrar_cliente', [3560, 220], 'Salva uma cliente na lista, sem criar horário e sem mandar mensagem. Se o número já existir, usa a ficha que já existe. Devolve o cliente_id.',
         'cadastrar_cliente', [['telefone', 'Telefone com DDD', 'string'], ['nome', 'Nome, só se a Gleide disse (vazio se não souber)', 'string'],
           ['observacoes', 'O que a cliente quer, como a Gleide contou (ex.: quer cabelo vietnamita)', 'string']]),
       tool('chamar_cliente', [3720, 220], 'Manda pelo número do salão uma mensagem para uma cliente, sem precisar de horário. Use quando a Gleide pediu para falar com a cliente (o pedido dela já é o sim).',
-        'chamar_cliente', [ID('cliente_id'), ['texto', 'O texto da mensagem (o que a Gleide ditou, ou o que você escreveu fazendo o que ela pediu)', 'string']]),
+        'chamar_cliente', [ID('cliente_id'), NOME, ['texto', 'O texto da mensagem (o que a Gleide ditou, ou o que você escreveu fazendo o que ela pediu)', 'string']]),
       tool('combinar_retorno', [3720, 440], 'Marca um dia para a IA de atendimento mandar mensagem para a cliente ("dá um toque nela em janeiro", "chama ela dia 20"). Nesse dia a IA manda sozinha, de manhã. Um por cliente: marcar de novo troca a data. Use quando a Gleide pediu (o pedido dela já é o sim).',
-        'combinar_retorno', [ID('cliente_id'), ['data', 'Dia AAAA-MM-DD, depois de hoje e até 120 dias. Mês sem dia ("janeiro") = primeiro dia útil desse mês, nunca feriado', 'string'],
+        'combinar_retorno', [ID('cliente_id'), NOME, ['data', 'Dia AAAA-MM-DD, depois de hoje e até 120 dias. Mês sem dia ("janeiro") = primeiro dia útil desse mês, nunca feriado', 'string'],
           ['texto', 'Assunto, para a IA saber o que falar (ex.: disse que voltava em janeiro para colocar o cabelo)', 'string']]),
       tool('avisar_cliente', [3400, 220], 'Manda mensagem para a cliente pelo número do salão sobre um horário dela. Use quando a Gleide pediu (o pedido dela já é o sim).',
-        'avisar_cliente', [ID('agendamento_id'),
+        'avisar_cliente', [ID('agendamento_id'), NOME,
           ['tipo', '"aviso" (horário mudado, cancelamento, recado) ou "remarcacao" (imprevisto da Gleide: pede para a cliente remarcar)', 'string'],
           ['texto', 'Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto da mensagem', 'string']]),
       // regras fixas (supabase/035): o que ela pede para valer "a partir de agora" no jeito da ASSISTENTE trabalhar
@@ -813,9 +959,13 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       'Marcar como lida': main('Ler pendências'),
       'Ler pendências': main('Ler regras'),
       'Ler regras': main('Ler pedidos abertos'),
-      'Ler pedidos abertos': main('Agente assistente'),
+      'Ler pedidos abertos': main('Ler feitos'),
+      'Ler feitos': main('Contexto'),
+      'Contexto': main('Agente assistente'),
       'Agente assistente': main('Conferir resposta'),
-      'Conferir resposta': { main: [[{ node: 'Ritmo humano', type: 'main', index: 0 }, { node: 'Pedidos respondidos', type: 'main', index: 0 }]] },
+      'Conferir resposta': { main: [[{ node: 'Ritmo humano', type: 'main', index: 0 }, { node: 'Pedidos respondidos', type: 'main', index: 0 },
+        { node: 'Guardar feitos', type: 'main', index: 0 }, { node: 'Resposta corrigida?', type: 'main', index: 0 }]] },
+      'Resposta corrigida?': { main: [[{ node: 'Memória: nota da correção', type: 'main', index: 0 }], []] },
       'Pedidos respondidos': main('Apagar pedido respondido'),
       'Ritmo humano': main('Pausa (lendo)'),
       'Pausa (lendo)': main('Digitando...'),
@@ -869,12 +1019,13 @@ const linha = (p) => {
     : '• *' + nome(p) + '* fechou. O que ficou combinado e quando ela volta? Se depende do cabelo: chega em quantos dias e precisa confeccionar?';
   return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';
 };
-const texto = 'Oi, Gleide! Pra deixar o CRM em dia:\n' + ps.map(linha).join('\n') + '\n\nPode responder em áudio, do seu jeito 🙂';
+const texto = 'Oi, Gleide! Me conta pra eu anotar aqui:\n' + ps.map(linha).join('\n') + '\n\nPode responder em áudio, do seu jeito 🙂';
+${QUANDO_JS}
 const ids = ps.map((p) => p.pendencia_id);
 const numeros = ${NUMEROS};
 return numeros.map((tel) => ({ json: { tel, texto, ids,
   // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou
-  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));
+  memoria: JSON.stringify({ type: 'ai', data: { content: '[' + quandoFoi(Date.now()) + '] ' + texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));
 ` }),
       evoPost('Mandar para a Gleide', [880, 100], 'message/sendText', '{ number: $json.tel, text: $json.texto }',
         { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000 }),
@@ -897,5 +1048,12 @@ return numeros.map((tel) => ({ json: { tel, texto, ids,
     settings,
   };
 
-  return { assistenteWorkflow, ferramentasWorkflow, pendenciasWorkflow, ferramentasIdFile };
+  // Loja com prompt próprio da assistente (lojas/<slug>/prompt-assistente.txt) escrito antes de 12/11/2026: acrescenta
+  // o registro do que já foi feito e a regra da hora. No prompt da Gleide não muda nada (já tem os dois).
+  const garantirContexto = () => {
+    const o = assistenteWorkflow.nodes.find((n) => n.name === 'Agente assistente').parameters.options;
+    if (!o.systemMessage.includes("$('Contexto')")) o.systemMessage += '\n\n' + BLOCO_FEITOS + '\n\nA HORA DAS MENSAGENS\n' + REGRA_HORA;
+  };
+
+  return { assistenteWorkflow, ferramentasWorkflow, pendenciasWorkflow, ferramentasIdFile, garantirContexto };
 };

@@ -790,9 +790,13 @@ const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramenta
   alerta.alertaWorkflow, workflow];
 // dúvidas que a dona já respondeu viram memória da loja (respostas-aprendidas.js): vale para todas as lojas.
 // Na loja roda dentro do bloco abaixo, depois do prompt próprio da assistente e antes de trocar os nomes.
-const aplicarRespostas = () => require('./respostas-aprendidas.js')({ node, main, GEMINI, workflow,
-  assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow,
-  dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
+const aplicarRespostas = () => {
+  // prompt próprio de loja sem o registro do que a assistente já fez: entra aqui (assistente-workflows.js)
+  assistente.garantirContexto();
+  require('./respostas-aprendidas.js')({ node, main, GEMINI, workflow,
+    assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow,
+    dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
+};
 if (!LOJA) aplicarRespostas();
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
