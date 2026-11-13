@@ -93,14 +93,15 @@ module.exports.assistente = ({ node, ferramentasWorkflow: wf }) => {
   const M = "$('Montar chamada').first().json";
   const banco = achar('Executar no banco');
   for (const k of ['url', 'jsonBody']) {
-    if (!banco.parameters[k].includes('$json.')) throw new Error('google_agenda (assistente): o Executar no banco mudou');
+    // desde o PR 158 o Executar no banco já lê de 'Montar chamada' (há um 'Conferir cliente' no meio)
+    if (!banco.parameters[k].includes('$json.') && !banco.parameters[k].includes("$('Montar chamada')")) throw new Error('google_agenda (assistente): o Executar no banco mudou');
     banco.parameters[k] = banco.parameters[k].replace(/\$json\./g, `${M}.`);
   }
   banco.executeOnce = true;
   wf.nodes.push(
     node('Precisa da Google?', 'n8n-nodes-base.if', 2.2, [0, 0], {
       conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
-        conditions: [{ id: 'g1', leftValue: `={{ ${JSON.stringify(ACOES.map((a) => 'n8n_assistente_' + a))}.includes($json.funcao) && !$json.erro }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' },
+        conditions: [{ id: 'g1', leftValue: `={{ ${JSON.stringify(ACOES.map((a) => 'n8n_assistente_' + a))}.includes(${M}.funcao) && !${M}.erro }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' },
       options: {},
     }),
     node('Google: config', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
@@ -137,9 +138,10 @@ return [{ json: { ocupados, texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.s
   'Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona confirmar.' } }];
 ` }),
   );
-  const depois = wf.connections['Montar chamada'];
-  if (depois?.main?.[0]?.[0]?.node !== 'Executar no banco') throw new Error('google_agenda (assistente): a ligação mudou');
-  wf.connections['Montar chamada'] = { main: [[{ node: 'Precisa da Google?', type: 'main', index: 0 }]] };
+  // entra logo antes do Executar no banco: depois de 'Cliente confere?' (PR 158) ou, no desenho antigo, de 'Montar chamada'
+  const antes = wf.connections['Cliente confere?']?.main?.[0]?.[0]?.node === 'Executar no banco' ? 'Cliente confere?' : 'Montar chamada';
+  if (wf.connections[antes]?.main?.[0]?.[0]?.node !== 'Executar no banco') throw new Error('google_agenda (assistente): a ligação mudou');
+  wf.connections[antes].main[0] = [{ node: 'Precisa da Google?', type: 'main', index: 0 }];
   wf.connections['Precisa da Google?'] = { main: [[{ node: 'Google: config', type: 'main', index: 0 }], [{ node: 'Executar no banco', type: 'main', index: 0 }]] };
   wf.connections['Google: config'] = { main: [[{ node: 'Google: links', type: 'main', index: 0 }]] };
   wf.connections['Google: links'] = { main: [[{ node: 'Google: ler agenda', type: 'main', index: 0 }]] };

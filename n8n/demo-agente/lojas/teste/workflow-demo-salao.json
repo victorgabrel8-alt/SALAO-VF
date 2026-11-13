@@ -3228,7 +3228,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000318",
+      "id": "00000000-0000-4000-8000-000000000325",
       "name": "perguntar_para_gleide",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -3322,7 +3322,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000324",
+      "id": "00000000-0000-4000-8000-000000000331",
       "name": "Pedido: procurar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3346,7 +3346,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000325",
+      "id": "00000000-0000-4000-8000-000000000332",
       "name": "É resposta da Caroline?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3380,7 +3380,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000326",
+      "id": "00000000-0000-4000-8000-000000000333",
       "name": "Pedido: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3393,7 +3393,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000327",
+      "id": "00000000-0000-4000-8000-000000000334",
       "name": "Pedido: escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3423,7 +3423,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000328",
+      "id": "00000000-0000-4000-8000-000000000335",
       "name": "Pedido: texto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3436,7 +3436,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000329",
+      "id": "00000000-0000-4000-8000-000000000336",
       "name": "Pedido: enviar à cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3468,7 +3468,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000330",
+      "id": "00000000-0000-4000-8000-000000000337",
       "name": "Pedido: registrar saída",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3500,7 +3500,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000331",
+      "id": "00000000-0000-4000-8000-000000000338",
       "name": "Pedido: memória (resposta da Caroline)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3523,7 +3523,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000332",
+      "id": "00000000-0000-4000-8000-000000000339",
       "name": "Pedido: memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3546,7 +3546,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000333",
+      "id": "00000000-0000-4000-8000-000000000340",
       "name": "Pedido: apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3567,7 +3567,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000334",
+      "id": "00000000-0000-4000-8000-000000000341",
       "name": "Pedido: confirmar à Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3599,7 +3599,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000335",
+      "id": "00000000-0000-4000-8000-000000000342",
       "name": "Pedido: seguir normal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3612,7 +3612,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000339",
+      "id": "00000000-0000-4000-8000-000000000346",
       "name": "IA falhou? (alerta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3646,7 +3646,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000340",
+      "id": "00000000-0000-4000-8000-000000000347",
       "name": "Avisar Victor (IA falhou)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -3678,7 +3678,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000341",
+      "id": "00000000-0000-4000-8000-000000000348",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3702,7 +3702,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000342",
+      "id": "00000000-0000-4000-8000-000000000349",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3715,7 +3715,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000343",
+      "id": "00000000-0000-4000-8000-000000000350",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3749,7 +3749,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000344",
+      "id": "00000000-0000-4000-8000-000000000351",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3769,7 +3769,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000345",
+      "id": "00000000-0000-4000-8000-000000000352",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3782,7 +3782,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000346",
+      "id": "00000000-0000-4000-8000-000000000353",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3804,7 +3804,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000347",
+      "id": "00000000-0000-4000-8000-000000000354",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3818,7 +3818,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000355",
+      "id": "00000000-0000-4000-8000-000000000362",
       "name": "Rajada: ler fila",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3842,7 +3842,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000356",
+      "id": "00000000-0000-4000-8000-000000000363",
       "name": "Resposta velha: ler fila",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3867,7 +3867,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000357",
+      "id": "00000000-0000-4000-8000-000000000364",
       "name": "Resposta velha: descartes",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3892,7 +3892,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000358",
+      "id": "00000000-0000-4000-8000-000000000365",
       "name": "Resposta velha?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -3926,7 +3926,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000359",
+      "id": "00000000-0000-4000-8000-000000000366",
       "name": "Descarte: contar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3951,7 +3951,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000360",
+      "id": "00000000-0000-4000-8000-000000000367",
       "name": "Descarte: memória ler",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -3975,7 +3975,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000361",
+      "id": "00000000-0000-4000-8000-000000000368",
       "name": "Descarte: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -3988,7 +3988,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000362",
+      "id": "00000000-0000-4000-8000-000000000369",
       "name": "Descarte: mexer na memória?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4022,7 +4022,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000363",
+      "id": "00000000-0000-4000-8000-000000000370",
       "name": "Descarte: memória apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4042,7 +4042,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000364",
+      "id": "00000000-0000-4000-8000-000000000371",
       "name": "Descarte: sobrou memória?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4076,7 +4076,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000365",
+      "id": "00000000-0000-4000-8000-000000000372",
       "name": "Descarte: memória itens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4089,7 +4089,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000366",
+      "id": "00000000-0000-4000-8000-000000000373",
       "name": "Descarte: memória regravar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4111,7 +4111,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000367",
+      "id": "00000000-0000-4000-8000-000000000374",
       "name": "Descarte: memória pronta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4125,7 +4125,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000368",
+      "id": "00000000-0000-4000-8000-000000000375",
       "name": "Descarte: devolver mensagens?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4159,7 +4159,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000369",
+      "id": "00000000-0000-4000-8000-000000000376",
       "name": "Descarte: fila itens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4172,7 +4172,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000370",
+      "id": "00000000-0000-4000-8000-000000000377",
       "name": "Descarte: fila devolver",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4194,7 +4194,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000371",
+      "id": "00000000-0000-4000-8000-000000000378",
       "name": "Descarte: fila pronta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4208,7 +4208,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000372",
+      "id": "00000000-0000-4000-8000-000000000379",
       "name": "Descarte: zerar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4229,7 +4229,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000373",
+      "id": "00000000-0000-4000-8000-000000000380",
       "name": "Preço: ler pendência",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4254,7 +4254,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000374",
+      "id": "00000000-0000-4000-8000-000000000381",
       "name": "Preço: gravar pendência",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4280,7 +4280,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000375",
+      "id": "00000000-0000-4000-8000-000000000382",
       "name": "Descarte: preço pendente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -4346,7 +4346,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000392",
+      "id": "00000000-0000-4000-8000-000000000399",
       "name": "enviar_catalogo",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4396,7 +4396,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000393",
+      "id": "00000000-0000-4000-8000-000000000400",
       "name": "Supabase: respostas aprendidas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4441,7 +4441,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000394",
+      "id": "00000000-0000-4000-8000-000000000401",
       "name": "Aprender: é pergunta?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4475,7 +4475,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000395",
+      "id": "00000000-0000-4000-8000-000000000402",
       "name": "Aprender: avaliar (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4508,7 +4508,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000396",
+      "id": "00000000-0000-4000-8000-000000000403",
       "name": "Aprender: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4521,7 +4521,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000397",
+      "id": "00000000-0000-4000-8000-000000000404",
       "name": "Aprender: guardar?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4555,7 +4555,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000398",
+      "id": "00000000-0000-4000-8000-000000000405",
       "name": "Aprender: guardar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4596,7 +4596,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000399",
+      "id": "00000000-0000-4000-8000-000000000406",
       "name": "Aprender: guardou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4630,7 +4630,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000400",
+      "id": "00000000-0000-4000-8000-000000000407",
       "name": "Aprender: avisar a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4661,7 +4661,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000401",
+      "id": "00000000-0000-4000-8000-000000000408",
       "name": "Aprender: era preço?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4695,7 +4695,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000402",
+      "id": "00000000-0000-4000-8000-000000000409",
       "name": "Aprender: dica do preço",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
