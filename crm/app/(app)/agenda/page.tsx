@@ -27,7 +27,7 @@ import {
   type StatusAtendimento,
 } from "@/lib/atendimentos";
 import { lerAlmoco, textoAlmoco } from "@/lib/almoco";
-import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
+import { confirmarAvaliacao, ehAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
 import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import {
@@ -229,7 +229,8 @@ export default function AgendaPage() {
   }
 
   // A atender -> abre a folha "Foi isso / Fez outra coisa / Faltou". Realizado ou faltou -> desfaz
-  // (volta para a linha do tempo; pergunta antes quando algo vai sumir: os serviços feitos junto).
+  // (volta para a linha do tempo). Sempre pergunta antes: um toque sem querer num cartão concluído
+  // desfazia o ✓ calado e a cliente atendida aparecia como não atendida (12/11/2026).
   async function alternarRealizado(a: Atendimento) {
     if (a.status === "agendado") {
       setConfirmando(a);
@@ -246,7 +247,13 @@ export default function AgendaPage() {
       const extras = feitosJunto(a);
       // Só os que entraram no ✓: os escolhidos junto ao marcar o horário ficam
       const nomes = (a.extrasDaConfirmacao ?? []).join(", ");
-      if (nomes && !(await perguntar(`Voltar para "a atender"? O que foi feito junto (${nomes}) sai deste horário.`, { confirmar: "Desfazer" }))) return;
+      const quem = a.clientes?.nome ?? "a cliente";
+      const pergunta = nomes
+        ? `Voltar ${quem} para "a atender"? O que foi feito junto (${nomes}) sai deste horário.`
+        : ehAvaliacao(a.servicos?.nome)
+          ? `Voltar ${quem} para "a atender"? O resultado da avaliação também sai.`
+          : `Voltar ${quem} para "a atender"?`;
+      if (!(await perguntar(pergunta, { confirmar: "Desfazer" }))) return;
       erro = await desfazerConfirmacao(empresa.id, a, extras);
     }
     if (erro) await avisar(`Não deu certo: ${erro}`);
@@ -584,7 +591,7 @@ const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string;
   },
   atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
   faltou: { rotulo: "Faltou", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
-  naoAtendida: { rotulo: "Não atendida", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
+  naoAtendida: { rotulo: "Falta confirmar", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
 };
 
 function situacaoDe(a: Atendimento): Situacao {
@@ -766,7 +773,7 @@ function LinhaNaoAtendidas({ quantidade, aberto, aoAlternar }: { quantidade: num
       >
         <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
         <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
-          {aberto ? "Esconder" : quantidade === 1 ? "1 não atendida" : `${quantidade} não atendidas`}
+          {aberto ? "Esconder" : quantidade === 1 ? "1 para confirmar" : `${quantidade} para confirmar`}
         </span>
         <svg
           width="16"

@@ -291,7 +291,8 @@ export function feitosJunto(a: Atendimento) {
   return a.juntos ?? [];
 }
 
-// Desfaz o ✓: volta para "a atender", tira os serviços a mais que entraram no ✓ e, se o serviço
+// Desfaz o ✓: volta para "a atender", tira o resultado da avaliação (se era uma), os serviços a mais
+// que entraram no ✓ e, se o serviço
 // foi trocado no "Fez outra coisa", volta o que estava marcado. Os escolhidos junto ao marcar o
 // horário (marcado_junto, supabase/034) ficam: eles fazem parte do horário.
 export async function desfazerConfirmacao(empresaId: string, a: Atendimento, extras: Atendimento[]) {
@@ -324,7 +325,19 @@ export async function desfazerConfirmacao(empresaId: string, a: Atendimento, ext
           : {}),
     })
     .eq("id", a.id);
-  return error?.message;
+  if (error) return error.message;
+  // O ✓ de uma avaliação grava também o resultado (crm_confirmar_atendimento). Desfazer só o horário
+  // deixava "Fechou" na ficha e o horário de volta em "a atender": ninguém perguntava mais nada e o app
+  // mostrava a cliente como não atendida (12/11/2026). O resultado volta a ficar em aberto junto.
+  const { error: erroAvaliacao } = await db
+    .from("avaliacoes")
+    .update({ resultado: "pendente", resultado_em: null })
+    .eq("agendamento_id", a.id)
+    .neq("resultado", "pendente");
+  // 23505: a cliente já tem outra avaliação em aberto (só pode uma). O resultado antigo fica; o horário
+  // já voltou para "a atender" e a assistente pergunta por ele (supabase/045).
+  if (erroAvaliacao && erroAvaliacao.code !== "23505" && !tabelaNaoExiste(erroAvaliacao)) return erroAvaliacao.message;
+  return undefined;
 }
 
 // Excluir apaga o horário de vez (ex.: lançado por engano). Para a cliente que desmarcou,
