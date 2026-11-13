@@ -257,5 +257,6 @@
   "preco_livre": true,
   "bloco_minutos": 150,
   "contexto_saidas": true,
-  "assistente_conversas": true
+  "assistente_conversas": true,
+  "assistente_fotos": true
 }

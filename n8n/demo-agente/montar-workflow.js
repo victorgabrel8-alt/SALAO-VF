@@ -862,6 +862,8 @@ if (LOJA) {
   aplicarRespostas();
   // a assistente da dona lê as conversas recentes com as clientes antes de agir (assistente-conversas.js); depois do prompt próprio da loja
   if (LOJA.assistente_conversas) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // a assistente da dona lê foto e print (assistente-fotos.js)
+  if (LOJA.assistente_fotos) require('./assistente-fotos.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
