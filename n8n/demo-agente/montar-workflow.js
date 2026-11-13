@@ -824,6 +824,8 @@ if (LOJA) {
   }
   // a IA de atendimento vê o que o salão já mandou à cliente (assistente da dona incluída): contexto-saidas.js
   if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
+  // horário que a dona mandou oferecer: marca sem sinal e sem perguntar de novo (oferta-da-dona.js)
+  if (LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./oferta-da-dona.js')({ workflow, agendaWorkflow });
   // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
   if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
   if (LOJA.google_agenda) {
