@@ -194,8 +194,14 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
   sinal de R$ 30 para todo horário): a IA disse os valores da loja, disse que não faz queratina e, ao marcar,
   pediu o sinal de R$ 30 com a chave da loja. Loja apagada no fim.
 - O tom e a ordem da venda consultiva (acolher, entender, mostrar valor, convidar, facilitar) continuam os do prompt 8.0.
-- Não testado no motor de mega hair: assistente da dona, rotinas, orçamento de cabelo, avaliação por ligação,
-  conferência do comprovante do sinal e o caso "só para quem faltou".
+- Segunda rodada de testes (14/11), com loja descartável (avaliação gratuita na lista, sinal de R$ 30 só para quem faltou):
+  a assistente da dona respondeu a agenda da loja; o pedido de cabelo avulso chamou `pedir_orcamento_cabelo` (a ferramenta
+  devolveu "não consegui mandar" porque o WhatsApp da loja de teste não existe, e a IA não disse que pediu); cliente que
+  nunca faltou marcou a avaliação sem sinal; as rotinas rodaram por loja, pelo horário e pelo disparo manual.
+- Dois ajustes no texto depois do teste: a IA tinha inventado um link de mapa (agora só manda link que estiver em Dados do
+  salão) e não citava no combinado a regra do sinal de quem falta (agora cita, com o valor da loja).
+- Não testado no motor de mega hair: conferência do comprovante de quem faltou, avaliação por ligação (a loja precisa ter
+  o serviço online ativo) e o orçamento chegando de verdade à dona.
 - O sinal conferido pelo sistema (comprovante) da Gleide entra só no conjunto dela; no motor depende de `sinal_pix`.
 - Em 14/11 a branch foi atualizada com a `main` (conflito em `sinal-pix.js` resolvido com a versão da main); a Gleide
   gerada desta branch saiu byte a byte igual à gerada da `main` pura.

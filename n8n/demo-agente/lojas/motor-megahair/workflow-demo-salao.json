@@ -3549,7 +3549,7 @@
         "description": "=Troca a avaliação da cliente entre presencial e online, no mesmo dia e hora. Use quando ela pedir ou aceitar a troca, sem perguntar à {{ $('Loja').first().json.dona }} e sem transferir. Só diga que mudou se a resposta começar com MUDADO. Para mudar o dia ou a hora, use remarcar_agendamento.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_MODALIDADE",
+          "value": "cSii8uVEAnwyfYuz",
           "mode": "id"
         },
         "workflowInputs": {
