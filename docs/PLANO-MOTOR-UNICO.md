@@ -223,8 +223,8 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
   não fecha com Esc; não há trava no servidor contra criar duas lojas iguais.
 
 **Cadastro pela própria dona (14/11, etapa 5): `crm/app/cadastro`, `supabase/050` e `051`.**
-- Página pública do app, "Cadastrar minha loja" (ramo, loja, dona, WhatsApp, cidade, e-mail opcional), com link
-  na tela de login. O pedido só grava uma linha em `motor_cadastros` (função `pedir_cadastro`): não cria loja,
+- Página pública do app, "Cadastrar minha loja" (ramo, loja, dona, WhatsApp, cidade, e-mail opcional), no endereço
+  `/cadastro` (sem link no login, por decisão do Victor: a agência manda o endereço). O pedido só grava uma linha em `motor_cadastros` (função `pedir_cadastro`): não cria loja,
   WhatsApp nem IA. Assim um formulário público não consegue criar instância nem gastar Gemini.
 - A agência vê os pedidos na tela Lojas do painel, do mais antigo para o mais novo, e aprova (cria a loja, o
   WhatsApp e abre o QR) ou recusa. Na aprovação o e-mail do convite aparece para ser conferido com a dona, porque
