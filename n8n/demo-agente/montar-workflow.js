@@ -832,6 +832,8 @@ if (LOJA) {
     pp.parameters.jsCode = pp.parameters.jsCode.replace(semValor, 'Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela.');
   }
   // a IA de atendimento vê o que o salão já mandou à cliente (assistente da dona incluída): contexto-saidas.js
+  // a IA só cancela se a cliente pediu (cancelar-so-se-pediu.js). Sem opção no loja.json: vale para toda loja nova
+  require('./cancelar-so-se-pediu.js')({ node, workflow, agendaWorkflow });
   if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
   // horário que a dona mandou oferecer: marca sem sinal e sem perguntar de novo (oferta-da-dona.js)
   if (LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./oferta-da-dona.js')({ workflow, agendaWorkflow });
