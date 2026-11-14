@@ -27,6 +27,7 @@ type Loja = {
   temRecado: boolean;
   sinal: Sinal;
 };
+type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string };
 type Qr = { lojaId: string; nome: string; imagem: string; codigo: string; conectado: boolean; avisos?: string[] };
 
 const RAMO: Record<string, string> = { manicure: "Unhas", mega_hair: "Mega hair", estudio_beleza: "Estúdio de beleza" };
@@ -63,15 +64,17 @@ function reais(texto: string): number | null {
 
 export default function LojasPage() {
   const [lojas, setLojas] = useState<Loja[] | null>(null);
+  const [cadastros, setCadastros] = useState<Cadastro[]>([]);
   const [erro, setErro] = useState("");
   const [criando, setCriando] = useState(false);
   const [qr, setQr] = useState<Qr | null>(null);
   const [aberta, setAberta] = useState<string | null>(null);
 
   const carregar = useCallback(() => {
-    chamar<{ lojas: Loja[] }>("/api/lojas")
+    chamar<{ lojas: Loja[]; cadastros: Cadastro[] }>("/api/lojas")
       .then((r) => {
         setLojas(r.lojas);
+        setCadastros(r.cadastros ?? []);
         setErro("");
       })
       .catch((e: Error) => setErro(e.message));
@@ -110,6 +113,15 @@ export default function LojasPage() {
       )}
 
       {qr && <PainelQr qr={qr} aoMudar={setQr} aoFechar={() => (setQr(null), carregar())} />}
+
+      {lojas && cadastros.length > 0 && (
+        <section className="mb-6 space-y-3">
+          <h2 className="text-xl font-bold">Pedidos de cadastro ({cadastros.length})</h2>
+          {cadastros.map((c) => (
+            <CartaoCadastro key={c.id} cadastro={c} aoMudar={carregar} aoAprovar={(novo) => (setQr(novo), carregar())} />
+          ))}
+        </section>
+      )}
 
       {lojas && (
         <div className="space-y-3">
@@ -306,6 +318,70 @@ function PainelQr({ qr, aoMudar, aoFechar }: { qr: Qr; aoMudar: (q: Qr) => void;
       <button onClick={aoFechar} className={botao + " mt-4"}>
         Fechar
       </button>
+    </div>
+  );
+}
+
+// Pedido que a dona fez pelo app (página Cadastrar minha loja). Aprovar cria a loja e abre o QR.
+function CartaoCadastro({ cadastro, aoMudar, aoAprovar }: { cadastro: Cadastro; aoMudar: () => void; aoAprovar: (qr: Qr) => void }) {
+  const { dialogo, perguntar, avisar } = useDialogo();
+  const [ocupado, setOcupado] = useState(false);
+  const [limite, setLimite] = useState("200");
+  const c = cadastro;
+
+  async function resolver(acao: "aprovar" | "recusar") {
+    let limiteMes: number | null = null;
+    try {
+      if (acao === "aprovar") limiteMes = inteiro(limite, "Teto de conversas");
+    } catch (e) {
+      return void avisar((e as Error).message);
+    }
+    const pergunta =
+      acao === "aprovar"
+        ? `Aprovar ${c.nomeLoja}?\nCria a loja, o WhatsApp para conectar${c.email ? ` e manda o convite do app para ${c.email}` : ""}. A IA nasce em teste.`
+        : `Recusar o pedido de ${c.nomeLoja}?\nNada é criado e o pedido sai da lista.`;
+    if (!(await perguntar(pergunta, { confirmar: acao === "aprovar" ? "Aprovar" : "Recusar", perigo: acao === "recusar" }))) return;
+    setOcupado(true);
+    try {
+      const r = await chamar<{ id: string; nome: string; qr: { imagem: string; codigo: string }; avisos: string[] }>(`/api/cadastros/${c.id}`, {
+        method: "POST",
+        body: JSON.stringify({ acao, limiteMes }),
+      });
+      if (acao === "aprovar") aoAprovar({ lojaId: r.id, nome: r.nome, imagem: r.qr.imagem, codigo: r.qr.codigo, conectado: false, avisos: r.avisos });
+      else aoMudar();
+    } catch (e) {
+      await avisar((e as Error).message);
+      aoMudar();
+    }
+    setOcupado(false);
+  }
+
+  return (
+    <div className="rounded-2xl border border-cobre/40 bg-cobre-claro/40 p-5">
+      {dialogo}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-lg font-bold">{c.nomeLoja}</p>
+          <p className="text-sm text-texto-2">
+            {c.ramo === "megahair" ? "Mega hair" : "Unhas"} · {c.dona} · {c.whatsapp}
+            {c.cidade && ` · ${c.cidade}`}
+            {c.email && ` · ${c.email}`}
+          </p>
+          <p className="text-sm text-texto-2">Pedido em {new Date(c.criadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <label className="text-sm font-semibold">
+            Teto de conversas por mês
+            <input value={limite} onChange={(e) => setLimite(e.target.value)} inputMode="numeric" aria-label="Teto de conversas por mês" className={"mt-1 block w-40 " + campo} />
+          </label>
+          <button onClick={() => resolver("aprovar")} disabled={ocupado} className={botaoForte}>
+            {ocupado ? "Aguarde…" : "Aprovar"}
+          </button>
+          <button onClick={() => resolver("recusar")} disabled={ocupado} className={botao + " h-11"}>
+            Recusar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

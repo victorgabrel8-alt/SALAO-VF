@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { supabase, supabaseConfigurado } from "@/lib/supabase/client";
@@ -141,6 +142,13 @@ export default function LoginPage() {
             )}
           </button>
         </form>
+
+        <p className="login-subir mt-6 text-center text-[15px] text-texto-2 [animation-delay:200ms]">
+          Ainda não usa o {SALAO.nomeApp}?{" "}
+          <Link href="/cadastro" className="font-semibold text-bronze-escuro underline underline-offset-4">
+            Cadastrar minha loja
+          </Link>
+        </p>
 
         <p className="login-subir mt-auto flex items-center justify-center gap-1.5 pt-10 pb-[calc(32px+env(safe-area-inset-bottom))] text-[13px] text-texto-2 [animation-delay:240ms] sm:mt-14">
           <IconeEscudo />
