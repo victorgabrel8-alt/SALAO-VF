@@ -164,53 +164,91 @@ export function useListaClientes(empresaId: string, consulta: Consulta, porPagin
   return { lista: atual, verMais };
 }
 
-// Contadores dos filtros: o banco conta, sem mandar as linhas (também usado pelo Início)
-export async function contarClientes(empresaId: string, diasLimite: number): Promise<Record<string, number>> {
-  const statuses: StatusCliente[] = ["retorno_chegando", "retorno_atrasado", "inativa", "em_dia", "sem_visita"];
-  const contar = () =>
-    supabase()
+// O banco devolve no máximo 1000 linhas por leitura (padrão do Supabase)
+const PAGINA_CONTAGEM = 1000;
+
+type LinhaContagem = Pick<ClienteStatus, "status" | "proximo_agendamento" | "retorno_previsto">;
+
+// Contadores dos filtros. Uma leitura só de `clientes_status` (três colunas por cliente) e a conta é
+// feita aqui: antes eram oito contagens ao mesmo tempo, cada uma recalculando a view inteira, e o
+// banco chegou a travar. Devolve null se alguma leitura falhar: número errado nunca vai para a tela.
+export async function contarClientes(empresaId: string, diasLimite: number): Promise<Record<string, number> | null> {
+  const db = supabase();
+  // O .then() já dispara a leitura: ela corre junto com a das linhas
+  const excluidas = db
+    .from("clientes")
+    .select("id", { count: "exact", head: true })
+    .eq("empresa_id", empresaId)
+    .filter("etiquetas", "cs", SEM_EXCLUIDAS)
+    .then((r) => r);
+
+  const linhas: LinhaContagem[] = [];
+  for (let de = 0; ; de += PAGINA_CONTAGEM) {
+    const { data, error } = await db
       .from("clientes_status")
-      .select("id", { count: "exact", head: true })
+      .select("status, proximo_agendamento, retorno_previsto")
       .eq("empresa_id", empresaId)
-      .not("etiquetas", "cs", SEM_EXCLUIDAS);
-  const [excluidas, recentes, agendadas, ...respostas] = await Promise.all([
-    supabase()
-      .from("clientes")
-      .select("id", { count: "exact", head: true })
-      .eq("empresa_id", empresaId)
-      .filter("etiquetas", "cs", SEM_EXCLUIDAS),
-    contar().eq("status", "retorno_atrasado").gte("retorno_previsto", dataLimite(diasLimite)),
-    contar().not("proximo_agendamento", "is", null),
-    ...statuses.map((s) => contar().eq("status", s)),
-  ]);
-  const total: Record<string, number> = {};
-  statuses.forEach((s, i) => (total[s] = respostas[i].count ?? 0));
-  total.atrasadas_recentes = recentes.count ?? 0;
+      .not("etiquetas", "cs", SEM_EXCLUIDAS)
+      .order("id")
+      .range(de, de + PAGINA_CONTAGEM - 1);
+    if (error || !data) return null;
+    linhas.push(...(data as LinhaContagem[]));
+    if (data.length < PAGINA_CONTAGEM) break;
+  }
+  const { count: totalExcluidas, error: erroExcluidas } = await excluidas;
+  if (erroExcluidas || totalExcluidas === null) return null;
+
+  const limite = dataLimite(diasLimite);
+  const total: Record<string, number> = {
+    retorno_chegando: 0,
+    retorno_atrasado: 0,
+    inativa: 0,
+    em_dia: 0,
+    sem_visita: 0,
+    atrasadas_recentes: 0,
+    agendadas: 0,
+  };
+  for (const l of linhas) {
+    // Quem tem horário marcado vem "em_dia" do banco, mas na tela é "Agendada"
+    if (l.proximo_agendamento) {
+      total.agendadas += 1;
+      continue;
+    }
+    total[l.status] = (total[l.status] ?? 0) + 1;
+    if (l.status === "retorno_atrasado" && l.retorno_previsto && l.retorno_previsto >= limite) total.atrasadas_recentes += 1;
+  }
   total.atrasadas_antigas = total.retorno_atrasado - total.atrasadas_recentes;
   total.retornos = total.retorno_chegando + total.atrasadas_recentes;
   total.para_chamar = total.retorno_chegando + total.retorno_atrasado;
-  total.todas = statuses.reduce((soma, s) => soma + total[s], 0);
-  // Quem tem horário marcado vem "em_dia" do banco, mas na tela é "Agendada"
-  total.agendadas = agendadas.count ?? 0;
-  total.em_dia = total.em_dia - total.agendadas;
-  total.excluidas = excluidas.count ?? 0;
+  total.todas = linhas.length;
+  total.excluidas = totalExcluidas;
   return total;
 }
 
+// Se a leitura falhar, tenta mais uma vez depois deste tempo
+const NOVA_TENTATIVA_MS = 4000;
+
+// null = ainda não tem contagem boa (a tela mostra "…"). Se uma releitura falhar, fica a última boa.
 export function useContagemClientes(empresaId: string, diasLimite: number, versao: number) {
-  const [contagem, setContagem] = useState<Record<string, number> | null>(null);
+  const [estado, setEstado] = useState<{ empresaId: string; total: Record<string, number> } | null>(null);
 
   useEffect(() => {
     let ativo = true;
-    contarClientes(empresaId, diasLimite).then((total) => {
-      if (ativo) setContagem(total);
-    });
+    let espera: ReturnType<typeof setTimeout> | undefined;
+    const ler = (tentativa: number) =>
+      contarClientes(empresaId, diasLimite).then((total) => {
+        if (!ativo) return;
+        if (total) setEstado({ empresaId, total });
+        else if (tentativa === 0) espera = setTimeout(() => ler(1), NOVA_TENTATIVA_MS);
+      });
+    ler(0);
     return () => {
       ativo = false;
+      clearTimeout(espera);
     };
   }, [empresaId, diasLimite, versao]);
 
-  return contagem;
+  return estado?.empresaId === empresaId ? estado.total : null;
 }
 
 // Espera a dona parar de digitar antes de buscar no banco
