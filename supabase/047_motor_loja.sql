@@ -35,55 +35,7 @@ as $$
     'assist', coalesce(e.config->'assistente_numeros', '[]'::jsonb),
     'permitidos', coalesce(e.config->'ia'->'permitidos', '[]'::jsonb),
     'liberada', coalesce(e.config->'ia'->>'liberada', '') = 'true',
-    'bloco_min', case when e.config->'ia'->>'bloco_min' ~ '^[0-9]{1,3}
-    'catalogo_link', coalesce(e.config->'loja'->>'catalogo_link', '')
-  )
-  from empresas e
-  where e.id = p_empresa_id;
-$$;
-
--- Mensagem que chegou: de qual loja é a instância do WhatsApp? Sem loja deste ramo no motor, devolve null.
-create or replace function motor_loja(p_instancia text, p_nicho text)
-returns jsonb
-language sql
-stable
-set search_path = public
-as $$
-  select motor_ficha(e.id)
-  from empresas e
-  where e.instancia_whatsapp = p_instancia
-    and p_instancia <> ''
-    and e.nicho = p_nicho
-    and e.ativo
-    and e.config->'ia'->>'motor' = 'true'
-  limit 1;
-$$;
-
--- Rotinas: as lojas do ramo que estão no motor (p_empresa_id: só aquela, para teste).
-create or replace function motor_lojas(p_nicho text, p_empresa_id uuid default null)
-returns setof jsonb
-language sql
-stable
-set search_path = public
-as $$
-  select motor_ficha(e.id)
-  from empresas e
-  where e.nicho = p_nicho
-    and e.ativo
-    and e.config->'ia'->>'motor' = 'true'
-    and coalesce(e.instancia_whatsapp, '') <> ''
-    and (p_empresa_id is null or e.id = p_empresa_id)
-  order by e.criado_em;
-$$;
-
--- só o servidor (n8n, com a chave de serviço) chama
-revoke all on function motor_ficha(uuid) from public, anon, authenticated;
-revoke all on function motor_loja(text, text) from public, anon, authenticated;
-revoke all on function motor_lojas(text, uuid) from public, anon, authenticated;
-grant execute on function motor_ficha(uuid) to service_role;
-grant execute on function motor_loja(text, text) to service_role;
-grant execute on function motor_lojas(text, uuid) to service_role;
- then (e.config->'ia'->>'bloco_min')::int else 0 end,
+    'bloco_min', case when e.config->'ia'->>'bloco_min' ~ '^[0-9]{1,3}$' then (e.config->'ia'->>'bloco_min')::int else 0 end,
     'catalogo_link', coalesce(e.config->'loja'->>'catalogo_link', '')
   )
   from empresas e
