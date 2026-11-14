@@ -23,7 +23,7 @@ const env = Object.fromEntries(
     .map((l) => [l.slice(0, l.indexOf('=')), l.slice(l.indexOf('=') + 1).trim().replace(/^["']|["']$/g, '')]),
 );
 // ramo -> nicho no banco e pasta do motor
-const RAMOS = { unhas: { nicho: 'manicure', motor: 'motor-unhas' } };
+const RAMOS = { unhas: { nicho: 'manicure', motor: 'motor-unhas' }, megahair: { nicho: 'mega_hair', motor: 'motor-megahair' } };
 const EVO = (env.EVOLUTION_URL_PUBLICA || 'https://evo.oistudio.com.br').replace(/\/$/, '');
 const EVO_CHAVE = env.EVOLUTION_API_KEY_SERVIDOR;
 // de dentro do servidor a Evolution chama o n8n pelo nome do serviço (igual às lojas com conjunto próprio)

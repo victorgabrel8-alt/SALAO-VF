@@ -1,0 +1,2174 @@
+{
+  "name": "[Motor Mega Hair] IA - Faltas e avisos",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000011",
+      "name": "Nota 11",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -232
+      ],
+      "parameters": {
+        "content": "## Faltas, atrasos e vagas\nA cada 5 min (8h–20h): chama quem faltou ou está atrasada, oferece vaga que abriu para quem tem horário depois,\ne conta para a a dona o que mudou. Liga e desliga em empresas.config (faltas, atrasos, vagas).",
+        "width": 1400,
+        "height": 172,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000244",
+      "name": "Horário do salão?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "h1",
+              "leftValue": "={{ $now.setZone('America/Cuiaba').hour >= 8 && $now.setZone('America/Cuiaba').hour < 20 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000246",
+      "name": "Faltas para chamar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_faltas_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000247",
+      "name": "Mensagem da falta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((f) => f.agendamento_id).map((f) => {\n  const nome = primeiro(f.nome);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + '! Sentimos sua falta ' + quando(f.inicio) +\n    ' 💛 Aconteceu alguma coisa? Se quiser, já vejo outro horário pra você.';\n  return { json: { ...f, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000248",
+      "name": "Mandar para a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000249",
+      "name": "Enviou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000250",
+      "name": "Registrar chamada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_chamada_falta",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_agendamento_id: $('Mensagem da falta').item.json.agendamento_id, p_mensagem: $('Mensagem da falta').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000251",
+      "name": "Atrasos para chamar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000252",
+      "name": "Mensagem do atraso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        200
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((a) => a.agendamento_id).map((a) => {\n  const nome = primeiro(a.nome);\n  const texto = a.etapa === 1\n    ? 'Oi' + (nome ? ' ' + nome : '') + '! Seu horário aqui no salão era ' + quando(a.inicio) + ' 💛 Está a caminho?'\n    : (nome ? nome + ', c' : 'C') + 'onseguiu vir? Se hoje não der, me avisa que eu vejo outro horário pra você, sem problema 💛';\n  return { json: { ...a, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000253",
+      "name": "Chamar a atrasada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000254",
+      "name": "Chamou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000255",
+      "name": "Registrar chamada do atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_chamada_atraso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_agendamento_id: $('Mensagem do atraso').item.json.agendamento_id, p_mensagem: $('Mensagem do atraso').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000256",
+      "name": "Lembretes para mandar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_lembretes_para_mandar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000257",
+      "name": "Mensagem do lembrete",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        400
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nreturn $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const nome = primeiro(l.nome);\n  // 13/11: lembrete com postura (pedido do Victor): horário reservado só para ela, pontualidade, aviso para\n  // desmarcar e a regra do sinal. Tom sóbrio, sem propaganda. Texto da a dona: outra loja precisa do texto dela.\n  const oi = 'Olá' + (nome ? ', ' + nome : '') + ('. Aqui é do ' + $('Loja').first().json.nome + '.');\n  const servico = l.servico ? ' (' + l.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '';\n  const reserva = l.online\n    ? ('Sua avaliação online com a ' + $('Loja').first().json.dona + ' está reservada para ') + quando(l.inicio) + '. Ela liga para você por áudio aqui no WhatsApp.'\n    : ('Seu horário com a ' + $('Loja').first().json.dona + ' está reservado para ') + quando(l.inicio) + servico + '.' + (l.endereco ? ' Estamos na ' + l.endereco + '.' : '');\n  const texto = [oi, reserva,\n    ('A ' + $('Loja').first().json.dona + ' atende uma cliente por vez, e esse período da agenda fica dedicado só a você. Por isso pedimos que ') +\n      (l.online ? 'esteja disponível' : 'chegue') + ' no horário: a partir de 15 minutos de atraso, o atendimento pode precisar ser remarcado.',\n    'Se surgir um imprevisto, basta nos avisar com 24 horas de antecedência e encontramos outro horário. Para este agendamento não há cobrança de sinal. Em caso de falta ou de cancelamento em cima da hora, as próximas reservas passam a ser feitas mediante sinal.',\n    'Posso confirmar a sua presença?'].join('\\n\\n');\n  return { json: { ...l, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000258",
+      "name": "Lembrar a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          },
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000259",
+      "name": "Lembrou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        400
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "l1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000260",
+      "name": "Registrar lembrete",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_lembrete",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_agendamento_id: $('Mensagem do lembrete').item.json.agendamento_id, p_mensagem: $('Mensagem do lembrete').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000261",
+      "name": "Atrasos para confirmar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_confirmar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000262",
+      "name": "Mensagem veio ou libera",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        600
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = (('' + $('Loja').first().json.assist + '') || ('' + $('Loja').first().json.assist + '')).split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000263",
+      "name": "Perguntar à a dona (atraso)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000264",
+      "name": "Guardar pergunta do atraso",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        600
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
+        "messageData": "={{ $('Mensagem veio ou libera').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000265",
+      "name": "Marcar atraso perguntado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        600
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000266",
+      "name": "Conflitos de atraso",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_conflitos_atraso",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000267",
+      "name": "Mensagem do conflito",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        800
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst cs = $input.all().map((i) => i.json).filter((c) => c.contato_id);\nif (!cs.length) return [];\nconst n = (s) => '*' + (s || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\nconst texto = cs.map((c) => '⚠️ ' + n(c.nome_atrasada) + ' (' + quando(c.horario_atrasada) + ') apareceu, mas ' + n(c.nome_adiantou) +\n  ' já adiantou para ' + quando(c.novo_horario) + '. As duas estão no mesmo horário: como quer resolver?').join('\\n');\nconst itens = cs.map((c) => ({ id: c.contato_id, situacao: 'conflito' }));\nconst numeros = (('' + $('Loja').first().json.assist + '') || ('' + $('Loja').first().json.assist + '')).split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000268",
+      "name": "Avisar a a dona (conflito)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000269",
+      "name": "Guardar aviso do conflito",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        800
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:assistente:{{ $('Mensagem do conflito').item.json.tel }}",
+        "messageData": "={{ $('Mensagem do conflito').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000270",
+      "name": "Marcar conflito avisado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        800
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_avisado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_itens: $('Mensagem do conflito').item.json.itens }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000271",
+      "name": "Vagas para oferecer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_vagas_para_oferecer",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000272",
+      "name": "Mensagem da vaga",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1000
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n// uma oferta por cliente por vez, mesmo se abriram duas vagas antes do horário dela\nconst vistas = new Set();\nreturn $input.all().map((i) => i.json).filter((v) => v.vaga_id && !vistas.has(v.cliente_id) && vistas.add(v.cliente_id)).map((v) => {\n  const nome = primeiro(v.nome);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + '! Abriu um horário ' + quando(v.vaga_inicio) + ', antes do seu (' + quando(v.inicio_atual) +\n    ') 💛 Se quiser adiantar, é só me falar que eu já troco pra você. Se preferir manter o seu, tudo certo também!';\n  return { json: { ...v, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000273",
+      "name": "Oferecer para a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000274",
+      "name": "Ofereceu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        1000
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "v1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000275",
+      "name": "Registrar oferta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        1000
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_oferta_vaga",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_vaga_id: $('Mensagem da vaga').item.json.vaga_id, p_agendamento_id: $('Mensagem da vaga').item.json.agendamento_id, p_mensagem: $('Mensagem da vaga').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000276",
+      "name": "Mudanças da IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_mudancas_para_avisar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000277",
+      "name": "Mensagem da mudança",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1200
+      ],
+      "parameters": {
+        "jsCode": "\nconst ms = $input.all().map((i) => i.json).filter((m) => m.mudanca_id);\nif (!ms.length) return [];\nconst linha = (m) => {\n  const n = '*' + (m.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  const serv = m.servico ? ' (' + m.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '';\n  if (m.tipo === 'mudou_modalidade') return '🔁 ' + n + ' mudou a avaliação de ' + m.de_texto + ' para *' + m.para_texto + '*.';\n  return m.tipo === 'cancelou'\n    ? '❌ ' + n + ' cancelou o horário de ' + m.de_texto + serv + '.'\n    : '📅 ' + n + ' mudou o horário de ' + m.de_texto + ' para *' + m.para_texto + '*' + serv + '.';\n};\nconst texto = ms.map(linha).join('\\n');\nconst ids = ms.map((m) => m.mudanca_id);\nconst numeros = (('' + $('Loja').first().json.assist + '') || ('' + $('Loja').first().json.assist + '')).split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000278",
+      "name": "Avisar a mudança",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000279",
+      "name": "Avisou a mudança?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1500,
+        1200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "m1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000280",
+      "name": "Guardar a mudança na memória",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        1200
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:assistente:{{ $('Mensagem da mudança').item.json.tel }}",
+        "messageData": "={{ $('Mensagem da mudança').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000281",
+      "name": "Marcar mudança avisada",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2100,
+        1200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_mudancas_avisadas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_ids: $('Mensagem da mudança').item.json.ids }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000282",
+      "name": "Avisos para a a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        1400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_avisos_para_gleide",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + '') }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000283",
+      "name": "Mensagem do aviso",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        900,
+        1400
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.contato_id);\nif (!as.length) return [];\nconst linha = (a) => {\n  const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  if (a.situacao === 'remarcou') {\n    const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';\n    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';\n    return a.tipo === 'falta'\n      ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'\n      : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';\n  }\n  return a.tipo === 'falta'\n    ? '⚠️ ' + n + ' não respondeu sobre a falta de ' + quando(a.horario_original) + '. Quer chamar você mesma?'\n    : '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';\n};\nconst texto = as.map(linha).join('\\n');\nconst itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));\nconst numeros = (('' + $('Loja').first().json.assist + '') || ('' + $('Loja').first().json.assist + '')).split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens,\n  // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a a dona responder\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000284",
+      "name": "Mandar para a a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        1400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000285",
+      "name": "Guardar na memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1500,
+        1400
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:assistente:{{ $('Mensagem do aviso').item.json.tel }}",
+        "messageData": "={{ $('Mensagem do aviso').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000286",
+      "name": "Marcar avisado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1800,
+        1400
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_marcar_avisado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_itens: $('Mensagem do aviso').item.json.itens }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "4c0f2791-c638-48a0-8722-aea5d826ccb5",
+      "name": "Trava de teste: Mandar para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "818c25e7-acf2-4ae9-82e0-503b896aa159",
+      "name": "Trava de teste: Chamar a atrasada",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3e4e5937-5196-415d-84ec-936edea3bb32",
+      "name": "Trava de teste: Lembrar a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e0991ba9-b999-4d24-860a-465625a846b7",
+      "name": "Trava de teste: Perguntar à a dona (atraso)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        480
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "62a3983c-f948-4e71-8cd4-ced6f9f9b606",
+      "name": "Trava de teste: Avisar a a dona (conflito)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        680
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "f7f02a0e-e5f3-491b-84b3-50e4614b6fbd",
+      "name": "Trava de teste: Oferecer para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        880
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "a87fb4f8-3f68-4c3a-8272-6bd7d563df7e",
+      "name": "Trava de teste: Avisar a mudança",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        1080
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7fd69850-7d29-4119-80ff-45a145d16a0a",
+      "name": "Trava de teste: Mandar para a a dona",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1200,
+        1280
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))(('' + $('Loja').first().json.permitidos + '').split(',').filter(Boolean), ('' + $('Loja').first().json.assist_sem9 + '').split(',').filter(Boolean), (() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "bc1ab467-9990-401c-89e1-9e35c7077a63",
+      "name": "Entrada do motor",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -660,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "loja_json"
+            },
+            {
+              "name": "gatilho"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "46f7a66a-e2de-4439-83b9-3cf7ea57bc55",
+      "name": "Loja",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -440,
+        0
+      ],
+      "parameters": {
+        "jsCode": "// Ficha da loja deste atendimento (motor único). Tudo o que muda de uma loja para outra sai daqui.\nconst bruto = $('Entrada do motor').first().json.loja_json;\nconst f = typeof bruto === 'string' ? JSON.parse(bruto || 'null') : bruto;\nif (!f || !f.empresa_id) return [];\nconst sem9 = (n) => { const d = String(n).replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; };\nconst lista = (v) => (Array.isArray(v) ? v : String(v || '').split(',')).map((s) => String(s).trim()).filter(Boolean);\nconst dona = String(f.dona || 'responsável').trim();\n// Trava de teste: números com e sem o 9 (o principal compara como o WhatsApp manda; as rotinas, sem o 9).\n// Loja ainda não liberada pela agência (config.ia.liberada) e sem lista: ninguém recebe, só a dona.\nlet permitidos = [...new Set(lista(f.permitidos).flatMap((n) => [n.replace(/\\D/g, ''), sem9(n)]).filter(Boolean))];\nif (f.liberada !== true && !permitidos.length) permitidos = ['0'];\nif (f.liberada === true) permitidos = [];\nreturn [{ json: {\n  empresa_id: f.empresa_id, nome: f.nome || '', nicho: f.nicho || '', instancia: f.instancia || '',\n  dona, dona_maiuscula: dona.toUpperCase(), nome_maiusculo: String(f.nome || '').toUpperCase(), cidade: f.cidade || '', fuso: f.fuso || 'America/Cuiaba',\n  assist: lista(f.assist).join(','), assist_sem9: lista(f.assist).map(sem9).join(','),\n  permitidos: permitidos.join(','), catalogo_link: f.catalogo_link || '',\n  // tempo mínimo que cada cliente ocupa na agenda (config.ia.bloco_min); 0 = vale o tempo de cada serviço\n  bloco_min: Number.isInteger(Number(f.bloco_min)) && Number(f.bloco_min) >= 30 && Number(f.bloco_min) <= 480 ? Number(f.bloco_min) : 0,\n  // a ficha passa de um workflow para outro (loja_json) e é lida de novo por este mesmo código: liberada vai junto\n  liberada: f.liberada === true,\n  // teto de conversas do mês (supabase/048): no_limite = a loja chegou ao teto; conversa_barrada = além disso,\n  // quem mandou esta mensagem ainda não falou com a IA hoje (conversa nova)\n  limite_mes: f.limite_mes ?? null, uso_mes: f.uso_mes ?? null, no_limite: f.no_limite === true, conversa_barrada: f.conversa_barrada === true,\n} }];"
+      }
+    },
+    {
+      "id": "bc36a4d7-5599-4a1c-8a01-7103f47c02d1",
+      "name": "Gatilho: A cada 5 min",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ $('Entrada do motor').first().json.gatilho === \"A cada 5 min\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b1512b61-087b-49ac-82da-20265cd9acc2",
+      "name": "Gatilho: Disparar agora (teste)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -220,
+        160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "g1",
+              "leftValue": "={{ $('Entrada do motor').first().json.gatilho === \"Disparar agora (teste)\" }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Horário do salão?": {
+      "main": [
+        [
+          {
+            "node": "Mudanças da IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lembretes para mandar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para confirmar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Conflitos de atraso",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Faltas para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vagas para oferecer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Avisos para a a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembretes para mandar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do lembrete": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Lembrar a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrar a cliente": {
+      "main": [
+        [
+          {
+            "node": "Lembrou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atrasos para chamar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do atraso": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Chamar a atrasada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamar a atrasada": {
+      "main": [
+        [
+          {
+            "node": "Chamou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chamou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar chamada do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Atrasos para confirmar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem veio ou libera",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem veio ou libera": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Perguntar à a dona (atraso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Perguntar à a dona (atraso)": {
+      "main": [
+        [
+          {
+            "node": "Guardar pergunta do atraso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar pergunta do atraso": {
+      "main": [
+        [
+          {
+            "node": "Marcar atraso perguntado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conflitos de atraso": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do conflito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do conflito": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Avisar a a dona (conflito)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a a dona (conflito)": {
+      "main": [
+        [
+          {
+            "node": "Guardar aviso do conflito",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar aviso do conflito": {
+      "main": [
+        [
+          {
+            "node": "Marcar conflito avisado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Faltas para chamar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem da falta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem da falta": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Enviou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar chamada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vagas para oferecer": {
+      "main": [
+        [
+          {
+            "node": "Mensagem da vaga",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem da vaga": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Oferecer para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Oferecer para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Ofereceu?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ofereceu?": {
+      "main": [
+        [
+          {
+            "node": "Registrar oferta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mudanças da IA": {
+      "main": [
+        [
+          {
+            "node": "Mensagem da mudança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem da mudança": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Avisar a mudança",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisar a mudança": {
+      "main": [
+        [
+          {
+            "node": "Avisou a mudança?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisou a mudança?": {
+      "main": [
+        [
+          {
+            "node": "Guardar a mudança na memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar a mudança na memória": {
+      "main": [
+        [
+          {
+            "node": "Marcar mudança avisada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Avisos para a a dona": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do aviso",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do aviso": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Mandar para a a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar para a a dona": {
+      "main": [
+        [
+          {
+            "node": "Guardar na memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar na memória da assistente": {
+      "main": [
+        [
+          {
+            "node": "Marcar avisado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trava de teste: Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Chamar a atrasada": {
+      "main": [
+        [
+          {
+            "node": "Chamar a atrasada",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Lembrar a cliente": {
+      "main": [
+        [
+          {
+            "node": "Lembrar a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Perguntar à a dona (atraso)": {
+      "main": [
+        [
+          {
+            "node": "Perguntar à a dona (atraso)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Avisar a a dona (conflito)": {
+      "main": [
+        [
+          {
+            "node": "Avisar a a dona (conflito)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Oferecer para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Oferecer para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Avisar a mudança": {
+      "main": [
+        [
+          {
+            "node": "Avisar a mudança",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Mandar para a a dona": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a a dona",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Gatilho: A cada 5 min": {
+      "main": [
+        [
+          {
+            "node": "Horário do salão?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Gatilho: Disparar agora (teste)": {
+      "main": [
+        [
+          {
+            "node": "Mudanças da IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lembretes para mandar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Atrasos para confirmar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Conflitos de atraso",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Faltas para chamar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vagas para oferecer",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Avisos para a a dona",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Entrada do motor": {
+      "main": [
+        [
+          {
+            "node": "Loja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja": {
+      "main": [
+        [
+          {
+            "node": "Gatilho: A cada 5 min",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Gatilho: Disparar agora (teste)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true
+  }
+}
