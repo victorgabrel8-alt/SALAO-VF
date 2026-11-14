@@ -21,6 +21,37 @@ const achar = (lista, prefixo, tel) => lista.find((k) => k.startsWith(prefixo + 
 const agora = new Date().toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const diaDe = (s) => new Date(s).toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit' });
 const quem = { cliente: 'Cliente', ia: 'Você (IA)', humano: 'Gleide' };
+// Ciclo de manutenção (supabase/048, pedido do Victor em 14/11/2026): alô em dias contados a partir do serviço feito.
+// Venda de alto padrão: a mensagem é sobre ELA e o cabelo dela, nunca cobrança nem oferta.
+const OBJETIVO = {
+  cuidado: 'OBJETIVO: saber como ela está se sentindo com o cabelo nestes primeiros dias (adaptação, conforto). É cuidado, não venda: não fale em manutenção, horário, agenda nem valor.',
+  meio: 'OBJETIVO: acompanhar. Pergunte como o cabelo está e se ela está confortável com ele. Não ofereça horário, não cite data nem prazo: a pergunta é sobre ela. Já passou um mês: não fale em adaptação nem em primeiros dias. Se ela contar algum incômodo na resposta, aí sim a conversa segue para a manutenção.',
+  janela: 'OBJETIVO: avisar com leveza que o período de manutenção que a Gleide recomenda (até 60 dias) está chegando e perguntar se ela quer que você veja um horário. Essa é a única pergunta da mensagem (não pergunte também como o cabelo está). Não cite dia nem hora específicos.',
+  passou: 'OBJETIVO: o período de manutenção que a Gleide recomenda (até 60 dias) já passou. Sem cobrar e sem alarmar, diga isso em uma frase e faça uma pergunta só: se ela quer que você veja um horário para a manutenção.',
+};
+const ciclo = (c, nome, conversa) => [
+  'Você é a assistente virtual da Gleide, do salão Toda Bonita Mega Hair (Sinop-MT), no WhatsApp do salão.',
+  'A cliente' + (nome ? ' (' + nome + ')' : '') + ' fez ' + (c.servico || 'mega hair') + ' no salão' +
+    (c.feito_em ? ' em ' + diaDe(c.feito_em + 'T12:00:00-04:00') : '') + (c.dias_desde != null ? ', há ' + c.dias_desde + ' dias' : '') + '. Agora é ' + agora + '.',
+  'Você vai mandar UMA mensagem de acompanhamento, por iniciativa do salão. Ela não pediu esse contato.',
+  OBJETIVO[c.etapa] || OBJETIVO.meio,
+  c.resumo_ia ? 'Resumo do que se sabe dela: ' + c.resumo_ia : '',
+  '', 'CONVERSA (mais antiga primeiro):', conversa || '(sem mensagens)', '',
+  'Primeiro decida se faz sentido mandar. Responda exatamente "PULAR: <motivo curto>" se:',
+  '- ela pediu para não receber mensagem, disse que não quer mais ou que vai para outro lugar;',
+  '- há reclamação ou problema com o serviço ainda sem solução na conversa (isso é com a Gleide, não com um alô);',
+  '- ela contou que tirou o mega hair ou que não vai continuar usando;',
+  '- nos últimos dias a conversa já tratou exatamente disso (ela já contou como o cabelo está, ou já combinou quando vem).',
+  'Se fizer sentido, escreva como uma consultora atenciosa de um salão de alto padrão, que lembrou dela:',
+  '- comece com "Oi, <primeiro nome>" e faça UMA pergunta só, simples e aberta;',
+  '- 1 ou 2 frases curtas, calorosas e naturais, sem gíria pesada e sem formalidade fria; sem negrito, sem lista; no máximo um emoji discreto;',
+  '- se a conversa trouxer um detalhe dela (o evento, o que ela queria do cabelo), pode usar uma vez, com delicadeza;',
+  '- use só o que está escrito aqui: não suponha como o cabelo está, não elogie resultado que você não viu;',
+  '- sem preço, sem promoção, sem novidade, sem horário inventado, sem urgência e sem "última chance";',
+  '- nada de frase de robô: "Só passando pra lembrar", "Tô passando pra saber", "Espero que esteja bem", "Fico à disposição", "é só me chamar", "é só me avisar";',
+  '- não se apresente de novo, não explique que a mensagem é automática e não repita frases já mandadas na conversa.',
+  'Responda só com a mensagem (ou com PULAR: motivo), sem aspas.',
+].filter((l) => l !== null).join('\n');
 return $('Quem chamar').all().map((i) => i.json).filter((c) => c.retorno_id).filter((c) => !achar(pausas, 'pausa:', c.telefone)).map((c) => {
   const nome = String(c.nome || '').trim().split(/\s+/)[0] || '';
   const conversa = (c.historico || []).map((m) => '[' + m.em + '] ' + (quem[m.autor] || m.autor) + (m.tipo !== 'texto' ? ' (' + m.tipo + ')' : '') + ': ' + m.texto).join('\n');
@@ -50,7 +81,11 @@ return $('Quem chamar').all().map((i) => i.json).filter((c) => c.retorno_id).fil
   ].filter((l) => l !== null).join('\n');
   // memória da IA: a chave que já existe; sem ela, o formato do WhatsApp (sem o 9)
   const memoria = achar(memorias, 'memoria:', c.telefone) || 'memoria:' + c.telefone.replace(/^(55\d{2})9(\d{8})$/, '$1$2');
-  return { json: { ...c, nome, instrucao, memoria, historico: undefined } };
+  const doCiclo = c.origem === 'ciclo';
+  const aviso = doCiclo
+    ? '[alô automático de acompanhamento: ela fez ' + (c.servico || 'mega hair') + (c.dias_desde != null ? ' há ' + c.dias_desde + ' dias' : '') + ' e o salão mandou a mensagem abaixo]'
+    : '[ela tinha combinado de falar com o salão por volta de hoje' + (c.assunto ? ' (' + c.assunto + ')' : '') + '; alô automático de retorno]';
+  return { json: { ...c, nome, instrucao: doCiclo ? ciclo(c, nome, conversa) : instrucao, memoria, aviso, historico: undefined } };
 });
 `;
 
@@ -95,7 +130,8 @@ module.exports = ({ env, node, main, GEMINI }) => {
         // mesma senha do webhook do WhatsApp (header x-webhook-token): sem ela, ninguém dispara de fora
         { webhookId: '3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f', credentials: { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } } }),
       // o banco já confere a data, o horário do salão e o resto (supabase/028)
-      rpc('Quem chamar', [220, 0], 'n8n_retornos_para_chamar', `{ p_empresa_id: ${EMPRESA} }`),
+      // n8n_alos_para_chamar (supabase/048) = n8n_retornos_para_chamar + os alôs do ciclo de manutenção do dia
+      rpc('Quem chamar', [220, 0], 'n8n_alos_para_chamar', `{ p_empresa_id: ${EMPRESA} }`),
       // Gleide assumiu a conversa pelo celular (pausa no Redis, 12 h): não chama
       node('Pausas', 'n8n-nodes-base.redis', 1, [440, 0], { operation: 'keys', keyPattern: 'pausa:*', getValues: false },
         { credentials: REDIS, executeOnce: true, alwaysOutputData: true }),
@@ -128,7 +164,7 @@ module.exports = ({ env, node, main, GEMINI }) => {
       // memória da conversa (LPUSH, a mais nova na frente), como na retomada: o agente sabe o que mandou quando ela responder
       node('Memória (aviso)', 'n8n-nodes-base.redis', 1, [2420, -200], {
         operation: 'push', list: `={{ ${D}.memoria }}`, tail: false,
-        messageData: `={{ JSON.stringify({ type: 'human', data: { content: '[ela tinha combinado de falar com o salão por volta de hoje' + (${D}.assunto ? ' (' + ${D}.assunto + ')' : '') + '; alô automático de retorno]', additional_kwargs: {}, response_metadata: {} } }) }}`,
+        messageData: `={{ JSON.stringify({ type: 'human', data: { content: ${D}.aviso, additional_kwargs: {}, response_metadata: {} } }) }}`,
       }, { credentials: REDIS, onError: 'continueRegularOutput' }),
       node('Memória (mensagem enviada)', 'n8n-nodes-base.redis', 1, [2640, -200], {
         operation: 'push', list: `={{ ${D}.memoria }}`, tail: false,
