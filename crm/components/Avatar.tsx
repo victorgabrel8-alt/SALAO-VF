@@ -8,11 +8,12 @@ function iniciais(nome: string | null): string {
 }
 
 // O id continua no tipo para as telas que já o passam.
-export function Avatar({ nome, tamanho = "h-12 w-12 text-lg" }: { id: string; nome: string | null; tamanho?: string }) {
+// cor: só para destacar quem precisa da dona (fundo de atenção)
+export function Avatar({ nome, tamanho = "h-12 w-12 text-lg", cor = "bg-campo text-grafite" }: { id: string; nome: string | null; tamanho?: string; cor?: string }) {
   return (
     <span
       aria-hidden
-      className={`flex shrink-0 items-center justify-center rounded-full font-extrabold ${tamanho} bg-campo text-grafite`}
+      className={`flex shrink-0 items-center justify-center rounded-full font-extrabold ${tamanho} ${cor}`}
     >
       {iniciais(nome)}
     </span>

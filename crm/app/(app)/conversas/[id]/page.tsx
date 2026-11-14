@@ -58,7 +58,7 @@ async function buscarConversa(clienteId: string): Promise<Conversa> {
 
 export default function ConversaPage() {
   return (
-    <Suspense fallback={<p className="p-4 text-texto-2">Carregando…</p>}>
+    <Suspense fallback={<p className="carregando-calmo p-4 text-texto-2">Carregando…</p>}>
       <ConversaCliente />
     </Suspense>
   );
@@ -124,7 +124,7 @@ function ConversaCliente() {
     rolarAteOFim();
   }, [total]);
 
-  if (!conversa) return <p className="p-4 text-texto-2">Carregando…</p>;
+  if (!conversa) return <p className="carregando-calmo p-4 text-texto-2">Carregando…</p>;
   if ("erro" in conversa) return <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">{conversa.erro}</p>;
 
   const { cliente, mensagens } = conversa;
@@ -322,7 +322,7 @@ function Balao({
           </details>
         )}
         {midia && <p className="text-xs font-semibold opacity-75">{midia}{m.conteudo && m.tipo === "audio" ? " · transcrição" : ""}</p>}
-        <p className="text-[15px] leading-snug whitespace-pre-wrap">
+        <p className="text-[15px] leading-snug whitespace-pre-wrap [overflow-wrap:anywhere]">
           {texto}
           {/* Espaço reservado para a hora caber na última linha, como no WhatsApp */}
           <span aria-hidden className={`inline-block ${a.enviada ? "w-[62px]" : "w-[42px]"}`} />

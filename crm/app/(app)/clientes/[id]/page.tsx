@@ -76,7 +76,7 @@ function dinheiro(valor: number): string {
 
 export default function FichaClientePage() {
   return (
-    <Suspense fallback={<p className="p-5 text-texto-2">Carregando…</p>}>
+    <Suspense fallback={<p className="carregando-calmo p-5 text-texto-2">Carregando…</p>}>
       <FichaCliente />
     </Suspense>
   );
@@ -101,7 +101,7 @@ function FichaCliente() {
     };
   }, [id, versao]);
 
-  if (!resultado) return <p className="p-5 text-texto-2">Carregando…</p>;
+  if (!resultado) return <p className="carregando-calmo p-5 text-texto-2">Carregando…</p>;
   if ("erro" in resultado) return <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">{resultado.erro}</p>;
   const ficha = resultado;
 

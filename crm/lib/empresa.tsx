@@ -48,7 +48,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (estado.carregando) {
-    return <p className="p-6 text-lg text-rotulo">Carregando…</p>;
+    return <p className="carregando-calmo p-6 text-lg text-rotulo">Carregando…</p>;
   }
   if ("erro" in estado) {
     return (

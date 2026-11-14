@@ -7,15 +7,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { useEmpresa } from "@/lib/empresa";
 import { buscarExcluidas } from "@/lib/excluidas";
-import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao, primeiroNome } from "@/lib/formato";
-import { situacaoIa, type SituacaoIa } from "@/lib/ia";
+import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao } from "@/lib/formato";
+import { situacaoIa } from "@/lib/ia";
 import { supabase } from "@/lib/supabase/client";
 import { useTempoReal } from "@/lib/tempoReal";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
-// Lista no estilo do WhatsApp no iPhone: título grande no fundo claro, busca, quem precisa de
-// você em bolinhas no topo (como os stories), seletor Tudo/Atenção/IA pausada e linhas que
-// deslizam para o lado mostrando Ficha e WhatsApp.
+// Lista no estilo do WhatsApp no iPhone: título grande no fundo claro, busca, seletor
+// Tudo/Atenção/IA pausada, quem precisa da dona fixada no topo em cartão próprio, e as demais
+// num cartão único com linhas que deslizam para o lado mostrando Ficha e WhatsApp.
 
 // Linha da view conversas: a última mensagem de cada cliente
 type Conversa = {
@@ -98,36 +98,6 @@ const FILTROS: { chave: Filtro; rotulo: string }[] = [
   { chave: "pausada", rotulo: "IA pausada" },
 ];
 
-// Pontinho no canto do avatar: verde = IA atendendo, bronze = pausada, rosé = precisa de você
-const PONTO: Record<SituacaoIa, { cor: string; rotulo: string }> = {
-  atendendo: { cor: "bg-[#2F7D5B]", rotulo: "IA atendendo" },
-  pausada: { cor: "bg-bronze", rotulo: "IA pausada" },
-  precisa: { cor: "bg-rose-texto", rotulo: "Precisa de você" },
-};
-
-function AvatarComStatus({ id, nome, situacao, tamanho }: { id: string; nome: string | null; situacao: SituacaoIa; tamanho?: string }) {
-  return (
-    <span className="relative shrink-0">
-      <Avatar id={id} nome={nome} tamanho={tamanho} />
-      <span
-        role="img"
-        aria-label={PONTO[situacao].rotulo}
-        className={`absolute -right-0.5 -bottom-0.5 h-3.5 w-3.5 rounded-full border-2 border-perola ${PONTO[situacao].cor}`}
-      />
-    </span>
-  );
-}
-
-// ✓✓ nas mensagens que saíram do salão (da IA ou da dona)
-function Enviada() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada" className="mr-1 inline-block shrink-0 align-[-3px]">
-      <path d="m2 13 4 4 8-9" />
-      <path d="m10 16 1 1 8-9" />
-    </svg>
-  );
-}
-
 // Prévia da última mensagem: "[áudio] Oi..." vira 🎤 Oi..., e "[imagem]" vira 📷 Foto, como no WhatsApp
 function Previa({ texto }: { texto: string | null }) {
   if (!texto) return <>(mensagem sem texto)</>;
@@ -147,7 +117,6 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
   const inicio = useRef<{ x: number; y: number } | null>(null);
   const [arrasto, setArrasto] = useState<number | null>(null);
   const situacao = situacaoIa(c.ia_pausada, c.motivo_pausa);
-  const nossa = c.ultimo_autor !== "cliente";
   const deslocamento = arrasto ?? (aberta ? -LARGURA_ACOES : 0);
 
   function tocar() {
@@ -208,17 +177,16 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
         style={{ transform: `translateX(${deslocamento}px)` }}
         className={`relative flex w-full items-center gap-3 bg-card px-3.5 text-left active:bg-campo ${arrasto === null ? "transition-transform duration-200" : ""}`}
       >
-        <AvatarComStatus id={c.cliente_id} nome={c.nome} situacao={situacao} tamanho="h-12 w-12 text-lg" />
+        <Avatar id={c.cliente_id} nome={c.nome} tamanho="h-11 w-11 text-base" />
         {/* O nome manda; a prévia fica numa linha só, em cinza, como no WhatsApp */}
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-b-[0.5px] border-borda py-3 group-last:border-b-0">
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-b border-campo py-3 group-last:border-b-0">
           <span className="flex items-baseline justify-between gap-2">
-            <span className="truncate text-[16px] font-semibold text-texto">{c.nome ?? formatarTelefone(c.telefone)}</span>
-            <span className={`shrink-0 text-[12px] ${situacao === "precisa" ? "font-bold text-rose-texto" : "text-texto-2"}`}>
+            <span className="truncate text-[16px] font-bold text-texto">{c.nome ?? formatarTelefone(c.telefone)}</span>
+            <span className={`shrink-0 text-[13px] ${situacao === "precisa" ? "font-bold text-rose-texto" : "text-rotulo"}`}>
               {quando(c.ultima_mensagem_em)}
             </span>
           </span>
-          <span className="flex min-w-0 items-center text-[14px] text-texto-2">
-            {nossa && <Enviada />}
+          <span className="flex min-w-0 items-center text-[15px] text-texto-2">
             <span className="truncate">
               {c.ultimo_autor === "ia" && (
                 <span className="ia-tag mr-1.5 align-[1px]">
@@ -304,6 +272,9 @@ function ConversasPageConteudo() {
     }
     return base.filter((c) => filtro === "todas" || situacaoIa(c.ia_pausada, c.motivo_pausa) === filtro);
   }, [conversas, achadas, texto, filtro]);
+  // Fixadas no topo: quem precisa da dona (sem busca; com busca, tudo vai para a lista)
+  const fixadas = texto ? [] : lista.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "precisa");
+  const demais = fixadas.length ? lista.filter((c) => !fixadas.includes(c)) : lista;
 
   return (
     <>
@@ -311,19 +282,17 @@ function ConversasPageConteudo() {
       <header className="flex flex-col gap-2.5 px-4 pt-6">
         <div>
           <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">Conversas</h1>
-          <p className="text-sm text-texto-2">
+          <p className="text-[14px] text-texto-2">
             {total.todas} {total.todas === 1 ? "conversa" : "conversas"}
             {total.precisa > 0 && (
               <>
                 {" · "}
-                <span className="font-semibold text-rose-texto">
-                  {total.precisa} {total.precisa === 1 ? "precisa" : "precisam"} de você
-                </span>
+                <span className="font-bold text-rose-texto">{total.precisa} esperando você</span>
               </>
             )}
           </p>
         </div>
-        <label className="flex h-10 items-center gap-2 rounded-full bg-campo px-3.5">
+        <label className="flex h-12 items-center gap-2.5 rounded-[14px] border border-borda bg-card px-3.5">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
@@ -334,7 +303,7 @@ function ConversasPageConteudo() {
             placeholder="Pesquisar"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#7A5870]"
+            className="h-full min-w-0 flex-1 bg-transparent text-[16px] outline-none placeholder:text-[#7A5870]"
           />
         </label>
       </header>
@@ -342,55 +311,67 @@ function ConversasPageConteudo() {
       {!resultado && <p className="carregando-calmo px-4 pt-5 text-texto-2">Carregando…</p>}
       {resultado && "erro" in resultado && <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler as conversas: {resultado.erro}</p>}
 
-      {/* Quem precisa de você, em bolinhas (como os stories do Instagram/Messenger) */}
-      {precisam.length > 0 && !busca.trim() && (
-        <section aria-label="Precisam de você" className="flex gap-3.5 overflow-x-auto px-4 pt-3.5 pb-1 [scrollbar-width:none]">
-          {precisam.map((c) => (
-            <Link key={c.cliente_id} href={`/conversas/${c.cliente_id}`} className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center text-xs text-rotulo">
-              <span className="rounded-full bg-[conic-gradient(#7A2617,#B4432F,#7A2617)] p-[3px]">
-                <span className="block rounded-full border-2 border-perola">
-                  <Avatar id={c.cliente_id} nome={c.nome} tamanho="h-[54px] w-[54px] text-xl" />
+      {/* Controle segmentado: trilho Pérola, opção escolhida em Ônix. "Atenção" leva um contador
+          vermelho quando há conversa esperando a dona */}
+      <div role="group" aria-label="Filtrar conversas" className="mx-4 mt-3 mb-1 grid grid-cols-3 gap-1 rounded-[14px] bg-campo p-1">
+        {FILTROS.map((f) => {
+          const ativo = filtro === f.chave;
+          return (
+            <button
+              key={f.chave}
+              onClick={() => setFiltro(f.chave)}
+              aria-pressed={ativo}
+              className={`flex h-11 items-center justify-center gap-1.5 rounded-[11px] text-[14px] transition-colors duration-200 ${
+                ativo ? "bg-grafite font-bold text-perola" : "font-semibold text-grafite"
+              }`}
+            >
+              {f.rotulo}
+              {f.chave === "precisa" && total.precisa > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-atencao px-1.5 text-[12px] font-bold text-white">
+                  {total.precisa}
+                </span>
+              )}
+              {f.chave === "pausada" && total.pausada > 0 && <span className="font-semibold opacity-70">{total.pausada}</span>}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Quem precisa da dona fica fixado no topo, em cartão próprio com borda de atenção */}
+      {fixadas.length > 0 && (
+        <section aria-label="Precisam de você" className="chegar-suave mx-4 mt-2 flex flex-col gap-2">
+          {fixadas.map((c) => (
+            <Link
+              key={c.cliente_id}
+              href={`/conversas/${c.cliente_id}`}
+              className="flex items-center gap-3 rounded-[18px] border-2 border-atencao bg-card px-3.5 py-3 active:bg-campo"
+            >
+              <Avatar id={c.cliente_id} nome={c.nome} tamanho="h-11 w-11 text-base" cor="bg-rose text-rose-texto" />
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[16px] font-bold">{c.nome ?? formatarTelefone(c.telefone)}</span>
+                  <span className="shrink-0 text-[13px] text-rotulo">{quando(c.ultima_mensagem_em)}</span>
+                </span>
+                <span className="text-[14px] font-extrabold text-atencao">Precisa de você</span>
+                <span className="truncate text-[15px] text-texto-2">
+                  <Previa texto={c.ultima_mensagem} />
                 </span>
               </span>
-              <span className="w-full truncate">{c.nome ? primeiroNome(c.nome) : formatarTelefone(c.telefone)}</span>
             </Link>
           ))}
         </section>
       )}
 
-      {/* Seletor em cápsula, como no iOS 26: a bolha da opção escolhida desliza até a tocada,
-          na mesma mola da barra de abas (bolha-aba) */}
-      <div role="group" aria-label="Filtrar conversas" className="relative mx-4 mt-3 mb-1.5 grid grid-cols-3 rounded-full bg-campo p-1">
-        <span
-          aria-hidden
-          className="bolha-aba pointer-events-none absolute inset-y-1 left-1 w-[calc((100%-0.5rem)/3)] rounded-full bg-card shadow-[0_1px_4px_rgba(30,23,20,0.15)]"
-          style={{ transform: `translateX(${FILTROS.findIndex((f) => f.chave === filtro) * 100}%)` }}
-        />
-        {FILTROS.map((f) => (
-          <button
-            key={f.chave}
-            onClick={() => setFiltro(f.chave)}
-            aria-pressed={filtro === f.chave}
-            className={`relative h-10 rounded-full text-[13px] font-semibold transition-colors duration-300 active:scale-95 ${
-              filtro === f.chave ? "text-grafite" : "text-rotulo"
-            }`}
-          >
-            {f.rotulo}
-            {total[f.chave] > 0 && f.chave !== "todas" && ` · ${total[f.chave]}`}
-          </button>
-        ))}
-      </div>
-
       {resultado && "conversas" in resultado && (
         <section className="chegar-suave">
-          {lista.length === 0 ? (
-            <p className="mx-4 mt-6 text-center text-[15px] text-texto-2">
+          {demais.length === 0 ? (
+            fixadas.length === 0 && <p className="mx-4 mt-6 text-center text-[15px] text-texto-2">
               {busca.trim() ? "Nenhuma conversa encontrada." : "Nenhuma conversa aqui."}
             </p>
           ) : (
             // As conversas num cartão, para os nomes não se perderem no fundo pérola
-            <ul className="mx-4 mt-1.5 overflow-hidden rounded-[22px] bg-card borda-suave">
-              {lista.map((c) => (
+            <ul className="mx-4 mt-2 overflow-hidden rounded-[18px] bg-card borda-suave">
+              {demais.map((c) => (
                 <LinhaDeslizante
                   key={c.cliente_id}
                   conversa={c}
@@ -400,7 +381,7 @@ function ConversasPageConteudo() {
               ))}
             </ul>
           )}
-          {lista.length > 0 && <p className="px-4 pt-3 text-center text-xs text-texto-2">Deslize uma conversa para o lado para ver Ficha e WhatsApp.</p>}
+          {demais.length > 0 && <p className="px-4 pt-3 text-center text-xs text-texto-2">Deslize uma conversa para o lado para ver Ficha e WhatsApp.</p>}
           {cortada && !texto && filtro === "todas" && (
             <p className="px-4 pt-1.5 pb-2 text-center text-xs text-texto-2">
               Mostrando as {LIMITE} conversas mais recentes. Para achar uma mais antiga, use a busca.

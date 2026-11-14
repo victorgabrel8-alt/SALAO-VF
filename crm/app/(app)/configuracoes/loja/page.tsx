@@ -128,8 +128,8 @@ export default function DadosLojaPage() {
     setAviso("Salvo ✓");
   }
 
-  const campo = "h-12 w-full rounded-full bg-card px-4 text-[16px] font-semibold outline-none borda-suave";
-  const caixa = "w-full rounded-[22px] bg-card px-4 py-3 text-[16px] outline-none borda-suave";
+  const campo = "h-12 w-full rounded-full bg-campo px-4 text-[16px] font-semibold outline-none focus:ring-2 focus:ring-grafite";
+  const caixa = "w-full rounded-[22px] bg-campo px-4 py-3 text-[16px] outline-none focus:ring-2 focus:ring-grafite";
 
   return (
     <>

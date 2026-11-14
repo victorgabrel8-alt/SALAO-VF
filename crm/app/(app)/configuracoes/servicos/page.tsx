@@ -112,7 +112,7 @@ export default function ServicosPage() {
 
       <div className="flex flex-col gap-4 px-4 pt-5">
         {erro && <p className="rounded-2xl bg-rose p-3 text-rose-texto">Não foi possível carregar: {erro}</p>}
-        {!servicos && !erro && <p className="text-[15px] text-texto-2">Carregando…</p>}
+        {!servicos && !erro && <p className="carregando-calmo text-[15px] text-texto-2">Carregando…</p>}
 
         {categorias.map((c) => {
           const lista = ativos.filter((s) => (categorias.some((x) => x.id === s.categoria) ? s.categoria : "outro") === c.id);
