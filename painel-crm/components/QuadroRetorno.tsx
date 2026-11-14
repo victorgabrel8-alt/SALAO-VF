@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Etiquetas } from "@/components/Etiquetas";
+import { Aviso, Folha, Rotulo, botao, botaoForte, opcao, type Tom, TONS } from "@/components/Pecas";
 import { montarMensagem, tipoDoAlo } from "@/lib/alo";
 import { useEmpresa } from "@/lib/empresa";
 import { formatarData, formatarHora, formatarTelefone, haQuantoTempo, hojeNoSalao, prazo } from "@/lib/formato";
@@ -14,12 +15,10 @@ import {
   moverCard,
   previa,
   proximaEtapa,
-  useQuadro,
   type CardCliente,
   type Etapa,
 } from "@/lib/quadro";
 import { mudarStatus, type StatusManual } from "@/lib/statusManual";
-import { useTempoReal } from "@/lib/tempoReal";
 import { abrirWhatsApp } from "@/lib/whatsapp";
 
 type Filtro = "todas" | "atrasadas" | "chegando" | "inativas" | "vip" | Etapa;
@@ -33,7 +32,11 @@ type AoSoltar =
 
 const temVip = (c: CardCliente) => c.etiquetas.some((e) => e.toLowerCase() === "vip");
 
-const FILTROS: { chave: Filtro; rotulo: string; passa: (c: CardCliente) => boolean; aoSoltar: AoSoltar }[] = [
+type OpcaoFiltro = { chave: Filtro; rotulo: string; ponto?: string; passa: (c: CardCliente) => boolean; aoSoltar: AoSoltar };
+
+// Dois grupos de filtro, que são coisas diferentes: o status da cliente (o que o retorno dela diz)
+// e a etapa do quadro (em que coluna ela está)
+const POR_STATUS: OpcaoFiltro[] = [
   {
     chave: "todas",
     rotulo: "Todas",
@@ -59,52 +62,42 @@ const FILTROS: { chave: Filtro; rotulo: string; passa: (c: CardCliente) => boole
     aoSoltar: { tipo: "status", status: "inativa", texto: "marcar como inativa" },
   },
   { chave: "vip", rotulo: "VIP", passa: temVip, aoSoltar: { tipo: "etiqueta", etiqueta: "vip", texto: "marcar como VIP" } },
-  ...ETAPAS.map((e) => ({
-    chave: e.chave,
-    rotulo: e.titulo,
-    passa: (c: CardCliente) => etapaDe(c) === e.chave,
-    aoSoltar: { tipo: "etapa", etapa: e.chave } as const,
-  })),
 ];
+const POR_ETAPA: OpcaoFiltro[] = ETAPAS.map((e) => ({
+  chave: e.chave,
+  rotulo: e.titulo,
+  ponto: e.ponto,
+  passa: (c: CardCliente) => etapaDe(c) === e.chave,
+  aoSoltar: { tipo: "etapa", etapa: e.chave } as const,
+}));
+const GRUPOS = [
+  { titulo: "Status da cliente", filtros: POR_STATUS },
+  { titulo: "Etapa do quadro", filtros: POR_ETAPA },
+];
+const FILTROS = [...POR_STATUS, ...POR_ETAPA];
 
-// Selo do card: o que mais importa sobre o retorno dela
-function selo(c: CardCliente): { texto: string; cor: string; ponto: string } {
+// Selo do card: o que mais importa sobre o retorno dela, sempre escrito
+function selo(c: CardCliente): { texto: string; tom: Tom } {
   if (c.proximo_agendamento) {
     const hora = formatarHora(c.proximo_agendamento).replace(":00", "h");
-    return {
-      texto: `marcado ${formatarData(c.proximo_agendamento).slice(0, 5)} ${hora}`,
-      cor: "bg-salvia text-salvia-texto",
-      ponto: "bg-status-em-dia",
-    };
+    return { texto: `marcado ${formatarData(c.proximo_agendamento).slice(0, 5)} ${hora}`, tom: "ok" };
   }
   if (c.status === "inativa") {
     const dias = c.dias_sem_visita ?? 0;
     const meses = Math.floor(dias / 30);
-    return {
-      texto: `inativa ${meses >= 2 ? `${meses} meses` : `${dias} dias`}`,
-      cor: "bg-taupe text-taupe-texto",
-      ponto: "bg-status-inativa",
-    };
+    return { texto: `inativa ${meses >= 2 ? `${meses} meses` : `${dias} dias`}`, tom: "neutro" };
   }
   // Com status escolhido à mão a data pode não bater: aí o selo só diz o status
   if (c.status === "retorno_atrasado") {
     const vencido = c.retorno_previsto && c.retorno_previsto < hojeNoSalao();
-    return {
-      texto: vencido ? prazo(c.retorno_previsto!) : "atrasada",
-      cor: "bg-rose text-rose-texto",
-      ponto: "bg-status-atrasada",
-    };
+    return { texto: vencido ? prazo(c.retorno_previsto!) : "atrasada", tom: "atencao" };
   }
   if (c.status === "retorno_chegando") {
     const futuro = c.retorno_previsto && c.retorno_previsto >= hojeNoSalao();
-    return {
-      texto: futuro ? `retorno ${prazo(c.retorno_previsto!)}` : "retorno chegando",
-      cor: "bg-mel text-mel-texto",
-      ponto: "bg-status-chegando",
-    };
+    return { texto: futuro ? `retorno ${prazo(c.retorno_previsto!)}` : "retorno chegando", tom: "aviso" };
   }
-  if (c.status === "sem_visita") return { texto: "sem visita", cor: "bg-campo text-texto-2", ponto: "bg-status-sem-visita" };
-  return { texto: "em dia", cor: "bg-salvia text-salvia-texto", ponto: "bg-status-em-dia" };
+  if (c.status === "sem_visita") return { texto: "sem visita", tom: "neutro" };
+  return { texto: "em dia", tom: "ok" };
 }
 
 // Dentro da coluna: atrasadas (a mais atrasada primeiro), depois retorno chegando, depois inativas
@@ -124,13 +117,19 @@ function textoVisita(c: CardCliente): string {
 
 // Quadro de retorno: arrastar o card entre as colunas (ou usar a seta) muda a etapa;
 // clicar no card abre a mensagem para mandar pelo WhatsApp.
-export function QuadroRetorno({ busca }: { busca: string }) {
+// Quem lê o quadro no banco é a tela de Clientes (o mesmo quadro alimenta o resumo do topo).
+export function QuadroRetorno({
+  busca,
+  quadro,
+  trocarCard,
+  aoRecarregar,
+}: {
+  busca: string;
+  quadro: { cards: CardCliente[]; erro?: string } | null;
+  trocarCard: (card: CardCliente) => void;
+  aoRecarregar: () => void;
+}) {
   const empresa = useEmpresa();
-  const [versao, setVersao] = useState(0);
-  const { quadro, trocarCard } = useQuadro(empresa.id, versao);
-  // Atendimento marcado/desmarcado na Agenda do salão, horário novo da IA, alô que saiu pelo
-  // WhatsApp do salão etc.: o quadro se atualiza sozinho
-  useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, () => setVersao((v) => v + 1));
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [arrastando, setArrastando] = useState<CardCliente | null>(null);
   const [sobre, setSobre] = useState<string | null>(null);
@@ -171,7 +170,7 @@ export function QuadroRetorno({ busca }: { busca: string }) {
     trocarCard(r.card);
   }
 
-  // Card solto num filtro lá em cima (ver FILTROS)
+  // Card solto num filtro lá em cima (ver POR_STATUS e POR_ETAPA)
   async function soltarNoFiltro(card: CardCliente, acao: AoSoltar) {
     if (acao.tipo === "etapa") return mover(card, acao.etapa);
     if (acao.tipo === "etiqueta" && temVip(card)) return;
@@ -190,7 +189,7 @@ export function QuadroRetorno({ busca }: { busca: string }) {
       acao.tipo === "status" ? await mudarStatus(card.id, acao.status) : await adicionarEtiqueta(card.id, acao.etiqueta);
     if (e) trocarCard(card);
     setErro(e ? `Não foi possível ${acao.texto} (${card.nome ?? "cliente"}): ${e}` : "");
-    if (!e) setVersao((v) => v + 1);
+    if (!e) aoRecarregar();
   }
 
   function soltarEm(chave: string, acao: (c: CardCliente) => void) {
@@ -213,90 +212,103 @@ export function QuadroRetorno({ busca }: { busca: string }) {
 
   return (
     <>
-      <div className="mb-3 flex flex-wrap gap-2">
-        {FILTROS.map((f, i) => {
-          const alvo = `filtro-${f.chave}`;
-          return (
-            <span key={f.chave} className="contents">
-              {/* Separa os filtros de status das etapas do quadro */}
-              {i > 0 && FILTROS[i - 1].aoSoltar.tipo !== "etapa" && f.aoSoltar.tipo === "etapa" && (
-                <span className="mx-1 self-center text-inativo" aria-hidden>
-                  |
-                </span>
-              )}
-              <button
-                onClick={() => setFiltro(f.chave)}
-                aria-pressed={filtro === f.chave}
-                {...soltarEm(alvo, (c) => soltarNoFiltro(c, f.aoSoltar))}
-                className={`h-10 rounded-full px-4 font-semibold transition ${
-                  filtro === f.chave ? "chip-ativo" : "border border-grafite/10 bg-card text-grafite hover:bg-campo/60"
-                } ${arrastando ? "ring-2 ring-[var(--cor-principal)]/40 ring-offset-1" : ""} ${
-                  sobre === alvo ? "scale-110 bg-cobre text-grafite" : ""
+      {/* Filtros: status e etapa são dois grupos, cada um com o seu nome. Também recebem cards arrastados. */}
+      <div className="mb-4 rounded-[18px] border border-borda bg-card px-5 py-4">
+        <div className="grid gap-x-5 gap-y-3 md:grid-cols-[9.5rem_1fr]">
+          {GRUPOS.map((g) => (
+            <div key={g.titulo} className="contents">
+              <p className="rotulo md:pt-3.5">{g.titulo}</p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label={`Filtros: ${g.titulo}`}>
+                {g.filtros.map((f) => {
+                  const alvo = `filtro-${f.chave}`;
+                  const ativa = filtro === f.chave;
+                  return (
+                    <button
+                      key={f.chave}
+                      onClick={() => setFiltro(f.chave)}
+                      aria-pressed={ativa}
+                      {...soltarEm(alvo, (c) => soltarNoFiltro(c, f.aoSoltar))}
+                      className={`${opcao(ativa)} ${
+                        sobre === alvo ? "outline-2 outline-offset-2 outline-onix" : arrastando ? "border-dashed border-borda-forte" : ""
+                      }`}
+                    >
+                      {f.ponto && <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${f.ponto}`} aria-hidden="true" />}
+                      {f.rotulo}
+                      <span className={`font-semibold tabular-nums ${ativa ? "" : "text-apoio"}`}>{buscados.filter(f.passa).length}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 border-t border-borda pt-3 text-[14px] text-apoio" aria-live="polite">
+          {arrastando
+            ? `Solte ${arrastando.nome ?? "a cliente"} numa coluna ou em qualquer opção acima. Em “Todas”, ela volta ao status automático.`
+            : "Arraste os cards entre as colunas ou para as opções acima, ou use a seta do card. Clique no card para escrever a mensagem."}
+        </p>
+      </div>
+
+      {erro && (
+        <div className="mb-4">
+          <Aviso tom="atencao">{erro}</Aviso>
+        </div>
+      )}
+      {quadro?.erro && (
+        <div className="mb-4">
+          <Aviso tom="atencao">Erro ao ler o quadro: {quadro.erro}</Aviso>
+        </div>
+      )}
+
+      {/* "Para chamar" é a coluna mais cheia: ocupa duas larguras, com os cards lado a lado.
+          Em tela estreita o quadro rola para o lado, para nenhum texto ser cortado. */}
+      <div className="overflow-x-auto pb-2">
+        <div className="grid min-w-[1040px] grid-cols-[1.7fr_repeat(4,minmax(0,1fr))] gap-3">
+          {ETAPAS.map((etapa) => {
+            const cards = visiveis.filter((c) => etapaDe(c) === etapa.chave);
+            const larga = etapa.chave === "para_chamar";
+            return (
+              <section
+                key={etapa.chave}
+                aria-label={etapa.titulo}
+                {...soltarEm(etapa.chave, (c) => mover(c, etapa.chave))}
+                className={`min-h-[50vh] rounded-[18px] bg-campo p-2 ${
+                  sobre === etapa.chave ? "outline-2 -outline-offset-2 outline-onix" : ""
                 }`}
               >
-                {f.rotulo}{" "}
-                <span className={sobre === alvo || filtro === f.chave ? "font-normal" : "font-normal text-texto-2"}>
-                  {buscados.filter(f.passa).length}
-                </span>
-              </button>
-            </span>
-          );
-        })}
-      </div>
-      <p className="mb-4 text-sm text-texto-2">
-        {arrastando
-          ? `Solte ${arrastando.nome ?? "a cliente"} numa coluna ou em qualquer opção acima. Em “Todas”, ela volta ao status automático.`
-          : "Arraste os cards entre as colunas ou para as opções acima, ou use a seta do card. Clique no card para escrever a mensagem."}
-      </p>
-
-      {erro && <p className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">{erro}</p>}
-      {quadro?.erro && <p className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">Erro ao ler o quadro: {quadro.erro}</p>}
-
-      {/* "Para chamar" é a coluna mais cheia: ocupa duas larguras, com os cards lado a lado */}
-      <div className="grid grid-cols-6 gap-4">
-        {ETAPAS.map((etapa) => {
-          const cards = visiveis.filter((c) => etapaDe(c) === etapa.chave);
-          const larga = etapa.chave === "para_chamar";
-          return (
-            <section
-              key={etapa.chave}
-              {...soltarEm(etapa.chave, (c) => mover(c, etapa.chave))}
-              className={`min-h-[60vh] rounded-2xl p-3 transition ${larga ? "col-span-2" : ""} ${
-                sobre === etapa.chave ? "bg-cobre-claro ring-2 ring-[var(--cor-principal)]" : "bg-campo"
-              }`}
-            >
-              <header className="mb-3 flex items-center justify-between px-1 pt-1">
-                <h2 className="flex items-center gap-2 font-semibold">
-                  <span className={`h-2.5 w-2.5 rounded-full ${etapa.ponto}`} />
-                  {etapa.titulo}
-                </h2>
-                <span className="rounded-full bg-card px-2.5 py-0.5 text-sm font-semibold text-texto-2">
-                  {quadro ? cards.length : "…"}
-                </span>
-              </header>
-              <div className={larga ? "grid grid-cols-2 items-start gap-3" : "space-y-3"}>
-                {!quadro && <p className="px-1 text-sm text-texto-2">Carregando…</p>}
-                {cards.map((c) => (
-                  <Card
-                    key={c.id}
-                    card={c}
-                    arrastado={arrastando?.id === c.id}
-                    aoArrastar={() => setArrastando(c)}
-                    aoSoltar={() => {
-                      setArrastando(null);
-                      setSobre(null);
-                    }}
-                    aoAbrir={() => setEscrevendo(c)}
-                    aoAvancar={() => {
-                      const prox = proximaEtapa(etapaDe(c));
-                      if (prox) mover(c, prox);
-                    }}
-                  />
-                ))}
-              </div>
-            </section>
-          );
-        })}
+                <header className="px-1 pt-2 pb-3">
+                  <h2 className="flex items-center gap-1.5 text-[14px] font-bold tracking-[-0.01em]">
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${etapa.ponto}`} aria-hidden="true" />
+                    {etapa.titulo}
+                  </h2>
+                  <p className="mt-0.5 pl-4 text-[13px] font-semibold text-apoio tabular-nums">
+                    {quadro ? `${cards.length} ${cards.length === 1 ? "cliente" : "clientes"}` : "…"}
+                  </p>
+                </header>
+                <div className={larga ? "grid grid-cols-2 items-start gap-2" : "space-y-2"}>
+                  {!quadro && <p className="px-2 text-[14px] text-texto-2">Carregando…</p>}
+                  {cards.map((c) => (
+                    <Card
+                      key={c.id}
+                      card={c}
+                      arrastado={arrastando?.id === c.id}
+                      aoArrastar={() => setArrastando(c)}
+                      aoSoltar={() => {
+                        setArrastando(null);
+                        setSobre(null);
+                      }}
+                      aoAbrir={() => setEscrevendo(c)}
+                      aoAvancar={() => {
+                        const prox = proximaEtapa(etapaDe(c));
+                        if (prox) mover(c, prox);
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
+            );
+          })}
+        </div>
       </div>
 
       {escrevendo && (
@@ -332,6 +344,8 @@ function Card({
 }) {
   const s = selo(card);
   const temProxima = proximaEtapa(etapaDe(card)) !== null;
+  // Selo em caixinha (não em pílula) e sem "nowrap": em coluna estreita o texto quebra de linha, não é cortado
+  const caixinha = "inline-block rounded-lg px-2 py-1 text-[13px] leading-snug font-bold";
   return (
     <article
       draggable
@@ -342,35 +356,48 @@ function Card({
       }}
       onDragEnd={aoSoltar}
       onClick={aoAbrir}
-      className={`cursor-grab rounded-2xl border border-borda bg-card p-4 transition hover:shadow-md active:cursor-grabbing ${
-        arrastado ? "opacity-40" : ""
-      }`}
+      className={`min-w-0 cursor-grab rounded-[14px] border border-borda bg-card p-3 hover:border-borda-forte active:cursor-grabbing ${arrastado ? "opacity-40" : ""}`}
     >
-      <p className="font-semibold leading-snug">{card.nome ?? "Sem nome"}</p>
-      <p className="text-sm whitespace-nowrap text-texto-2">{formatarTelefone(card.telefone)}</p>
-      <span className={`mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-sm font-medium ${s.cor}`}>
-        <span className={`h-2 w-2 rounded-full ${s.ponto}`} />
-        {s.texto}
-      </span>
+      {/* O nome abre a mensagem pelo teclado (Enter ou espaço); o clique em qualquer ponto do card faz o mesmo.
+          Não é um <button> de verdade porque, em alguns navegadores, botão dentro do card atrapalha o arrastar. */}
+      <p
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          aoAbrir();
+        }}
+        className="rounded text-[15px] leading-snug font-bold [overflow-wrap:anywhere]"
+      >
+        {card.nome?.trim() || "Sem nome"}
+      </p>
+      <p className="mt-0.5 text-[13px] text-apoio">{formatarTelefone(card.telefone)}</p>
+      <p className="mt-2">
+        <span className={`${caixinha} ${TONS[s.tom]}`}>{s.texto}</span>
+      </p>
       {faltaEnviar(card) && (
-        <span className="mt-2 block w-fit rounded-full bg-rose px-2.5 py-0.5 text-sm font-semibold text-rose-texto">
-          Abriu o WhatsApp · falta enviar
-        </span>
+        <p className="mt-1.5">
+          <span className={`${caixinha} ${TONS.atencao}`}>Abriu o WhatsApp, falta enviar</span>
+        </p>
       )}
       <Etiquetas etiquetas={card.etiquetas} className="mt-2" />
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-borda/60 pt-3">
-        <span className="text-sm leading-tight text-texto-2">{textoVisita(card)}</span>
+      <div className="mt-2.5 flex items-end justify-between gap-2 border-t border-borda pt-2.5">
+        <span className="text-[13px] leading-snug text-apoio">{textoVisita(card)}</span>
         {temProxima && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               aoAvancar();
             }}
-            aria-label="Passar para a próxima coluna"
+            aria-label={`Passar ${card.nome ?? "a cliente"} para a próxima coluna`}
             title="Passar para a próxima coluna"
-            className="flex h-9 w-9 items-center justify-center rounded-full border border-borda text-cobre-escuro hover:bg-campo/60"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-borda-forte bg-card text-grafite hover:bg-campo/50"
           >
-            →
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
           </button>
         )}
       </div>
@@ -392,45 +419,36 @@ function Mensagem({
 }) {
   const [texto, setTexto] = useState(() => montarMensagem(config, tipoDoAlo(card.status), card.nome, card.servico));
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4" onClick={aoFechar}>
-      <div
-        role="dialog"
-        aria-modal="true"
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg space-y-4 rounded-3xl bg-card p-6"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="font-serif text-2xl font-semibold">{card.nome ?? "Sem nome"}</h2>
-            <p className="text-texto-2">{formatarTelefone(card.telefone)}</p>
-          </div>
-          <Link href={`/clientes/${card.id}`} className="text-sm font-semibold text-cobre-escuro hover:underline">
+    <Folha titulo={card.nome ?? "Sem nome"} aoFechar={aoFechar} largura="max-w-lg">
+      <div className="space-y-4">
+        <p className="-mt-3 flex flex-wrap items-center justify-between gap-3 text-[15px] text-texto-2">
+          {formatarTelefone(card.telefone)}
+          <Link href={`/clientes/${card.id}`} className="flex h-10 items-center font-bold text-grafite underline underline-offset-4">
             Ver ficha
           </Link>
-        </div>
-        <textarea
-          value={texto}
-          onChange={(e) => setTexto(e.target.value)}
-          rows={5}
-          className="w-full rounded-xl border border-borda p-3 outline-none focus:border-[var(--cor-principal)]"
-        />
-        <div className="grid grid-cols-2 gap-2">
-          <button onClick={aoFechar} className="h-12 rounded-xl border border-borda font-semibold hover:bg-campo/60">
-            Voltar
-          </button>
-          <button
-            onClick={() => aoEnviar(texto.trim())}
-            disabled={!texto.trim()}
-            className="h-12 rounded-xl bg-grafite font-bold text-perola disabled:opacity-50"
-          >
+        </p>
+        <label className="block">
+          <Rotulo>Mensagem para mandar pelo WhatsApp</Rotulo>
+          <textarea
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            rows={6}
+            className="w-full rounded-xl border border-borda bg-card p-3 text-[15px] leading-relaxed outline-none focus:border-onix focus-visible:ring-2 focus-visible:ring-onix/15"
+          />
+        </label>
+        <div className="flex flex-wrap gap-2.5">
+          <button onClick={() => aoEnviar(texto.trim())} disabled={!texto.trim()} className={botaoForte + " h-11"}>
             Abrir no WhatsApp
           </button>
+          <button onClick={aoFechar} className={botao + " h-11"}>
+            Voltar
+          </button>
         </div>
-        <p className="text-sm text-texto-2">
-          O card vai para “Mensagem enviada” quando a mensagem sair pelo WhatsApp do salão. Enviou de outro jeito? Arraste o card
-          para “Mensagem enviada”.
+        <p className="text-[14px] leading-relaxed text-apoio">
+          O card vai para “Mensagem enviada” quando a mensagem sair pelo WhatsApp do salão. Enviou de outro jeito? Arraste o card para
+          “Mensagem enviada”.
         </p>
       </div>
-    </div>
+    </Folha>
   );
 }

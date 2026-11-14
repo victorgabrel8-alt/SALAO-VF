@@ -2,10 +2,11 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useRef, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
 import { PainelManutencao } from "@/components/PainelManutencao";
+import { Aviso, Chip, Numero, botao, botaoForte, campoBase, cartao, opcao } from "@/components/Pecas";
 import { QuadroRetorno } from "@/components/QuadroRetorno";
 import type { StatusCliente } from "@/lib/status";
 import { diasDesdeContato } from "@/lib/alo";
@@ -21,8 +22,14 @@ import {
   type FiltroClientes,
 } from "@/lib/listaClientes";
 import { ORIGENS, lerOrigem, rotuloOrigem } from "@/lib/origem";
+import { etapaDe, faltaEnviar, useQuadro, type Etapa } from "@/lib/quadro";
 import { SeloStatus } from "@/lib/status";
 import { useTempoReal } from "@/lib/tempoReal";
+
+// A tela é lida de cima para baixo:
+//   1. resumo do que pede atenção hoje (quatro números, tirados do quadro);
+//   2. como ver as clientes (Quadro, Lista ou Manutenção) e a busca;
+//   3. a vista escolhida, com os filtros dela.
 
 const VISTAS = [
   { chave: "quadro", rotulo: "Quadro" },
@@ -43,10 +50,16 @@ const FILTROS: { chave: FiltroClientes; rotulo: string }[] = [
   { chave: "excluidas", rotulo: "Excluídas" },
 ];
 
-// Linhas em destaque: atrasadas (rosé/argila) e retorno chegando (mel)
-const DESTAQUE: Partial<Record<StatusCliente, { linha: string; borda: string; texto: string }>> = {
-  retorno_atrasado: { linha: "bg-rose/40 hover:bg-rose/60", borda: "border-status-atrasada", texto: "font-semibold text-rose-texto" },
-  retorno_chegando: { linha: "bg-mel/40 hover:bg-mel/60", borda: "border-status-chegando", texto: "font-semibold text-mel-texto" },
+// Os filtros da Lista em dois grupos: quem pede uma ação da agência e as demais situações
+const GRUPOS: { titulo: string; filtros: FiltroClientes[] }[] = [
+  { titulo: "Pedem atenção", filtros: ["para_chamar", "retorno_chegando", "atrasadas_recentes", "atrasadas_antigas", "inativa"] },
+  { titulo: "Situação", filtros: ["todas", "agendadas", "em_dia", "sem_visita", "excluidas"] },
+];
+
+// Prazo em destaque: atrasadas (rosé) e retorno chegando (mel). O status vem escrito no selo ao lado.
+const DESTAQUE: Partial<Record<StatusCliente, string>> = {
+  retorno_atrasado: "font-bold text-rose-texto",
+  retorno_chegando: "font-bold text-mel-texto",
 };
 
 function textoChamada(dias: number): string {
@@ -100,6 +113,23 @@ function Crm() {
   const buscaAtrasada = useAtraso(busca);
   // Atendimento marcado/desmarcado na Agenda do salão atualiza a lista e as contagens sozinho
   useTempoReal(["agendamentos", "clientes"], empresa.id, () => setVersao((v) => v + 1));
+  // O quadro (colunas de retorno) alimenta o resumo do topo e a vista Quadro. Horário novo da IA, alô que
+  // saiu pelo WhatsApp do salão etc.: ele se atualiza sozinho
+  const [versaoQuadro, setVersaoQuadro] = useState(0);
+  const { quadro, trocarCard } = useQuadro(empresa.id, versaoQuadro);
+  // Fora da vista Quadro a mudança só fica anotada (para não pesar no banco); ao voltar para o Quadro ele é lido de novo
+  const quadroVelho = useRef(false);
+  useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, () => {
+    if (vista === "quadro") setVersaoQuadro((v) => v + 1);
+    else quadroVelho.current = true;
+  });
+  function escolherVista(chave: (typeof VISTAS)[number]["chave"]) {
+    if (chave === "quadro" && quadroVelho.current) {
+      quadroVelho.current = false;
+      setVersaoQuadro((v) => v + 1);
+    }
+    router.replace(chave === "quadro" ? "/" : `/?vista=${chave}`, { scroll: false });
+  }
   const diasLimite = diasLimiteCelular(empresa.config);
   const contagem = useContagemClientes(empresa.id, diasLimite, versao);
   const { lista, verMais } = useListaClientes(
@@ -154,30 +184,63 @@ function Crm() {
     setSelecionadas([]);
     setErroAcao(falhas.length ? `${falhas.length} de ${ids.length} não foram salvas: ${falhas[0]}` : "");
     setVersao((v) => v + 1);
+    setVersaoQuadro((v) => v + 1);
   }
+
+  // Resumo do dia: sai do mesmo quadro que a vista Quadro mostra, para os números baterem com as colunas
+  const cards = quadro && !quadro.erro ? quadro.cards : null;
+  const naEtapa = (etapa: Etapa) => (cards ? cards.filter((c) => etapaDe(c) === etapa).length : null);
+  const paraChamar = naEtapa("para_chamar");
+  const responderam = naEtapa("respondeu");
+  const agendadas = naEtapa("agendado");
+  const atrasadas = cards ? cards.filter((c) => c.status === "retorno_atrasado").length : null;
+  const faltamEnviar = cards ? cards.filter(faltaEnviar).length : 0;
+  const espera = quadro?.erro ? "não deu para ler agora" : "carregando…";
 
   return (
     <>
-      <div className="flex items-end justify-between gap-4 pt-8 pb-4">
+      <header className="flex flex-wrap items-end justify-between gap-4 pt-9 pb-6">
         <div>
-          <h1 className="font-serif text-[30px] leading-tight">Clientes</h1>
-          <p className="text-texto-2">
-            {contagem ? `${contagem.todas} clientes` : "…"} · {empresa.nome}
-          </p>
+          <p className="rotulo">{empresa.nome}</p>
+          <h1 className="mt-1 font-serif text-[30px] leading-tight">Clientes</h1>
         </div>
-        <div className="flex gap-2">
-          <div className="flex h-11 rounded-xl bg-campo p-1" role="group" aria-label="Como ver as clientes">
-            {VISTAS.map((v) => (
-              <button
-                key={v.chave}
-                onClick={() => router.replace(v.chave === "quadro" ? "/" : `/?vista=${v.chave}`, { scroll: false })}
-                aria-pressed={vista === v.chave}
-                className={`rounded-lg px-4 font-semibold ${vista === v.chave ? "bg-card shadow-[0_1px_2px_rgba(33,22,16,0.08)]" : "text-texto-2 hover:text-grafite"}`}
-              >
-                {v.rotulo}
-              </button>
-            ))}
-          </div>
+        <p className="text-[14px] font-semibold text-apoio">{contagem ? `${contagem.todas.toLocaleString("pt-BR")} clientes no salão` : "…"}</p>
+      </header>
+
+      {/* 1. O que pede atenção hoje */}
+      <section aria-label="Resumo de hoje" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Numero
+          rotulo="Para chamar"
+          valor={paraChamar}
+          apoio={!cards ? espera : faltamEnviar > 0 ? `${faltamEnviar} com mensagem aberta, falta enviar` : paraChamar ? "esperando a primeira mensagem" : "ninguém para chamar agora"}
+          tom={faltamEnviar > 0 ? "aviso" : undefined}
+        />
+        <Numero rotulo="Responderam" valor={responderam} apoio={!cards ? espera : responderam ? "falta marcar o horário" : "nenhuma resposta esperando"} tom={responderam ? "aviso" : undefined} />
+        <Numero rotulo="Atrasadas" valor={atrasadas} apoio={!cards ? espera : atrasadas ? "passaram da data de retorno" : "ninguém atrasada"} tom={atrasadas ? "atencao" : undefined} />
+        <Numero rotulo="Agendadas" valor={agendadas} apoio={!cards ? espera : agendadas ? "com horário marcado" : "nenhum horário marcado"} />
+      </section>
+
+      {quadro?.erro && vista !== "quadro" && (
+        <div className="mt-3">
+          <Aviso tom="atencao">Erro ao ler o resumo: {quadro.erro}</Aviso>
+        </div>
+      )}
+
+      {/* 2. Como ver as clientes, e a busca */}
+      <div className="mt-9 mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex rounded-[14px] bg-campo p-1" role="group" aria-label="Como ver as clientes">
+          {VISTAS.map((v) => (
+            <button
+              key={v.chave}
+              onClick={() => escolherVista(v.chave)}
+              aria-pressed={vista === v.chave}
+              className={`h-10 rounded-[10px] px-5 text-[14px] ${vista === v.chave ? "bg-onix font-bold text-porcelana" : "font-semibold text-grafite hover:bg-card/60"}`}
+            >
+              {v.rotulo}
+            </button>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2.5">
           {vista === "lista" && (
             <select
               value={origem ?? ""}
@@ -186,7 +249,7 @@ function Crm() {
                 setSelecionadas([]);
               }}
               aria-label="Filtrar por origem"
-              className="h-11 rounded-xl border border-borda bg-card px-3"
+              className={campoBase + " font-semibold"}
             >
               <option value="">Todas as origens</option>
               {ORIGENS.map((o) => (
@@ -196,62 +259,85 @@ function Crm() {
               ))}
             </select>
           )}
-          <input
-            type="search"
-            placeholder="Buscar por nome ou telefone"
-            value={busca}
-            onChange={(e) => {
-              setBusca(e.target.value);
-              setSelecionadas([]);
-            }}
-            className="h-11 w-72 rounded-xl border border-borda bg-card px-4 outline-none focus:border-[var(--cor-principal)]"
-          />
+          <div className="relative">
+            <label htmlFor="busca-clientes" className="sr-only">
+              Buscar cliente por nome ou telefone
+            </label>
+            <svg
+              className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-apoio"
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              id="busca-clientes"
+              type="search"
+              placeholder="Buscar por nome ou telefone"
+              value={busca}
+              onChange={(e) => {
+                setBusca(e.target.value);
+                setSelecionadas([]);
+              }}
+              className={campoBase + " w-72 pl-10"}
+            />
+          </div>
         </div>
       </div>
 
+      {/* 3. A vista escolhida */}
       {vista === "quadro" ? (
-        <QuadroRetorno busca={buscaAtrasada} />
+        <QuadroRetorno busca={buscaAtrasada} quadro={quadro} trocarCard={trocarCard} aoRecarregar={() => setVersaoQuadro((v) => v + 1)} />
       ) : vista === "manutencao" ? (
         <PainelManutencao busca={buscaAtrasada} />
       ) : (
         <>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {FILTROS.map((f) => (
-              <button
-                key={f.chave}
-                onClick={() => escolherFiltro(f.chave)}
-                aria-pressed={filtro === f.chave}
-                className={`h-10 rounded-full px-4 font-semibold ${
-                  filtro === f.chave ? "chip-ativo" : "border border-grafite/10 bg-card text-grafite hover:bg-campo/60"
-                }`}
-              >
-                {f.rotulo} ({contagem?.[f.chave] ?? "…"})
-              </button>
-            ))}
+          <div className={`${cartao} mb-4 px-5 py-4`}>
+            <div className="grid gap-x-5 gap-y-3 md:grid-cols-[9.5rem_1fr]">
+              {GRUPOS.map((g) => (
+                <div key={g.titulo} className="contents">
+                  <p className="rotulo md:pt-3.5">{g.titulo}</p>
+                  <div className="flex flex-wrap gap-2" role="group" aria-label={`Filtros: ${g.titulo}`}>
+                    {g.filtros.map((chave) => {
+                      const f = FILTROS.find((x) => x.chave === chave)!;
+                      return (
+                        <button key={f.chave} onClick={() => escolherFiltro(f.chave)} aria-pressed={filtro === f.chave} className={opcao(filtro === f.chave)}>
+                          {f.rotulo}
+                          <span className={`font-semibold tabular-nums ${filtro === f.chave ? "" : "text-apoio"}`}>{contagem?.[f.chave] ?? "…"}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p className="mt-3 border-t border-borda pt-3 text-[14px] text-apoio">Para mudar a cliente de etapa ou de status, use o Quadro: lá dá para arrastar.</p>
           </div>
-          <p className="-mt-2 mb-4 text-sm text-texto-2">
-            Para mudar a cliente de etapa ou de status, use o Quadro: lá dá para arrastar.
-          </p>
 
           {selecionadas.length > 0 && (
-            <div className="sticky top-16 z-10 mb-4 flex items-center justify-between gap-4 rounded-2xl border border-grafite/10 bg-card px-4 py-3 shadow-md">
-              <span className="font-semibold">
+            <div className="sticky top-3 z-10 mb-4 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-onix bg-card px-5 py-3">
+              <span className="text-[15px] font-bold" role="status">
                 {selecionadas.length} {selecionadas.length === 1 ? "cliente selecionada" : "clientes selecionadas"}
               </span>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setSelecionadas([])}
-                  disabled={processando !== null}
-                  className="h-10 rounded-xl border border-borda px-4 font-semibold hover:bg-campo/60 disabled:opacity-50"
-                >
+                <button onClick={() => setSelecionadas([])} disabled={processando !== null} className={botao}>
                   Limpar seleção
                 </button>
                 <button
                   onClick={acaoEmMassa}
                   disabled={processando !== null}
-                  className={`h-10 rounded-xl px-4 font-bold disabled:opacity-60 ${
-                    filtro === "excluidas" ? "bg-grafite text-perola" : "bg-rose-texto text-white hover:bg-[#7a301f]"
-                  }`}
+                  className={
+                    filtro === "excluidas"
+                      ? botaoForte
+                      : "inline-flex h-10 items-center justify-center rounded-xl bg-atencao px-5 text-[14px] font-bold text-white hover:bg-rose-texto disabled:opacity-50"
+                  }
                 >
                   {processando
                     ? `${filtro === "excluidas" ? "Restaurando" : "Excluindo"} ${processando.feitas} de ${processando.total}…`
@@ -262,45 +348,53 @@ function Crm() {
               </div>
             </div>
           )}
-          {erroAcao && <p className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">{erroAcao}</p>}
-          {lista?.erro && <p className="rounded-xl bg-rose p-4 text-rose-texto">Erro ao ler as clientes: {lista.erro}</p>}
+          {erroAcao && (
+            <div className="mb-4">
+              <Aviso tom="atencao">{erroAcao}</Aviso>
+            </div>
+          )}
+          {lista?.erro && (
+            <div className="mb-4">
+              <Aviso tom="atencao">Erro ao ler as clientes: {lista.erro}</Aviso>
+            </div>
+          )}
 
-          <div className="overflow-hidden rounded-2xl border border-borda bg-card">
-            <table className="w-full text-left">
-              <thead className="bg-campo/60 text-sm text-texto-2">
+          <div className={`${cartao} overflow-x-auto`}>
+            <table className="w-full text-left text-[15px]">
+              <thead className="border-b border-borda bg-campo/50 text-[13px] text-texto-2">
                 <tr>
-                  <th className="w-10 py-3 pr-1 pl-4">
-                    <input
-                      type="checkbox"
-                      checked={todasMarcadas}
-                      onChange={() => setSelecionadas(todasMarcadas ? [] : idsNaTela)}
-                      disabled={idsNaTela.length === 0}
-                      aria-label="Selecionar todas desta lista"
-                      title="Selecionar todas desta lista"
-                      className="h-5 w-5 accent-[var(--cor-principal)]"
-                    />
+                  <th className="w-12 py-1 pr-1 pl-3">
+                    <label className="flex h-10 w-10 cursor-pointer items-center justify-center" title="Selecionar todas desta lista">
+                      <input
+                        type="checkbox"
+                        checked={todasMarcadas}
+                        onChange={() => setSelecionadas(todasMarcadas ? [] : idsNaTela)}
+                        disabled={idsNaTela.length === 0}
+                        aria-label="Selecionar todas desta lista"
+                        className="h-5 w-5 accent-[var(--color-onix)]"
+                      />
+                    </label>
                   </th>
-                  <th className="px-4 py-3 font-medium">Cliente</th>
-                  <th className="px-4 py-3 font-medium">Telefone</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 font-medium">Última visita</th>
-                  <th className="px-4 py-3 font-medium">Retorno / horário</th>
-                  <th className="px-4 py-3 font-medium">Visitas</th>
-                  <th className="px-4 py-3 font-medium">Origem</th>
-                  <th className="px-4 py-3 font-medium">Último contato</th>
+                  <th className="px-4 py-3 font-bold">Cliente</th>
+                  <th className="px-4 py-3 font-bold">Status</th>
+                  <th className="px-4 py-3 font-bold">Última visita</th>
+                  <th className="px-4 py-3 font-bold">Retorno ou horário</th>
+                  <th className="px-4 py-3 text-right font-bold">Visitas</th>
+                  <th className="px-4 py-3 font-bold">Origem</th>
+                  <th className="px-4 py-3 font-bold">Último contato</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-borda/60">
+              <tbody className="divide-y divide-borda">
                 {!lista && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-6 text-texto-2">
+                    <td colSpan={8} className="px-5 py-6 text-texto-2">
                       Carregando…
                     </td>
                   </tr>
                 )}
                 {lista && !lista.erro && lista.itens.length === 0 && (
                   <tr>
-                    <td colSpan={9} className="px-4 py-8 text-center text-texto-2">
+                    <td colSpan={8} className="px-5 py-8 text-center text-texto-2">
                       Nenhuma cliente aqui.
                     </td>
                   </tr>
@@ -311,55 +405,45 @@ function Crm() {
                   const o = lerOrigem(c.etiquetas);
                   const destaque = DESTAQUE[c.status];
                   return (
-                    <tr
-                      key={c.id}
-                      className={`align-top ${selecionadas.includes(c.id) ? "bg-cobre-claro/60" : (destaque?.linha ?? "hover:bg-campo/60")}`}
-                    >
-                      <td className={`py-3 pr-1 pl-3 ${destaque ? `border-l-4 ${destaque.borda}` : "border-l-4 border-transparent"}`}>
-                        <input
-                          type="checkbox"
-                          checked={selecionadas.includes(c.id)}
-                          onChange={() => alternarSelecao(c.id)}
-                          aria-label={`Selecionar ${c.nome ?? "cliente"}`}
-                          className="h-5 w-5 accent-[var(--cor-principal)]"
-                        />
+                    <tr key={c.id} className={`align-top ${selecionadas.includes(c.id) ? "bg-campo/70" : "hover:bg-campo/40"}`}>
+                      <td className="py-1.5 pr-1 pl-3">
+                        <label className="flex h-10 w-10 cursor-pointer items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={selecionadas.includes(c.id)}
+                            onChange={() => alternarSelecao(c.id)}
+                            aria-label={`Selecionar ${c.nome ?? "cliente"}`}
+                            className="h-5 w-5 accent-[var(--color-onix)]"
+                          />
+                        </label>
                       </td>
                       <td className="px-4 py-3">
-                        <Link href={`/clientes/${c.id}`} className="font-semibold hover:underline">
-                          {c.nome ?? "Sem nome"}
+                        <Link href={`/clientes/${c.id}`} className="-my-2.5 inline-block py-2.5 font-bold underline-offset-4 hover:underline">
+                          {c.nome?.trim() || "Sem nome"}
                         </Link>
-                        <Etiquetas etiquetas={c.etiquetas} />
+                        <span className="block text-[14px] whitespace-nowrap text-apoio">{formatarTelefone(c.telefone)}</span>
+                        <Etiquetas etiquetas={c.etiquetas} className="mt-1.5" />
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-texto-2">{formatarTelefone(c.telefone)}</td>
                       <td className="px-4 py-3">
                         {filtro === "excluidas" ? (
-                          <button
-                            onClick={() => restaurar(c)}
-                            disabled={restaurando === c.id}
-                            className="h-9 rounded-lg border border-borda bg-card px-3 text-sm font-semibold hover:bg-campo/60 disabled:opacity-50"
-                          >
+                          <button onClick={() => restaurar(c)} disabled={restaurando === c.id} className={botao}>
                             {restaurando === c.id ? "…" : "Restaurar"}
                           </button>
+                        ) : // Marcou ou remarcou: aparece como Agendada (o banco diz "em dia")
+                        c.proximo_agendamento ? (
+                          <Chip tom="ok">Agendada</Chip>
                         ) : (
-                          // Marcou ou remarcou: aparece como Agendada (o banco diz "em dia")
-                          c.proximo_agendamento ? (
-                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-salvia px-2.5 py-0.5 text-sm font-semibold text-salvia-texto">
-                              <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-salvia-viva" />
-                              Agendada
-                            </span>
-                          ) : (
-                            <SeloStatus status={c.status} />
-                          )
+                          <SeloStatus status={c.status} />
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         {c.ultima_visita ? (
                           <>
                             {formatarData(c.ultima_visita)}
-                            <span className="block text-sm text-texto-2">{haQuantoTempo(c.ultima_visita)}</span>
+                            <span className="block text-[14px] text-apoio">{haQuantoTempo(c.ultima_visita)}</span>
                           </>
                         ) : (
-                          <span className="text-texto-2">Nunca veio</span>
+                          <span className="text-apoio">Nunca veio</span>
                         )}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
@@ -367,19 +451,15 @@ function Crm() {
                           <>
                             {proximo.rotulo === "Marcado" ? "Marcado " : ""}
                             {proximo.valor}
-                            <span className={`block text-sm ${destaque && proximo.rotulo !== "Marcado" ? destaque.texto : "text-texto-2"}`}>
-                              {proximo.detalhe}
-                            </span>
+                            <span className={`block text-[14px] ${destaque && proximo.rotulo !== "Marcado" ? destaque : "text-apoio"}`}>{proximo.detalhe}</span>
                           </>
                         ) : (
-                          <span className="text-inativo">—</span>
+                          <span className="text-apoio">—</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center">{c.total_visitas}</td>
+                      <td className="px-4 py-3 text-right tabular-nums">{c.total_visitas}</td>
                       <td className="px-4 py-3 whitespace-nowrap text-texto-2">{o ? rotuloOrigem(o) : "—"}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-texto-2">
-                        {dias === null ? "—" : textoChamada(dias)}
-                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-texto-2">{dias === null ? "—" : textoChamada(dias)}</td>
                     </tr>
                   );
                 })}
@@ -388,11 +468,7 @@ function Crm() {
           </div>
 
           {lista?.temMais && (
-            <button
-              onClick={verMais}
-              disabled={lista.carregandoMais}
-              className="mt-4 h-11 w-full rounded-xl border border-borda bg-card font-semibold hover:bg-campo/60 disabled:opacity-50"
-            >
+            <button onClick={verMais} disabled={lista.carregandoMais} className={botao + " mt-4 h-11 w-full"}>
               {lista.carregandoMais ? "Carregando…" : "Ver mais"}
             </button>
           )}

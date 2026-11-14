@@ -278,7 +278,16 @@ dona de outra loja. Conferido na tela com um pedido de teste.
   passos (conectar o WhatsApp, dona preenche o app, testar e liberar) e o próximo passo em destaque; lojas no ar em
   linhas, com o uso do mês contra o teto. Nova loja, QR e ajustes abrem numa folha por cima e fecham com Esc.
 - Conferido no navegador: Lojas, Clientes, Serviços, folha Nova loja e folha de ajustes (salvar funcionou).
-- Não revisto tela a tela: a ficha da cliente e o quadro de manutenção só ganharam as cores e a fonte novas.
+- Clientes, ficha da cliente e manutenção reorganizadas no mesmo padrão (só aparência; as peças comuns, como
+  folha, chip, aviso e botões, foram para `painel-crm/components/Pecas.tsx`): Clientes abre com quatro números do
+  dia (para chamar, responderam, atrasadas, agendadas), depois a vista e a busca, e os filtros em dois grupos com
+  nome (status da cliente e etapa do quadro); o quadro não corta texto e rola para o lado em tela estreita; a
+  manutenção mostra as faixas como escala, da mais urgente à menos urgente, com número e rótulo escritos; a ficha
+  é lida na ordem quem é, o que está combinado, o que a IA sabe, histórico e, por último, editar e excluir.
+  Para o resumo, o quadro é lido uma vez ao abrir Clientes em qualquer vista; fora da vista Quadro ele não é
+  relido a cada mudança (só ao voltar para o Quadro), para não pesar no banco.
+  Testado só em leitura no Salão Toda Bonita (o login da agência não enxerga a Loja Teste): arrastar card,
+  enviar mensagem, salvar ficha, pausar IA e excluir foram conferidos pelo código, não por clique.
 
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app

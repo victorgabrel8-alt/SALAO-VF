@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useDialogo } from "@/components/Dialogo";
+import { Aviso, Chip, Folha, Numero, Rotulo, Secao, botao, botaoForte, campo, cartao } from "@/components/Pecas";
 
 // Lojas da agência no motor único (docs/PLANO-MOTOR-UNICO.md): criar loja nova (instância do WhatsApp, loja no
 // banco e QR), ver quem conectou e o que falta preencher, liberar a IA, teto de conversas e sinal.
@@ -40,58 +41,6 @@ type Qr = { lojaId: string; nome: string; imagem: string; codigo: string; conect
 const RAMO: Record<string, string> = { manicure: "Unhas", mega_hair: "Mega hair", estudio_beleza: "Estúdio de beleza" };
 // custo médio de IA por conversa, medido na fatura de novembro de 2026 (docs/PLANO-MOTOR-UNICO.md): só para a estimativa do resumo
 const CUSTO_POR_CONVERSA = 0.43;
-
-// ---------- peças de desenho (identidade Oi Studio: cartão branco com borda, sem sombra; botão Ônix) ----------
-const campo =
-  "h-11 w-full rounded-xl border border-borda bg-card px-3 text-[15px] outline-none placeholder:text-apoio/70 focus:border-onix focus-visible:ring-2 focus-visible:ring-onix/15";
-const botao =
-  "inline-flex h-10 items-center justify-center rounded-xl border border-borda-forte bg-card px-4 text-[14px] font-bold text-grafite hover:bg-campo/50 disabled:opacity-50";
-const botaoForte = "inline-flex h-10 items-center justify-center rounded-xl bg-onix px-5 text-[14px] font-bold text-porcelana hover:bg-carvao disabled:opacity-50";
-const cartao = "rounded-[18px] border border-borda bg-card";
-
-type Tom = "ok" | "atencao" | "aviso" | "neutro";
-const TONS: Record<Tom, string> = {
-  ok: "bg-salvia text-salvia-texto",
-  atencao: "bg-rose text-rose-texto",
-  aviso: "bg-mel text-mel-texto",
-  neutro: "bg-campo text-grafite",
-};
-const Chip = ({ tom, children }: { tom: Tom; children: ReactNode }) => (
-  <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[13px] font-bold whitespace-nowrap ${TONS[tom]}`}>{children}</span>
-);
-const Aviso = ({ tom, children }: { tom: Tom; children: ReactNode }) => (
-  <p role={tom === "atencao" ? "alert" : undefined} className={`rounded-xl px-3.5 py-3 text-[14px] leading-relaxed ${TONS[tom]}`}>
-    {children}
-  </p>
-);
-const Rotulo = ({ children }: { children: ReactNode }) => <span className="mb-1.5 block text-[13px] font-bold text-texto-2">{children}</span>;
-
-// Folha por cima da tela (formulários). Fecha no ×, no Esc e no clique fora.
-function Folha({ titulo, aoFechar, largura = "max-w-2xl", children }: { titulo: string; aoFechar: () => void; largura?: string; children: ReactNode }) {
-  const idTitulo = useId();
-  useEffect(() => {
-    const aoTeclar = (e: KeyboardEvent) => e.key === "Escape" && aoFechar();
-    window.addEventListener("keydown", aoTeclar);
-    return () => window.removeEventListener("keydown", aoTeclar);
-  }, [aoFechar]);
-  return (
-    <div className="fixed inset-0 z-30 flex items-start justify-center overflow-y-auto bg-onix/45 px-4 py-10" onClick={aoFechar}>
-      <div role="dialog" aria-modal="true" aria-labelledby={idTitulo} onClick={(e) => e.stopPropagation()} className={`w-full ${largura} rounded-[20px] border border-borda bg-card p-6`}>
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <h2 id={idTitulo} className="text-[22px] leading-tight font-bold tracking-[-0.02em]">
-            {titulo}
-          </h2>
-          <button onClick={aoFechar} aria-label="Fechar" className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-apoio hover:bg-campo/60 hover:text-grafite">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-              <path d="M6 6l12 12M18 6 6 18" />
-            </svg>
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 async function chamar<T>(rota: string, opcoes?: RequestInit): Promise<T> {
   const r = await fetch(rota, { ...opcoes, headers: { "Content-Type": "application/json" } });
@@ -244,32 +193,6 @@ export default function LojasPage() {
       {qr && <PainelQr qr={qr} aoMudar={setQr} aoFechar={() => (setQr(null), carregar())} />}
       {lojaAjustando && <Ajustes loja={lojaAjustando} aoFechar={() => setAjustando(null)} aoMudar={carregar} />}
     </>
-  );
-}
-
-// Um número do resumo: rótulo pequeno, número grande, uma linha de apoio
-function Numero({ rotulo, valor, apoio, tom }: { rotulo: string; valor: number; apoio: string; tom?: "atencao" | "aviso" }) {
-  return (
-    <div className={`${cartao} px-5 py-4`}>
-      <p className="rotulo">{rotulo}</p>
-      <p className="mt-1.5 text-[34px] leading-none font-extrabold tracking-[-0.04em] tabular-nums">{valor.toLocaleString("pt-BR")}</p>
-      <p className={`mt-2 text-[13px] font-semibold ${tom === "atencao" ? "text-rose-texto" : tom === "aviso" ? "text-mel-texto" : "text-apoio"}`}>{apoio}</p>
-    </div>
-  );
-}
-
-function Secao({ titulo, apoio, acao, children }: { titulo: string; apoio: string; acao?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="mt-9">
-      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h2 className="text-[19px] font-bold tracking-[-0.02em]">{titulo}</h2>
-          <p className="text-[14px] text-apoio">{apoio}</p>
-        </div>
-        {acao}
-      </div>
-      {children}
-    </section>
   );
 }
 

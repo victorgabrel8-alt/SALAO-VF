@@ -16,15 +16,17 @@ export function Etiquetas({
   return (
     <ul className={`flex flex-wrap gap-1.5 ${className}`}>
       {visiveis.map((e) => (
-        <li key={e} className="inline-flex bg-cobre-claro text-cobre-escuro items-center rounded-full text-sm font-medium">
-          <span className={aoRemover ? "py-0.5 pl-2.5" : "px-2.5 py-0.5"}>{e}</span>
+        <li key={e} className="inline-flex items-center rounded-full bg-campo text-[13px] font-bold text-grafite">
+          <span className={aoRemover ? "py-1 pl-3" : "px-2.5 py-1"}>{e}</span>
           {aoRemover && (
             <button
               onClick={() => aoRemover(e)}
               aria-label={`Tirar a etiqueta ${e}`}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-base active:opacity-60"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-apoio hover:bg-borda hover:text-grafite"
             >
-              ×
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
             </button>
           )}
         </li>

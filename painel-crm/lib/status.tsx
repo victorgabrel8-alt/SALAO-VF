@@ -9,12 +9,12 @@ export const STATUS: Record<StatusCliente, { rotulo: string; ponto: string; fort
   retorno_chegando: {
     rotulo: "Retorno chegando",
     ponto: "bg-status-chegando",
-    forte: "border-transparent bg-mel text-mel-texto font-semibold",
+    forte: "border-transparent bg-mel text-mel-texto",
   },
   retorno_atrasado: {
     rotulo: "Atrasada",
     ponto: "bg-status-atrasada",
-    forte: "border-transparent bg-rose text-rose-texto font-semibold",
+    forte: "border-transparent bg-rose text-rose-texto",
   },
   inativa: { rotulo: "Inativa", ponto: "bg-status-inativa" },
   sem_visita: { rotulo: "Sem visita", ponto: "bg-status-sem-visita" },
@@ -28,8 +28,8 @@ export function SeloStatus({ status }: { status: StatusCliente }) {
   const s = STATUS[status];
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-sm ${
-        s.forte ?? "border-borda font-medium text-texto-2"
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-[13px] font-bold whitespace-nowrap ${
+        s.forte ?? "border-borda text-texto-2"
       }`}
     >
       <PontoStatus cor={s.ponto} />

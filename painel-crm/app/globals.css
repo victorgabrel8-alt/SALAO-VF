@@ -71,6 +71,18 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Foco pelo teclado sempre visível (botões, links, seleções e o que mais recebe foco) */
+@layer base {
+  :where(a, button, select, summary, [tabindex], input[type="checkbox"], input[type="radio"]):focus-visible {
+    outline: 2px solid var(--color-onix);
+    outline-offset: 2px;
+  }
+  /* sobre fundo Ônix (menu lateral) o contorno é claro */
+  :where(aside.bg-onix) :where(a, button, select):focus-visible {
+    outline-color: var(--color-porcelana);
+  }
+}
+
 /* Títulos: a fonte com serifa saiu; font-serif agora é Manrope com o desenho dos títulos */
 .font-serif {
   letter-spacing: -0.03em;
