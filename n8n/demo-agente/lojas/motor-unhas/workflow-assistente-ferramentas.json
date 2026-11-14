@@ -869,6 +869,7 @@
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
     "saveManualExecutions": true,
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "mC3mr8auBX4MiFz9"
   }
 }

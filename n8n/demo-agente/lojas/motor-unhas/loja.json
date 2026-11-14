@@ -1,6 +1,7 @@
 {
   "slug": "motor-unhas",
   "motor": true,
+  "guardar_execucoes": true,
   "rotulo": "Motor Unhas",
   "nome": "MOTORxNOME",
   "nicho": "manicure",

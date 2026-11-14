@@ -348,6 +348,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "mC3mr8auBX4MiFz9"
   }
 }

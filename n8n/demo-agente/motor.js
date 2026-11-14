@@ -470,6 +470,9 @@ function aplicar(conjunto, loja) {
   }
   const base = conjunto[0].wf.settings || {};
   const rotinas = montarRotinas(rotinasPorWf, loja, { executionOrder: 'v1', timezone: base.timezone || 'America/Cuiaba', saveManualExecutions: true, saveDataSuccessExecution: 'none' });
+  // fase de teste (loja.json: "guardar_execucoes": true): guarda também as execuções que deram certo, para conferir no n8n.
+  // Com muitas lojas isso enche o n8n (a retomada roda a cada minuto por loja): desligar depois dos testes.
+  if (loja.guardar_execucoes) for (const wf of [...conjunto.map((c) => c.wf), rotinas]) wf.settings = { ...wf.settings, saveDataSuccessExecution: 'all' };
   const erros = conferir([...conjunto.map((c) => c.wf), rotinas]);
   if (erros.length) throw new Error(`motor: o conjunto tem problema.\n- ${[...new Set(erros)].join('\n- ')}`);
   return rotinas;
