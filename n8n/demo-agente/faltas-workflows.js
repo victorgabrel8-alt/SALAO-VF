@@ -135,7 +135,9 @@ return numeros.map((tel) => ({ json: { tel, texto, ids,
 `;
 
 const MENSAGEM_AVISO = QUANDO + String.raw`
-const as = $input.all().map((i) => i.json).filter((a) => a.contato_id);
+// Falta sem resposta não vai para a Gleide (pedido do Victor, 14/11/2026): chamar a cliente é papel da IA.
+// Ela fica só anotada (nó "Faltas sem resposta") para a campanha de trazer clientes de volta.
+const as = $input.all().map((i) => i.json).filter((a) => a.contato_id && !(a.tipo === 'falta' && a.situacao === 'sem_resposta'));
 if (!as.length) return [];
 const linha = (a) => {
   const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';
@@ -146,9 +148,7 @@ const linha = (a) => {
       ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'
       : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';
   }
-  return a.tipo === 'falta'
-    ? '⚠️ ' + n + ' não respondeu sobre a falta de ' + quando(a.horario_original) + '. Quer chamar você mesma?'
-    : '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';
+  return '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';
 };
 const texto = as.map(linha).join('\n');
 const itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));
@@ -156,6 +156,14 @@ const numeros = ${NUMEROS};
 return numeros.map((tel) => ({ json: { tel, texto, itens,
   // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a Gleide responder
   memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));
+`;
+
+// Quem faltou, foi chamada pela IA e não respondeu em 24 h: só anota (registros_ia 'avisou_sem_resposta'), sem mensagem.
+const FALTAS_SEM_RESPOSTA = String.raw`
+const itens = $input.all().map((i) => i.json)
+  .filter((a) => a.contato_id && a.tipo === 'falta' && a.situacao === 'sem_resposta')
+  .map((a) => ({ id: a.contato_id, situacao: a.situacao }));
+return itens.length ? [{ json: { itens } }] : [];
 `;
 
 module.exports = ({ env, node, main }) => {
@@ -291,6 +299,8 @@ module.exports = ({ env, node, main }) => {
       }, { credentials: REDIS }),
       rpc('Marcar avisado', [1320, 120], 'n8n_marcar_avisado',
         `{ p_empresa_id: ${EMPRESA}, p_itens: $('Mensagem do aviso').item.json.itens }`, { executeOnce: true }),
+      node('Faltas sem resposta', 'n8n-nodes-base.code', 2, [660, 300], { jsCode: FALTAS_SEM_RESPOSTA }),
+      rpc('Anotar falta sem resposta', [880, 300], 'n8n_marcar_avisado', `{ p_empresa_id: ${EMPRESA}, p_itens: $json.itens }`),
     ],
     connections: {
       'A cada 5 min': main('Horário do salão?'),
@@ -325,7 +335,8 @@ module.exports = ({ env, node, main }) => {
       'Avisar a mudança': main('Avisou a mudança?'),
       'Avisou a mudança?': main('Guardar a mudança na memória'),
       'Guardar a mudança na memória': main('Marcar mudança avisada'),
-      'Avisos para a Gleide': main('Mensagem do aviso'),
+      'Avisos para a Gleide': { main: [[{ node: 'Mensagem do aviso', type: 'main', index: 0 }, { node: 'Faltas sem resposta', type: 'main', index: 0 }]] },
+      'Faltas sem resposta': main('Anotar falta sem resposta'),
       'Mensagem do aviso': main('Mandar para a Gleide'),
       'Mandar para a Gleide': main('Guardar na memória da assistente'),
       'Guardar na memória da assistente': main('Marcar avisado'),
