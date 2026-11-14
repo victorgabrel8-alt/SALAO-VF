@@ -169,5 +169,6 @@
   "assistente_conversas": true,
   "assistente_fotos": true,
   "assistente_marcar": true,
+  "lembrete_duplo": true,
   "resumo_noite": "19:00"
 }
