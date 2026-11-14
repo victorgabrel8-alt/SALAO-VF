@@ -41,7 +41,7 @@ module.exports = ({ assistenteWorkflow, ferramentasWorkflow, minutos }) => {
   const resp = assistenteWorkflow.nodes.find((x) => /^Responder a /.test(x.name) && String(x.parameters?.jsonBody || '').includes("$('Conferir resposta').first().json.texto"));
   if (!resp) throw new Error('assistente_marcar: não achei o nó que responde à dona');
   const LIMPAR = "(() => { const cru = String($('Conferir resposta').first().json.texto || ''); const NL = String.fromCharCode(10); " +
-    "const ruim = /^(aproveitando|bom atendimento|bons atendimentos|se precisar|qualquer coisa|fico (aqui|no aguardo|de prontid|à disposi)|mais alguma coisa|é só (chamar|me chamar|falar|avisar)|estou (aqui|à disposi))/i; " +
+    "const ruim = /^(aproveitando|bom atendimento|bons atendimentos|se precisar|qualquer coisa|fico (aqui|no aguardo|de prontid|à disposi)|mais alguma coisa|é só (chamar|me chamar|falar|avisar)|estou (aqui|à disposi)|tudo (em dia|certinho|certo por aqui)|aproveite|bom (casamento|descanso|evento|trabalho|domingo|fim de semana)|boa (festa|noite|tarde))/i; " +
     "const t = cru.replace(/[\\u{1FAE1}\\u{1F64F}\\u{1F60A}\\u{1F609}\\u{1F970}\\u{1F339}\\u{2728}\\u{1F49B}\\u{1F496}\\u{1F485}\\u{1F60D}\\u{1F389}]/gu, '') " +
     ".split(NL).map((l) => l.split(/(?<=[.!?])\\s+/).filter((f) => !ruim.test(f.trim())).join(' ').trim()).join(NL) " +
     ".replace(new RegExp(NL + '{3,}', 'g'), NL + NL).trim(); return t || cru; })()";
