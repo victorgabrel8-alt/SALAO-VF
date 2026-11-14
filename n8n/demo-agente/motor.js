@@ -206,6 +206,8 @@ return [{ json: {
   dona, dona_maiuscula: dona.toUpperCase(), nome_maiusculo: String(f.nome || '').toUpperCase(), cidade: f.cidade || '', fuso: f.fuso || 'America/Cuiaba',
   assist: lista(f.assist).join(','), assist_sem9: lista(f.assist).map(sem9).join(','),
   permitidos: permitidos.join(','), catalogo_link: f.catalogo_link || '',
+  // tempo mínimo que cada cliente ocupa na agenda (config.ia.bloco_min); 0 = vale o tempo de cada serviço
+  bloco_min: Number.isInteger(Number(f.bloco_min)) && Number(f.bloco_min) >= 30 && Number(f.bloco_min) <= 480 ? Number(f.bloco_min) : 0,
 } }];`;
 
 const noCodigo = (nome, wf, posicao, jsCode) => ({
@@ -312,6 +314,27 @@ function mandarFicha(wf) {
     wi.value.loja_json = `={{ JSON.stringify(${REF}) }}`;
     if (Array.isArray(wi.schema)) wi.schema.push({ id: 'loja_json', displayName: 'loja_json', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string', removed: false });
   }
+}
+
+// Bloco por cliente (bloco-minimo.js e assistente-marcar.js escrevem o número da loja modelo no código):
+// no motor o número é o de cada loja (ficha.bloco_min). Loja sem bloco: vale o tempo de cada serviço, como
+// numa loja sem "bloco_minutos" (piso de 15 min; evento da Google de 1 h ocupa 90 min; 60 min sem serviço dito).
+function blocoDaLoja(wf, N) {
+  const B = `Number(${REF}.bloco_min)`;
+  const trocas = [
+    [`const dur = Math.max(${N}, Number(e.duracao_minutos) || 60);`, `const dur = Math.max(${B} || 15, Number(e.duracao_minutos) || 60);`],
+    [`if (m === 60) b = a.plus({ minutes: ${N} });`, `if (m === 60 && ${B}) b = a.plus({ minutes: ${B} });`],
+    [`p_bloco_min: ${N} };`, `p_bloco_min: ${B} || 60 };`],
+  ];
+  let feitas = 0;
+  for (const nd of wf.nodes) {
+    if (typeof nd.parameters?.jsCode !== 'string') continue;
+    for (const [de, para] of trocas) {
+      const n = nd.parameters.jsCode.split(de).length - 1;
+      if (n) { nd.parameters.jsCode = nd.parameters.jsCode.split(de).join(para); feitas += n; }
+    }
+  }
+  return feitas;
 }
 
 // Catálogo: loja sem link cadastrado (config.loja.catalogo_link) não manda mensagem vazia; a IA é avisada
@@ -422,6 +445,7 @@ function aplicar(conjunto, loja) {
   if (!loja.rotulo || !loja.nicho) throw new Error('motor: loja.json precisa de "rotulo" (nome do conjunto) e "nicho"');
   const prefixo = `${loja.slug}:`;
   const rotinasPorWf = [];
+  let blocos = 0;
   for (const { wf, arquivoId } of conjunto) {
     // nome do conjunto no lugar do nome da loja; chave do Redis com o id da loja no lugar do nome do conjunto
     let s = JSON.stringify(wf).split(`"name":"[MOTORxNOME] `).join(`"name":"[${loja.rotulo}] `);
@@ -457,6 +481,7 @@ function aplicar(conjunto, loja) {
     if (lista.length) rotinasPorWf.push({ arquivoId, lista });
     mandarFicha(wf);
     if (arquivoId === '.workflow-catalogo-id') semCatalogo(wf);
+    if (loja.bloco_minutos) blocos += blocoDaLoja(wf, loja.bloco_minutos);
     for (const nd of wf.nodes) converterNo(nd, wf.name);
     // toda chave do Redis tem que começar pela loja
     for (const nd of wf.nodes) {
@@ -468,6 +493,10 @@ function aplicar(conjunto, loja) {
       }
     }
   }
+  // 4 pontos: duração do horário novo, evento da Google (agenda e ferramentas da assistente) e marcar sem serviço dito
+  if (loja.bloco_minutos && blocos !== 4) throw new Error(`motor: esperava 4 pontos com o bloco de ${loja.bloco_minutos} min e achei ${blocos} (bloco-minimo.js ou assistente-marcar.js mudou?)`);
+  const sobrouBloco = conjunto.map((c) => c.wf).filter((wf) => loja.bloco_minutos && new RegExp(`(minutes: |Math\\.max\\(|p_bloco_min: )${loja.bloco_minutos}\\b`).test(JSON.stringify(wf)));
+  if (sobrouBloco.length) throw new Error(`motor: sobrou o bloco da loja modelo escrito em ${sobrouBloco.map((w) => w.name).join(', ')}`);
   const base = conjunto[0].wf.settings || {};
   const rotinas = montarRotinas(rotinasPorWf, loja, { executionOrder: 'v1', timezone: base.timezone || 'America/Cuiaba', saveManualExecutions: true, saveDataSuccessExecution: 'none' });
   // fase de teste (loja.json: "guardar_execucoes": true): guarda também as execuções que deram certo, para conferir no n8n.
