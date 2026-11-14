@@ -32,6 +32,21 @@ module.exports = ({ assistenteWorkflow, ferramentasWorkflow, minutos }) => {
     if (!c.leftValue.includes('"n8n_assistente_reagendar"')) throw new Error('assistente_marcar: "Precisa da Google?" mudou');
     c.leftValue = c.leftValue.replace('"n8n_assistente_reagendar"', '"n8n_assistente_reagendar_confirma"');
   }
+  // 14/11 (Victor): "a única coisa que não pode acontecer é ficar esperando pela Caroline". Na Gleide o "marcar assim
+  // mesmo" só vale depois que ela viu o motivo (pode_forcar); aqui o horário que a dona ditou é gravado na primeira chamada.
+  trocar("const forcar = () => sim('forcar') && sim('pode_forcar');", "const forcar = () => sim('forcar');");
+  trocar("const forcarIgnorado = sim('forcar') && !sim('pode_forcar');", "const forcarIgnorado = false;");
+  // resposta curta de verdade: o roteiro proíbe, mas o modelo ainda solta "Aproveitando…", "Bom atendimento!" e 🫡.
+  // Antes de enviar, saem as frases de enfeite e os emojis que não são ✅ ⚠️ ❓ 💰 📋.
+  const resp = assistenteWorkflow.nodes.find((x) => /^Responder a /.test(x.name) && String(x.parameters?.jsonBody || '').includes("$('Conferir resposta').first().json.texto"));
+  if (!resp) throw new Error('assistente_marcar: não achei o nó que responde à dona');
+  const LIMPAR = "(() => { const cru = String($('Conferir resposta').first().json.texto || ''); const NL = String.fromCharCode(10); " +
+    "const ruim = /^(aproveitando|bom atendimento|bons atendimentos|se precisar|qualquer coisa|fico (aqui|no aguardo|de prontid|à disposi)|mais alguma coisa|é só (chamar|me chamar|falar|avisar)|estou (aqui|à disposi))/i; " +
+    "const t = cru.replace(/[\\u{1FAE1}\\u{1F64F}\\u{1F60A}\\u{1F609}\\u{1F970}\\u{1F339}\\u{2728}\\u{1F49B}\\u{1F496}\\u{1F485}\\u{1F60D}\\u{1F389}]/gu, '') " +
+    ".split(NL).map((l) => l.split(/(?<=[.!?])\\s+/).filter((f) => !ruim.test(f.trim())).join(' ').trim()).join(NL) " +
+    ".replace(new RegExp(NL + '{3,}', 'g'), NL + NL).trim(); return t || cru; })()";
+  resp.parameters.jsonBody = resp.parameters.jsonBody.split("$('Conferir resposta').first().json.texto").join(LIMPAR);
+
   // descrição do campo minutos na ferramenta
   const t = assistenteWorkflow.nodes.find((x) => x.name === 'marcar_horario');
   if (!t) throw new Error('assistente_marcar: não achei a ferramenta marcar_horario');
