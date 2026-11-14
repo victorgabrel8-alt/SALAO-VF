@@ -30,7 +30,9 @@ const MOTIVOS = {
   erro: "'NÃO AGENDADO: não consegui conferir o comprovante agora. Peça desculpas e use transferir_para_humano.'",
 };
 
-module.exports = ({ node, workflow, agendaWorkflow, loja }) => {
+// Gleide (13/11/2026): entra com semBloco (as regras da conversa ficam no prompt dela) e dona 'Gleide'; no banco,
+// config.loja.sinal_pix.so_para_quem_faltou faz o sistema exigir o comprovante só de quem faltou (supabase/047).
+module.exports = ({ node, workflow, agendaWorkflow, loja, semBloco, dona }) => {
   const achar = (wf, nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error(`sinal_pix: não achei "${nome}"`); return n; };
   const trocar = (texto, de, para, onde) => { if (!texto.includes(de)) throw new Error(`sinal_pix: o código de "${onde}" mudou`); return texto.replace(de, para); };
 
@@ -94,13 +96,14 @@ module.exports = ({ node, workflow, agendaWorkflow, loja }) => {
     "const f = (v) => Number(v || 0).toFixed(2).replace('.', ','); " +
     `const base = (${m[1]}); ` +
     "if (g && mo.corpo && mo.corpo.sinal_codigo) return base + ' SINAL: o comprovante de R$ ' + f(mo.corpo.sinal_valor) + ' foi conferido e ficou registrado no agendamento. Diga que o sinal fica descontado do valor no dia.'; " +
-    `const motivos = { ${Object.entries(MOTIVOS).map(([k, v]) => `${k}: () => ${v}`).join(', ')} }; ` +
+    `const motivos = { ${Object.entries(MOTIVOS).map(([k, v]) => `${k}: () => ${dona ? v.replace(/a Caroline/g, 'a ' + dona).replace(/conta do studio/g, 'conta do salão') : v}`).join(', ')} }; ` +
     'if (!g && mo.motivoSinal) return (motivos[mo.motivoSinal] || motivos.erro)(); ' +
     'return base; })() }}';
 
   // 3. ferramenta e prompt
   const criar = achar(workflow, 'criar_agendamento');
   criar.parameters.description += ' Se a loja pede sinal por Pix, só grava depois que a cliente mandou a foto do comprovante (o sistema confere); senão volta NÃO AGENDADO com o motivo.';
+  if (semBloco) return;
   const agente = achar(workflow, 'Agente IA').parameters.options;
   if (!agente.systemMessage.includes("$('Supabase: dados do salão')")) throw new Error('sinal_pix: rode lojas.dadosDoSalao antes');
   agente.systemMessage += "\n\n{{ (() => { const s = ((($('Supabase: dados do salão').first().json.config || {}).loja || {}).sinal_pix) || {}; if (!s.ativo) return ''; " +

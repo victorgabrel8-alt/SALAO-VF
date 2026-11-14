@@ -336,13 +336,13 @@ export function FormAtendimento({
   const nomeDaCliente = cliente?.nome ?? (nomeNova.trim() || "a cliente");
 
   const campo =
-    "h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
+    "h-12 w-full rounded-xl border border-claro bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]";
 
   return (
     <Folha rotulo={modo === "registrar" ? "Registrar atendimento" : "Novo horário"} aoFechar={aoFechar} className="space-y-5 bg-white px-4">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">{modo === "registrar" ? "Registrar atendimento" : "Novo horário"}</h2>
-        <button onClick={aoFechar} className="h-11 px-3 text-lg font-semibold text-neutral-600">
+        <button onClick={aoFechar} className="h-11 px-3 text-lg font-semibold text-texto-2">
           Fechar
         </button>
       </div>
@@ -351,10 +351,10 @@ export function FormAtendimento({
       <section className="space-y-2">
         <h3 className="text-lg font-semibold">Cliente</h3>
         {cliente ? (
-          <div className="flex items-center justify-between rounded-xl bg-neutral-100 p-3">
+          <div className="flex items-center justify-between rounded-xl bg-campo p-3">
             <div>
               <p className="text-lg font-semibold">{cliente.nome ?? "Sem nome"}</p>
-              <p className="text-neutral-600">{formatarTelefone(cliente.telefone)}</p>
+              <p className="text-texto-2">{formatarTelefone(cliente.telefone)}</p>
             </div>
             <button onClick={() => setCliente(null)} className="h-11 px-3 font-semibold text-[var(--cor-principal)]">
               Trocar
@@ -384,16 +384,16 @@ export function FormAtendimento({
               className={campo}
             />
             {busca.trim().length >= 2 && (
-              <ul className="divide-y divide-neutral-200 rounded-xl border border-neutral-200">
+              <ul className="divide-y divide-borda rounded-xl border border-borda">
                 {resultados.map((c) => (
                   <li key={c.id}>
-                    <button onClick={() => setCliente(c)} className="w-full px-4 py-3 text-left active:bg-neutral-50">
+                    <button onClick={() => setCliente(c)} className="w-full px-4 py-3 text-left active:bg-campo">
                       <span className="block text-lg font-semibold">{c.nome ?? "Sem nome"}</span>
-                      <span className="text-neutral-600">{formatarTelefone(c.telefone)}</span>
+                      <span className="text-texto-2">{formatarTelefone(c.telefone)}</span>
                     </button>
                   </li>
                 ))}
-                {resultados.length === 0 && <li className="px-4 py-3 text-neutral-500">Nenhuma cliente encontrada.</li>}
+                {resultados.length === 0 && <li className="px-4 py-3 text-rotulo">Nenhuma cliente encontrada.</li>}
               </ul>
             )}
             <button
@@ -402,7 +402,7 @@ export function FormAtendimento({
                 setNomeNova(/\d/.test(busca) ? "" : busca);
                 setTelefoneNova(/\d/.test(busca) ? busca : "");
               }}
-              className="h-12 w-full rounded-xl border-2 border-dashed border-neutral-300 font-semibold"
+              className="h-12 w-full rounded-xl border-2 border-dashed border-claro font-semibold"
             >
               + Cliente nova
             </button>
@@ -424,19 +424,19 @@ export function FormAtendimento({
           <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} className={campo} />
         </label>
       </section>
-      {terminaAs && <p className="-mt-3 text-neutral-600">Termina às {terminaAs}</p>}
+      {terminaAs && <p className="-mt-3 text-texto-2">Termina às {terminaAs}</p>}
       {/* Aviso na hora, antes de salvar */}
       {vaiAgendar &&
         almocoDoSalao &&
         conflitaComAlmoco(almocoDoSalao, hora.slice(0, 5), minutosTotal) && (
-          <p className="-mt-3 text-sm font-medium text-amber-700">
+          <p className="-mt-3 text-sm font-medium text-rose-texto">
             Cai no almoço ({almocoDoSalao.inicio} às {almocoDoSalao.fim}).
           </p>
         )}
 
       {/* Horário que ainda não chegou: avisa que entra como a próxima cliente */}
       {modo === "registrar" && noFuturo && (
-        <p className="rounded-xl bg-amber-50 p-3 text-amber-900">
+        <p className="rounded-xl bg-campo p-3 text-texto">
           Esse horário ainda não chegou: ela entra na agenda como <strong>próxima cliente</strong>, para você confirmar depois.
         </p>
       )}
@@ -444,7 +444,7 @@ export function FormAtendimento({
       {/* Retorno: só informa a data; quem chama a cliente quando chegar a hora é a IA */}
       {/* Cada serviço tem o próprio retorno: a IA chama pelo que vence primeiro */}
       {modo === "registrar" && !noFuturo && escolhidosDados.length > 0 && (
-        <section className="space-y-1 rounded-xl border border-neutral-200 p-3">
+        <section className="space-y-1 rounded-xl border border-borda p-3">
           <h3 className="text-lg font-semibold">Retorno</h3>
           {escolhidosDados.length === 1 ? (
             <RetornoDoServico servico={escolhidosDados[0]} data={quandoValido ? data : null} />
@@ -457,21 +457,21 @@ export function FormAtendimento({
               ))}
             </ul>
           )}
-          {escolhidosDados.some((s) => s.dias_retorno) && <p className="text-sm text-neutral-500">A IA chama a cliente quando a data chegar.</p>}
+          {escolhidosDados.some((s) => s.dias_retorno) && <p className="text-sm text-rotulo">A IA chama a cliente quando a data chegar.</p>}
         </section>
       )}
 
       {aviso?.tipo === "parecida" && (
-        <section className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
+        <section className="space-y-3 rounded-xl border border-claro bg-campo p-3">
           {aviso.lista.some((c) => c.mesmoTelefone) ? (
             <>
-              <h3 className="text-lg font-semibold text-amber-900">Esse telefone já está cadastrado</h3>
-              <p className="text-amber-900">Um telefone só pode ter uma ficha. Use a cliente que já existe:</p>
+              <h3 className="text-lg font-semibold text-texto">Esse telefone já está cadastrado</h3>
+              <p className="text-texto">Um telefone só pode ter uma ficha. Use a cliente que já existe:</p>
             </>
           ) : (
             <>
-              <h3 className="text-lg font-semibold text-amber-900">Essa cliente já não está cadastrada?</h3>
-              <p className="text-amber-900">
+              <h3 className="text-lg font-semibold text-texto">Essa cliente já não está cadastrada?</h3>
+              <p className="text-texto">
                 {aviso.lista.length === 1 ? "Achamos uma cliente parecida." : "Achamos clientes parecidas."} Se for ela, use a ficha que já existe:
               </p>
             </>
@@ -485,11 +485,11 @@ export function FormAtendimento({
                 salvar({ clienteFixa: c });
               }}
               disabled={salvando}
-              className="flex w-full items-center justify-between gap-3 rounded-xl border border-amber-300 bg-white px-4 py-3 text-left active:bg-amber-100"
+              className="flex w-full items-center justify-between gap-3 rounded-xl border border-claro bg-white px-4 py-3 text-left active:bg-campo"
             >
               <span>
                 <span className="block font-semibold">{c.nome ?? "Sem nome"}</span>
-                <span className="block text-sm text-neutral-600">
+                <span className="block text-sm text-texto-2">
                   {formatarTelefone(c.telefone)} · {c.motivo}
                 </span>
               </span>
@@ -498,11 +498,11 @@ export function FormAtendimento({
           ))}
           {/* Mesmo telefone: não existe "outra pessoa" (o número não pode ter duas fichas) */}
           {aviso.lista.some((c) => c.mesmoTelefone) ? (
-            <button onClick={() => setAviso(null)} disabled={salvando} className="h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold">
+            <button onClick={() => setAviso(null)} disabled={salvando} className="h-12 w-full rounded-xl border border-claro bg-white font-semibold">
               Voltar e corrigir o telefone
             </button>
           ) : (
-            <button onClick={() => setAviso({ tipo: "nova" })} disabled={salvando} className="h-12 w-full rounded-xl border border-neutral-300 bg-white font-semibold">
+            <button onClick={() => setAviso({ tipo: "nova" })} disabled={salvando} className="h-12 w-full rounded-xl border border-claro bg-white font-semibold">
               Não, é outra pessoa
             </button>
           )}
@@ -510,14 +510,14 @@ export function FormAtendimento({
       )}
 
       {aviso?.tipo === "nova" && (
-        <section className="space-y-3 rounded-xl border border-amber-300 bg-amber-50 p-3">
-          <h3 className="text-lg font-semibold text-amber-900">Criar uma ficha nova para {nomeDaCliente}?</h3>
-          <p className="text-amber-900">Ela vai ficar separada da cliente parecida. Só confirme se tiver certeza de que é outra pessoa.</p>
+        <section className="space-y-3 rounded-xl border border-claro bg-campo p-3">
+          <h3 className="text-lg font-semibold text-texto">Criar uma ficha nova para {nomeDaCliente}?</h3>
+          <p className="text-texto">Ela vai ficar separada da cliente parecida. Só confirme se tiver certeza de que é outra pessoa.</p>
           <div className="grid grid-cols-2 gap-2">
-            <button onClick={() => setAviso(null)} disabled={salvando} className="h-12 rounded-xl border border-neutral-300 bg-white font-semibold">
+            <button onClick={() => setAviso(null)} disabled={salvando} className="h-12 rounded-xl border border-claro bg-white font-semibold">
               Voltar
             </button>
-            <button onClick={() => salvar({ novaConfirmada: true })} disabled={salvando} className="h-12 rounded-xl bg-amber-700 font-bold text-white">
+            <button onClick={() => salvar({ novaConfirmada: true })} disabled={salvando} className="h-12 rounded-xl bg-grafite font-bold text-white">
               {salvando ? "Salvando…" : "Sim, criar nova"}
             </button>
           </div>
@@ -539,7 +539,7 @@ export function FormAtendimento({
               {nomeDaCliente} já tem horário marcado
             </h3>
             {aviso.lista.map((h) => (
-              <div key={h.id} className="space-y-2 rounded-2xl border border-neutral-200 p-3">
+              <div key={h.id} className="space-y-2 rounded-2xl border border-borda p-3">
                 <p className="font-semibold">
                   {formatarData(h.inicio).slice(0, 5)} às {formatarHora(h.inicio)} · {h.servicos?.nome ?? "Serviço não informado"}
                 </p>
@@ -555,18 +555,18 @@ export function FormAtendimento({
             <button
               onClick={() => salvar({ diaConfirmado: true })}
               disabled={salvando}
-              className="h-12 w-full rounded-xl border border-neutral-300 font-semibold disabled:opacity-50"
+              className="h-12 w-full rounded-xl border border-claro font-semibold disabled:opacity-50"
             >
               Criar um novo horário
             </button>
-            <button onClick={() => setAviso(null)} disabled={salvando} className="h-11 w-full font-semibold text-neutral-600">
+            <button onClick={() => setAviso(null)} disabled={salvando} className="h-11 w-full font-semibold text-texto-2">
               Cancelar
             </button>
           </div>
         </div>
       )}
 
-      {erro && <p className="rounded-xl bg-red-100 p-3 font-medium text-red-900">{erro}</p>}
+      {erro && <p className="rounded-xl bg-rose p-3 font-medium text-rose-texto">{erro}</p>}
 
       {/* Com um aviso aberto, quem decide é ele: o botão de salvar sai de cena */}
       {!aviso && (
@@ -589,17 +589,17 @@ function RetornoDoServico({ servico, data, curto = false }: { servico: ServicoEs
     return (
       <p>
         <span className="font-semibold">{servico.nome}:</span>{" "}
-        {volta ? `${formatarData(volta).slice(0, 5)} (${prazo(volta)})` : <span className="text-neutral-500">sem retorno</span>}
+        {volta ? `${formatarData(volta).slice(0, 5)} (${prazo(volta)})` : <span className="text-rotulo">sem retorno</span>}
       </p>
     );
   }
-  if (!volta) return <p className="text-neutral-600">{servico.nome} não tem retorno programado.</p>;
+  if (!volta) return <p className="text-texto-2">{servico.nome} não tem retorno programado.</p>;
   return (
     <>
       <p className="text-lg">
         Ela deve voltar em <strong>{formatarData(volta)}</strong> ({prazo(volta)})
       </p>
-      <p className="text-sm text-neutral-500">
+      <p className="text-sm text-rotulo">
         {servico.nome} tem retorno de {servico.dias_retorno} dias.
       </p>
     </>

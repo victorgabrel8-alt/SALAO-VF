@@ -466,7 +466,8 @@ const nodes = [
       "  if (!pediuPreco) fs = fs.map(f => {",
       "    // exceção (13/11, Adriana): ao oferecer horário de manutenção a IA diz 'a partir de R$ 150 por tela' sem a cliente",
       "    // pedir, para ela não descobrir o valor depois de marcada. Só passa essa frase, e só se for o único valor do texto",
-      "    if (!VALOR.test(f) || (ofertaManut && PRECO_MANUT.test(f))) return f;",
+      "    // o sinal de R$ 20 de quem faltou (13/11) faz parte do combinado do horário: a frase com a palavra 'sinal' passa",
+      "    if (!VALOR.test(f) || (ofertaManut && PRECO_MANUT.test(f)) || /\\bsinal\\b[^.!?]*R\\$\\s?20\\b|R\\$\\s?20\\b[^.!?]*\\bsinal\\b/i.test(f)) return f;",
       "    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?(?:a partir de\\s+)?(?:R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?|\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais)/gi, '').replace(/\\s+,/g, ',').replace(/^[\\s,;:–-]+/, '').trim().replace(/^\\p{Ll}/u, (l) => l.toUpperCase());",
       "    return !VALOR.test(s) && !/R\\$/.test(s) && QUANDO.test(s) ? s : '';",
       "  }).filter(Boolean);",
@@ -737,6 +738,10 @@ memoriaJanela(assistente.assistenteWorkflow, 'Agente assistente', REDIS);
 require('./resposta-velha.js')({ node, main, ifNode, cond, REDIS, D })(workflow);
 // preço pedido e ainda não entregue: o filtro de preço não apaga e o balão descartado volta (preco-pendente.js)
 require('./preco-pendente.js')({ node, REDIS, D })(workflow);
+
+// comprovante do sinal conferido pelo sistema, em foto ou PDF (sinal-pix.js). Na Gleide o banco só exige o
+// comprovante de quem faltou (config.loja.sinal_pix.so_para_quem_faltou, supabase/047); as lojas ligam o delas mais abaixo
+if (!LOJA) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: { slug: 'gleide' }, semBloco: true, dona: 'Gleide' });
 
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');

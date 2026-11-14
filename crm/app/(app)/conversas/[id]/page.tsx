@@ -58,7 +58,7 @@ async function buscarConversa(clienteId: string): Promise<Conversa> {
 
 export default function ConversaPage() {
   return (
-    <Suspense fallback={<p className="p-4 text-texto-2">Carregando…</p>}>
+    <Suspense fallback={<p className="carregando-calmo p-4 text-texto-2">Carregando…</p>}>
       <ConversaCliente />
     </Suspense>
   );
@@ -124,7 +124,7 @@ function ConversaCliente() {
     rolarAteOFim();
   }, [total]);
 
-  if (!conversa) return <p className="p-4 text-texto-2">Carregando…</p>;
+  if (!conversa) return <p className="carregando-calmo p-4 text-texto-2">Carregando…</p>;
   if ("erro" in conversa) return <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">{conversa.erro}</p>;
 
   const { cliente, mensagens } = conversa;
@@ -151,11 +151,11 @@ function ConversaCliente() {
   // da marca (cliente em branco, IA em grafite, você em bronze) e as ações numa bolha de vidro.
   return (
     // Fundo pérola com pontinhos bronze bem leves, como o papel de parede do WhatsApp
-    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-[radial-gradient(rgb(168_138_104/0.16)_1px,transparent_1px)] [background-size:18px_18px]">
+    <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-[radial-gradient(rgb(27_23_25/0.05)_1px,transparent_1px)] [background-size:18px_18px]">
       <header className="vidro-barra sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2 px-3 py-2">
           <Link href="/conversas" aria-label="Voltar para Conversas" className="vidro flex h-10 w-10 shrink-0 items-center justify-center rounded-full active:scale-95">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="m15 18-6-6 6-6" />
             </svg>
           </Link>
@@ -208,7 +208,7 @@ function ConversaCliente() {
       </div>
 
       {/* Ações numa bolha de vidro, acima da barra de abas (70px + 20px de folga) */}
-      <div className="fixed inset-x-0 bottom-[calc(100px+env(safe-area-inset-bottom))] z-10 mx-auto max-w-xl px-4">
+      <div className="fixed inset-x-0 bottom-[calc(88px+env(safe-area-inset-bottom))] z-10 mx-auto max-w-xl px-4">
         <div className="vidro flex gap-2 rounded-full p-1.5">
           <button
             onClick={alternarIa}
@@ -256,7 +256,7 @@ const AUTOR: Record<
   ia: {
     rotulo: "IA",
     lado: "justify-end",
-    balao: "bg-grafite text-perola shadow-[0_1px_1.5px_rgba(30,23,20,0.25)]",
+    balao: "bg-grafite text-perola shadow-[0_1px_1.5px_rgba(27,23,25,0.2)]",
     rabo: "text-grafite -right-[7px] -scale-x-100",
     canto: "rounded-tr-[4px]",
     etiqueta: "text-bronze",
@@ -266,7 +266,7 @@ const AUTOR: Record<
   humano: {
     rotulo: "Você",
     lado: "justify-end",
-    balao: "bg-bronze-escuro text-white shadow-[0_1px_1.5px_rgba(30,23,20,0.25)]",
+    balao: "bg-bronze-escuro text-white shadow-[0_1px_1.5px_rgba(27,23,25,0.2)]",
     rabo: "text-bronze-escuro -right-[7px] -scale-x-100",
     canto: "rounded-tr-[4px]",
     etiqueta: "text-areia",
@@ -322,7 +322,7 @@ function Balao({
           </details>
         )}
         {midia && <p className="text-xs font-semibold opacity-75">{midia}{m.conteudo && m.tipo === "audio" ? " · transcrição" : ""}</p>}
-        <p className="text-[15px] leading-snug whitespace-pre-wrap">
+        <p className="text-[15px] leading-snug whitespace-pre-wrap [overflow-wrap:anywhere]">
           {texto}
           {/* Espaço reservado para a hora caber na última linha, como no WhatsApp */}
           <span aria-hidden className={`inline-block ${a.enviada ? "w-[62px]" : "w-[42px]"}`} />
@@ -330,7 +330,7 @@ function Balao({
         <span className={`absolute right-2.5 bottom-1.5 flex items-center gap-0.5 text-[11px] leading-none ${a.hora}`}>
           {formatarHora(m.criado_em)}
           {a.enviada && (
-            <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#8DB4CF" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada">
+            <svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#EFE6E1" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada">
               <path d="m1 6 3 3 6-7.5" />
               <path d="m7.5 8 1 1 6-7.5" />
             </svg>

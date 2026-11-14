@@ -76,7 +76,7 @@ function dinheiro(valor: number): string {
 
 export default function FichaClientePage() {
   return (
-    <Suspense fallback={<p className="p-5 text-texto-2">Carregando…</p>}>
+    <Suspense fallback={<p className="carregando-calmo p-5 text-texto-2">Carregando…</p>}>
       <FichaCliente />
     </Suspense>
   );
@@ -101,7 +101,7 @@ function FichaCliente() {
     };
   }, [id, versao]);
 
-  if (!resultado) return <p className="p-5 text-texto-2">Carregando…</p>;
+  if (!resultado) return <p className="carregando-calmo p-5 text-texto-2">Carregando…</p>;
   if ("erro" in resultado) return <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">{resultado.erro}</p>;
   const ficha = resultado;
 
@@ -212,7 +212,7 @@ function Recolhivel({ aberto, children }: { aberto: boolean; children: ReactNode
 function Cartao({ titulo, children }: { titulo?: string; children: ReactNode }) {
   return (
     <section className="flex flex-col gap-3 rounded-[22px] bg-card p-[18px]">
-      {titulo && <h2 className="font-serif text-[21px] font-semibold">{titulo}</h2>}
+      {titulo && <h2 className="text-[18px] font-bold">{titulo}</h2>}
       {children}
     </section>
   );
@@ -229,8 +229,6 @@ function Topo({ cliente }: { cliente: ClienteStatus }) {
 
   return (
     <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-4 overflow-clip rounded-b-[32px] bg-grafite px-5 pt-[calc(16px+env(safe-area-inset-top))] pb-[60px]">
-      <span aria-hidden="true" className="pointer-events-none absolute -top-24 -right-16 h-[200px] w-[200px] rounded-full bg-[radial-gradient(circle,rgb(168_138_104/0.24),transparent_68%)]" />
-      <span aria-hidden="true" className="pointer-events-none absolute -top-[70px] -right-[40px] h-40 w-40 rounded-full border border-bronze/35" />
       {/* Sem aba de clientes neste app: a ficha abre pela Agenda, Início ou Conversas */}
       <button
         onClick={() => router.back()}
@@ -242,22 +240,22 @@ function Topo({ cliente }: { cliente: ClienteStatus }) {
         </svg>
       </button>
       <div className="relative flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] bg-card font-serif text-[26px] font-semibold text-taupe-texto shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-[20px] bg-card text-[22px] font-bold text-taupe-texto shadow-[0_10px_24px_rgba(0,0,0,0.3)]">
           {iniciais(cliente.nome)}
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 className="truncate font-serif text-[26px] leading-tight font-semibold text-white">{cliente.nome ?? "Sem nome"}</h1>
+          <h1 className="truncate text-[22px] leading-tight font-bold text-white">{cliente.nome ?? "Sem nome"}</h1>
           <span className="text-[13px] text-areia">
             Cliente desde {MESES_CURTOS[mesDesde - 1]}/{anoDesde} · {cliente.total_visitas}{" "}
             {cliente.total_visitas === 1 ? "visita" : "visitas"}
           </span>
           <div className="flex flex-wrap gap-1.5">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[12px] font-medium text-perola">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 px-2.5 py-0.5 text-[12px] font-medium text-perola">
               <PontoStatus cor={status.ponto} />
               {status.rotulo}
             </span>
             {cliente.ia_pausada && (
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-bronze/40 px-2.5 py-0.5 text-[12px] font-medium text-perola">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 px-2.5 py-0.5 text-[12px] font-medium text-perola">
                 <PontoStatus cor="bg-bronze" />
                 IA pausada
               </span>
@@ -277,15 +275,15 @@ function Contato({ cliente }: { cliente: ClienteStatus }) {
     <div className="relative mx-5 -mt-9 grid grid-cols-2 gap-2.5">
       <button onClick={() => abrirWhatsApp(cliente.telefone)} className={estilo}>
         <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-salvia">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#3F5135" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1F5C42" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
           </svg>
         </span>
         WhatsApp
       </button>
       <a href={`tel:+${cliente.telefone}`} className={estilo}>
-        <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#E2E6EA]">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#36485A" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#EFE6E1]">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z" />
           </svg>
         </span>
@@ -300,14 +298,14 @@ function ProximoHorario({ horario: h }: { horario: Horario }) {
   const data = formatarData(h.inicio);
   return (
     <section className="flex items-center gap-3.5 rounded-[22px] bg-grafite p-[18px] text-white">
-      <div className="flex h-[60px] w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-bronze text-grafite">
+      <div className="flex h-[60px] w-14 shrink-0 flex-col items-center justify-center rounded-2xl bg-grafite text-perola">
         <span className="text-[11px] font-bold uppercase">{MESES_CURTOS[Number(data.slice(3, 5)) - 1]}</span>
-        <span className="font-serif text-[28px] leading-none font-semibold">{data.slice(0, 2)}</span>
+        <span className="text-[24px] leading-none font-bold">{data.slice(0, 2)}</span>
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-[3px]">
-        <span className="text-xs font-semibold tracking-[0.06em] text-bronze uppercase">Próximo horário</span>
+        <span className="text-xs font-semibold tracking-[0.06em] text-claro uppercase">Próximo horário</span>
         <span className="truncate text-base font-bold">{h.servicos?.nome ?? "Serviço não informado"}</span>
-        <span className="text-[13px] text-[#C7BBAC]">
+        <span className="text-[13px] text-[#EFE6E1]">
           {formatarHora(h.inicio)}
           {h.profissionais && ` · com ${h.profissionais.nome}`}
         </span>
@@ -342,7 +340,7 @@ function Preferencias({ cliente, aoMudar, aoEditar }: { cliente: ClienteStatus; 
       className="flex cursor-pointer flex-col gap-3 rounded-[22px] bg-card p-[18px] transition-transform duration-150 active:scale-[0.99] active:bg-campo/60"
     >
       <div className="flex items-center justify-between gap-3">
-        <h2 className="font-serif text-[21px] font-semibold">Preferências</h2>
+        <h2 className="text-[18px] font-bold">Preferências</h2>
         <span className="flex items-center gap-0.5 text-sm font-semibold text-bronze-escuro">
           Editar
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -376,7 +374,7 @@ function Retornos({ retornos }: { retornos: RetornoServico[] }) {
       <ul className="flex flex-col gap-3">
         {ordenados.map((r) => {
           const dias = r.retorno_previsto ? diasEntre(hoje, r.retorno_previsto) : null;
-          const ponto = dias === null ? "bg-borda" : dias < 0 ? "bg-rose-texto" : dias <= 7 ? "bg-bronze" : "bg-[#5E7A50]";
+          const ponto = dias === null ? "bg-borda" : dias < 0 ? "bg-rose-texto" : dias <= 7 ? "bg-bronze" : "bg-[#2F7D5B]";
           return (
             <li key={r.servico_id} className="flex gap-3">
               <PontoStatus cor={`${ponto} mt-[7px]`} />
@@ -464,7 +462,7 @@ function Dados({ cliente, aoSalvar, aoConcluir }: { cliente: ClienteStatus; aoSa
     aoSalvar();
     setTimeout(aoConcluir, 900);
   }
-  const campo = "h-[52px] w-full rounded-2xl bg-campo px-4 text-base outline-none focus:ring-2 focus:ring-bronze";
+  const campo = "h-[52px] w-full rounded-2xl bg-campo px-4 text-base outline-none focus:ring-2 focus:ring-grafite";
 
   return (
     <Cartao titulo="Editar dados">
@@ -480,7 +478,7 @@ function Dados({ cliente, aoSalvar, aoConcluir }: { cliente: ClienteStatus; aoSa
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
           placeholder="Alergias, fórmula da cor, método do mega hair, preferências…"
-          className="w-full rounded-2xl bg-campo p-4 text-base outline-none placeholder:text-[#9A8C80] focus:ring-2 focus:ring-bronze"
+          className="w-full rounded-2xl bg-campo p-4 text-base outline-none placeholder:text-[#7A5870] focus:ring-2 focus:ring-grafite"
         />
       </label>
 
@@ -494,7 +492,7 @@ function Dados({ cliente, aoSalvar, aoConcluir }: { cliente: ClienteStatus; aoSa
               onClick={() => alternarEtiqueta(e)}
               aria-pressed={etiquetas.includes(e)}
               className={`h-11 rounded-full px-4 text-sm font-semibold ${
-                etiquetas.includes(e) ? "bg-bronze text-grafite" : "border border-borda text-rotulo"
+                etiquetas.includes(e) ? "bg-grafite text-perola" : "border border-borda text-rotulo"
               }`}
             >
               {e}
@@ -506,7 +504,7 @@ function Dados({ cliente, aoSalvar, aoConcluir }: { cliente: ClienteStatus; aoSa
           onChange={(e) => setNovaEtiqueta(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && salvar()}
           placeholder="Nova etiqueta (aparece ao salvar)"
-          className={`${campo} placeholder:text-[#9A8C80]`}
+          className={`${campo} placeholder:text-[#7A5870]`}
         />
       </div>
 
@@ -514,7 +512,7 @@ function Dados({ cliente, aoSalvar, aoConcluir }: { cliente: ClienteStatus; aoSa
         onClick={salvar}
         disabled={salvando || salvo}
         className={`flex h-14 w-full items-center justify-center gap-2 rounded-[18px] text-[17px] font-bold text-white transition-colors duration-300 active:scale-[0.98] ${
-          salvo ? "bg-[#5E7A50]" : "bg-grafite disabled:opacity-50"
+          salvo ? "bg-[#2F7D5B]" : "bg-grafite disabled:opacity-50"
         }`}
       >
         {salvo ? (

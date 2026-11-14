@@ -128,20 +128,20 @@ export default function DadosLojaPage() {
     setAviso("Salvo ✓");
   }
 
-  const campo = "h-12 w-full rounded-full bg-card px-4 text-[16px] font-semibold outline-none borda-suave";
-  const caixa = "w-full rounded-[22px] bg-card px-4 py-3 text-[16px] outline-none borda-suave";
+  const campo = "h-12 w-full rounded-full bg-campo px-4 text-[16px] font-semibold outline-none focus:ring-2 focus:ring-grafite";
+  const caixa = "w-full rounded-[22px] bg-campo px-4 py-3 text-[16px] outline-none focus:ring-2 focus:ring-grafite";
 
   return (
     <>
       <header className="flex flex-col gap-3 px-4 pt-4">
         <Link href="/configuracoes" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m15 18-6-6 6-6" />
           </svg>
           Configurações
         </Link>
         <div>
-          <h1 className="font-serif text-[34px] leading-tight font-semibold">Dados do salão</h1>
+          <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">Dados do salão</h1>
           <p className="text-sm text-texto-2">
             {empresa.config.ia_usa_dados_loja === true
               ? "A IA usa estas informações para responder as clientes."
@@ -171,7 +171,7 @@ export default function DadosLojaPage() {
                     role="switch"
                     aria-checked={f.aberto}
                     aria-label={`Abre ${d.nome.toLowerCase()}`}
-                    className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${f.aberto ? "bg-grafite" : "bg-neutral-300"}`}
+                    className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${f.aberto ? "bg-grafite" : "bg-claro"}`}
                   >
                     <span className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all ${f.aberto ? "left-6" : "left-1"}`} />
                   </button>
