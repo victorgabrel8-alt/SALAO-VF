@@ -158,6 +158,18 @@ else if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCA
 // aviso: a Gleide pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)
 else if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
   ' a Gleide mandou avisar: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');
+// ciclo de manutenção: a IA chamou sozinha para acompanhar o cabelo depois do serviço (ver supabase/048)
+else if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia' && [].concat(alo.retornos_combinados || []).some((r) => r && r.origem === 'ciclo')) {
+  const etapa = ([].concat(alo.retornos_combinados || []).find((r) => r && r.origem === 'ciclo') || {}).etapa;
+  linhas.push('ALÔ DE ACOMPANHAMENTO (o salão chamou, ela não pediu): em ' + dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") +
+    ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. ' +
+    (etapa === 'cuidado'
+      ? 'Era só cuidado dos primeiros dias: se está tudo bem, fique feliz com ela usando as palavras dela e encerre com leveza, sem oferecer horário nem falar de manutenção. Se ela contar dor, incômodo forte ou problema, acolha e siga a regra de complicação depois do serviço.'
+      : etapa === 'meio'
+        ? 'Se ela está confortável: diga que a Gleide recomenda a manutenção em até 60 dias e pergunte, uma vez e sem pressa, se ela quer que você já veja um horário para mais perto dessa data. Se ela contar incômodo, tela soltando ou aparecendo: acolha e ofereça a manutenção agora (consultar_horarios_livres para a manutenção).'
+        : 'Se ela topar ver horário: use consultar_horarios_livres para a manutenção e ofereça 2 horários, seguindo as regras da manutenção. Se disser que agora não pode, acolha e pergunte quando fica melhor para ela; se der um prazo, vale a regra do alô combinado.') +
+    ' Não repita o texto do alô e não pergunte o que ela já fez: está na ficha.');
+}
 // retorno combinado: ela tinha combinado de voltar a falar nesta data e a IA chamou (ver supabase/028)
 else if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia') linhas.push('ALÔ DE RETORNO (combinado com ela): ela tinha ficado de falar com o salão nesta data e em ' +
   dia(alo.criado_em).toFormat("dd/LL 'às' HH:mm") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. Siga o assunto que ficou combinado; se ela ainda não decidiu, acolha sem insistir.');
@@ -170,7 +182,7 @@ return [{ json: { texto: linhas.join('\n') + JA_FALOU + SEM_RESPOSTA } }];
   workflow.connections['Supabase: ficha da cliente'] = main('Supabase: histórico da cliente');
   // último alô do CRM (14 dias, o mesmo prazo do "respondeu" no banco) que ainda não virou agendamento
   workflow.nodes.push(supa('Supabase: último alô', 'GET',
-    'contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status,inicio)' +
+    'contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,retornos_combinados(origem,etapa),vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status,inicio)' +
     '&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1' +
     "&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}" +
     "&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}", null, { executeOnce: true }));
