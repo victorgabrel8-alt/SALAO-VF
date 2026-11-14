@@ -81,9 +81,18 @@ conjunto: `motor-unhas` e, depois, `motor-megahair`. São 2 conjuntos no total, 
   texto. Os 6 problemas que ele achou foram corrigidos (memória da assistente sem a loja, trava com e sem
   o 9, catálogo sem link, teste das rotinas, alerta de erro nas rotinas, loja de outro ramo).
 
-**Ainda não provado, porque nada rodou no n8n:** se a Evolution manda `body.instance`; o que o nó HTTP
-devolve quando a loja não existe; se a lista vazia de lojas para as rotinas; se a descrição das ferramentas
-aceita a ficha; se `loja_json` chega inteiro nos subworkflows. É o primeiro teste a fazer na Loja Teste.
+**Primeiro teste no n8n (13/11, mensagens simuladas no webhook, sem WhatsApp).** Os 16 workflows
+"[Motor Unhas]" foram criados no n8n e ficaram **desligados** depois do teste. A Loja Teste está no motor
+(`instancia_whatsapp = loja-teste-motor`, instância que não existe; `permitidos` com números falsos).
+- Instância desconhecida: para no nó Loja, sem erro.
+- Número fora da lista: para no Filtro.
+- Número liberado: a IA respondeu com o preço do app da Loja Teste (R$ 110) e consultou a agenda dela
+  (a ficha chegou no subworkflow).
+- Dona falando com a assistente: a assistente respondeu com a agenda da Loja Teste.
+- Nenhum alerta de erro disparou.
+
+**Ainda não provado:** o workflow Rotinas (não foi ligado), o envio real da resposta pelo WhatsApp, duas
+lojas ao mesmo tempo com o mesmo número de cliente, e o tempo e a memória por atendimento.
 
 **Limites conhecidos do motor hoje:** o alerta de erro não diz de qual loja foi; "Sinop", "MT" e o fuso de
 Cuiabá continuam fixos; cada mensagem faz uma consulta a mais ao banco.
