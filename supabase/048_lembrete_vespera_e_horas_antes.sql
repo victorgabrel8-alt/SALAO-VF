@@ -22,6 +22,8 @@ language sql stable set search_path to 'public' as $$
        and (jsonb_array_length(coalesce(e.config->'lembretes'->'so_para', '[]'::jsonb)) = 0
             or (e.config->'lembretes'->'so_para') ? c.telefone)
        and a.inicio > p_agora + interval '45 minutes'
+       -- config.lembretes.desde: horário que começa antes desse instante não recebe lembrete (para ligar no meio do dia)
+       and a.inicio >= coalesce(nullif(e.config->'lembretes'->>'desde', '')::timestamptz, '-infinity'::timestamptz)
        and not exists (select 1 from contatos ct where ct.cliente_id = c.id and ct.tipo in ('remarcacao', 'aviso')
                         and ct.agendamento_id is not null
                         and ct.resultado in ('pendente', 'respondeu') and ct.criado_em > p_agora - interval '14 days')
