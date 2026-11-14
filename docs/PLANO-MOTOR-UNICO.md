@@ -144,7 +144,7 @@ Cuiabá continuam fixos; cada mensagem faz uma consulta a mais ao banco.
 - [ ] `instancia_alerta` no `loja.json` do motor: qual WhatsApp manda o alerta de erro (sem isso o envio é recusado)
 - [ ] Enviar o motor ao n8n desligado e ligar só para a Loja Teste (precisa de uma instância de WhatsApp de teste
   com o webhook apontando para `motor-unhas-whatsapp-salao`)
-- [ ] Medir memória e tempo por atendimento, para saber quantas lojas o servidor aguenta
+- [x] Medir o tempo por atendimento (63 s; ver acima). A memória do servidor não foi medida
 - [x] Teto de conversas por loja (`config.ia.limite_mes`), com avisos de 80% e 100%
 - [ ] Chave própria do Gemini por loja: ainda não construído
 - [ ] Teste: o mesmo número de cliente falando com duas lojas; nada vaza
@@ -239,6 +239,33 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
 - Não testado: convite por e-mail; o limite por endereço de internet com muitos pedidos de verdade; chamadas ao
   mesmo tempo. Pendências: o painel não avisa quando o WhatsApp do pedido já é de outra loja; não há aviso
   automático para a agência quando chega pedido novo (é preciso abrir a tela).
+
+**Alerta de erro com a loja (14/11).** Cada execução do motor anota no Redis de qual loja é (chave
+`motor:exec:<id da execução>`, 1 hora). O workflow Alerta de erro lê essa chave e põe "Loja: …" na mensagem; o
+limite de 1 alerta a cada 10 minutos passou a ser por workflow e por loja, para o erro de uma não esconder o de
+outra. O aviso "a IA falhou" também leva o nome da loja. Conferido no n8n: a anotação roda e grava a loja certa.
+Não foi visto um alerta de verdade chegando com a loja: a mensagem malformada usada para provocar erro foi
+tolerada pelo fluxo. O texto do alerta foi conferido rodando o código gerado com dados de exemplo.
+
+**Quanto tempo leva um atendimento (medido em 14/11).**
+- 93 atendimentos reais (Gleide e Caroline): mediana de **63 segundos** do recebimento até a resposta sair
+  (menor 36 s, maior 159 s). Nos testes do motor, 16 atendimentos: mediana de 75 s (o WhatsApp de teste é falso e
+  as chamadas demoram mais para falhar).
+- Desses 63 s, cerca de 40 s são espera de propósito (juntar mensagens seguidas e leitura humanizada), 14 s são
+  chamadas ao WhatsApp (ficar online, marcar como lida, digitando, enviar), 2 s a IA e 2 s o banco.
+- Mensagem que não vira atendimento (barrada, eco, fora da lista) custa 0,3 s.
+- Pico da Gleide em novembro: 20 respostas numa hora, 15 em 10 minutos. Isso dá, no pior momento, cerca de
+  **1 atendimento em andamento ao mesmo tempo por loja** do tamanho dela; na média do dia, bem menos.
+- Conta para o servidor: com N lojas parecidas com a Gleide, o pior caso é perto de N atendimentos abertos ao
+  mesmo tempo, quase todos parados na espera (não gastam processador). O que cresce é memória: cada execução
+  guarda cerca de 190 KB de dados, mais o que o n8n usa por execução aberta.
+- **Não medido: a memória do servidor.** Não há acesso ao VPS por aqui. Antes de passar de umas 20 lojas, olhar no
+  Easypanel a memória do n8n num horário cheio.
+- Espaço em disco: com `guardar_execucoes` ligado, cada loja do tamanho da Gleide grava perto de 80 MB por mês de
+  histórico de execuções. Com dezenas de lojas é preciso desligar essa opção ou ligar a limpeza automática do n8n.
+
+**Painel: WhatsApp repetido (14/11).** O pedido de cadastro avisa quando o WhatsApp informado já é o número da
+dona de outra loja. Conferido na tela com um pedido de teste.
 
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
