@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TelaDaAba } from "@/components/TelaDaAba";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
@@ -18,6 +19,7 @@ import {
   naoAtendida,
   excluirAtendimento,
   feitosJunto,
+  marcarChegou,
   mudarStatus,
   nomeCurto,
   reagendar,
@@ -51,6 +53,7 @@ import type { Profissional, ServicoAtivo } from "@/lib/tipos";
 // "Clientes do dia": só quem ainda vai ser atendida fica na linha do tempo. Concluídas e faltas
 // saem dela e vão para o grupo recolhido ("N concluídos"). Cancelados não aparecem.
 const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+const DIAS_LONGOS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
 type Dia = { atendimentos: Atendimento[]; profissionais: Profissional[]; comHorario: Set<string> } | { erro: string };
@@ -93,6 +96,14 @@ function duracao(min: number): string {
 }
 
 export default function AgendaPage() {
+  return (
+    <TelaDaAba>
+      <AgendaPageConteudo />
+    </TelaDaAba>
+  );
+}
+
+function AgendaPageConteudo() {
   const empresa = useEmpresa();
   const [dia, setDia] = useState(hojeNoSalao());
   const [resultado, setResultado] = useState<{ dia: string; dados: Dia } | null>(null);
@@ -273,6 +284,19 @@ export default function AgendaPage() {
     return erro;
   }
 
+  // Botões do cartão de hoje: "Chegou" marca a chegada (a IA para de cobrar atraso) e
+  // "Faltou" pergunta antes e marca a falta, como a folha faz
+  async function chegou(a: Atendimento, sim = true) {
+    const erro = await marcarChegou(a.id, sim);
+    if (erro) await avisar(`Não deu certo: ${erro}`);
+    recarregar();
+  }
+  async function faltou(a: Atendimento) {
+    if (!(await perguntar(`${a.clientes?.nome ?? "A cliente"} faltou?`, { confirmar: "Faltou" }))) return;
+    const erro = await marcarFalta(a);
+    if (erro) await avisar(`Não deu certo: ${erro}`);
+  }
+
   // Faltou: sai da linha do tempo e vai para o grupo recolhido; a IA vê a falta na ficha
   async function marcarFalta(a: Atendimento) {
     const erro = await mudarStatus(a.id, "faltou");
@@ -306,29 +330,25 @@ export default function AgendaPage() {
   return (
     <>
       {/* Topo grafite: mês, resumo do dia e os dias da semana */}
-      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
-        {/* Detalhe do canto: um brilho bronze suave e dois arcos finos, no lugar do círculo cinza chapado */}
-        <span aria-hidden className="pointer-events-none absolute -top-28 -right-20 h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle,rgb(168_138_104/0.26),transparent_68%)]" />
-        <span aria-hidden className="pointer-events-none absolute -top-[78px] -right-[46px] h-[176px] w-[176px] rounded-full border border-bronze/35" />
-        <span aria-hidden className="pointer-events-none absolute -top-[46px] -right-[14px] h-[112px] w-[112px] rounded-full border border-bronze/20" />
+      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[28px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
         <div className="relative flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm text-claro">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="truncate text-[13px] font-semibold text-dourado">
               {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)} de {dia.slice(0, 4)}
               {ok && ` · ${visiveis.length === 1 ? "1 horário" : `${visiveis.length} horários`}`}
             </span>
-            <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">Agenda</h1>
+            <h1 className="text-[30px] leading-tight font-bold tracking-[-0.035em] text-perola">Agenda</h1>
           </div>
           <div className="flex items-center gap-2">
             {dia !== hoje && (
-              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-bronze/50 px-4 text-[13px] font-bold text-perola active:scale-95">
+              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-white/25 px-4 text-[13px] font-bold text-perola active:scale-95">
                 Hoje
               </button>
             )}
             {/* Todas as clientes dos próximos dias e meses, numa lista só */}
             <Link
               href="/agenda/proximas"
-              className="flex h-11 items-center gap-1.5 rounded-full bg-[#D8C6AE] pr-3.5 pl-3 text-[13px] font-bold text-grafite active:scale-95"
+              className="flex h-11 items-center gap-1.5 rounded-full bg-[#FAF6F3] pr-3.5 pl-3 text-[13px] font-bold text-grafite active:scale-95"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
@@ -341,17 +361,17 @@ export default function AgendaPage() {
           <button
             onClick={() => irParaSemana(-7)}
             aria-label="Semana anterior"
-            className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
+            className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-campo/70"
           >
             ‹
           </button>
           <div className={`relative grid flex-1 gap-1.5 ${semana.length === 7 ? "grid-cols-7" : "grid-cols-6"}`}>
-            {/* Bolha bronze do dia escolhido: desliza até o dia tocado na mesma mola da barra de
+            {/* Bolha dourada do dia escolhido (única exceção à regra do ouro): desliza até o dia tocado na mesma mola da barra de
                 abas. Fica atrás dos dias (que são translúcidos), então aparece passando por baixo */}
             {bolhaDia && (
               <span
                 aria-hidden
-                className="bolha-aba pointer-events-none absolute inset-y-0 left-0 rounded-[18px] bg-bronze shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+                className="bolha-aba pointer-events-none absolute inset-y-0 left-0 rounded-[14px] bg-dourado"
                 style={{ transform: `translateX(${bolhaDia.x}px)`, width: bolhaDia.largura, transitionProperty: "transform, width" }}
               />
             )}
@@ -368,15 +388,15 @@ export default function AgendaPage() {
                   onClick={() => setDia(d)}
                   aria-pressed={escolhido}
                   aria-label={`${formatarData(d)}${bloqueioDoDia(empresa.config, d) ? " (sem atender)" : ""}`}
-                  className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] transition-colors duration-300 active:scale-95 ${
+                  className={`relative flex h-[62px] flex-col items-center justify-center gap-0.5 rounded-[14px] transition-colors duration-300 active:scale-95 ${
                     escolhido
                       ? "text-grafite"
-                      : `bg-white/[0.07] text-perola ${d === hoje ? "ring-[1.5px] ring-bronze" : "ring-1 ring-bronze/25"}`
+                      : `bg-carvao text-perola ${d === hoje ? "ring-[1.5px] ring-white/40" : ""}`
                   }`}
                 >
-                  <span className="text-xs font-semibold opacity-85">{DIAS_SEMANA[semanaIdx]}</span>
+                  <span className="text-xs font-semibold opacity-85">{escolhido && d === hoje ? "Hoje" : DIAS_SEMANA[semanaIdx]}</span>
                   {/* Dia sem atender: número riscado */}
-                  <span className={`font-serif text-[22px] leading-none font-semibold ${bloqueioDoDia(empresa.config, d) ? "line-through decoration-[#C9897A] decoration-2 opacity-60" : ""}`}>
+                  <span className={`text-[18px] leading-none font-extrabold ${bloqueioDoDia(empresa.config, d) ? "line-through decoration-[#B4432F] decoration-2 opacity-60" : ""}`}>
                     {Number(d.slice(8))}
                   </span>
                   {/* Pontinho: dia com horário marcado */}
@@ -393,16 +413,16 @@ export default function AgendaPage() {
           <button
             onClick={() => irParaSemana(7)}
             aria-label="Próxima semana"
-            className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
+            className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-campo/70"
           >
             ›
           </button>
         </div>
       </header>
 
-      <h2 className="mt-5 text-center font-serif text-[24px] font-semibold">
-        Clientes do dia
-        {ok && naLinha.length > 0 && <span className="ml-2 align-middle text-base font-bold text-bronze-escuro">{naLinha.length}</span>}
+      <h2 className="mt-5 px-5 text-[16px] font-bold">
+        {DIAS_LONGOS[(new Date(`${dia}T12:00:00Z`).getUTCDay() + 6) % 7]}, {Number(dia.slice(8))}
+        {ok && ` · ${visiveis.length === 1 ? "1 cliente" : `${visiveis.length} clientes`}`}
       </h2>
 
       <section className="mt-3 px-5">
@@ -427,11 +447,11 @@ export default function AgendaPage() {
             {b.motivo && ` · ${b.motivo}`}. A IA não marca ninguém nesse período.
           </p>
         ))}
-        {!dados && <p className="text-texto-2">Carregando…</p>}
+        {!dados && <p className="carregando-calmo text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
         {ok && (
-          <>
+          <div className="chegar-suave">
             {visiveis.length === 0 && <Vazio texto="Dia livre. Nenhum horário marcado." />}
             <ol className="flex flex-col gap-3">
               {/* Concluídos e faltas: fora da linha do tempo, recolhidos; tocar mostra a lista deles */}
@@ -477,6 +497,8 @@ export default function AgendaPage() {
                         celebrar={false}
                         aoAbrir={() => setAberto(a.id)}
                         aoMarcar={() => alternarRealizado(a)}
+                        aoChegou={dia === hoje ? (sim) => chegou(a, sim) : undefined}
+                        aoFaltou={dia === hoje ? () => faltou(a) : undefined}
                       />
                     ))}
                 </li>
@@ -493,9 +515,9 @@ export default function AgendaPage() {
                 const livre = fimAnterior ? Math.round((e.inicio - fimAnterior) / 60_000) : 0;
                 return (
                   <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id} className="flex flex-col gap-3">
-                    {livre >= 30 && <IntervaloLivre minutos={livre} />}
+                    {livre >= 30 && fimAnterior && <IntervaloLivre inicio={fimAnterior} minutos={livre} semCirculo={dia === hoje} />}
                     {e.tipo === "almoco" ? (
-                      <BlocoAlmoco texto={textoAlmoco(almoco!)} />
+                      <BlocoAlmoco texto={textoAlmoco(almoco!)} semCirculo={dia === hoje} />
                     ) : (
                       <ItemLinhaDoTempo
                         atendimento={e.atendimento}
@@ -505,13 +527,15 @@ export default function AgendaPage() {
                         celebrar={celebrando === e.atendimento.id && e.atendimento.status === "realizado"}
                         aoAbrir={() => setAberto(e.atendimento.id)}
                         aoMarcar={() => alternarRealizado(e.atendimento)}
+                        aoChegou={dia === hoje ? (sim) => chegou(e.atendimento, sim) : undefined}
+                        aoFaltou={dia === hoje ? () => faltou(e.atendimento) : undefined}
                       />
                     )}
                   </li>
                 );
               })}
             </ol>
-          </>
+          </div>
         )}
       </section>
 
@@ -578,8 +602,8 @@ const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string;
   // grafite cheio pesava demais quando havia mais de uma cliente no horário)
   agora: {
     rotulo: "Agora",
-    cartao: "bg-card ring-[1.5px] ring-bronze shadow-[0_10px_26px_rgba(168,138,104,0.28)]",
-    selo: "bg-bronze text-grafite",
+    cartao: "bg-card ring-2 ring-grafite",
+    selo: "bg-grafite text-perola",
     sub: "text-texto-2",
   },
   atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
@@ -598,8 +622,8 @@ function situacaoDe(a: Atendimento): Situacao {
 
 // Círculo de concluído ao lado do cartão: vazio = a atender, ✓ = realizado, ✕ = faltou
 const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string; rotulo: string }> = {
-  agendado: { simbolo: "", classe: "border-[1.5px] border-bronze bg-card", rotulo: "Marcar como realizado" },
-  realizado: { simbolo: "✓", classe: "bg-[#5E7A50] text-white", rotulo: "Realizado (tocar desfaz)" },
+  agendado: { simbolo: "", classe: "border-[1.5px] border-claro bg-card", rotulo: "Marcar como realizado" },
+  realizado: { simbolo: "✓", classe: "bg-[#2F7D5B] text-white", rotulo: "Realizado (tocar desfaz)" },
   faltou: { simbolo: "✕", classe: "bg-rose-texto text-white", rotulo: "Faltou (tocar desfaz)" },
   cancelado: { simbolo: "–", classe: "bg-borda text-white", rotulo: "Cancelado" },
 };
@@ -614,6 +638,8 @@ function ItemLinhaDoTempo({
   celebrar,
   aoAbrir,
   aoMarcar,
+  aoChegou,
+  aoFaltou,
 }: {
   atendimento: Atendimento;
   intencao: Avaliacao | undefined;
@@ -622,6 +648,9 @@ function ItemLinhaDoTempo({
   celebrar: boolean;
   aoAbrir: () => void;
   aoMarcar: () => void;
+  // Só hoje: no lugar do círculo, os botões Chegou/Faltou (e Concluir depois que ela chegou)
+  aoChegou?: (sim: boolean) => void;
+  aoFaltou?: () => void;
 }) {
   const min = minutos(a);
   const icone = ICONE_STATUS[a.status];
@@ -630,66 +659,109 @@ function ItemLinhaDoTempo({
   // Já resolvido (concluído ou faltou): cartão compacto, só nome e serviço
   const resolvido = situacao === "concluido" || situacao === "faltou";
   const reagendado = ultimoReagendamento(a);
+  const comBotoes = !resolvido && a.status === "agendado" && Boolean(aoChegou && aoFaltou);
 
   return (
     <div className="flex items-stretch gap-3">
-      <span className={`w-12 shrink-0 text-sm font-bold ${resolvido ? "pt-3 text-inativo" : "pt-4 text-rotulo"}`}>{formatarHora(a.inicio)}</span>
-
-      <button
-        onClick={aoAbrir}
-        className={`flex min-w-0 flex-1 flex-col gap-1 rounded-[20px] px-4 text-left ${resolvido ? "py-2.5" : "py-3.5"} ${s.cartao} ${celebrar ? "cartao-confirmado" : ""}`}
+      <span
+        className={`w-[52px] shrink-0 tracking-[-0.02em] ${resolvido ? "pt-2.5 text-[17px] font-bold text-inativo" : "pt-3 text-[20px] font-extrabold text-texto"}`}
       >
-        <span className="flex items-center justify-between gap-2">
-          <span className="flex min-w-0 items-center gap-2">
-            <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${barra}`} />
-            <span className="truncate text-base font-bold">
-              {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
+        {formatarHora(a.inicio)}
+      </span>
+
+      <div className={`flex min-w-0 flex-1 flex-col rounded-[18px] ${s.cartao} ${celebrar ? "cartao-confirmado" : ""}`}>
+        <button
+          onClick={aoAbrir}
+          className={`flex min-w-0 flex-col gap-1 rounded-[18px] px-4 text-left ${resolvido ? "py-2.5" : "py-3.5"}`}
+        >
+          <span className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-2">
+              <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${barra}`} />
+              <span className="truncate text-[17px] font-bold">
+                {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
+              </span>
+            </span>
+            <span className={`shrink-0 rounded-full px-[9px] py-[5px] text-[11px] font-bold whitespace-nowrap ${s.selo} ${celebrar ? "selo-pop" : ""}`}>
+              {s.rotulo}
             </span>
           </span>
-          <span className={`shrink-0 rounded-full px-[9px] py-[5px] text-[11px] font-bold whitespace-nowrap ${s.selo} ${celebrar ? "selo-pop" : ""}`}>
-            {s.rotulo}
+          <span className={`text-[15px] ${s.sub}`}>
+            {resumoDosServicos(a)} · {duracao(min)}
           </span>
-        </span>
-        <span className={`text-[13px] ${s.sub}`}>
-          {resumoDosServicos(a)} · {duracao(min)}
-          {a.origem === "ia" && " · IA"}
-        </span>
-        {/* Também nos concluídos: é lá que costuma ficar o horário em dobro */}
-        {vezesNoDia > 1 && (
-          <span className="w-fit rounded-full bg-rose px-2 py-0.5 text-[11px] font-bold text-rose-texto">
-            {vezesNoDia} horários dela neste dia · conferir
-          </span>
-        )}
-        {!resolvido && (
-          <>
-            {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
-            <Intencao avaliacao={intencao} />
-            <Observacao texto={a.clientes?.observacoes} />
-            {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
-          </>
-        )}
-      </button>
-
-      {/* Círculo de concluído: um toque marca realizado */}
-      <button
-        onClick={aoMarcar}
-        disabled={a.status === "cancelado"}
-        aria-label={icone.rotulo}
-        className={`flex w-8 shrink-0 items-start justify-center ${resolvido ? "pt-2.5" : "pt-3.5"}`}
-      >
-        <span className="relative flex h-[26px] w-[26px]">
-          {celebrar && <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#5E7A50]" />}
-          <span className={`relative flex h-full w-full items-center justify-center rounded-full text-xs font-bold ${icone.classe} ${celebrar ? "selo-pop" : ""}`}>
-            {a.status === "realizado" ? (
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path className={celebrar ? "check-desenhar" : ""} d="m5 12 5 5L20 7" />
-              </svg>
+          {/* Marcado pela IA: a etiqueta; com resumo, ela vem junto do resumo (Intencao) */}
+          {a.origem === "ia" && !(intencao?.pre_resumo?.trim() && !resolvido) && (
+            <span className="ia-tag mt-0.5 w-fit">
+              <span className="ia-dot" />
+              IA
+            </span>
+          )}
+          {/* Também nos concluídos: é lá que costuma ficar o horário em dobro */}
+          {vezesNoDia > 1 && (
+            <span className="w-fit rounded-full bg-rose px-2 py-0.5 text-[11px] font-bold text-rose-texto">
+              {vezesNoDia} horários dela neste dia · conferir
+            </span>
+          )}
+          {!resolvido && (
+            <>
+              {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
+              <Intencao avaliacao={intencao} />
+              <Observacao texto={a.clientes?.observacoes} />
+              {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
+            </>
+          )}
+        </button>
+        {comBotoes && (
+          <div className="flex flex-col gap-2 px-4 pb-3.5">
+            {a.chegou_em ? (
+              <>
+                <p className="flex items-center justify-between gap-2 text-[14px] text-texto-2">
+                  <span>
+                    <b className="text-salvia-texto">Chegou</b> às {formatarHora(a.chegou_em)}
+                  </span>
+                  <button onClick={() => aoChegou!(false)} className="h-11 px-1 text-[14px] font-semibold underline underline-offset-2">
+                    Desfazer
+                  </button>
+                </p>
+                <button onClick={aoMarcar} className="h-12 rounded-[13px] bg-grafite text-[16px] font-bold text-perola active:scale-[0.99]">
+                  Concluir atendimento
+                </button>
+              </>
             ) : (
-              icone.simbolo
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => aoChegou!(true)} className="h-12 rounded-[13px] bg-grafite text-[16px] font-bold text-perola active:scale-[0.98]">
+                  Chegou
+                </button>
+                <button onClick={aoFaltou} className="h-12 rounded-[13px] border border-claro bg-card text-[16px] font-bold text-grafite active:scale-[0.98]">
+                  Faltou
+                </button>
+              </div>
             )}
+          </div>
+        )}
+      </div>
+
+      {/* Círculo de concluído: um toque marca realizado (nos outros dias e nos já resolvidos) */}
+      {!comBotoes && (
+        <button
+          onClick={aoMarcar}
+          disabled={a.status === "cancelado"}
+          aria-label={icone.rotulo}
+          className={`flex w-8 shrink-0 items-start justify-center ${resolvido ? "pt-2.5" : "pt-3.5"}`}
+        >
+          <span className="relative flex h-[26px] w-[26px]">
+            {celebrar && <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#2F7D5B]" />}
+            <span className={`relative flex h-full w-full items-center justify-center rounded-full text-xs font-bold ${icone.classe} ${celebrar ? "selo-pop" : ""}`}>
+              {a.status === "realizado" ? (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path className={celebrar ? "check-desenhar" : ""} d="m5 12 5 5L20 7" />
+                </svg>
+              ) : (
+                icone.simbolo
+              )}
+            </span>
           </span>
-        </span>
-      </button>
+        </button>
+      )}
     </div>
   );
 }
@@ -711,13 +783,13 @@ function LinhaConcluidos({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 shrink-0" />
+      <span className="w-[52px] shrink-0" />
       <button
         onClick={aoAlternar}
         aria-expanded={aberto}
         className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[20px] border border-borda px-4 py-2.5 text-left active:scale-[0.99]"
       >
-        <span key={quantidade} className="selo-pop flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#5E7A50] text-white">
+        <span key={quantidade} className="selo-pop flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#2F7D5B] text-white">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m5 12 5 5L20 7" />
           </svg>
@@ -758,7 +830,7 @@ function LinhaConcluidos({
 function LinhaNaoAtendidas({ quantidade, aberto, aoAlternar }: { quantidade: number; aberto: boolean; aoAlternar: () => void }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 shrink-0" />
+      <span className="w-[52px] shrink-0" />
       <button
         onClick={aoAlternar}
         aria-expanded={aberto}
@@ -789,14 +861,15 @@ function LinhaNaoAtendidas({ quantidade, aberto, aoAlternar }: { quantidade: num
 }
 
 // Almoço na agenda: uma faixa discreta, sem ações
-function BlocoAlmoco({ texto }: { texto: string }) {
+// semCirculo: no dia de hoje os cartões não têm o círculo à direita, então o almoço vai até a borda
+function BlocoAlmoco({ texto, semCirculo }: { texto: string; semCirculo?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 shrink-0 text-sm font-bold text-inativo">{texto.slice(0, 5)}</span>
-      <p className="flex-1 rounded-[20px] border border-dashed border-borda px-4 py-3 text-sm text-texto-2">
-        <span className="font-semibold text-rotulo">Almoço</span> · {texto}
+      <span className="w-[52px] shrink-0 text-[17px] font-bold text-inativo">{texto.slice(0, 5)}</span>
+      <p className="flex-1 rounded-[16px] bg-campo px-4 py-3 text-[15px] text-texto-2">
+        <span className="font-bold text-texto">Almoço</span> · {texto}
       </p>
-      <span className="w-8 shrink-0" />
+      {!semCirculo && <span className="w-8 shrink-0" />}
     </div>
   );
 }
@@ -823,7 +896,7 @@ function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento
   return (
     <div className="rounded-[22px] bg-card p-[18px]">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="font-serif text-2xl font-semibold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
+        <p className="text-2xl font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
         {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
       </div>
       <Intencao avaliacao={intencao} />
@@ -876,11 +949,18 @@ function ServicosDoHorario({ atendimento: a }: { atendimento: Atendimento }) {
 }
 
 // Só informa o tempo livre entre os horários (quem marca é a IA)
-function IntervaloLivre({ minutos: min }: { minutos: number }) {
+// Intervalo livre: linha tracejada com "11:00 · 1h livre"
+function IntervaloLivre({ inicio, minutos: min, semCirculo }: { inicio: number; minutos: number; semCirculo?: boolean }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="w-12 shrink-0" />
-      <p className="flex-1 text-xs font-medium text-texto-2">{duracao(min)} livre</p>
+      <span className="w-[52px] shrink-0" />
+      <p className="flex flex-1 items-center gap-2.5 text-[13px] font-semibold text-rotulo">
+        <span className="shrink-0">
+          {formatarHora(new Date(inicio).toISOString())} · {duracao(min)} livre
+        </span>
+        <span aria-hidden className="h-0 flex-1 border-t-[1.5px] border-dashed border-claro" />
+      </p>
+      {!semCirculo && <span className="w-8 shrink-0" />}
     </div>
   );
 }

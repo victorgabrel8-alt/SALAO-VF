@@ -6,8 +6,9 @@ export function Intencao({ avaliacao, claro = false }: { avaliacao: Avaliacao | 
   const texto = avaliacao?.pre_resumo?.trim();
   if (!texto) return null;
   return (
-    <p className={`mt-0.5 line-clamp-2 text-sm ${claro ? "text-[#CFC3B4]" : "text-texto-2"}`}>
-      <span className={`mr-1 rounded-full px-1.5 py-px text-[10px] font-bold tracking-wide ${claro ? "bg-bronze text-grafite" : "bg-areia text-bronze-escuro"}`}>
+    <p className={`mt-0.5 line-clamp-2 text-sm ${claro ? "text-[#EFE6E1]" : "text-texto-2"}`}>
+      <span className={`ia-tag mr-1.5 align-[1px] ${claro ? "ring-1 ring-white/25" : ""}`}>
+        <span className="ia-dot" />
         IA
       </span>
       {avaliacao?.resultado === "pensando" && <span className="font-semibold">Ficou de pensar · </span>}

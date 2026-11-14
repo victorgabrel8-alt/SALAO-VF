@@ -359,16 +359,16 @@ export function ultimoReagendamento(a: Atendimento): string | null {
 }
 
 // Cor fixa por profissional (pela ordem do nome), para a dona reconhecer de longe na agenda
-// Tons suaves: a cor só identifica, não chama atenção.
+// Tons sóbrios da identidade Oi Studio (sem rosa nem cores vivas): a cor só identifica.
 const CORES_PROFISSIONAL = [
-  { borda: "border-l-rose-300", ponto: "bg-rose-300", capsula: "bg-rose-200 text-rose-900" },
-  { borda: "border-l-sky-300", ponto: "bg-sky-300", capsula: "bg-sky-200 text-sky-900" },
-  { borda: "border-l-violet-300", ponto: "bg-violet-300", capsula: "bg-violet-200 text-violet-900" },
-  { borda: "border-l-emerald-300", ponto: "bg-emerald-300", capsula: "bg-emerald-200 text-emerald-900" },
-  { borda: "border-l-amber-300", ponto: "bg-amber-300", capsula: "bg-amber-200 text-amber-900" },
-  { borda: "border-l-stone-400", ponto: "bg-stone-400", capsula: "bg-stone-200 text-stone-900" },
+  { borda: "border-l-[#1B1719]", ponto: "bg-[#1B1719]", capsula: "bg-[#EFE6E1] text-[#1B1719]" },
+  { borda: "border-l-[#7A5870]", ponto: "bg-[#7A5870]", capsula: "bg-[#F1E8EE] text-[#5A3F52]" },
+  { borda: "border-l-[#4F6475]", ponto: "bg-[#4F6475]", capsula: "bg-[#E6EBEF] text-[#2F3F4C]" },
+  { borda: "border-l-[#94702E]", ponto: "bg-[#94702E]", capsula: "bg-[#F3EBDC] text-[#5E4515]" },
+  { borda: "border-l-[#5E6B4A]", ponto: "bg-[#5E6B4A]", capsula: "bg-[#E9ECE2] text-[#3D4630]" },
+  { borda: "border-l-[#C9BBB3]", ponto: "bg-[#C9BBB3]", capsula: "bg-[#EFE6E1] text-[#4A3C45]" },
 ];
-const SEM_PROFISSIONAL = { borda: "border-l-neutral-200", ponto: "bg-neutral-200", capsula: "bg-neutral-200 text-neutral-700" };
+const SEM_PROFISSIONAL = { borda: "border-l-borda", ponto: "bg-borda", capsula: "bg-borda text-texto-2" };
 
 // Dias da semana que têm horário (para os pontinhos da faixa da semana)
 export async function buscarDiasComHorario(empresaId: string, de: string, ate: string) {

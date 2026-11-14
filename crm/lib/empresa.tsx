@@ -48,7 +48,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
   }, []);
 
   if (estado.carregando) {
-    return <p className="p-6 text-lg text-neutral-500">Carregando…</p>;
+    return <p className="carregando-calmo p-6 text-lg text-rotulo">Carregando…</p>;
   }
   if ("erro" in estado) {
     return (
@@ -88,7 +88,7 @@ export function BotaoSair() {
   return (
     <button
       onClick={sair}
-      className="h-12 w-full rounded-xl border-2 border-neutral-300 text-lg font-semibold active:bg-neutral-100"
+      className="h-12 w-full rounded-xl border-2 border-claro text-lg font-semibold active:bg-campo"
     >
       Sair
     </button>

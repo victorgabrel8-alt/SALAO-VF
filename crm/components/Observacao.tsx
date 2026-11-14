@@ -4,9 +4,9 @@ export function Observacao({ texto }: { texto: string | null | undefined }) {
   const limpo = texto?.trim();
   if (!limpo) return null;
   return (
-    <p className="mt-0.5 line-clamp-2 text-sm text-neutral-700">
+    <p className="mt-0.5 line-clamp-2 text-sm text-texto-2">
       <span className="font-bold text-[var(--cor-principal)]">* </span>
-      <span className="underline decoration-neutral-400 underline-offset-2">{limpo}</span>
+      <span className="underline decoration-claro underline-offset-2">{limpo}</span>
     </p>
   );
 }
