@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
   const acesso = await conferirAgencia(request);
   if (!acesso.ok) return Response.json({ erro: acesso.erro }, { status: acesso.status });
   try {
-    const [lojas, cadastros] = await Promise.all([listarLojas(), listarCadastros()]);
-    return Response.json({ lojas, cadastros });
+    const [lojas, pedidos] = await Promise.all([listarLojas(), listarCadastros()]);
+    return Response.json({ lojas, cadastros: pedidos.cadastros, cadastrosPendentes: pedidos.pendentes });
   } catch (e) {
     return comErro(e);
   }

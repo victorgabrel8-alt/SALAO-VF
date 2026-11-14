@@ -222,6 +222,24 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
 - Pendências conhecidas: a lista faz duas consultas por loja (rever com dezenas de lojas); o diálogo de confirmação
   não fecha com Esc; não há trava no servidor contra criar duas lojas iguais.
 
+**Cadastro pela própria dona (14/11, etapa 5): `crm/app/cadastro`, `supabase/050` e `051`.**
+- Página pública do app, "Cadastrar minha loja" (ramo, loja, dona, WhatsApp, cidade, e-mail opcional), com link
+  na tela de login. O pedido só grava uma linha em `motor_cadastros` (função `pedir_cadastro`): não cria loja,
+  WhatsApp nem IA. Assim um formulário público não consegue criar instância nem gastar Gemini.
+- A agência vê os pedidos na tela Lojas do painel, do mais antigo para o mais novo, e aprova (cria a loja, o
+  WhatsApp e abre o QR) ou recusa. Na aprovação o e-mail do convite aparece para ser conferido com a dona, porque
+  quem recebe o convite entra como dona da loja.
+- Travas do formulário: 3 pedidos por dia por endereço de internet, 3 pendentes por WhatsApp e por e-mail, 200 por
+  dia no total, uma chamada de cada vez; só algarismos comuns no WhatsApp; sem quebra de linha, caractere de
+  controle ou invisível nos textos (eles vão para o prompt da IA). "Recusar todos" limpa pedidos falsos.
+- Pedido que ficou aprovado sem loja (queda no meio) aparece como preso, com Reabrir.
+- Testado no navegador: pedido pelo app em tela de celular, aprovação e recusa no painel, recusa em lote, dados
+  inválidos. Um testador revisou a segurança; os 9 problemas achados foram corrigidos.
+- Para as donas verem a página, o app precisa ser publicado (merge e Implantar). A função já está no banco.
+- Não testado: convite por e-mail; o limite por endereço de internet com muitos pedidos de verdade; chamadas ao
+  mesmo tempo. Pendências: o painel não avisa quando o WhatsApp do pedido já é de outra loja; não há aviso
+  automático para a agência quando chega pedido novo (é preciso abrir a tela).
+
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
 - [ ] Modelo **Unhas**, a partir do prompt da Caroline, sem o que é só dela
@@ -243,7 +261,7 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
 - [ ] A 3ª cliente já entra direto pelo motor
 
 ### Etapa 5 — Cadastro pela dona
-- [ ] Tela Criar minha conta, QR dentro do app, loja em "aguardando aprovação"
+- [x] Página Cadastrar minha loja no app e aprovação no painel (o QR aparece no painel, na aprovação)
 
 ### Etapa 6 — Gleide por último
 - [ ] O que é só dela vira recurso do ramo ou configuração da loja

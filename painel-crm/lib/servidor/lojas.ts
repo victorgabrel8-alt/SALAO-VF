@@ -159,6 +159,9 @@ export async function criarLoja(dados: NovaLoja, criadoPor: string) {
   const whats = digitos(dados.whatsappDona);
   const cidade = String(dados.cidade ?? "").trim();
   const email = String(dados.email ?? "").trim();
+  // nome, dona e cidade entram no prompt da IA e em mensagens: sem quebra de linha, controle ou caractere invisível
+  const ruim = /[\u0000-\u001f\u007f\u00a0\u200b-\u200f\u202a-\u202e\u2060\u2066-\u2069\ufeff]/;
+  if (ruim.test(nome) || ruim.test(dona) || ruim.test(cidade)) throw new ErroLoja("Nome da loja, da dona ou cidade com caractere inválido.");
   if (nome.length < 3 || nome.length > 80) throw new ErroLoja("Escreva o nome da loja (até 80 letras).");
   if (dona.length > 40 || cidade.length > 60 || email.length > 120) throw new ErroLoja("Nome da dona, cidade ou e-mail longo demais.");
   if (!dona) throw new ErroLoja("Escreva o nome da dona.");
@@ -319,22 +322,37 @@ export async function mudarLoja(id: string, m: Mudanca) {
   if (feito !== true) throw new ErroLoja("Esta loja não está no motor.");
 }
 
-// ---------- Pedidos de cadastro (supabase/050): a dona pede pelo app, a agência aprova aqui ----------
-export type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string };
-type LinhaCadastro = { id: string; criado_em: string; nome_loja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; status: string };
+// ---------- Pedidos de cadastro (supabase/050 e 051): a dona pede pelo app, a agência aprova aqui ----------
+// "preso" = pedido marcado como aprovado, mas a loja não chegou a ser criada (queda no meio da aprovação):
+// aparece na lista para poder ser reaberto.
+export type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; preso: boolean };
+type LinhaCadastro = { id: string; criado_em: string; nome_loja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; status: string; empresa_id: string | null };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const CAMPOS_CADASTRO = "id,criado_em,nome_loja,ramo,dona,whatsapp,cidade,email,status,empresa_id";
+const paraTela = (c: LinhaCadastro, preso: boolean): Cadastro => ({ id: c.id, criadoEm: c.criado_em, nomeLoja: c.nome_loja, ramo: c.ramo, dona: c.dona, whatsapp: c.whatsapp, cidade: c.cidade, email: c.email, preso });
 
-export async function listarCadastros(): Promise<Cadastro[]> {
-  const l = await banco<LinhaCadastro[]>("/rest/v1/motor_cadastros?select=id,criado_em,nome_loja,ramo,dona,whatsapp,cidade,email,status&status=eq.pendente&order=criado_em.desc&limit=100");
-  return l.map((c) => ({ id: c.id, criadoEm: c.criado_em, nomeLoja: c.nome_loja, ramo: c.ramo, dona: c.dona, whatsapp: c.whatsapp, cidade: c.cidade, email: c.email }));
+// Os mais antigos primeiro (quem pediu antes é atendida antes e pedido real não some atrás de pedido falso).
+// Falha aqui não derruba a tela Lojas: a lista de pedidos só vem vazia.
+export async function listarCadastros(): Promise<{ cadastros: Cadastro[]; pendentes: number }> {
+  try {
+    const dezMin = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const semana = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+    const [pendentes, presos] = await Promise.all([
+      banco<LinhaCadastro[]>(`/rest/v1/motor_cadastros?select=${CAMPOS_CADASTRO}&status=eq.pendente&order=criado_em.asc&limit=200`),
+      banco<LinhaCadastro[]>(`/rest/v1/motor_cadastros?select=${CAMPOS_CADASTRO}&status=eq.aprovado&empresa_id=is.null&resolvido_em=lt.${dezMin}&resolvido_em=gt.${semana}&order=criado_em.asc&limit=20`),
+    ]);
+    return { cadastros: [...presos.map((c) => paraTela(c, true)), ...pendentes.map((c) => paraTela(c, false))], pendentes: pendentes.length };
+  } catch (e) {
+    console.error("[lojas] listarCadastros", e);
+    return { cadastros: [], pendentes: 0 };
+  }
 }
 
-async function lerCadastroPendente(id: string): Promise<LinhaCadastro> {
+async function lerCadastro(id: string): Promise<LinhaCadastro> {
   if (!UUID.test(id)) throw new ErroLoja("Pedido inválido.");
-  const l = await banco<LinhaCadastro[]>(`/rest/v1/motor_cadastros?select=id,criado_em,nome_loja,ramo,dona,whatsapp,cidade,email,status&id=eq.${id}`);
+  const l = await banco<LinhaCadastro[]>(`/rest/v1/motor_cadastros?select=${CAMPOS_CADASTRO}&id=eq.${id}`);
   if (!l.length) throw new ErroLoja("Pedido não encontrado.");
-  if (l[0].status !== "pendente") throw new ErroLoja("Este pedido já foi resolvido.");
   return l[0];
 }
 
@@ -342,23 +360,52 @@ const resolver = (id: string, status: "aprovado" | "recusado", empresaId: string
   banco<boolean>("/rest/v1/rpc/motor_resolver_cadastro", { method: "POST", body: JSON.stringify({ p_id: id, p_status: status, p_empresa_id: empresaId }) });
 
 // Aprovar = criar a loja com os dados do pedido (instância, loja no banco, convite se houver e-mail) e devolver o QR.
-// O pedido é marcado como aprovado ANTES de criar, para dois cliques ao mesmo tempo não criarem duas lojas;
-// se a criação falhar, ele volta a ficar pendente.
-export async function aprovarCadastro(id: string, criadoPor: string, limiteMes: number | null) {
-  const c = await lerCadastroPendente(id);
+// - O pedido é marcado como aprovado ANTES de criar, para dois cliques ao mesmo tempo não criarem duas lojas.
+// - Se a criação falhar, o pedido volta a ficar pendente.
+// - Depois que a loja existe, nada mais desfaz a aprovação: falha ao anotar a loja no pedido vira só um aviso.
+// - `email`: o que a agência confirmou com a dona (pode corrigir ou apagar o do pedido; vazio = sem convite).
+export async function aprovarCadastro(id: string, criadoPor: string, limiteMes: number | null, email?: string) {
+  const c = await lerCadastro(id);
+  if (c.status !== "pendente") throw new ErroLoja("Este pedido já foi resolvido.");
   if (limiteMes !== null && !(Number.isInteger(limiteMes) && limiteMes > 0 && limiteMes < 1000000)) throw new ErroLoja("Teto de conversas: um número inteiro.");
+  const emailFinal = String(email ?? c.email ?? "").trim().toLowerCase();
+  if (emailFinal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailFinal)) throw new ErroLoja("E-mail inválido.");
   if ((await resolver(id, "aprovado", null)) !== true) throw new ErroLoja("Este pedido já foi resolvido.");
+
+  let r: Awaited<ReturnType<typeof criarLoja>>;
   try {
-    const r = await criarLoja({ ramo: c.ramo, nome: c.nome_loja, dona: c.dona, whatsappDona: c.whatsapp, cidade: c.cidade, email: c.email, limiteMes, blocoMin: null }, criadoPor);
-    await banco(`/rest/v1/motor_cadastros?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ empresa_id: r.id }) });
-    return { ...r, nome: c.nome_loja };
+    r = await criarLoja({ ramo: c.ramo, nome: c.nome_loja, dona: c.dona, whatsappDona: c.whatsapp, cidade: c.cidade, email: emailFinal, limiteMes, blocoMin: null }, criadoPor);
   } catch (e) {
-    await banco(`/rest/v1/motor_cadastros?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ status: "pendente", resolvido_em: null }) }).catch(() => null);
+    await banco(`/rest/v1/motor_cadastros?id=eq.${id}&status=eq.aprovado&empresa_id=is.null`, { method: "PATCH", body: JSON.stringify({ status: "pendente", resolvido_em: null }) }).catch(() => null);
     throw e;
   }
+  await banco(`/rest/v1/motor_cadastros?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ empresa_id: r.id }) }).catch(() => {
+    r.avisos.push("A loja foi criada, mas o pedido não foi ligado a ela: ele pode aparecer como preso na lista. Recuse-o para tirar de lá.");
+  });
+  return { ...r, nome: c.nome_loja };
 }
 
 export async function recusarCadastro(id: string) {
-  await lerCadastroPendente(id);
+  const c = await lerCadastro(id);
+  // pedido preso (aprovado sem loja) também pode ser recusado: volta a pendente e é recusado em seguida
+  if (c.status === "aprovado" && !c.empresa_id) await reabrirCadastro(id);
+  else if (c.status !== "pendente") throw new ErroLoja("Este pedido já foi resolvido.");
   if ((await resolver(id, "recusado", null)) !== true) throw new ErroLoja("Este pedido já foi resolvido.");
+}
+
+// Pedido preso volta a pendente, para ser aprovado de novo.
+export async function reabrirCadastro(id: string) {
+  const c = await lerCadastro(id);
+  if (!(c.status === "aprovado" && !c.empresa_id)) throw new ErroLoja("Este pedido não está preso.");
+  await banco(`/rest/v1/motor_cadastros?id=eq.${id}&status=eq.aprovado&empresa_id=is.null`, { method: "PATCH", body: JSON.stringify({ status: "pendente", resolvido_em: null }) });
+}
+
+// Recusa de uma vez todos os pendentes (limpar pedidos falsos). Devolve quantos foram.
+export async function recusarTodosCadastros() {
+  const l = await banco<{ id: string }[]>("/rest/v1/motor_cadastros?status=eq.pendente", {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ status: "recusado", resolvido_em: new Date().toISOString() }),
+  });
+  return l.length;
 }

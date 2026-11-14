@@ -27,7 +27,7 @@ type Loja = {
   temRecado: boolean;
   sinal: Sinal;
 };
-type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string };
+type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; preso: boolean };
 type Qr = { lojaId: string; nome: string; imagem: string; codigo: string; conectado: boolean; avisos?: string[] };
 
 const RAMO: Record<string, string> = { manicure: "Unhas", mega_hair: "Mega hair", estudio_beleza: "Estúdio de beleza" };
@@ -116,7 +116,10 @@ export default function LojasPage() {
 
       {lojas && cadastros.length > 0 && (
         <section className="mb-6 space-y-3">
-          <h2 className="text-xl font-bold">Pedidos de cadastro ({cadastros.length})</h2>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-xl font-bold">Pedidos de cadastro ({cadastros.length})</h2>
+            {cadastros.filter((c) => !c.preso).length > 1 && <RecusarTodos quantos={cadastros.filter((c) => !c.preso).length} aoMudar={carregar} />}
+          </div>
           {cadastros.map((c) => (
             <CartaoCadastro key={c.id} cadastro={c} aoMudar={carregar} aoAprovar={(novo) => (setQr(novo), carregar())} />
           ))}
@@ -322,30 +325,64 @@ function PainelQr({ qr, aoMudar, aoFechar }: { qr: Qr; aoMudar: (q: Qr) => void;
   );
 }
 
+// Recusar todos os pedidos pendentes de uma vez (para limpar pedidos falsos)
+function RecusarTodos({ quantos, aoMudar }: { quantos: number; aoMudar: () => void }) {
+  const { dialogo, perguntar, avisar } = useDialogo();
+  const [ocupado, setOcupado] = useState(false);
+  async function recusar() {
+    if (!(await perguntar(`Recusar os ${quantos} pedidos pendentes?\nNada é criado e todos saem da lista. Não dá para desfazer por esta tela.`, { confirmar: "Recusar todos", perigo: true }))) return;
+    setOcupado(true);
+    try {
+      await chamar("/api/cadastros/todos", { method: "POST", body: JSON.stringify({ acao: "recusar" }) });
+    } catch (e) {
+      await avisar((e as Error).message);
+    }
+    setOcupado(false);
+    aoMudar();
+  }
+  return (
+    <>
+      {dialogo}
+      <button onClick={recusar} disabled={ocupado} className={botao}>
+        Recusar todos
+      </button>
+    </>
+  );
+}
+
 // Pedido que a dona fez pelo app (página Cadastrar minha loja). Aprovar cria a loja e abre o QR.
 function CartaoCadastro({ cadastro, aoMudar, aoAprovar }: { cadastro: Cadastro; aoMudar: () => void; aoAprovar: (qr: Qr) => void }) {
   const { dialogo, perguntar, avisar } = useDialogo();
   const [ocupado, setOcupado] = useState(false);
   const [limite, setLimite] = useState("200");
+  const [email, setEmail] = useState(cadastro.email);
   const c = cadastro;
 
-  async function resolver(acao: "aprovar" | "recusar") {
+  async function resolver(acao: "aprovar" | "recusar" | "reabrir") {
     let limiteMes: number | null = null;
     try {
       if (acao === "aprovar") limiteMes = inteiro(limite, "Teto de conversas");
     } catch (e) {
       return void avisar((e as Error).message);
     }
+    const destino = email.trim();
     const pergunta =
       acao === "aprovar"
-        ? `Aprovar ${c.nomeLoja}?\nCria a loja, o WhatsApp para conectar${c.email ? ` e manda o convite do app para ${c.email}` : ""}. A IA nasce em teste.`
-        : `Recusar o pedido de ${c.nomeLoja}?\nNada é criado e o pedido sai da lista.`;
-    if (!(await perguntar(pergunta, { confirmar: acao === "aprovar" ? "Aprovar" : "Recusar", perigo: acao === "recusar" }))) return;
+        ? `Aprovar ${c.nomeLoja}?\nCria a loja e o WhatsApp para conectar. A IA nasce em teste.\n\n${
+            destino
+              ? `O convite do app vai para ${destino}. Quem recebe esse e-mail entra como dona e vê clientes, conversas e agenda: confirme o endereço com a ${c.dona} pelo WhatsApp antes.`
+              : "Sem e-mail: nenhum convite do app será enviado agora."
+          }`
+        : acao === "recusar"
+          ? `Recusar o pedido de ${c.nomeLoja}?\nNada é criado e o pedido sai da lista.`
+          : `Reabrir o pedido de ${c.nomeLoja}?\nEle volta para a lista como pendente, para ser aprovado de novo. Antes, confira na lista de lojas se a loja não chegou a ser criada.`;
+    const confirmar = acao === "aprovar" ? "Aprovar" : acao === "recusar" ? "Recusar" : "Reabrir";
+    if (!(await perguntar(pergunta, { confirmar, perigo: acao === "recusar" }))) return;
     setOcupado(true);
     try {
       const r = await chamar<{ id: string; nome: string; qr: { imagem: string; codigo: string }; avisos: string[] }>(`/api/cadastros/${c.id}`, {
         method: "POST",
-        body: JSON.stringify({ acao, limiteMes }),
+        body: JSON.stringify({ acao, limiteMes, email: destino }),
       });
       if (acao === "aprovar") aoAprovar({ lojaId: r.id, nome: r.nome, imagem: r.qr.imagem, codigo: r.qr.codigo, conectado: false, avisos: r.avisos });
       else aoMudar();
@@ -359,28 +396,47 @@ function CartaoCadastro({ cadastro, aoMudar, aoAprovar }: { cadastro: Cadastro; 
   return (
     <div className="rounded-2xl border border-cobre/40 bg-cobre-claro/40 p-5">
       {dialogo}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p className="text-lg font-bold">{c.nomeLoja}</p>
           <p className="text-sm text-texto-2">
             {c.ramo === "megahair" ? "Mega hair" : "Unhas"} · {c.dona} · {c.whatsapp}
             {c.cidade && ` · ${c.cidade}`}
-            {c.email && ` · ${c.email}`}
           </p>
           <p className="text-sm text-texto-2">Pedido em {new Date(c.criadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
+          {c.preso && (
+            <p role="alert" className="mt-2 rounded-xl bg-rose p-3 text-sm text-rose-texto">
+              Este pedido ficou marcado como aprovado, mas a loja não foi criada. Reabra para aprovar de novo, ou recuse.
+            </p>
+          )}
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <label className="text-sm font-semibold">
-            Teto de conversas por mês
-            <input value={limite} onChange={(e) => setLimite(e.target.value)} inputMode="numeric" aria-label="Teto de conversas por mês" className={"mt-1 block w-40 " + campo} />
-          </label>
-          <button onClick={() => resolver("aprovar")} disabled={ocupado} className={botaoForte}>
-            {ocupado ? "Aguarde…" : "Aprovar"}
-          </button>
-          <button onClick={() => resolver("recusar")} disabled={ocupado} className={botao + " h-11"}>
-            Recusar
-          </button>
-        </div>
+        {c.preso ? (
+          <div className="flex flex-wrap gap-2">
+            <button onClick={() => resolver("reabrir")} disabled={ocupado} className={botaoForte}>
+              Reabrir
+            </button>
+            <button onClick={() => resolver("recusar")} disabled={ocupado} className={botao + " h-11"}>
+              Recusar
+            </button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-end gap-2">
+            <label className="text-sm font-semibold">
+              E-mail para o convite (confirme com a dona)
+              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="sem convite" className={"mt-1 block w-64 " + campo} />
+            </label>
+            <label className="text-sm font-semibold">
+              Teto de conversas por mês
+              <input value={limite} onChange={(e) => setLimite(e.target.value)} inputMode="numeric" className={"mt-1 block w-36 " + campo} />
+            </label>
+            <button onClick={() => resolver("aprovar")} disabled={ocupado} className={botaoForte}>
+              {ocupado ? "Aguarde…" : "Aprovar"}
+            </button>
+            <button onClick={() => resolver("recusar")} disabled={ocupado} className={botao + " h-11"}>
+              Recusar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

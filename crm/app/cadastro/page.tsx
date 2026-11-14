@@ -15,6 +15,9 @@ const RAMOS = [
   { chave: "megahair", titulo: "Mega hair", texto: "Aplicação e manutenção" },
 ];
 
+// WhatsApp da agência, se configurado: link de ajuda quando o envio não dá certo
+const WHATS_AGENCIA = (process.env.NEXT_PUBLIC_AGENCIA_WHATSAPP ?? "").replace(/\D/g, "");
+
 const campo =
   "h-[56px] w-full rounded-2xl bg-card/85 px-[18px] text-[17px] outline-none ring-1 ring-grafite/[0.08] placeholder:text-inativo focus:bg-white focus:ring-2 focus:ring-bronze";
 
@@ -64,8 +67,8 @@ export default function CadastroPage() {
           <div className="mt-10 space-y-4">
             <h1 className="font-serif text-[38px] leading-tight font-semibold">Pedido enviado</h1>
             <p role="status" className="rounded-2xl bg-salvia p-5 text-[17px] leading-relaxed text-salvia-texto">
-              Recebemos o cadastro de <b>{nomeLoja}</b>. Vamos falar com você no WhatsApp para conectar o número da loja e liberar o seu
-              acesso ao app.
+              Recebemos o cadastro de <b>{nomeLoja}</b>. Vamos falar com você no WhatsApp para conectar o número da loja
+              {email.trim() ? " e liberar o seu acesso ao app." : ". Para o acesso ao app, vamos pedir o seu e-mail por lá."}
             </p>
             <p className="text-[15px] leading-relaxed text-texto-2">
               Enquanto isso, já separe: os serviços com preço e duração, o horário de funcionamento e as formas de pagamento. É o que a
@@ -88,7 +91,7 @@ export default function CadastroPage() {
                   {RAMOS.map((r) => (
                     <label
                       key={r.chave}
-                      className={`cursor-pointer rounded-2xl p-4 ring-1 transition ${
+                      className={`cursor-pointer rounded-2xl p-4 ring-1 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bronze has-[:focus-visible]:ring-offset-2 has-[:focus-visible]:ring-offset-perola ${
                         ramo === r.chave ? "bg-grafite text-white ring-grafite" : "bg-card/85 ring-grafite/[0.08]"
                       }`}
                     >
@@ -127,7 +130,7 @@ export default function CadastroPage() {
                 <input value={cidade} onChange={(e) => setCidade(e.target.value)} maxLength={60} autoComplete="address-level2" placeholder="Sinop" className={campo} />
               </label>
               <label className="block">
-                <span className="mb-2 block text-[15px] font-semibold text-rotulo">E-mail, para o seu login no app</span>
+                <span className="mb-2 block text-[15px] font-semibold text-rotulo">E-mail, para o seu login no app (opcional)</span>
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -144,6 +147,14 @@ export default function CadastroPage() {
               {erro && (
                 <p role="alert" className="rounded-2xl bg-rose p-4 text-[15px] font-medium text-rose-texto">
                   {erro}
+                  {WHATS_AGENCIA && (
+                    <>
+                      {" "}
+                      <a href={`https://wa.me/${WHATS_AGENCIA}`} className="underline underline-offset-4">
+                        Falar com a gente no WhatsApp
+                      </a>
+                    </>
+                  )}
                 </p>
               )}
 
