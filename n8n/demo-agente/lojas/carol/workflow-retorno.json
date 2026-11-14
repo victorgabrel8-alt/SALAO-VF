@@ -1,0 +1,622 @@
+{
+  "name": "[Studio Caroline Ferreira] IA - Retorno combinado",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000016",
+      "name": "Nota 16",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -232
+      ],
+      "parameters": {
+        "content": "## Retorno combinado\nA cada 10 min: a cliente combinou de voltar a falar numa data (a IA anota pela anotar_no_crm)? Nessa data, com o salão aberto, o Gemini\nescreve um alô leve sobre o que ficou combinado, ou decide não mandar. Vai pelo número do salão, para o CRM (contato retorno) e para a memória da IA.",
+        "width": 1400,
+        "height": 172,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000303",
+      "name": "A cada 10 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000304",
+      "name": "Disparar agora (teste)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "carol-retorno-combinado",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "a74be7ba-47e1-4ad5-8dad-390428da3008",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000305",
+      "name": "Quem chamar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_retornos_para_chamar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000306",
+      "name": "Pausas",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "carol:pausa:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000307",
+      "name": "Memórias",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "carol:memoria:*",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000308",
+      "name": "Preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\n// chaves do Redis vêm com o número do WhatsApp, que pode ter ou não o 9 depois do DDD: acha pelos 8 últimos dígitos\nconst chaves = (j) => [].concat(j?.keys || Object.keys(j || {})).map(String);\nconst pausas = chaves($('Pausas').first().json);\nconst memorias = chaves($('Memórias').first().json);\nconst achar = (lista, prefixo, tel) => lista.find((k) => k.startsWith(prefixo + tel.slice(0, 4)) && k.endsWith(tel.slice(-8)));\nconst agora = new Date().toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });\nconst diaDe = (s) => new Date(s).toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit' });\nconst quem = { cliente: 'Cliente', ia: 'Você (IA)', humano: 'Caroline' };\nreturn $('Quem chamar').all().map((i) => i.json).filter((c) => c.retorno_id).filter((c) => !achar(pausas, 'carol:pausa:', c.telefone)).map((c) => {\n  const nome = String(c.nome || '').trim().split(/\\s+/)[0] || '';\n  const conversa = (c.historico || []).map((m) => '[' + m.em + '] ' + (quem[m.autor] || m.autor) + (m.tipo !== 'texto' ? ' (' + m.tipo + ')' : '') + ': ' + m.texto).join('\\n');\n  const instrucao = [\n    'Você é a assistente virtual da Caroline, do salão Studio Caroline Ferreira (Sinop-MT), no WhatsApp do salão.',\n    'Em ' + diaDe(c.combinado_em) + ' a cliente' + (nome ? ' (' + nome + ')' : '') + ' combinou de voltar a falar com o salão por volta de ' +\n      diaDe(c.data + 'T12:00:00-04:00') + (c.assunto ? ', sobre: ' + c.assunto : '') + '. Agora é ' + agora + ' e ela ainda não chamou.',\n    c.resumo_ia ? 'Resumo do que se sabe dela: ' + c.resumo_ia : '',\n    '', 'CONVERSA (mais antiga primeiro):', conversa, '',\n    'Primeiro decida se faz sentido mandar o alô. Responda exatamente \"PULAR: <motivo curto>\" se:',\n    '- na conversa ela não combinou de voltar a falar (a data foi anotada por engano) ou já resolveu o assunto;',\n    '- ela disse que não quer, não tem interesse, vai procurar outro lugar ou pediu para não mandar mensagem;',\n    '- ela pediu um tempo maior que ainda não passou (cirurgia, viagem, \"só mês que vem\").',\n    // Lizete (30/10): o salão ficou de responder as marcas e ela ficou de contar como ficou o cabelo; o alô é sobre o que ELA combinou\n    'Se o salão ficou devendo alguma resposta (você disse que ia confirmar algo com a Caroline), NÃO pule por isso: fale só do que ela combinou, sem citar a pendência e sem prometer a resposta.',\n    'Se fizer sentido, escreva o alô como uma pessoa de verdade que atende o WhatsApp do salão e lembrou do combinado:',\n    '- fale do assunto que ficou combinado, com o detalhe que ela trouxe, e pergunte de um jeito simples como foi ou o que ela decidiu;',\n    '- leve e sem cobrança: ela não tem obrigação de responder; não convide para agendar nem para a avaliação (a não ser que ela mesma tenha falado em marcar);',\n    '- não repita frases que você já mandou na conversa, nem a última pergunta com outras palavras;',\n    '- nada de frase pronta de robô: \"Se precisar de ajuda, estou por aqui\", \"Fico à disposição\", \"Só passando pra lembrar\", \"Tô passando pra saber\", \"Espero que esteja bem\", \"é só me chamar\";',\n    '- use só o que está escrito na conversa: não suponha o que ela não disse; não indique técnica, formato nem cor;',\n    '- não afirme estoque, cor, resultado nem preço (nem repita um valor da conversa); não invente horário livre, promoção ou novidade;',\n    '- não prometa passar foto ou mensagem para a Caroline nem que ela vai dar retorno (o alô não encaminha nada);',\n    '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop (\"pra\", \"tá\"), sem formalidade; sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez;',\n    '- pode começar com um \"Oi\" curto (faz dias que vocês não falam), sem se apresentar de novo; não fale de tempo sem resposta nem diga \"como combinamos\" em tom de cobrança.',\n    'Responda só com a mensagem (ou com PULAR: motivo), sem aspas.',\n  ].filter((l) => l !== null).join('\\n');\n  // memória da IA: a chave que já existe; sem ela, o formato do WhatsApp (sem o 9)\n  const memoria = achar(memorias, 'carol:memoria:', c.telefone) || 'carol:memoria:' + c.telefone.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2');\n  return { json: { ...c, nome, instrucao, memoria, historico: undefined } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000309",
+      "name": "Escrever (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.instrucao }] }], generationConfig: { temperature: 0.6, thinkingConfig: { thinkingLevel: 'low' } } }) }}",
+        "options": {}
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "MjEGxdJcHhSejzG7",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000310",
+      "name": "Decidir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst prep = $('Preparar').all();\nreturn $input.all().map((r, i) => {\n  const c = prep[i].json;\n  let t = String(r.json.candidates?.[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text || '').join('') || '').trim();\n  t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/^[\"“]|[\"”]$/g, '').trim();\n  // sem resposta do Gemini: não grava nada, tenta de novo na próxima rodada\n  if (!t) return { json: { ...c, acao: 'erro' } };\n  const pular = t.match(/^PULAR\\s*:?\\s*(.*)$/is);\n  if (pular) return { json: { ...c, acao: 'pular', motivo: pular[1].trim().slice(0, 300) || 'sem motivo' } };\n  return { json: { ...c, acao: 'enviar', texto: t } };\n});\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000311",
+      "name": "Enviar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.acao === 'enviar' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000312",
+      "name": "Pular?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.acao === 'pular' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000313",
+      "name": "Mandar para a cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000314",
+      "name": "Enviou?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000315",
+      "name": "Registrar alô",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_retorno",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_retorno_id: $('Decidir').item.json.retorno_id, p_situacao: 'enviado', p_mensagem: $('Decidir').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000316",
+      "name": "Memória (aviso)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Decidir').item.json.memoria }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'human', data: { content: '[ela tinha combinado de falar com o salão por volta de hoje' + ($('Decidir').item.json.assunto ? ' (' + $('Decidir').item.json.assunto + ')' : '') + '; alô automático de retorno]', additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000317",
+      "name": "Memória (mensagem enviada)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3600,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Decidir').item.json.memoria }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: $('Decidir').item.json.texto, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000318",
+      "name": "Registrar pulado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_retorno",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_retorno_id: $json.retorno_id, p_situacao: 'pulado', p_motivo: $json.motivo }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "A cada 10 min": {
+      "main": [
+        [
+          {
+            "node": "Quem chamar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste)": {
+      "main": [
+        [
+          {
+            "node": "Quem chamar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quem chamar": {
+      "main": [
+        [
+          {
+            "node": "Pausas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pausas": {
+      "main": [
+        [
+          {
+            "node": "Memórias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memórias": {
+      "main": [
+        [
+          {
+            "node": "Preparar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar": {
+      "main": [
+        [
+          {
+            "node": "Escrever (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Escrever (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Decidir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Decidir": {
+      "main": [
+        [
+          {
+            "node": "Enviar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar?": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pular?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pular?": {
+      "main": [
+        [
+          {
+            "node": "Registrar pulado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Enviou?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviou?": {
+      "main": [
+        [
+          {
+            "node": "Registrar alô",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar alô": {
+      "main": [
+        [
+          {
+            "node": "Memória (aviso)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória (aviso)": {
+      "main": [
+        [
+          {
+            "node": "Memória (mensagem enviada)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true,
+    "errorWorkflow": "7aHIAbHbumNK2pbn"
+  }
+}

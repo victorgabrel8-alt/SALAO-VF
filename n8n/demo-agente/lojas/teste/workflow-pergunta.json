@@ -1,5 +1,5 @@
 {
-  "name": "[Loja Teste] Perguntar para a Ana",
+  "name": "[Loja Teste] Perguntar para a Caroline",
   "nodes": [
     {
       "id": "00000000-0000-4000-9000-000000000014",
@@ -11,14 +11,14 @@
         -206
       ],
       "parameters": {
-        "content": "## Perguntar para a Ana\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Ana e guarda para repassar a resposta quando ela tocar em Responder.",
+        "content": "## Perguntar para a Caroline\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a Caroline e guarda para repassar a resposta quando ela tocar em Responder.",
         "width": 1400,
         "height": 146,
         "color": 1
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000244",
+      "id": "00000000-0000-4000-8000-000000000319",
       "name": "Recebe pergunta da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -43,13 +43,16 @@
             },
             {
               "name": "contexto"
+            },
+            {
+              "name": "tipo"
             }
           ]
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000245",
+      "id": "00000000-0000-4000-8000-000000000320",
       "name": "Supabase: número de alerta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -79,8 +82,8 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000246",
-      "name": "Enviar pergunta à Ana",
+      "id": "00000000-0000-4000-8000-000000000321",
+      "name": "Enviar pergunta à Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -101,7 +104,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '❓ ' + ($('Recebe pergunta da IA').first().json.nome || 'Cliente') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        '\\n\\n↩️ Toque em Responder e escreva a resposta.' }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.') }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -111,7 +114,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000247",
+      "id": "00000000-0000-4000-8000-000000000322",
       "name": "Guardar pedido",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -124,7 +127,7 @@
         "key": "=teste:pedido:{{ $json.key?.id || 'falhou' }}",
         "expire": true,
         "ttl": 259200,
-        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta }) }}"
+        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta, tipo: $('Recebe pergunta da IA').first().json.tipo || 'pergunta', empresa: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}"
       },
       "credentials": {
         "redis": {
@@ -135,12 +138,35 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000248",
+      "id": "00000000-0000-4000-8000-000000000323",
+      "name": "Memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:assistente:{{ $('Supabase: número de alerta').first().json.alerta }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'Pedi à Caroline o orçamento de cabelo de ' : 'Perguntei à Caroline sobre ') + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000324",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        1200,
+        1500,
         0
       ],
       "parameters": {
@@ -149,7 +175,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ $('Enviar pergunta à Ana').first().json.key?.id ? 'PERGUNTADO: a Ana recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Ana e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Ana responder, a resposta chega à cliente automaticamente.' : 'NÃO PERGUNTADO: não consegui mandar a pergunta agora. Diga com gentileza que não conseguiu confirmar isso agora e não invente a regra. Se a cliente precisar resolver já, use transferir_para_humano.' }}",
+              "value": "={{ $('Enviar pergunta à Caroline').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'ORÇAMENTO PEDIDO: a Caroline recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Caroline chega à cliente automaticamente.' : 'PERGUNTADO: a Caroline recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Caroline e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Caroline responder, a resposta chega à cliente automaticamente.') : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se a cliente precisar resolver já.' }}",
               "type": "string"
             }
           ]
@@ -174,14 +200,14 @@
       "main": [
         [
           {
-            "node": "Enviar pergunta à Ana",
+            "node": "Enviar pergunta à Caroline",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Enviar pergunta à Ana": {
+    "Enviar pergunta à Caroline": {
       "main": [
         [
           {
@@ -193,6 +219,17 @@
       ]
     },
     "Guardar pedido": {
+      "main": [
+        [
+          {
+            "node": "Memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória da assistente": {
       "main": [
         [
           {
@@ -208,6 +245,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "fsDy9N8aKuW6XAHY"
   }
 }

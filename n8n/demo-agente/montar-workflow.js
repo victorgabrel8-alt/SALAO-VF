@@ -811,12 +811,83 @@ if (!LOJA) aplicarRespostas();
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
+  lojas.dadosDoSalao(workflow);
+  lojas.tirarOrcamentoCabelo(workflow, LOJA);
+  // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
+  if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
+  // Google Agenda da dona também ocupa horário (google-agenda.js), até as clientes dela estarem todas no app
+  // preco_livre (loja.json): o filtro "valor só quando a cliente pergunta" é regra da Gleide. Na loja de ticket baixo
+  // o preço e o valor do sinal saem sempre (Marcia, 12/11: a IA escreveu "A manicure fica R$ 50" e "sinal de R$ 20"
+  // e o filtro apagou os dois; ela recebeu a chave Pix sem saber quanto pagar)
+  if (LOJA.preco_livre) {
+    const q = workflow.nodes.find((nd) => nd.name === 'Quebrar mensagens');
+    const de = 'const pediuPreco = pediuPrecoAgora || precoPendente;';
+    if (!q || !q.parameters.jsCode.includes(de)) throw new Error('preco_livre: o filtro de preço do "Quebrar mensagens" mudou');
+    q.parameters.jsCode = q.parameters.jsCode.replace(de, 'const pediuPreco = true; // loja com preco_livre');
+    // resposta da dona a uma pergunta: na Gleide o valor nunca é repassado ("ela explica na avaliação"); aqui o valor
+    // que a dona escreveu vai para a cliente como ela escreveu (teste de 12/11: "fica 180 reais" virava "na avaliação")
+    const pp = workflow.nodes.find((nd) => nd.name === 'Pedido: preparar');
+    const semValor = /NUNCA passe valor[\s\S]*?\(o salão não informa valores por mensagem\)\./;
+    if (!pp || !semValor.test(pp.parameters.jsCode)) throw new Error('preco_livre: a instrução da resposta da dona mudou');
+    pp.parameters.jsCode = pp.parameters.jsCode.replace(semValor, 'Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela.');
+  }
+  // a IA de atendimento vê o que o salão já mandou à cliente (assistente da dona incluída): contexto-saidas.js
+  if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
+  // horário que a dona mandou oferecer: marca sem sinal e sem perguntar de novo (oferta-da-dona.js)
+  if (LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./oferta-da-dona.js')({ workflow, agendaWorkflow });
+  // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
+  if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
+  if (LOJA.google_agenda) {
+    require('./google-agenda.js')({ node, agendaWorkflow });
+    require('./google-agenda.js').assistente({ node, ferramentasWorkflow: assistente.ferramentasWorkflow });
+    // cada cliente ocupa pelo menos bloco_minutos na agenda (bloco-minimo.js); depende da Google já encaixada
+    if (LOJA.bloco_minutos) require('./bloco-minimo.js')({ agendaWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
+  }
+  // memória da conversa mais curta na loja (loja.json: memoria_horas): quem volta depois disso começa conversa nova
+  if (LOJA.memoria_horas) {
+    const mem = workflow.nodes.find((nd) => nd.name === 'Memória (Redis)');
+    if (!mem) throw new Error('memoria_horas: não achei o nó "Memória (Redis)"');
+    mem.parameters.sessionTTL = Math.round(Number(LOJA.memoria_horas) * 3600);
+  }
+  // negrito do WhatsApp é *um asterisco*: o "**texto**" do Markdown que a IA às vezes escreve vira "*texto*" antes de enviar
+  const negrito = ".replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*')";
+  for (const [wf, no, de] of [
+    [workflow, 'Quebrar mensagens', ".replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim();"],
+    [assistente.assistenteWorkflow, 'Conferir resposta', "let texto = String(ag.output || '').trim();"],
+  ]) {
+    const nd = wf.nodes.find((n) => n.name === no);
+    if (!nd || !nd.parameters.jsCode.includes(de)) throw new Error(`negrito: o código de "${no}" mudou`);
+    nd.parameters.jsCode = nd.parameters.jsCode.replace(de, de.replace(/;$/, '') + negrito + ';');
+  }
+  // prompt próprio da assistente da dona (lojas/<slug>/<prompt_assistente>), com as mesmas expressões do código
+  if (LOJA.prompt_assistente) {
+    const txt = fs.readFileSync(path.join(LOJA.pasta, LOJA.prompt_assistente), 'utf8').replace(/\r\n/g, '\n').trim();
+    const faltam = ['Ler regras', 'Ler pendências', 'Ler pedidos abertos'].filter((no) => !txt.includes(`$('${no}')`));
+    if (faltam.length) throw new Error(`prompt_assistente: faltam as expressões de ${faltam.join(', ')}`);
+    if (!txt.includes(LOJA.empresa_id)) throw new Error('prompt_assistente: não tem o empresa_id desta loja');
+    const ag = assistente.assistenteWorkflow.nodes.find((nd) => nd.name === 'Agente assistente');
+    if (!ag) throw new Error('prompt_assistente: não achei o nó "Agente assistente"');
+    ag.parameters.options.systemMessage = '=' + txt;
+  }
+  if (LOJA.catalogo_pdf || LOJA.catalogo_link) require('./catalogo-pdf.js')({ node, str, toolSub, main, workflow, enviarWorkflow: catalogo.enviarWorkflow, idFile: catalogo.idFile, loja: LOJA, organizar });
   aplicarRespostas();
+  // a assistente da dona lê as conversas recentes com as clientes antes de agir (assistente-conversas.js); depois do prompt próprio da loja
+  if (LOJA.assistente_conversas) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // a assistente da dona lê foto e print (assistente-fotos.js)
+  if (LOJA.assistente_fotos) require('./assistente-fotos.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // a assistente marca sem inventar tempo e tira o "serviço não confirmado" quando a dona diz o serviço (assistente-marcar.js)
+  if (LOJA.assistente_marcar) require('./assistente-marcar.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
+  // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
+  if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
+  lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
+  // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
+  // (pausa, pergunta, assistente) e o alerta (número fixo). Workflow novo que manda mensagem entra numa das duas listas.
+  lojas.semTrava([workflow, audios.enviarWorkflow, catalogo.enviarWorkflow, pausaWorkflow, pedidos.perguntaWorkflow, assistente.assistenteWorkflow, alerta.alertaWorkflow]);
   const { erros, avisos } = lojas.conferirLoja(todos, LOJA, idsGleide);
   for (const a of avisos) console.log(`aviso: ${a}`);
   if (erros.length) {
-    console.error(`\nNÃO GEREI a loja "${LOJA.slug}": sobrou coisa da Gleide.\n- ${erros.join('\n- ')}\n`);
+    console.error(`\nNÃO GEREI a loja "${LOJA.slug}": sobrou coisa da Gleide ou o conjunto tem problema.\n- ${erros.join('\n- ')}\n`);
     process.exit(1);
   }
 }
@@ -839,7 +910,7 @@ fs.writeFileSync(saida('workflow-retomar.json'), JSON.stringify(retomar.retomarW
 fs.writeFileSync(saida('workflow-retorno.json'), JSON.stringify(retorno.retornoWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-alerta.json'), JSON.stringify(alerta.alertaWorkflow, null, 2));
 fs.writeFileSync(saida('workflow-pergunta.json'), JSON.stringify(pedidos.perguntaWorkflow, null, 2));
-fs.writeFileSync(saida('workflow-modalidade.json'), JSON.stringify(pedidos.modalidadeWorkflow, null, 2));
+if (!LOJA || LOJA.nicho === 'mega_hair') fs.writeFileSync(saida('workflow-modalidade.json'), JSON.stringify(pedidos.modalidadeWorkflow, null, 2));
 console.log('workflow-demo-salao.json, workflow-agenda-salao.json e workflow-pausa-salao.json gerados');
 
 // Trava: só envia ao n8n com o código em dia com a main e sem mudança fora do Git. Em 24/10 alguém enviou de uma
@@ -927,8 +998,10 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(retornoId);
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
-    const modalidadeId = await upsert(pedidos.modalidadeWorkflow, pedidos.modalidadeIdFile);
-    if (process.argv.includes('--ativar')) await ativar(modalidadeId);
+    // presencial/online é da avaliação de mega hair: as outras lojas não têm a ferramenta nem o workflow
+    const temModalidade = !LOJA || LOJA.nicho === 'mega_hair';
+    const modalidadeId = temModalidade ? await upsert(pedidos.modalidadeWorkflow, pedidos.modalidadeIdFile) : null;
+    if (temModalidade && process.argv.includes('--ativar')) await ativar(modalidadeId);
     const idTool = { transferir_para_humano: pausaId, anotar_no_crm: crmId, enviar_audio: audiosId, enviar_catalogo: catalogoId, perguntar_para_gleide: perguntaId, pedir_orcamento_cabelo: perguntaId, mudar_modalidade: modalidadeId };
     for (const nd of workflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = idTool[nd.name] || agendaId;
     fs.writeFileSync(saida('workflow-demo-salao.json'), JSON.stringify(workflow, null, 2));
@@ -942,5 +1015,27 @@ if (process.argv.includes('--enviar')) {
     }
     const assistenteId = await upsert(assistente.assistenteWorkflow, path.join(dir, '.workflow-assistente-id'));
     if (process.argv.includes('--ativar')) await ativar(assistenteId);
+    // loja: a IA já lê a tela Dados do salão; liga o aviso da tela (config.ia_usa_dados_loja), sem mexer no resto do config
+    if (LOJA) {
+      const supa = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
+      const rota = `${env.SUPABASE_URL}/rest/v1/empresas?id=eq.${LOJA.empresa_id}`;
+      const res = await fetch(`${rota}&select=config`, { headers: supa });
+      const lista = res.ok ? await res.json() : null;
+      const emp = Array.isArray(lista) ? lista[0] : null;
+      if (!emp) { console.error(`empresa ${LOJA.empresa_id} não achada no Supabase: config.ia_usa_dados_loja não ligado`); return; }
+      if (emp.config?.ia_usa_dados_loja !== true) {
+        const r = await fetch(rota, { method: 'PATCH', headers: supa, body: JSON.stringify({ config: { ...emp.config, ia_usa_dados_loja: true } }) });
+        console.log(r.ok ? 'Dados do salão: config.ia_usa_dados_loja ligado' : `erro ao ligar config.ia_usa_dados_loja: ${r.status}`);
+        emp.config = { ...emp.config, ia_usa_dados_loja: true };
+      }
+      // o banco só deixa a assistente mexer na agenda com o número da dona em config.assistente_numeros
+      // (assistente_autorizado): os números do loja.json entram lá, sem tirar os que já estão
+      const tem = Array.isArray(emp.config?.assistente_numeros) ? emp.config.assistente_numeros : [];
+      const faltam = (LOJA.assistente_numeros || []).filter((n) => !tem.includes(n));
+      if (faltam.length) {
+        const r = await fetch(rota, { method: 'PATCH', headers: supa, body: JSON.stringify({ config: { ...emp.config, assistente_numeros: [...tem, ...faltam] } }) });
+        console.log(r.ok ? `Assistente: ${faltam.join(', ')} liberado(s) no banco` : `erro ao liberar a assistente no banco: ${r.status}`);
+      }
+    }
   })();
 }

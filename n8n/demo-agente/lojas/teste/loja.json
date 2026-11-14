@@ -4,12 +4,262 @@
   "nicho": "manicure",
   "empresa_id": "ff4b7937-1abb-4803-83c8-e0896d94fc9f",
   "instancia": "loja-teste",
-  "dona": "Ana",
+  "dona": "Caroline",
   "cidade": "Sinop",
-  "assistente_numeros": ["5500000000001"],
-  "permitidos": ["556699270860"],
+  "assistente_numeros": [
+    "5500000000001"
+  ],
+  "permitidos": [
+    "556699270860",
+    "5566900000010",
+    "5566900000011",
+    "5566900000012",
+    "5566900000013",
+    "5566900000014",
+    "5566900000015",
+    "5566900000016",
+    "5566900000017",
+    "5566900000018",
+    "5566900000019",
+    "5566900000020",
+    "5566900000021",
+    "5566900000022",
+    "5566900000023",
+    "5566900000024",
+    "5566900000025",
+    "5566900000026",
+    "5566900000027",
+    "5566900000028",
+    "5566900000029",
+    "5566900000030",
+    "5566900000031",
+    "5566900000032",
+    "5566900000033",
+    "5566900000034",
+    "5566900000035",
+    "5566900000036",
+    "5566900000037",
+    "5566900000038",
+    "5566900000039",
+    "5566900000040",
+    "5566900000041",
+    "5566900000042",
+    "5566900000043",
+    "5566900000044",
+    "5566900000045",
+    "5566900000046",
+    "5566900000047",
+    "5566900000048",
+    "5566900000049",
+    "5566900000050",
+    "5566900000051",
+    "5566900000052",
+    "5566900000053",
+    "5566900000054",
+    "5566900000055",
+    "5566900000056",
+    "5566900000057",
+    "5566900000058",
+    "5566900000059",
+    "5566900000060",
+    "5566900000061",
+    "5566900000062",
+    "5566900000063",
+    "5566900000064",
+    "5566900000065",
+    "5566900000066",
+    "5566900000067",
+    "5566900000068",
+    "5566900000069",
+    "5566900000070",
+    "5566900000071",
+    "5566900000072",
+    "5566900000073",
+    "5566900000074",
+    "5566900000075",
+    "5566900000076",
+    "5566900000077",
+    "5566900000078",
+    "5566900000079",
+    "5566900000080",
+    "5566900000081",
+    "5566900000082",
+    "5566900000083",
+    "5566900000084",
+    "5566900000085",
+    "5566900000086",
+    "5566900000087",
+    "5566900000088",
+    "5566900000089",
+    "5566900000090",
+    "5566900000091",
+    "5566900000092",
+    "5566900000093",
+    "5566900000094",
+    "5566900000095",
+    "5566900000096",
+    "5566900000097",
+    "5566900000098",
+    "5566900000099"
+  ],
+  "catalogo_link": "https://wa.me/c/556696380737",
+  "prompt_assistente": "prompt-assistente.txt",
   "trocas": [
-    ["Uma cliente de um salão de mega hair mandou esta foto", "Uma cliente de um estúdio de unhas mandou esta foto"],
-    ["puxando o assunto do salão de mega hair", "puxando o assunto do estúdio de unhas"]
-  ]
+    [
+      "const isQuimica = /(progressiva|botox capilar|selagem|colora[cç][aã]o|mechas|luzes|hidrata[cç][aã]o|reconstru[cç][aã]o)/i.test(nome);",
+      "const isQuimica = false;"
+    ],
+    [
+      "Uma cliente de um salão de mega hair mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o salão: se parece o cabelo da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); de costas, de frente ou de lado; comprimento aproximado (ex.: no ombro, no meio das costas, na cintura); cor (preto, castanho escuro, castanho claro, loiro, ruivo, grisalho) e se tem mechas, luzes ou reflexos; textura e curvatura (liso; ondulado; cacheado com cachos abertos/largos; cacheado com cachos fechados/pequenos; crespo); volume aparente (ralo, médio, cheio); e se aparenta mega hair, mechas, luzes ou química. Se a luz, o ângulo ou o enquadramento não deixam ver o cabelo direito, diga isso. Não avalie saúde do fio nem couro cabeludo.",
+      "Uma cliente de um estúdio de unhas (manicure e pedicure) mandou esta foto no WhatsApp. Descreva em português, em no máximo 4 frases objetivas, só o que dá para ver e importa para o estúdio: se parecem as unhas da própria pessoa (foto caseira) ou uma foto de referência (modelo, foto de internet); mão ou pé; comprimento e formato das unhas (curtas, médias, longas; quadrada, redonda, amendoada, bailarina, stiletto); se parecem naturais, esmaltação comum, esmaltação em gel ou alongamento; cor e acabamento (brilho, fosco, francesinha, degradê, glitter, pedrarias, desenhos). Se a luz, o ângulo ou o enquadramento não deixam ver as unhas direito, diga isso. Não avalie saúde da unha nem da pele."
+    ],
+    [
+      "(ex.: 240 para aplicação de mega hair, 210 para manutenção, 30 para avaliação)",
+      "(ex.: 90 para pé e mão, 60 para esmaltação em gel, 150 para alongamento)"
+    ],
+    [
+      "dizendo se é aplicação ou manutenção (ex.: \"Manutenção – mão de obra\", \"Aplicação de mega hair – mão de obra\", \"Selagem\")",
+      "dizendo se é alongamento novo ou manutenção (ex.: \"Pé e mão\", \"Esmaltação em gel\", \"Manutenção de alongamento\")"
+    ],
+    [
+      "Ex.: \"comprar cabelo vietnamita 60 cm\", \"selagem - cabelo ressecado\", \"manutenção tela adesiva colocada em agosto\", \"avaliar técnica, cabelo curto\"",
+      "Ex.: \"pé e mão, primeira vez\", \"gel nude pra casamento sábado\", \"manutenção do alongamento feito há 3 semanas\", \"tirar o gel e esmaltar\""
+    ],
+    [
+      "(ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"selagem\")",
+      "(ex.: \"alongamento em gel, formato amendoado\", \"pé e mão\")"
+    ],
+    [
+      "dela (serviço, tipo de cabelo, química, orçamento)",
+      "dela (serviço, mão ou pé, gel ou alongamento, cor, ocasião)"
+    ],
+    [
+      "valores de SERVIÇOS/MÃO DE OBRA e durações, nunca preço dos FIOS; se houver divergência",
+      "valores e durações; se houver divergência"
+    ],
+    [
+      "(sem lista atualizada: não invente preço; use seção 04 apenas para base geral da mão de obra e durações)",
+      "(sem lista atualizada: não informe preço nem duração; diga que a Gleide confirma)"
+    ],
+    [
+      "mas NÃO libera preço de cabelo humano vendido por gramas/comprimento, nem permite calcular o TOTAL da primeira aplicação",
+      "mas NÃO permite somar valores, montar pacote nem dar desconto"
+    ],
+    [
+      "puxando o assunto do salão de mega hair sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair.",
+      "puxando o assunto do estúdio de unhas sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer marcar as unhas."
+    ],
+    [
+      "deixando a porta aberta para quando ela quiser saber sobre mega hair, sem cobrar resposta",
+      "deixando a porta aberta para quando ela quiser marcar, sem cobrar resposta"
+    ],
+    [
+      "(a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...)",
+      "(o gel, o alongamento, a cor, o pé e mão, a primeira vez...)"
+    ],
+    [
+      "- não indique técnica, quantidade nem tipo de cabelo, e não ofereça \"explicar qual técnica a Gleide recomenda\": quem define isso é a Gleide na avaliação;",
+      "- não prometa quanto tempo o gel ou o alongamento dura nem indique formato ou técnica: quem orienta isso é a Gleide no atendimento;"
+    ],
+    [
+      "- não afirme estoque, cor ou textura disponível, nem resultado (\"tem uns pretos lindos\", \"temos aqui no salão\", \"tem liso e ondulado\", \"ia ficar perfeito em você\"); o catálogo é do fornecedor: fale dele só como catálogo, sem dizer que o salão tem aquele cabelo;",
+      "- não afirme cor de esmalte disponível nem resultado (\"temos aqui\", \"ia ficar perfeito em você\");"
+    ],
+    [
+      "- se ela já disse que usa mega ou conhece a técnica, nada de explicação de iniciante;",
+      "- se ela já faz gel ou alongamento, nada de explicação de iniciante;"
+    ],
+    [
+      "(não existem; só há fotos de cabelo do catálogo do fornecedor)",
+      "(não existem por aqui)"
+    ],
+    [
+      "const COMUNS = new Set('mega hair cabelo cabelos quero",
+      "const COMUNS = new Set('unha unhas mao maos pe pes quero"
+    ],
+    [
+      "“A manutenção fica a partir de R$ 150 por tela.”",
+      "“O pé e mão fica R$ [preço fixo confirmado na lista].” (ou “a partir de R$ ...” apenas se a lista marcar preço inicial)."
+    ],
+    [
+      "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.",
+      "use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à Gleide, sem prometer valor."
+    ],
+    [
+      "(ex.: Pode levar cachorro de porte grande na avaliação?; Pode passar aí sem marcar horário?)",
+      "(ex.: Pode trazer a filha de 5 anos junto?; Pode passar aí sem marcar horário?)"
+    ],
+    [
+      "(ex.: trabalha em hospital, sem horário fixo)",
+      "(ex.: casamento no sábado, quer gel nude)"
+    ],
+    [
+      "(ex.: quer avaliação à distância, mora longe)",
+      "(ex.: unha inchada depois do alongamento)"
+    ],
+    [
+      "(ex.: Ver reação no couro cabeludo depois da aplicação)",
+      "(ex.: Ver a foto da unha e dizer se precisa voltar)"
+    ],
+    [
+      "use a seção 04 apenas para durações e base geral de mão de obra autorizada, nunca para inventar preço específico",
+      "não informe preço nem duração que não estejam na lista"
+    ],
+    [
+      "Químicas e tratamentos com preço positivo válido são sempre apresentados com “a partir de”; demais serviços",
+      "Os serviços"
+    ],
+    [
+      "não indique técnica, quantidade nem tipo de cabelo;",
+      "não indique técnica, formato nem cor;"
+    ],
+    [
+      "(ex.: quer cabelo vietnamita)",
+      "(ex.: quer alongamento em gel)"
+    ],
+    [
+      "como ficou o cabelo com a amiga",
+      "como ficou a cor da unha com a amiga"
+    ],
+    [
+      "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. ",
+      ""
+    ],
+    [
+      "Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático).",
+      "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
+    ],
+    [
+      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.",
+      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Se há pedido em outra linha, atenda a esse pedido e não acrescente pergunta genérica. Se TODAS as linhas forem apenas cumprimentos sem pedido, conduza com uma única pergunta de descoberta (seção 02). Não escreva os números [1], [2] na resposta."
+    ],
+    [
+      "Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp.",
+      "Para uma REAÇÃO ISOLADA DE ENCERRAMENTO sem nova demanda (como \"ok\", \"obrigada\", \"blz\"), depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. EXCEÇÃO OBRIGATÓRIA: \"oi\", \"olá\", \"boa tarde\", \"bom dia\", \"boa noite\" e cumprimentos semelhantes SEM outro pedido, quando usados para iniciar ou retomar contato, NÃO são reações de encerramento e NÃO recebem [[NAO_ENVIAR]]; responda e conduza com uma única pergunta de descoberta (seção 02)."
+    ],
+    [
+      "(nome, se já tem mega hair, qual serviço fez)",
+      "(nome, qual serviço fez)"
+    ],
+    [
+      "manutenção do seu mega hair, quer que eu veja um horário?",
+      "manutenção do seu alongamento, quer que eu veja um horário?"
+    ],
+    [
+      "Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.",
+      "Use transferir_para_humano se a cliente precisar resolver já."
+    ]
+  ],
+  "memoria_horas": 12,
+  "sinal_pix": true,
+  "google_agenda": true,
+  "almoco_flexivel": true,
+  "preco_livre": true,
+  "bloco_minutos": 150,
+  "contexto_saidas": true,
+  "oferta_sem_sinal": true,
+  "assistente_conversas": true,
+  "assistente_fotos": true,
+  "assistente_marcar": true,
+  "resumo_noite": "19:00"
 }

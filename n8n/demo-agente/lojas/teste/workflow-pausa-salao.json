@@ -11,7 +11,7 @@
         -258
       ],
       "parameters": {
-        "content": "## Transferir para a Ana\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou o assunto precisa da Ana.\nPausa a IA 12 h para a cliente, salva o resumo na ficha e avisa a Ana no WhatsApp (número de alerta do app).\nMande #ia na conversa para devolver à IA.",
+        "content": "## Transferir para a Caroline\nChamado pelo agente quando a cliente pede uma pessoa, reclama ou o assunto precisa da Caroline.\nPausa a IA 12 h para a cliente, salva o resumo na ficha e avisa a Caroline no WhatsApp (número de alerta do app).\nMande #ia na conversa para devolver à IA.",
         "width": 1400,
         "height": 198,
         "color": 3
@@ -83,7 +83,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "TRANSFERIDO: a Ana recebeu o resumo no WhatsApp e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora numa frase gentil que passou o assunto pra Ana e que ela responde por aqui (ex.: \"Vou confirmar com a Ana se pode trazer seu cachorro, ela te responde por aqui, tá?\" ou \"Vou passar sua conversa pra Ana, ela te chama por aqui 😊\"), sem prometer prazo e sem falar em equipe.",
+              "value": "TRANSFERIDO: a Caroline recebeu o resumo no WhatsApp e vai assumir esta conversa; você (IA) fica pausada para esta cliente por 12h. Responda agora numa frase gentil que passou o assunto pra Caroline e que ela responde por aqui (ex.: \"Vou confirmar com a Caroline se pode trazer seu cachorro, ela te responde por aqui, tá?\" ou \"Vou passar sua conversa pra Caroline, ela te chama por aqui 😊\"), sem prometer prazo e sem falar em equipe.",
               "type": "string"
             }
           ]
@@ -194,7 +194,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000094",
-      "name": "Avisar a Ana (WhatsApp)",
+      "name": "Avisar a Caroline (WhatsApp)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -215,7 +215,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + ($('Supabase: pausar IA').first().json.nome || 'Cliente') + ' · ' + String($('Supabase: pausar IA').first().json.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') +\n      '\\n' + ($('Recebe pedido do agente').first().json.o_que_precisa || $('Recebe pedido do agente').first().json.motivo || 'Quer falar com você') + ($('Recebe pedido do agente').first().json.resumo ? '\\n' + $('Recebe pedido do agente').first().json.resumo : '') +\n      '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + $('Supabase: pausar IA').first().json.id }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + ($('Supabase: pausar IA').first().json.nome || 'Cliente') + ' · ' + String($('Supabase: pausar IA').first().json.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') +\n      '\\n' + ($('Recebe pedido do agente').first().json.o_que_precisa || $('Recebe pedido do agente').first().json.motivo || 'Quer falar com você') +\n      '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + $('Supabase: pausar IA').first().json.id }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -274,14 +274,14 @@
       "main": [
         [
           {
-            "node": "Avisar a Ana (WhatsApp)",
+            "node": "Avisar a Caroline (WhatsApp)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Avisar a Ana (WhatsApp)": {
+    "Avisar a Caroline (WhatsApp)": {
       "main": [
         [
           {
@@ -297,6 +297,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "fsDy9N8aKuW6XAHY"
   }
 }

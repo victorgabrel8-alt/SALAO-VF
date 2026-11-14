@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000228",
+      "id": "00000000-0000-4000-8000-000000000287",
       "name": "A cada 1 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -38,7 +38,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000229",
+      "id": "00000000-0000-4000-8000-000000000288",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -62,7 +62,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000230",
+      "id": "00000000-0000-4000-8000-000000000289",
       "name": "Quem retomar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -94,7 +94,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000231",
+      "id": "00000000-0000-4000-8000-000000000290",
       "name": "Pausas",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -117,7 +117,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000232",
+      "id": "00000000-0000-4000-8000-000000000291",
       "name": "Memórias",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -140,7 +140,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000233",
+      "id": "00000000-0000-4000-8000-000000000292",
       "name": "Preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -149,11 +149,11 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\n// chaves do Redis vêm com o número do WhatsApp, que pode ter ou não o 9 depois do DDD: acha pelos 8 últimos dígitos\nconst chaves = (j) => [].concat(j?.keys || Object.keys(j || {})).map(String);\nconst pausas = chaves($('Pausas').first().json);\nconst memorias = chaves($('Memórias').first().json);\nconst achar = (lista, prefixo, tel) => lista.find((k) => k.startsWith(prefixo + tel.slice(0, 4)) && k.endsWith(tel.slice(-8)));\nconst agora = new Date().toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });\nconst quem = { cliente: 'Cliente', ia: 'Você (IA)', humano: 'Ana' };\nreturn $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).filter((c) => !achar(pausas, 'teste:pausa:', c.telefone)).map((c) => {\n  const nome = String(c.nome || '').trim().split(/\\s+/)[0] || '';\n  const conversa = (c.historico || []).map((m) => '[' + m.em + '] ' + (quem[m.autor] || m.autor) + (m.tipo !== 'texto' ? ' (' + m.tipo + ')' : '') + ': ' + m.texto).join('\\n');\n  const ultima = c.tentativa >= c.total;\n  const instrucao = [\n    'Você é a assistente virtual da Ana, do salão Loja Teste (Sinop-MT), no WhatsApp do salão.',\n    'A conversa abaixo parou: a última mensagem foi sua e a cliente' + (nome ? ' (' + nome + ')' : '') + ' não respondeu. Agora é ' + agora + '.',\n    'Esta é a tentativa ' + c.tentativa + ' de ' + c.total + ' de retomar a conversa' + (ultima ? ' (a última: depois dela você não manda mais nada).' : '.'),\n    c.resumo_ia ? 'Resumo do que se sabe dela: ' + c.resumo_ia : '',\n    '', 'CONVERSA (mais antiga primeiro):', conversa, '',\n    'O QUE ELA FALOU POR ÚLTIMO: ' + (c.historico || []).filter((m) => m.autor === 'cliente').slice(-3).map((m) => '\"' + m.texto + '\"').join(' / '), '',\n    'Primeiro decida se faz sentido retomar. Responda exatamente \"PULAR: <motivo curto>\" se:',\n    '- a conversa terminou de forma natural (ela agradeceu, se despediu ou disse \"ok, obrigada\" sem nada pendente);',\n    '- ela disse que não quer, não tem interesse, vai procurar outro lugar ou pediu para não mandar mensagem;',\n    '- quem está devendo resposta é o salão (você disse que ia confirmar com a Ana, ou a Ana assumiu a conversa);',\n    '- o horário já está marcado e não há nada pendente;',\n    '- sua última mensagem não deixou nada em aberto e retomar seria só insistência.',\n    'NÃO pule quando ela só cumprimentou (\"oi\", \"boa noite\", \"olá\") e sumiu sem dizer o que queria: muita cliente chega por anúncio assim. Nesse caso retome.',\n    'Se fizer sentido, escreva a mensagem como uma pessoa de verdade que atende o WhatsApp do salão e lembrou dessa conversa:',\n    // só cumprimento: não há assunto dela para retomar; um alô leve perguntando o que ela procura\n    !(c.historico || []).some((m) => m.autor === 'cliente' && !/^\\W*(oi+|ol[aá]|opa|e a[ií]|bo[am] (dia|tarde|noite)|tudo bem|td bem|tudo bom)[\\s!?.,🙂😊]*$/i.test(String(m.texto || '').trim()))\n      ? (c.tentativa === 1\n        ? '- ela só cumprimentou e ainda não disse o que procura. Mande um alô leve e curto, puxando o assunto do estúdio de unhas sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair. Não se apresente de novo e não repita o cumprimento que você já mandou;'\n        : '- você JÁ mandou um alô antes. NÃO repita nem reformule esse alô e não cumprimente de novo. Uma frase curta e diferente, deixando a porta aberta para quando ela quiser saber sobre mega hair, sem cobrar resposta;')\n      : c.tentativa === 1\n      ? '- fale do assunto DELA, com o detalhe que ela trouxe (a fita adesiva, o loiro, os 60 cm, a primeira vez, as fotos que você mandou...), e pergunte de um jeito simples se ficou alguma dúvida sobre isso ou o que ela achou. O objetivo é só saber se ficou dúvida: não convide para agendar nem para a avaliação (a não ser que ela mesma já tenha falado em marcar) e não faça de novo a sua última pergunta com outras palavras; varie o começo (nem sempre \"Oi, nome!\": pode ir direto ao assunto);'\n      : '- você JÁ mandou um alô antes (é a sua última mensagem na conversa). NÃO repita nem reformule esse alô, não pergunte de novo se ficou dúvida e não cumprimente de novo. Escreva só uma frase curta e diferente da anterior, ligada ao assunto dela, deixando a porta aberta sem cobrar resposta (a ideia é \"quando quiser ver isso, é só me chamar\"; não copie essas palavras);',\n    '- NÃO repita nem reformule a pergunta que ficou sem resposta, e não explique de novo o que já foi explicado;',\n    '- nada de frase pronta de robô: \"Se precisar de ajuda, estou por aqui\", \"Fico à disposição\", \"Qualquer dúvida estou à disposição\", \"Só passando pra lembrar\", \"Espero que esteja bem\";',\n    '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop (\"pra\", \"tá\"), sem formalidade; sem cobrança, culpa, urgência ou promoção inventada;',\n    '- não invente situação nem contexto (\"o dia tá corrido\", \"lembrei de você\", promoção, novidade); não comece com \"Oi\" se você já cumprimentou nesta conversa;',\n    '- não ofereça fotos de resultados ou de clientes da Ana (não existem; só há fotos de cabelo do catálogo do fornecedor);',\n    '- não fale preço nem valor (nem repita um que esteja na conversa); não invente horário livre, estoque nem resultado; não diga que ela respondeu nem que você \"viu\" algo novo;',\n    '- sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez, se souber;',\n    '- não fale de tempo sem resposta.',\n    'Responda só com a mensagem (ou com PULAR: motivo), sem aspas.',\n  ].filter((l) => l !== null).join('\\n');\n  // memória da IA: a chave que já existe; sem ela, o formato do WhatsApp (sem o 9)\n  const memoria = achar(memorias, 'teste:memoria:', c.telefone) || 'teste:memoria:' + c.telefone.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2');\n  return { json: { ...c, nome, instrucao, memoria, historico: undefined } };\n});\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\n// chaves do Redis vêm com o número do WhatsApp, que pode ter ou não o 9 depois do DDD: acha pelos 8 últimos dígitos\nconst chaves = (j) => [].concat(j?.keys || Object.keys(j || {})).map(String);\nconst pausas = chaves($('Pausas').first().json);\nconst memorias = chaves($('Memórias').first().json);\nconst achar = (lista, prefixo, tel) => lista.find((k) => k.startsWith(prefixo + tel.slice(0, 4)) && k.endsWith(tel.slice(-8)));\nconst agora = new Date().toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });\nconst quem = { cliente: 'Cliente', ia: 'Você (IA)', humano: 'Caroline' };\nreturn $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).filter((c) => !achar(pausas, 'teste:pausa:', c.telefone)).map((c) => {\n  const nome = String(c.nome || '').trim().split(/\\s+/)[0] || '';\n  const conversa = (c.historico || []).map((m) => '[' + m.em + '] ' + (quem[m.autor] || m.autor) + (m.tipo !== 'texto' ? ' (' + m.tipo + ')' : '') + ': ' + m.texto).join('\\n');\n  const ultima = c.tentativa >= c.total;\n  const instrucao = [\n    'Você é a assistente virtual da Caroline, do salão Loja Teste (Sinop-MT), no WhatsApp do salão.',\n    'A conversa abaixo parou: a última mensagem foi sua e a cliente' + (nome ? ' (' + nome + ')' : '') + ' não respondeu. Agora é ' + agora + '.',\n    'Esta é a tentativa ' + c.tentativa + ' de ' + c.total + ' de retomar a conversa' + (ultima ? ' (a última: depois dela você não manda mais nada).' : '.'),\n    c.resumo_ia ? 'Resumo do que se sabe dela: ' + c.resumo_ia : '',\n    '', 'CONVERSA (mais antiga primeiro):', conversa, '',\n    'O QUE ELA FALOU POR ÚLTIMO: ' + (c.historico || []).filter((m) => m.autor === 'cliente').slice(-3).map((m) => '\"' + m.texto + '\"').join(' / '), '',\n    'Primeiro decida se faz sentido retomar. Responda exatamente \"PULAR: <motivo curto>\" se:',\n    '- a conversa terminou de forma natural (ela agradeceu, se despediu ou disse \"ok, obrigada\" sem nada pendente);',\n    '- ela disse que não quer, não tem interesse, vai procurar outro lugar ou pediu para não mandar mensagem;',\n    '- quem está devendo resposta é o salão (você disse que ia confirmar com a Caroline, ou a Caroline assumiu a conversa);',\n    '- o horário já está marcado e não há nada pendente;',\n    // prompt v5.7/v5.8: impedimento temporário é adiamento, e \"não crie retorno automático sem autorização da cliente\"\n    '- ela disse que precisa esperar um tempo antes de vir (cirurgia/recuperação, viagem, compromisso, \"volto depois\", \"semana que vem\") — respeite: o alô automático soaria como cobrança;',\n    '- sua última mensagem ofereceu encaminhar o pedido ou perguntar algo para a Caroline e ela não respondeu: repetir a oferta é insistência;',\n    '- sua última mensagem disse que pediu orçamento ou perguntou algo à Caroline e está esperando a resposta dela: quem deve o retorno é o salão;',\n    '- sua última mensagem não deixou nada em aberto e retomar seria só insistência.',\n    'NÃO pule quando ela só cumprimentou (\"oi\", \"boa noite\", \"olá\") e sumiu sem dizer o que queria: muita cliente chega por anúncio assim. Nesse caso retome.',\n    'Se fizer sentido, escreva a mensagem como uma pessoa de verdade que atende o WhatsApp do salão e lembrou dessa conversa:',\n    // só cumprimento: não há assunto dela para retomar; um alô leve perguntando o que ela procura\n    !(c.historico || []).some((m) => m.autor === 'cliente' && !/^\\W*(oi+|ol[aá]|opa|e a[ií]|bo[am] (dia|tarde|noite)|tudo bem|td bem|tudo bom)[\\s!?.,🙂😊]*$/i.test(String(m.texto || '').trim()))\n      ? (c.tentativa === 1\n        ? '- ela só cumprimentou e ainda não disse o que procura. Mande um alô leve e curto, puxando o assunto do estúdio de unhas sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer marcar as unhas. Não se apresente de novo e não repita o cumprimento que você já mandou;'\n        : '- você JÁ mandou um alô antes. NÃO repita nem reformule esse alô e não cumprimente de novo. Uma frase curta e diferente, deixando a porta aberta para quando ela quiser marcar, sem cobrar resposta;')\n      : c.tentativa === 1\n      ? '- fale do assunto DELA, com o detalhe que ela trouxe (o gel, o alongamento, a cor, o pé e mão, a primeira vez...), e pergunte de um jeito simples se ficou alguma dúvida sobre isso ou o que ela achou. O objetivo é só saber se ficou dúvida: não convide para agendar nem para a avaliação (a não ser que ela mesma já tenha falado em marcar) e não faça de novo a sua última pergunta com outras palavras; varie o começo (nem sempre \"Oi, nome!\": pode ir direto ao assunto);'\n      : '- você JÁ mandou um alô antes (é a sua última mensagem na conversa). NÃO repita nem reformule esse alô, não pergunte de novo se ficou dúvida e não cumprimente de novo. Escreva só uma frase curta e diferente da anterior, ligada ao assunto dela, deixando a porta aberta sem cobrar resposta (a ideia é \"quando quiser ver isso, é só me chamar\"; não copie essas palavras);',\n    '- faça UMA coisa só nesta mensagem: uma pergunta simples ou um pedido, nunca os dois; não peça foto e pergunte sobre dúvida juntos;',\n    '- NÃO repita nem reformule a pergunta que ficou sem resposta, e não explique de novo o que já foi explicado;',\n    '- nada de frase pronta de robô: \"Se precisar de ajuda, estou por aqui\", \"Fico à disposição\", \"Qualquer dúvida estou à disposição\", \"Só passando pra lembrar\", \"Espero que esteja bem\", \"é só me chamar\", \"é só me dar um alô\";',\n    // regras do prompt da Caroline que valem também para o alô (conversa da Grazi, 30–31/10)\n    '- use só o que está escrito na conversa: não suponha o que ela não disse (se ela não respondeu se é a primeira vez, não diga que é);',\n    '- não prometa quanto tempo o gel ou o alongamento dura nem indique formato ou técnica: quem orienta isso é a Caroline no atendimento;',\n    '- não afirme cor de esmalte disponível nem resultado (\"temos aqui\", \"ia ficar perfeito em você\");',\n    '- sem exagero nem superlativo (\"maravilhoso\", \"lindíssimo\", \"um mais lindo que o outro\", \"perfeito\");',\n    // conversa da Claudineia (08/11): o alô falou em \"preencher essas falhas\"\n    '- nunca diga que o mega preenche falhas, recupera, resolve a queda ou devolve o volume: isso depende do fio e quem vê é a Caroline;',\n    '- não sugira dia nem plano que ela não mencionou (\"aproveitar o sábado\", \"passar aqui hoje\");',\n    '- se ela já faz gel ou alongamento, nada de explicação de iniciante;',\n    '- não prometa passar foto ou mensagem para a Caroline nem que ela vai dar retorno (o alô não encaminha nada);',\n    '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop (\"pra\", \"tá\"), sem formalidade; sem cobrança, culpa, urgência ou promoção inventada;',\n    '- não invente situação nem contexto (\"o dia tá corrido\", \"lembrei de você\", promoção, novidade); não comece com \"Oi\" se você já cumprimentou nesta conversa;',\n    '- não ofereça fotos de resultados ou de clientes da Caroline (não existem por aqui);',\n    '- não fale preço nem valor (nem repita um que esteja na conversa); não invente horário livre, estoque nem resultado; não diga que ela respondeu nem que você \"viu\" algo novo;',\n    '- sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez, se souber;',\n    '- não fale de tempo sem resposta.',\n    'Responda só com a mensagem (ou com PULAR: motivo), sem aspas.',\n  ].filter((l) => l !== null).join('\\n');\n  // memória da IA: a chave que já existe; sem ela, o formato do WhatsApp (sem o 9)\n  const memoria = achar(memorias, 'teste:memoria:', c.telefone) || 'teste:memoria:' + c.telefone.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2');\n  return { json: { ...c, nome, instrucao, memoria, historico: undefined } };\n});\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000234",
+      "id": "00000000-0000-4000-8000-000000000293",
       "name": "Escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -183,7 +183,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000235",
+      "id": "00000000-0000-4000-8000-000000000294",
       "name": "Decidir",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -196,7 +196,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000236",
+      "id": "00000000-0000-4000-8000-000000000295",
       "name": "Enviar?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -230,7 +230,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000237",
+      "id": "00000000-0000-4000-8000-000000000296",
       "name": "Pular?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -264,7 +264,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000238",
+      "id": "00000000-0000-4000-8000-000000000297",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -302,7 +302,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000239",
+      "id": "00000000-0000-4000-8000-000000000298",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -336,7 +336,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000240",
+      "id": "00000000-0000-4000-8000-000000000299",
       "name": "Registrar retomada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -368,7 +368,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000241",
+      "id": "00000000-0000-4000-8000-000000000300",
       "name": "Memória (aviso)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -391,7 +391,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000242",
+      "id": "00000000-0000-4000-8000-000000000301",
       "name": "Memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -414,7 +414,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000243",
+      "id": "00000000-0000-4000-8000-000000000302",
       "name": "Registrar pulada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -444,6 +444,40 @@
         "options": {}
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "7fb69b99-01b7-4a17-864a-585c841e0480",
+      "name": "Trava de teste: Mandar para a cliente",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        -120
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -539,7 +573,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a cliente",
+            "node": "Trava de teste: Mandar para a cliente",
             "type": "main",
             "index": 0
           }
@@ -607,12 +641,25 @@
           }
         ]
       ]
+    },
+    "Trava de teste: Mandar para a cliente": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
     }
   },
   "settings": {
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "none",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "fsDy9N8aKuW6XAHY"
   }
 }
