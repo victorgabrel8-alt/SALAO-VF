@@ -129,9 +129,19 @@ Cuiabá continuam fixos; cada mensagem faz uma consulta a mais ao banco.
 - [ ] Chave própria do Gemini por loja: ainda não construído
 - [ ] Teste: o mesmo número de cliente falando com duas lojas; nada vaza
 
-O que o modelo de Unhas ainda carrega da Caroline (vira ajuste por loja na etapa 2): bloco de 2h30 por
-cliente, memória de 12 h, resumo da noite às 19h, sinal por Pix, Google Agenda, almoço flexível e o texto
-do prompt dela.
+**Modelo de Unhas sem o que era só da Caroline (13/11, noite):**
+- Bloco por cliente: vem da ficha (`empresas.config.ia.bloco_min`, 30 a 480 min). Sem a chave vale o tempo
+  de cada serviço. Testado na Loja Teste: sem bloco a agenda usou 90 min; com `bloco_min = 120` passou a
+  usar 120 min na mensagem seguinte, sem gerar nem enviar nada.
+- Prompts (atendimento e assistente): o diferencial da loja é o que a dona escreveu no "Recado da dona"
+  (tela Dados do salão). Saíram o "método próprio", o "contorno das cutículas" e a "manicure russa" fixos.
+  Sem recado, a IA fala só do capricho no acabamento e não inventa técnica.
+- Cidade sem estado fixo (a cidade vem da ficha).
+
+O que o modelo ainda tem igual para todas as lojas (decidir por loja quando precisar): memória da conversa
+de 12 h, resumo da noite às 19h, almoço flexível, e sinal por Pix e Google Agenda (estes dois só agem se a
+loja tiver os dados cadastrados). O restante do texto do prompt (tom, roteiro de venda) continua sendo o
+que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manicure mostrar o que ajustar.
 
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
