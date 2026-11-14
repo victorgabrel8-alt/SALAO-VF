@@ -106,7 +106,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "0zUtzQmBZQ0hPGEt"
+          "value": "PENDENTE.workflow-assistente-pendencias-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -253,7 +253,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "0zUtzQmBZQ0hPGEt"
+          "value": "PENDENTE.workflow-assistente-pendencias-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -396,7 +396,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "ewy9j1kopF3koS1l"
+          "value": "PENDENTE.workflow-faltas-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -543,7 +543,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "ewy9j1kopF3koS1l"
+          "value": "PENDENTE.workflow-faltas-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -686,7 +686,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "ewy9j1kopF3koS1l"
+          "value": "PENDENTE.workflow-faltas-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -802,7 +802,7 @@
           "conditions": [
             {
               "id": "t1",
-              "leftValue": "={{ !!$json.empresa_id }}",
+              "leftValue": "={{ !!$json.empresa_id && !$json.no_limite }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -829,7 +829,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SMm6c7ojyLay3NMF"
+          "value": "PENDENTE.workflow-retomar-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -949,7 +949,7 @@
           "conditions": [
             {
               "id": "t1",
-              "leftValue": "={{ !!$json.empresa_id }}",
+              "leftValue": "={{ !!$json.empresa_id && !$json.no_limite }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -976,7 +976,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "SMm6c7ojyLay3NMF"
+          "value": "PENDENTE.workflow-retomar-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1092,7 +1092,7 @@
           "conditions": [
             {
               "id": "t1",
-              "leftValue": "={{ !!$json.empresa_id }}",
+              "leftValue": "={{ !!$json.empresa_id && !$json.no_limite }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1119,7 +1119,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "r19tLSWxC0t7PU0m"
+          "value": "PENDENTE.workflow-retorno-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1239,7 +1239,7 @@
           "conditions": [
             {
               "id": "t1",
-              "leftValue": "={{ !!$json.empresa_id }}",
+              "leftValue": "={{ !!$json.empresa_id && !$json.no_limite }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1266,7 +1266,7 @@
         "workflowId": {
           "__rl": true,
           "mode": "id",
-          "value": "r19tLSWxC0t7PU0m"
+          "value": "PENDENTE.workflow-retorno-id"
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
@@ -1304,6 +1304,230 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "27add2e4-c27b-4016-8ba6-999b3e8f2f87",
+      "name": "A cada 1 h · aviso do teto",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1620
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1,
+              "triggerAtMinute": 20
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "bc336f2b-b534-4a7a-8d68-067097b25c69",
+      "name": "Teto: quem avisar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1620
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_avisos_teto",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\" }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "86dcd532-c544-4ced-8b5a-00a42ac087c0",
+      "name": "Teto: tem aviso?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        1620
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id && !!$json.nivel }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "38ddf026-b507-4cc0-8c9b-8362752a861f",
+      "name": "Teto: montar avisos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        660,
+        1620
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// um aviso para a dona e outro para a agência\nconst f = $json;\nconst dona = String(f.dona || '').trim();\nconst numeroDona = String((Array.isArray(f.assist) ? f.assist[0] : String(f.assist || '').split(',')[0]) || '').replace(/\\D/g, '');\nconst oi = dona ? 'Oi, ' + dona + '! ' : 'Oi! ';\nconst paraDona = Number(f.nivel) >= 100\n  ? oi + 'Aviso da sua assistente: as ' + f.limite_mes + ' conversas do plano deste mês acabaram. Quem já está conversando comigo hoje continua sendo atendida e os lembretes de horário continuam saindo, mas cliente nova fica sem resposta automática até o mês virar ou o plano ser aumentado. Para aumentar, fale com o suporte.'\n  : oi + 'Aviso da sua assistente: já usei ' + f.uso_mes + ' das ' + f.limite_mes + ' conversas do plano deste mês. Quando chegar ao limite, cliente nova fica sem resposta automática. Se quiser aumentar o plano, fale com o suporte.';\nconst paraAgencia = '[' + \"Motor Unhas\" + '] ' + f.nome + ': ' + f.uso_mes + ' de ' + f.limite_mes + ' conversas no mês (' + (Number(f.nivel) >= 100 ? 'TETO: cliente nova sem resposta' : 'passou de 80%') + ').' + (numeroDona ? '' : ' A dona NÃO foi avisada: sem número em assistente_numeros.');\nreturn { json: { instancia: f.instancia, numeroDona, paraDona, paraAgencia } };"
+      }
+    },
+    {
+      "id": "a39ec46e-3716-4c0d-84ef-225732ba8fac",
+      "name": "Teto: dona tem número?",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        1540
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.numeroDona }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "35f6e18a-b0e4-42b8-8da5-adc99a4ac831",
+      "name": "Teto: avisar a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        1540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ $json.instancia }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.numeroDona, text: $json.paraDona }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "80af5a06-5a80-4f6f-8c17-59774f48f4c0",
+      "name": "Teto: avisar a agência",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        1700
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ \"salao-demo\" }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: \"556699270860\", text: $json.paraAgencia }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "fe1ade28-8307-479c-83be-430b610d4441",
+      "name": "Disparar agora (teste) · aviso do teto",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1780
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "motor-unhas-rotina-aviso-teto",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "472a2c63-d486-4a44-8a61-6ae323c4c958",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
     }
   ],
   "connections": {
@@ -1598,6 +1822,77 @@
         [
           {
             "node": "Rodar: Disparar agora (teste) · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A cada 1 h · aviso do teto": {
+      "main": [
+        [
+          {
+            "node": "Teto: quem avisar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teto: quem avisar": {
+      "main": [
+        [
+          {
+            "node": "Teto: tem aviso?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teto: tem aviso?": {
+      "main": [
+        [
+          {
+            "node": "Teto: montar avisos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teto: montar avisos": {
+      "main": [
+        [
+          {
+            "node": "Teto: dona tem número?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Teto: avisar a agência",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Teto: dona tem número?": {
+      "main": [
+        [
+          {
+            "node": "Teto: avisar a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste) · aviso do teto": {
+      "main": [
+        [
+          {
+            "node": "Teto: quem avisar",
             "type": "main",
             "index": 0
           }

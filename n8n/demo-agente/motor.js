@@ -208,6 +208,11 @@ return [{ json: {
   permitidos: permitidos.join(','), catalogo_link: f.catalogo_link || '',
   // tempo mínimo que cada cliente ocupa na agenda (config.ia.bloco_min); 0 = vale o tempo de cada serviço
   bloco_min: Number.isInteger(Number(f.bloco_min)) && Number(f.bloco_min) >= 30 && Number(f.bloco_min) <= 480 ? Number(f.bloco_min) : 0,
+  // a ficha passa de um workflow para outro (loja_json) e é lida de novo por este mesmo código: liberada vai junto
+  liberada: f.liberada === true,
+  // teto de conversas do mês (supabase/048): no_limite = a loja chegou ao teto; conversa_barrada = além disso,
+  // quem mandou esta mensagem ainda não falou com a IA hoje (conversa nova)
+  limite_mes: f.limite_mes ?? null, uso_mes: f.uso_mes ?? null, no_limite: f.no_limite === true, conversa_barrada: f.conversa_barrada === true,
 } }];`;
 
 const noCodigo = (nome, wf, posicao, jsCode) => ({
@@ -286,9 +291,24 @@ function entradas(wf, nicho) {
   if (g.type.endsWith('webhook')) {
     // mensagem da Evolution (ou repassada pelo principal): a instância diz de qual loja é
     if (!/\/webhook\/|whatsapp|assistente/.test(g.parameters.path || '')) throw new Error(`motor: webhook sem loja em "${wf.name}"`);
-    novos.push(supabaseRpc('Buscar loja', wf, [x, y - 200], 'motor_loja', `={{ JSON.stringify({ p_instancia: String(${ref}.first().json.body.instance || ''), p_nicho: ${JSON.stringify(nicho)} }) }}`));
+    // telefone de quem mandou: o banco usa para saber se é conversa nova (teto de conversas)
+    const TEL = `((k) => String((k.remoteJid || '').endsWith('@lid') && k.remoteJidAlt ? k.remoteJidAlt : (k.remoteJid || '')).split('@')[0])((${ref}.first().json.body.data || {}).key || {})`;
+    novos.push(supabaseRpc('Buscar loja', wf, [x, y - 200], 'motor_loja', `={{ JSON.stringify({ p_instancia: String(${ref}.first().json.body.instance || ''), p_nicho: ${JSON.stringify(nicho)}, p_telefone: ${TEL} }) }}`));
     novos.push(noCodigo('Loja', wf, [x + 220, y - 200], CODIGO_LOJA("$('Buscar loja').first().json")));
-    novos.push(noCodigo('Entrada', wf, [x + 440, y - 200], `// devolve a mensagem que chegou, como se o nó "Loja" não existisse no caminho\nreturn ${ref}.all();`));
+    const principal = /whatsapp-salao$/.test(g.parameters.path || '');
+    novos.push(noCodigo('Entrada', wf, [x + 440, y - 200], principal
+      ? `// Teto de conversas: a loja chegou ao limite do mês e esta cliente ainda não falou com a IA hoje.
+// A mensagem para aqui, sem resposta automática. A dona continua passando (assistente).
+const L = $('Loja').first().json;
+if (L.conversa_barrada) {
+  const sem9 = (n) => { const d = String(n).replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; };
+  const k = (${ref}.first().json.body.data || {}).key || {};
+  const tel = String((k.remoteJid || '').endsWith('@lid') && k.remoteJidAlt ? k.remoteJidAlt : (k.remoteJid || '')).split('@')[0];
+  if (!String(L.assist_sem9 || '').split(',').filter(Boolean).includes(sem9(tel))) return [];
+}
+// devolve a mensagem que chegou, como se o nó "Loja" não existisse no caminho
+return ${ref}.all();`
+      : `// devolve a mensagem que chegou, como se o nó "Loja" não existisse no caminho\nreturn ${ref}.all();`));
     wf.connections['Buscar loja'] = { main: [[{ node: 'Loja', type: 'main', index: 0 }]] };
     primeiro = 'Buscar loja';
   } else {
@@ -359,6 +379,7 @@ function montarRotinas(rotinasPorWf, loja, settings) {
   const wf = { name: `[${loja.rotulo}] Rotinas`, nodes: [], connections: {}, settings };
   const nicho = JSON.stringify(loja.nicho);
   let linha = 0;
+  let modeloWebhook = null;
   for (const { arquivoId, lista } of rotinasPorWf) {
     for (const r of lista) {
       const y = linha++ * 180;
@@ -385,15 +406,60 @@ function montarRotinas(rotinasPorWf, loja, settings) {
       const tem = {
         id: uuid(`rotinas:tem:${nomeGatilho}`), name: `Tem loja? ${nomeGatilho}`, type: 'n8n-nodes-base.filter', typeVersion: 2.2, position: [330, y + 80],
         parameters: { conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
-          conditions: [{ id: 't1', leftValue: '={{ !!$json.empresa_id }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' }, options: {} },
+          // retomada e retorno gastam IA para puxar conversa: param para a loja que chegou ao teto do mês
+          conditions: [{ id: 't1', leftValue: /retomar|retorno/.test(arquivoId) ? '={{ !!$json.empresa_id && !$json.no_limite }}' : '={{ !!$json.empresa_id }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' }, options: {} },
       };
+      if (r.teste && !modeloWebhook) modeloWebhook = r.no;
       wf.nodes.push(g, lojas, tem, chamar);
       wf.connections[g.name] = { main: [[{ node: lojas.name, type: 'main', index: 0 }]] };
       wf.connections[lojas.name] = { main: [[{ node: tem.name, type: 'main', index: 0 }]] };
       wf.connections[tem.name] = { main: [[{ node: chamar.name, type: 'main', index: 0 }]] };
     }
   }
+  avisosDoTeto(wf, loja, nicho, linha * 180, modeloWebhook);
   return wf;
+}
+
+// Teto de conversas (supabase/048): de hora em hora, as lojas que passaram de 80% ou chegaram a 100% do plano
+// do mês recebem um aviso, uma vez por nível: a dona (pelo WhatsApp da própria loja) e a agência.
+function avisosDoTeto(wf, loja, nicho, y, modeloWebhook) {
+  if (!loja.numero_agencia || !/^\d{12,13}$/.test(loja.numero_agencia)) throw new Error('motor: loja.json precisa de "numero_agencia" (WhatsApp da agência, só números, com 55 e DDD)');
+  const instAgencia = loja.instancia_alerta || 'FALTA-INSTANCIA-ALERTA';
+  const no = (nome, type, typeVersion, position, parameters, extra = {}) => ({ id: uuid(`rotinas:teto:${nome}`), name: nome, type, typeVersion, position, parameters, ...extra });
+  const horario = no('A cada 1 h · aviso do teto', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, y], { rule: { interval: [{ field: 'hours', hoursInterval: 1, triggerAtMinute: 20 }] } });
+  const avisos = supabaseRpc('Teto: quem avisar', wf, [220, y], 'motor_avisos_teto', `={{ JSON.stringify({ p_nicho: ${nicho} }) }}`);
+  const tem = no('Teto: tem aviso?', 'n8n-nodes-base.filter', 2.2, [440, y], { conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+    conditions: [{ id: 't1', leftValue: '={{ !!$json.empresa_id && !!$json.nivel }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' }, options: {} });
+  const textos = no('Teto: montar avisos', 'n8n-nodes-base.code', 2, [660, y], { mode: 'runOnceForEachItem', jsCode: `// um aviso para a dona e outro para a agência
+const f = $json;
+const dona = String(f.dona || '').trim();
+const numeroDona = String((Array.isArray(f.assist) ? f.assist[0] : String(f.assist || '').split(',')[0]) || '').replace(/\\D/g, '');
+const oi = dona ? 'Oi, ' + dona + '! ' : 'Oi! ';
+const paraDona = Number(f.nivel) >= 100
+  ? oi + 'Aviso da sua assistente: as ' + f.limite_mes + ' conversas do plano deste mês acabaram. Quem já está conversando comigo hoje continua sendo atendida e os lembretes de horário continuam saindo, mas cliente nova fica sem resposta automática até o mês virar ou o plano ser aumentado. Para aumentar, fale com o suporte.'
+  : oi + 'Aviso da sua assistente: já usei ' + f.uso_mes + ' das ' + f.limite_mes + ' conversas do plano deste mês. Quando chegar ao limite, cliente nova fica sem resposta automática. Se quiser aumentar o plano, fale com o suporte.';
+const paraAgencia = '[' + ${JSON.stringify(loja.rotulo)} + '] ' + f.nome + ': ' + f.uso_mes + ' de ' + f.limite_mes + ' conversas no mês (' + (Number(f.nivel) >= 100 ? 'TETO: cliente nova sem resposta' : 'passou de 80%') + ').' + (numeroDona ? '' : ' A dona NÃO foi avisada: sem número em assistente_numeros.');
+return { json: { instancia: f.instancia, numeroDona, paraDona, paraAgencia } };` });
+  const envio = (nome, position, instancia, numero, texto) => no(nome, 'n8n-nodes-base.httpRequest', 4.2, position, {
+    method: 'POST', url: `={{ $env.EVOLUTION_URL }}/message/sendText/{{ ${instancia} }}`,
+    sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
+    sendBody: true, specifyBody: 'json', jsonBody: `={{ JSON.stringify({ number: ${numero}, text: ${texto} }) }}`, options: { timeout: 15000 },
+  }, { onError: 'continueRegularOutput' });
+  const temDona = no('Teto: dona tem número?', 'n8n-nodes-base.filter', 2.2, [880, y - 80], { conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
+    conditions: [{ id: 't1', leftValue: '={{ !!$json.numeroDona }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' }, options: {} });
+  const paraDona = envio('Teto: avisar a dona', [1100, y - 80], '$json.instancia', '$json.numeroDona', '$json.paraDona');
+  const paraAgencia = envio('Teto: avisar a agência', [880, y + 80], JSON.stringify(instAgencia), JSON.stringify(loja.numero_agencia), '$json.paraAgencia');
+  wf.nodes.push(horario, avisos, tem, textos, temDona, paraDona, paraAgencia);
+  const liga = (de, ...para) => { wf.connections[de] = { main: [para.map((p) => ({ node: p, type: 'main', index: 0 }))] }; };
+  liga(horario.name, avisos.name); liga(avisos.name, tem.name); liga(tem.name, textos.name);
+  liga(textos.name, temDona.name, paraAgencia.name); liga(temDona.name, paraDona.name);
+  // teste: GET …/webhook/<slug>-rotina-aviso-teto roda a conferência agora
+  if (modeloWebhook) {
+    const w = JSON.parse(JSON.stringify(modeloWebhook));
+    w.name = 'Disparar agora (teste) · aviso do teto'; w.id = uuid('rotinas:teto:webhook'); w.position = [0, y + 160];
+    w.parameters.path = `${loja.slug}-rotina-aviso-teto`; w.webhookId = uuid('rotinas:teto:webhookId');
+    wf.nodes.push(w); liga(w.name, avisos.name);
+  }
 }
 
 // Confere o conjunto do motor: nenhuma marca sobrando, todo código fecha, toda referência a nó existe
