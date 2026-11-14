@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TelaDaAba } from "@/components/TelaDaAba";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -176,6 +177,14 @@ function Secao({ titulo, extra, children }: { titulo: string; extra?: ReactNode;
 }
 
 export default function InicioPage() {
+  return (
+    <TelaDaAba>
+      <InicioPageConteudo />
+    </TelaDaAba>
+  );
+}
+
+function InicioPageConteudo() {
   const empresa = useEmpresa();
   const [resumo, setResumo] = useState<Resumo | { erro: string } | null>(null);
   const [versao, setVersao] = useState(0);
@@ -242,11 +251,11 @@ export default function InicioPage() {
         aoRegistrar={() => setRegistrando(true)}
       />
 
-      {!resumo && <p className="p-5 text-texto-2">Carregando…</p>}
+      {!resumo && <p className="carregando-calmo p-5 text-texto-2">Carregando…</p>}
       {resumo && "erro" in resumo && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler o banco: {resumo.erro}</p>}
 
       {ok && (
-        <div className="flex flex-col gap-[22px] px-5 pt-4">
+        <div className="chegar-suave flex flex-col gap-[22px] px-5 pt-4">
           {/* O mais urgente primeiro, empilhado como as notificações do iPhone */}
           {ok.precisam.length > 0 && <PilhaPrecisam precisam={ok.precisam} />}
 
@@ -286,13 +295,13 @@ export default function InicioPage() {
                   className="flex items-center gap-3.5 rounded-[22px] bg-card borda-suave p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
                 >
                   <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ouro">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#7A5A1E" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
                       <circle cx="12" cy="12" r="4" />
                       <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
                     </svg>
                   </span>
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="font-serif text-[21px] font-semibold">Dia livre hoje</span>
+                    <span className="text-[18px] font-bold">Dia livre hoje</span>
                     <span className="text-[13px] text-texto-2">Nenhum horário marcado. Se a IA marcar alguém, aparece aqui.</span>
                   </span>
                   <Seta />
@@ -318,14 +327,14 @@ export default function InicioPage() {
                   className="flex flex-col gap-3 rounded-[22px] bg-card borda-suave p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold tracking-[0.25em] text-bronze-escuro uppercase">Próxima cliente</span>
+                    <span className="rotulo">Próxima cliente</span>
                     {proxima && <span className="rounded-full bg-grafite px-2.5 py-[5px] text-xs font-semibold text-perola">{quandoComeca(proxima)}</span>}
                   </div>
                   {proxima ? (
                     <div className="flex items-center gap-3">
                       <Avatar id={proxima.clientes?.id ?? proxima.id} nome={proxima.clientes?.nome ?? null} tamanho="h-12 w-12 text-xl" />
                       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <span className="truncate font-serif text-[21px] font-semibold">{nomeDe(proxima.clientes)}</span>
+                        <span className="truncate text-[18px] font-bold">{nomeDe(proxima.clientes)}</span>
                         <span className="text-[13px] text-texto-2">
                           {resumoDosServicos(proxima)} · {formatarHora(proxima.inicio)} · {duracao(minutosDe(proxima))}
                         </span>
@@ -551,7 +560,7 @@ function acoesDoHorario(a: Atendimento, aoConcluir?: () => void, aoChegou?: () =
   if (aoConcluir && a.status === "agendado") {
     acoes.push({
       rotulo: "Concluído",
-      cor: "bg-[#5E7A50]",
+      cor: "bg-[#2F7D5B]",
       aoTocar: aoConcluir,
       icone: (
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -652,7 +661,7 @@ function IndicadorPuxar({ puxado, atualizando }: { puxado: number; atualizando: 
         height="26"
         viewBox="0 0 24 24"
         fill="none"
-        stroke="#6E5539"
+        stroke="#7A5870"
         strokeWidth={2.2}
         strokeLinecap="round"
         aria-hidden
@@ -701,7 +710,7 @@ function Topo({ titulo, subtitulo, alerta, aoRegistrar }: { titulo: string; subt
       <header className="flex items-end justify-between gap-3 px-5 pt-6">
         <div className="flex min-w-0 flex-col">
           <span className="text-[13px] font-semibold tracking-wide text-texto-2 uppercase">{formatarDiaLongo(hojeNoSalao())}</span>
-          <h1 className="font-serif text-[34px] leading-tight font-semibold">{titulo}</h1>
+          <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">{titulo}</h1>
           <span className="truncate text-sm text-texto-2">{subtitulo}</span>
           {/* Quando este ponto sai da tela, o topo encolhe */}
           <div ref={marco} aria-hidden className="h-px" />
@@ -723,11 +732,11 @@ function BolhaConfiguracoes({ alerta, pequena }: { alerta: boolean; pequena?: bo
       aria-label={alerta ? "Configurações (alguém precisa de você)" : "Configurações"}
       className={`vidro relative flex shrink-0 items-center justify-center rounded-full active:scale-95 ${pequena ? "h-9 w-9" : "h-11 w-11"}`}
     >
-      <svg width={pequena ? 17 : 20} height={pequena ? 17 : 20} viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <svg width={pequena ? 17 : 20} height={pequena ? 17 : 20} viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <circle cx="12" cy="12" r="3" />
         <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
       </svg>
-      {alerta && <span aria-hidden className={`absolute rounded-full bg-bronze ${pequena ? "top-1.5 right-1.5 h-[6px] w-[6px]" : "top-2 right-2 h-[7px] w-[7px]"}`} />}
+      {alerta && <span aria-hidden className={`absolute rounded-full bg-[#B4432F] ${pequena ? "top-1.5 right-1.5 h-[6px] w-[6px]" : "top-2 right-2 h-[7px] w-[7px]"}`} />}
     </Link>
   );
 }
@@ -740,7 +749,7 @@ function BolhaRegistrar({ aoTocar, pequena }: { aoTocar: () => void; pequena?: b
       aria-label="Registrar atendimento"
       className={`vidro flex shrink-0 items-center justify-center rounded-full active:scale-95 ${pequena ? "h-9 w-9" : "h-11 w-11"}`}
     >
-      <svg width={pequena ? 18 : 21} height={pequena ? 18 : 21} viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2} strokeLinecap="round" aria-hidden>
+      <svg width={pequena ? 18 : 21} height={pequena ? 18 : 21} viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2} strokeLinecap="round" aria-hidden>
         <path d="M12 5v14M5 12h14" />
       </svg>
     </button>
@@ -803,7 +812,7 @@ function PilhaPrecisam({ precisam }: { precisam: Precisa[] }) {
 function Capsula({ valor, rotulo, href }: { valor: number; rotulo: string; href?: string }) {
   const conteudo = (
     <>
-      <b className="font-serif text-[17px] leading-none font-semibold">{valor}</b>
+      <b className="text-[17px] leading-none font-bold">{valor}</b>
       <span>{rotulo}</span>
     </>
   );
@@ -832,12 +841,12 @@ function Aniversarios({ lista }: { lista: Aniversariante[] }) {
         aria-expanded={aberta}
         className={`flex items-center gap-3 rounded-[20px] borda-suave px-3.5 py-3 text-left ${deHoje.length ? "bg-ouro" : "bg-card"}`}
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={deHoje.length ? "#7A5A1E" : "#6E5539"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={deHoje.length ? "#1B1719" : "#7A5870"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
           <rect x="3" y="8" width="18" height="4" rx="1" />
           <path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5" />
         </svg>
         <span className={`min-w-0 flex-1 truncate text-[15px] font-semibold ${deHoje.length ? "text-ouro-texto" : ""}`}>{resumo}</span>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`shrink-0 transition-transform ${aberta ? "rotate-90" : ""}`}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`shrink-0 transition-transform ${aberta ? "rotate-90" : ""}`}>
           <path d="m9 18 6-6-6-6" />
         </svg>
       </button>
@@ -870,7 +879,7 @@ function Aniversarios({ lista }: { lista: Aniversariante[] }) {
 
 function Seta({ pequena }: { pequena?: boolean }) {
   return (
-    <svg width={pequena ? 16 : 20} height={pequena ? 16 : 20} viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+    <svg width={pequena ? 16 : 20} height={pequena ? 16 : 20} viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
       <path d="m9 18 6-6-6-6" />
     </svg>
   );
@@ -883,7 +892,7 @@ function BotaoWhatsApp({ rotulo, aoTocar }: { rotulo: string; aoTocar: () => voi
       aria-label={rotulo}
       className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-borda active:bg-campo"
     >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3F5135" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1F5C42" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
       </svg>
     </button>

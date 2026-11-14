@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { supabase, supabaseConfigurado } from "@/lib/supabase/client";
-import { SALAO } from "@/lib/config";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,30 +32,24 @@ export default function LoginPage() {
 
   return (
     <main className="relative flex min-h-dvh flex-col overflow-hidden bg-perola text-texto">
-      {/* Luz bronze atrás do ícone e um brilho claro no canto, como nas páginas da App Store */}
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0">
-        <div className="absolute top-[-180px] left-1/2 h-[520px] w-[520px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,rgb(168_138_104/0.38),transparent)]" />
-        <div className="absolute top-[-120px] right-[-140px] h-[360px] w-[360px] rounded-full bg-[radial-gradient(closest-side,rgb(255_255_255/0.7),transparent)]" />
-        <div className="absolute bottom-[-200px] left-[-160px] h-[420px] w-[420px] rounded-full bg-[radial-gradient(closest-side,rgb(216_198_174/0.45),transparent)]" />
-      </div>
-
       <div className="relative mx-auto flex w-full max-w-[400px] flex-1 flex-col px-6 pt-[calc(64px+env(safe-area-inset-top))] sm:justify-center sm:pt-12">
-        {/* Ícone do app, com sombra em camadas e reflexo embaixo */}
+        {/* Logo horizontal Oi Studio: o ícone já diz "oi", embaixo só "studio" */}
         <div className="login-icone relative mx-auto">
           <Image
-            src="/icone-512.png"
+            src="/logo/oi-icon.svg"
+            unoptimized
             alt=""
             width={112}
             height={112}
             priority
-            className="relative z-10 h-28 w-28 rounded-[26px] shadow-[0_1px_1px_rgb(30_23_20/0.08),0_8px_16px_rgb(30_23_20/0.14),0_24px_48px_rgb(30_23_20/0.22)]"
+            className="relative z-10 h-28 w-28"
           />
-          <span aria-hidden="true" className="absolute inset-0 z-20 rounded-[26px] ring-1 ring-white/15 ring-inset" />
-          <span aria-hidden="true" className="absolute -bottom-5 left-1/2 h-6 w-20 -translate-x-1/2 rounded-full bg-grafite/25 blur-xl" />
         </div>
 
         <div className="login-subir mt-9 text-center [animation-delay:80ms]">
-          <h1 className="font-serif text-[42px] leading-none font-semibold tracking-tight">{SALAO.nomeApp}</h1>
+          <h1 className="text-[34px] leading-none font-bold tracking-[-0.045em]">
+            <span className="sr-only">oi </span>studio
+          </h1>
           <p className="mt-3 text-[15px] leading-relaxed text-texto-2">
             Suas clientes, sua agenda,
             <br />
@@ -126,7 +119,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={entrando || !supabaseConfigurado}
-            className="relative flex h-[56px] items-center justify-center gap-2 overflow-hidden rounded-full bg-[linear-gradient(180deg,#2c2a30,#1c1b1f)] text-[17px] font-semibold tracking-wide text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(30_23_20/0.2),0_12px_28px_rgb(30_23_20/0.28)] transition duration-150 active:scale-[0.97] disabled:opacity-50"
+            className="relative flex h-[56px] items-center justify-center gap-2 overflow-hidden rounded-full bg-[linear-gradient(180deg,#2B2629,#1B1719)] text-[17px] font-semibold tracking-wide text-white shadow-[inset_0_1px_0_rgb(255_255_255/0.14),0_1px_2px_rgb(30_23_20/0.2),0_12px_28px_rgb(30_23_20/0.28)] transition duration-150 active:scale-[0.97] disabled:opacity-50"
           >
             {entrando ? (
               <>
@@ -153,7 +146,7 @@ export default function LoginPage() {
 
 function IconeEmail() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
       <rect x="2" y="4" width="20" height="16" rx="3" />
       <path d="m22 7-10 6L2 7" />
     </svg>
@@ -162,7 +155,7 @@ function IconeEmail() {
 
 function IconeCadeado() {
   return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0">
       <rect x="3" y="11" width="18" height="11" rx="3" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>

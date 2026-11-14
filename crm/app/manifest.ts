@@ -9,7 +9,7 @@ export default function manifest(): MetadataRoute.Manifest {
     lang: "pt-BR",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
+    background_color: "#1B1719",
     theme_color: SALAO.corPrincipal,
     icons: [
       { src: "/icone-192.png", sizes: "192x192", type: "image/png" },

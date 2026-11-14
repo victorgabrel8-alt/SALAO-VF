@@ -62,13 +62,13 @@ export function EscolherServicos({
   const total = somarEscolhidos(escolhidos, servicos);
 
   const chip = (ativo: boolean) =>
-    `flex h-11 items-center gap-1.5 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-neutral-100 text-neutral-800"}`;
+    `flex h-11 items-center gap-1.5 rounded-full px-4 font-semibold ${ativo ? "chip-ativo" : "bg-campo text-texto"}`;
 
   return (
     <section className="space-y-3">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="text-lg font-semibold">Serviços</h3>
-        <span className="text-sm text-neutral-500">pode escolher mais de um</span>
+        <span className="text-sm text-rotulo">pode escolher mais de um</span>
       </div>
 
       {/* Os mais usados */}
@@ -106,37 +106,37 @@ export function EscolherServicos({
         </button>
       )}
       {temMais && verTodos && (
-        <div className="space-y-3 rounded-xl border border-neutral-200 p-3">
+        <div className="space-y-3 rounded-xl border border-borda p-3">
           {servicos.length > BUSCA_A_PARTIR_DE && (
             <input
               type="search"
               placeholder="Buscar serviço"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              className="h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+              className="h-12 w-full rounded-xl border border-claro bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
             />
           )}
           {grupos.map((g) => (
             <div key={g.id}>
-              <p className="px-1 pb-1 text-xs font-bold tracking-wide text-neutral-500 uppercase">{g.nome}</p>
-              <ul className="divide-y divide-neutral-100">
+              <p className="px-1 pb-1 text-xs font-bold tracking-wide text-rotulo uppercase">{g.nome}</p>
+              <ul className="divide-y divide-borda">
                 {g.servicos.map((s) => (
                   <li key={s.id}>
                     <button
                       onClick={() => alternar(s.id)}
                       aria-pressed={marcado(s.id)}
-                      className="flex min-h-12 w-full items-center gap-3 px-1 py-2 text-left active:bg-neutral-50"
+                      className="flex min-h-12 w-full items-center gap-3 px-1 py-2 text-left active:bg-campo"
                     >
                       <span
                         aria-hidden
                         className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${
-                          marcado(s.id) ? "border-[var(--cor-principal)] bg-[var(--cor-principal)] text-white" : "border-neutral-300"
+                          marcado(s.id) ? "border-[var(--cor-principal)] bg-[var(--cor-principal)] text-white" : "border-claro"
                         }`}
                       >
                         {marcado(s.id) && <Visto />}
                       </span>
                       <span className="min-w-0 flex-1 font-semibold">{s.nome}</span>
-                      <span className="shrink-0 text-right text-sm text-neutral-600">
+                      <span className="shrink-0 text-right text-sm text-texto-2">
                         {precoDoServico(s)} · {formatarDuracao(s.duracao_min)}
                       </span>
                     </button>
@@ -145,15 +145,15 @@ export function EscolherServicos({
               </ul>
             </div>
           ))}
-          {grupos.length === 0 && <p className="px-1 text-neutral-500">Nenhum serviço com esse nome.</p>}
+          {grupos.length === 0 && <p className="px-1 text-rotulo">Nenhum serviço com esse nome.</p>}
         </div>
       )}
 
       {/* O que foi escolhido, com os totais */}
       {escolhidos.length > 0 && (
-        <div className="rounded-xl bg-neutral-100 p-3">
-          <p className="pb-1 text-sm font-semibold text-neutral-600">Escolhidos</p>
-          <ul className="divide-y divide-neutral-200">
+        <div className="rounded-xl bg-campo p-3">
+          <p className="pb-1 text-sm font-semibold text-texto-2">Escolhidos</p>
+          <ul className="divide-y divide-borda">
             {escolhidos.map((e) => {
               const s = servicos.find((x) => x.id === e.id);
               if (!s) return null;
@@ -161,13 +161,13 @@ export function EscolherServicos({
                 <li key={e.id} className="space-y-1 py-2">
                   <div className="flex items-start gap-2">
                     <span className="min-w-0 flex-1 font-semibold">{s.nome}</span>
-                    <span className="shrink-0 text-right text-sm text-neutral-700">
+                    <span className="shrink-0 text-right text-sm text-texto-2">
                       {s.preco === null ? "sem preço" : formatarPreco(s.preco * e.quantidade)} · {formatarDuracao(s.duracao_min * e.quantidade)}
                     </span>
                     <button
                       onClick={() => alternar(s.id)}
                       aria-label={`Tirar ${s.nome}`}
-                      className="-my-2 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center text-neutral-500"
+                      className="-my-2 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center text-rotulo"
                     >
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden>
                         <path d="M6 6l12 12M18 6 6 18" />
@@ -202,7 +202,7 @@ export function EscolherServicos({
             })}
           </ul>
           {(escolhidos.length > 1 || escolhidos.some((e) => e.quantidade > 1)) && (
-            <div className="flex items-baseline justify-between gap-2 border-t border-neutral-300 pt-2">
+            <div className="flex items-baseline justify-between gap-2 border-t border-claro pt-2">
               <span className="font-bold">Total</span>
               <span className="text-right font-bold">
                 {total.aPartirDe ? "a partir de " : ""}

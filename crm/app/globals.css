@@ -1,41 +1,56 @@
 @import "tailwindcss";
 
-/* Identidade da VF Company (design/salao-redesign): grafite, pérola e bronze.
-   Use como bg-grafite, text-bronze-escuro, border-borda, font-serif... */
+/* Identidade Oi Studio (oi-studio-design-handoff.md): quase só Ônix e Porcelana, ouro raro.
+   Os nomes antigos (grafite, perola, card, campo, bronze...) continuam valendo para não espalhar
+   troca pelas telas, mas agora apontam para as cores novas. */
 @theme {
-  --color-grafite: #1c1b1f;
-  --color-perola: #efe7dc;
-  --color-card: #fbf8f3;
-  --color-campo: #ebe2d6;
-  --color-borda: #ddd1c2;
-  --color-bronze: #a88a68;
-  --color-bronze-escuro: #6e5539;
-  --color-texto: #1c1b1f;
-  --color-texto-2: #6b6158;
-  --color-rotulo: #3a3530;
-  --color-inativo: #9c9184;
-  --color-claro: #cfc3b4;
-  --color-areia: #e6dacb;
+  /* nomes novos */
+  --color-onix: #1b1719;
+  --color-porcelana: #faf6f3;
+  --color-branco: #ffffff;
+  --color-carvao: #2b2629;
+  --color-borda-forte: #c9bbb3;
+  --color-texto-suave: #4a3c45;
+  --color-texto-apoio: #7a5870;
+  --color-dourado: #d8bd8a; /* só sobre Ônix: pingo da logo, ponto da etiqueta IA, dia da agenda */
+  --color-ouro-antigo: #94702e; /* o mesmo pingo sobre fundo claro (só gráfico) */
+  --color-atencao: #b4432f;
+  --color-ok: #2f7d5b;
 
-  /* Etiquetas suaves: fundo / texto */
-  --color-rose: #f3ddd5;
-  --color-rose-texto: #8a3b2b;
-  --color-salvia: #e3e8dc;
-  --color-salvia-texto: #3f5135;
-  --color-ouro: #f3e7cf;
-  --color-ouro-texto: #7a5a1e;
-  --color-taupe: #e6dacb;
-  --color-taupe-texto: #5e4632;
+  /* nomes antigos, com as cores novas */
+  --color-grafite: #1b1719; /* Ônix */
+  --color-perola: #faf6f3; /* Porcelana (fundo das telas e texto sobre escuro) */
+  --color-card: #ffffff; /* Branco: cartões */
+  --color-campo: #efe6e1; /* Pérola: cartões secundários, chips, campos */
+  --color-borda: #e4d9d3;
+  --color-bronze: #c9bbb3; /* era o caramelo; agora só detalhe neutro (anéis, pontinhos) */
+  --color-bronze-escuro: #7a5870; /* links e rótulos de apoio */
+  --color-texto: #1b1719;
+  --color-texto-2: #4a3c45;
+  --color-rotulo: #7a5870;
+  --color-inativo: #7a5870;
+  --color-claro: #c9bbb3;
+  --color-areia: #efe6e1;
 
-  /* Variáveis criadas pelo next/font no layout */
-  --font-sans: var(--fonte-jost), system-ui, sans-serif;
-  --font-serif: var(--fonte-cormorant), Georgia, serif;
+  /* Estados: fundo / texto */
+  --color-rose: #f6e4df; /* atenção */
+  --color-rose-texto: #7a2617;
+  --color-salvia: #e1efe8; /* ok */
+  --color-salvia-texto: #1f5c42;
+  --color-ouro: #efe6e1; /* sem ouro de fundo: virou o neutro Pérola */
+  --color-ouro-texto: #1b1719;
+  --color-taupe: #efe6e1;
+  --color-taupe-texto: #4a3c45;
+
+  /* Uma fonte só: Manrope (variável criada pelo next/font no layout) */
+  --font-sans: var(--fonte-manrope), system-ui, sans-serif;
+  --font-serif: var(--fonte-manrope), system-ui, sans-serif;
 }
 
 /* App claro e de alto contraste: a dona usa com pressa, entre um atendimento e outro. */
 :root {
-  --background: #efe7dc;
-  --foreground: #1c1b1f;
+  --background: #faf6f3;
+  --foreground: #1b1719;
   color-scheme: light;
 }
 
@@ -46,35 +61,57 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* A Cormorant desenha o "1" como um "I" (algarismos antigos): nos números, usa os normais */
+/* Títulos: a antiga fonte com serifa saiu; font-serif agora é Manrope com o desenho dos títulos */
 .font-serif {
-  font-variant-numeric: lining-nums;
+  letter-spacing: -0.02em;
 }
 
 /* Rótulos pequenos em MAIÚSCULAS, bem espaçados */
 @utility rotulo {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3em;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--color-texto-apoio);
   text-transform: uppercase;
 }
 
-/* Opção escolhida (filtros, serviço, status...): bronze, como no redesign */
+/* Opção escolhida (filtros, serviço, status...): Ônix com texto Porcelana */
 @utility chip-ativo {
-  background: var(--color-bronze);
-  color: var(--color-grafite);
+  background: var(--color-onix);
+  color: var(--color-porcelana);
+}
+
+/* Etiqueta "IA": marca o que a IA fez sozinha. Único lugar do ouro fora da logo. */
+@utility ia-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-onix);
+  color: var(--color-porcelana);
+  border-radius: 999px;
+  padding: 2px 7px 2px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+@utility ia-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-dourado);
 }
 
 /* Vidro (Liquid Glass do iPhone): só no que flutua por cima do conteúdo — barras, bolhas,
    folhas. Os cartões continuam sólidos: no fundo pérola liso não há o que desfocar. */
 @utility vidro {
-  background: rgb(251 248 243 / 0.62);
+  background: rgb(255 255 255 / 0.72);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
   border: 1px solid rgb(255 255 255 / 0.65);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.8),
-    0 6px 20px rgb(30 23 20 / 0.1);
+    0 6px 20px rgb(27 23 25 / 0.1);
 
   /* Quem desligou a transparência no iPhone (ou navegador sem desfoque) vê o vidro sólido */
   @media (prefers-reduced-transparency: reduce) {
@@ -89,10 +126,10 @@ body {
 
 /* Barra de vidro de ponta a ponta (topo que aparece ao rolar): sem borda nem cantos, só a linha de baixo */
 @utility vidro-barra {
-  background: rgb(239 231 220 / 0.72);
+  background: rgb(250 246 243 / 0.82);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
   backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgb(28 27 31 / 0.08);
+  border-bottom: 1px solid var(--color-borda);
 
   @media (prefers-reduced-transparency: reduce) {
     background: var(--background);
@@ -106,13 +143,13 @@ body {
 
 /* Vidro escuro: a barra de abas, no grafite da marca, deixando o conteúdo passar desfocado por trás */
 @utility vidro-escuro {
-  background: rgb(28 27 31 / 0.78);
+  background: rgb(27 23 25 / 0.86);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgb(255 255 255 / 0.08);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.1),
-    0 12px 30px rgb(30 23 20 / 0.25);
+    0 12px 30px rgb(27 23 25 / 0.25);
 
   @media (prefers-reduced-transparency: reduce) {
     background: var(--color-grafite);
@@ -168,6 +205,230 @@ body {
   }
   .bolha-aba-forma {
     animation: none;
+  }
+}
+
+/* Troca de aba (components/TelaDaAba.tsx), no jeito do iPhone: as duas telas se cruzam ao mesmo
+   tempo (sem "buraco" entre uma e outra). A barra de abas fica parada. */
+:root {
+  --mola: linear(0, 0.043, 0.146, 0.277, 0.415, 0.545, 0.66, 0.758, 0.836, 0.897, 0.942, 0.974, 0.995, 1.009, 1.016, 1.019, 1.02, 1.018, 1.016, 1.013, 1.011, 1.008, 1.006, 1.004, 1.003, 1.002, 1.001, 1, 1);
+  --mola-rapida: cubic-bezier(0.32, 0.72, 0, 1); /* a curva das folhas e menus do iOS */
+}
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+/* Sem deslizar nem desfocar: na troca de abas do iPhone a tela não anda para o lado, ela se
+   cruza com a outra. A antiga apaga sem pressa; a nova acende por cima e assenta com uma
+   aproximação quase imperceptível (99,4% → 100%), o que dá profundidade sem "mexer" a tela. */
+::view-transition-group(.aba-direita),
+::view-transition-group(.aba-esquerda) {
+  animation-duration: 0.42s;
+}
+::view-transition-old(.aba-direita),
+::view-transition-old(.aba-esquerda) {
+  animation: troca-apagar 0.3s cubic-bezier(0.4, 0, 0.6, 1) both;
+}
+::view-transition-new(.aba-direita),
+::view-transition-new(.aba-esquerda) {
+  animation:
+    troca-acender 0.42s cubic-bezier(0.25, 0.1, 0.25, 1) 0.04s both,
+    troca-assentar 0.6s var(--mola) both;
+}
+@keyframes troca-apagar {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes troca-acender {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes troca-assentar {
+  from {
+    scale: 0.994;
+  }
+}
+/* Dados que chegam depois da troca de tela (aba) (as telas leem o banco no navegador): a lista acende
+   suave em vez de "pular" na tela, e o "Carregando…" só aparece se demorar mais de meio segundo */
+@keyframes chegar-suave {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+@utility chegar-suave {
+  animation: chegar-suave 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+@keyframes carregando-calmo {
+  from {
+    opacity: 0;
+  }
+}
+@utility carregando-calmo {
+  animation: carregando-calmo 0.3s ease-out 0.5s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chegar-suave,
+  .carregando-calmo {
+    animation: none;
+  }
+}
+
+/* Pílula da aba (components/BarraAbas.tsx): desliza na mesma mola e, no caminho, estica um pouco
+   na direção do movimento e assenta ao chegar, como a lente de vidro do iOS */
+@keyframes pilula-esticar {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.14, 0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@utility pilula-aba {
+  animation: pilula-esticar 0.55s var(--mola);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+  .pilula-aba {
+    animation: none;
+  }
+}
+
+/* Abertura do app (components/Abertura.tsx). A linha do tempo: o "o" cresce (0 a 0,55 s), a haste do
+   "i" se desenha (0,15 a 0,6 s), o pingo dourado cai e quica (0,45 a 1 s), "STUDIO" aparece
+   (0,65 a 1,05 s) e a tela se abre aproximando a logo (1,25 a 1,65 s). */
+.abertura {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-onix);
+  animation: abertura-sair 0.4s cubic-bezier(0.4, 0, 0.2, 1) 1.25s forwards;
+}
+html[data-abertura="vista"] .abertura {
+  display: none;
+}
+.abertura-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  animation: abertura-aproximar 0.4s cubic-bezier(0.4, 0, 0.2, 1) 1.25s forwards;
+}
+.abertura-o {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    abertura-o 0.55s var(--mola) both,
+    abertura-acender 0.3s ease-out both;
+}
+.abertura-i {
+  stroke-dasharray: 41;
+  stroke-dashoffset: 41;
+  animation: abertura-haste 0.45s cubic-bezier(0.65, 0, 0.35, 1) 0.15s forwards;
+}
+.abertura-pingo {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  animation: abertura-pingo 0.55s linear 0.45s both;
+}
+.abertura-nome {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  margin-right: -0.3em; /* o espaço da última letra não empurra o nome para a esquerda */
+  color: #efe6e1;
+  animation: abertura-nome 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) 0.65s both;
+}
+@keyframes abertura-o {
+  from {
+    transform: scale(0.55);
+  }
+}
+@keyframes abertura-acender {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes abertura-haste {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+/* Cai de cima, encosta, quica um pouco (amassando de leve) e assenta */
+@keyframes abertura-pingo {
+  0% {
+    transform: translateY(-46px);
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  15% {
+    opacity: 1;
+  }
+  45% {
+    transform: translateY(0) scale(1.12, 0.86);
+    animation-timing-function: cubic-bezier(0, 0.55, 0.45, 1);
+  }
+  68% {
+    transform: translateY(-9px) scale(0.97, 1.04);
+    animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+  }
+  86% {
+    transform: translateY(0) scale(1.04, 0.96);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes abertura-nome {
+  from {
+    opacity: 0;
+    letter-spacing: 0.5em;
+    margin-right: -0.5em;
+  }
+}
+@keyframes abertura-aproximar {
+  to {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+@keyframes abertura-sair {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+/* Quem pediu menos movimento: só a logo parada, apagando rápido */
+@media (prefers-reduced-motion: reduce) {
+  .abertura {
+    animation: abertura-sair 0.3s ease-out 0.6s forwards;
+  }
+  .abertura-logo,
+  .abertura-o,
+  .abertura-pingo,
+  .abertura-nome {
+    animation: none;
+  }
+  .abertura-i {
+    animation: none;
+    stroke-dashoffset: 0;
   }
 }
 
@@ -233,13 +494,13 @@ body {
     background-color: var(--color-salvia);
     opacity: 1;
     transform: scale(1.025);
-    box-shadow: 0 0 0 2px #5e7a50, 0 10px 24px rgb(94 122 80 / 0.25);
+    box-shadow: 0 0 0 2px #2f7d5b;
   }
   35% {
     background-color: var(--color-salvia);
     opacity: 1;
     transform: scale(1);
-    box-shadow: 0 0 0 2px #5e7a50, 0 10px 24px rgb(94 122 80 / 0.2);
+    box-shadow: 0 0 0 2px #2f7d5b;
   }
 }
 @keyframes subir-suave {
@@ -280,7 +541,7 @@ body {
 /* Contorno fino dos cartões: o creme do cartão e o pérola do fundo são quase iguais, então sem
    isso as bordas somem (como as listas agrupadas do iPhone, que têm uma linha bem leve) */
 @utility borda-suave {
-  border: 1px solid rgb(28 27 31 / 0.07);
+  border: 1px solid var(--color-borda);
 }
 
 /* Tela de login (app/login): o ícone surge com um leve "pulo", o resto sobe em sequência
@@ -343,7 +604,7 @@ body {
 @utility pb-safe {
   padding-bottom: env(safe-area-inset-bottom);
 }
-/* Espaço para o conteúdo não ficar atrás da barra de abas flutuante (70px + 20px de folga + área segura) */
+/* Espaço para o conteúdo terminar acima da barra de abas fixa (76px + área segura + folga) */
 @utility pb-abas {
-  padding-bottom: calc(70px + 20px + env(safe-area-inset-bottom) + 1.5rem);
+  padding-bottom: calc(76px + env(safe-area-inset-bottom) + 1.5rem);
 }

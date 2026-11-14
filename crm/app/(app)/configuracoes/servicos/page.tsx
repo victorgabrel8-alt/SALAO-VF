@@ -99,13 +99,13 @@ export default function ServicosPage() {
     <>
       <header className="flex flex-col gap-3 px-4 pt-4">
         <Link href="/configuracoes" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m15 18-6-6 6-6" />
           </svg>
           Configurações
         </Link>
         <div>
-          <h1 className="font-serif text-[34px] leading-tight font-semibold">Serviços e preços</h1>
+          <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">Serviços e preços</h1>
           <p className="text-sm text-texto-2">A IA usa estes preços nas conversas. Toque num serviço para mudar.</p>
         </div>
       </header>
@@ -243,7 +243,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
   return (
     <Folha rotulo={servico ? "Editar serviço" : "Novo serviço"} aoFechar={aoFechar} className="bg-[var(--background)] px-5">
       <div className="flex flex-col gap-4 pt-1 pb-5">
-        <h2 className="font-serif text-[26px] leading-tight font-semibold">{servico ? "Editar serviço" : "Novo serviço"}</h2>
+        <h2 className="text-[22px] leading-tight font-bold">{servico ? "Editar serviço" : "Novo serviço"}</h2>
 
         <label className="flex flex-col gap-1.5">
           <span className="rotulo text-texto-2">Nome</span>
@@ -280,7 +280,7 @@ function EditarServico({ servico, aoFechar, aoSalvar }: { servico: Servico | nul
             <span className="text-[16px] font-semibold">Preço &quot;a partir de&quot;</span>
             <span className="text-[13px] text-texto-2">{aPartirDe ? "Use o menor valor que você cobra" : "Preço fixo, a IA fala o valor exato"}</span>
           </span>
-          <span aria-hidden className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${aPartirDe ? "bg-grafite" : "bg-neutral-300"}`}>
+          <span aria-hidden className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${aPartirDe ? "bg-grafite" : "bg-claro"}`}>
             <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${aPartirDe ? "left-7" : "left-1"}`} />
           </span>
         </button>

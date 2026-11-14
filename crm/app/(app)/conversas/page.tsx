@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TelaDaAba } from "@/components/TelaDaAba";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -99,7 +100,7 @@ const FILTROS: { chave: Filtro; rotulo: string }[] = [
 
 // Pontinho no canto do avatar: verde = IA atendendo, bronze = pausada, rosé = precisa de você
 const PONTO: Record<SituacaoIa, { cor: string; rotulo: string }> = {
-  atendendo: { cor: "bg-[#5E7A50]", rotulo: "IA atendendo" },
+  atendendo: { cor: "bg-[#2F7D5B]", rotulo: "IA atendendo" },
   pausada: { cor: "bg-bronze", rotulo: "IA pausada" },
   precisa: { cor: "bg-rose-texto", rotulo: "Precisa de você" },
 };
@@ -120,7 +121,7 @@ function AvatarComStatus({ id, nome, situacao, tamanho }: { id: string; nome: st
 // ✓✓ nas mensagens que saíram do salão (da IA ou da dona)
 function Enviada() {
   return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6E8CA0" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada" className="mr-1 inline-block shrink-0 align-[-3px]">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" role="img" aria-label="Enviada" className="mr-1 inline-block shrink-0 align-[-3px]">
       <path d="m2 13 4 4 8-9" />
       <path d="m10 16 1 1 8-9" />
     </svg>
@@ -219,7 +220,12 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
           <span className="flex min-w-0 items-center text-[14px] text-texto-2">
             {nossa && <Enviada />}
             <span className="truncate">
-              {c.ultimo_autor === "ia" && <span className="text-bronze-escuro">IA: </span>}
+              {c.ultimo_autor === "ia" && (
+                <span className="ia-tag mr-1.5 align-[1px]">
+                  <span className="ia-dot" />
+                  IA
+                </span>
+              )}
               {c.ultimo_autor === "humano" && "Você: "}
               <Previa texto={c.ultima_mensagem} />
             </span>
@@ -231,6 +237,14 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
 }
 
 export default function ConversasPage() {
+  return (
+    <TelaDaAba>
+      <ConversasPageConteudo />
+    </TelaDaAba>
+  );
+}
+
+function ConversasPageConteudo() {
   const empresa = useEmpresa();
   const [resultado, setResultado] = useState<Resultado | null>(null);
   const [versao, setVersao] = useState(0);
@@ -296,7 +310,7 @@ export default function ConversasPage() {
       {/* Título grande no fundo claro, como no iPhone */}
       <header className="flex flex-col gap-2.5 px-4 pt-6">
         <div>
-          <h1 className="font-serif text-[34px] leading-tight font-semibold">Conversas</h1>
+          <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">Conversas</h1>
           <p className="text-sm text-texto-2">
             {total.todas} {total.todas === 1 ? "conversa" : "conversas"}
             {total.precisa > 0 && (
@@ -310,7 +324,7 @@ export default function ConversasPage() {
           </p>
         </div>
         <label className="flex h-10 items-center gap-2 rounded-full bg-campo px-3.5">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8F8377" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <circle cx="11" cy="11" r="7" />
             <path d="m20 20-3.5-3.5" />
           </svg>
@@ -320,12 +334,12 @@ export default function ConversasPage() {
             placeholder="Pesquisar"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#8F8377]"
+            className="h-full min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#7A5870]"
           />
         </label>
       </header>
 
-      {!resultado && <p className="px-4 pt-5 text-texto-2">Carregando…</p>}
+      {!resultado && <p className="carregando-calmo px-4 pt-5 text-texto-2">Carregando…</p>}
       {resultado && "erro" in resultado && <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler as conversas: {resultado.erro}</p>}
 
       {/* Quem precisa de você, em bolinhas (como os stories do Instagram/Messenger) */}
@@ -333,7 +347,7 @@ export default function ConversasPage() {
         <section aria-label="Precisam de você" className="flex gap-3.5 overflow-x-auto px-4 pt-3.5 pb-1 [scrollbar-width:none]">
           {precisam.map((c) => (
             <Link key={c.cliente_id} href={`/conversas/${c.cliente_id}`} className="flex w-16 shrink-0 flex-col items-center gap-1.5 text-center text-xs text-rotulo">
-              <span className="rounded-full bg-[conic-gradient(#8A3B2B,#A88A68,#8A3B2B)] p-[3px]">
+              <span className="rounded-full bg-[conic-gradient(#7A2617,#B4432F,#7A2617)] p-[3px]">
                 <span className="block rounded-full border-2 border-perola">
                   <Avatar id={c.cliente_id} nome={c.nome} tamanho="h-[54px] w-[54px] text-xl" />
                 </span>
@@ -368,7 +382,7 @@ export default function ConversasPage() {
       </div>
 
       {resultado && "conversas" in resultado && (
-        <section>
+        <section className="chegar-suave">
           {lista.length === 0 ? (
             <p className="mx-4 mt-6 text-center text-[15px] text-texto-2">
               {busca.trim() ? "Nenhuma conversa encontrada." : "Nenhuma conversa aqui."}

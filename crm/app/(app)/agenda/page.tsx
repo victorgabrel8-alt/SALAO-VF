@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TelaDaAba } from "@/components/TelaDaAba";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
@@ -93,6 +94,14 @@ function duracao(min: number): string {
 }
 
 export default function AgendaPage() {
+  return (
+    <TelaDaAba>
+      <AgendaPageConteudo />
+    </TelaDaAba>
+  );
+}
+
+function AgendaPageConteudo() {
   const empresa = useEmpresa();
   const [dia, setDia] = useState(hojeNoSalao());
   const [resultado, setResultado] = useState<{ dia: string; dados: Dia } | null>(null);
@@ -306,29 +315,25 @@ export default function AgendaPage() {
   return (
     <>
       {/* Topo grafite: mês, resumo do dia e os dias da semana */}
-      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[32px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
-        {/* Detalhe do canto: um brilho bronze suave e dois arcos finos, no lugar do círculo cinza chapado */}
-        <span aria-hidden className="pointer-events-none absolute -top-28 -right-20 h-[240px] w-[240px] rounded-full bg-[radial-gradient(circle,rgb(168_138_104/0.26),transparent_68%)]" />
-        <span aria-hidden className="pointer-events-none absolute -top-[78px] -right-[46px] h-[176px] w-[176px] rounded-full border border-bronze/35" />
-        <span aria-hidden className="pointer-events-none absolute -top-[46px] -right-[14px] h-[112px] w-[112px] rounded-full border border-bronze/20" />
+      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[28px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
         <div className="relative flex items-end justify-between gap-3">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm text-claro">
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <span className="truncate text-[13px] font-semibold text-dourado">
               {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)} de {dia.slice(0, 4)}
               {ok && ` · ${visiveis.length === 1 ? "1 horário" : `${visiveis.length} horários`}`}
             </span>
-            <h1 className="font-serif text-[30px] leading-tight font-semibold text-white">Agenda</h1>
+            <h1 className="text-[30px] leading-tight font-bold tracking-[-0.035em] text-perola">Agenda</h1>
           </div>
           <div className="flex items-center gap-2">
             {dia !== hoje && (
-              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-bronze/50 px-4 text-[13px] font-bold text-perola active:scale-95">
+              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-white/25 px-4 text-[13px] font-bold text-perola active:scale-95">
                 Hoje
               </button>
             )}
             {/* Todas as clientes dos próximos dias e meses, numa lista só */}
             <Link
               href="/agenda/proximas"
-              className="flex h-11 items-center gap-1.5 rounded-full bg-[#D8C6AE] pr-3.5 pl-3 text-[13px] font-bold text-grafite active:scale-95"
+              className="flex h-11 items-center gap-1.5 rounded-full bg-[#FAF6F3] pr-3.5 pl-3 text-[13px] font-bold text-grafite active:scale-95"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
@@ -341,17 +346,17 @@ export default function AgendaPage() {
           <button
             onClick={() => irParaSemana(-7)}
             aria-label="Semana anterior"
-            className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
+            className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-campo/70"
           >
             ‹
           </button>
           <div className={`relative grid flex-1 gap-1.5 ${semana.length === 7 ? "grid-cols-7" : "grid-cols-6"}`}>
-            {/* Bolha bronze do dia escolhido: desliza até o dia tocado na mesma mola da barra de
+            {/* Bolha dourada do dia escolhido (única exceção à regra do ouro): desliza até o dia tocado na mesma mola da barra de
                 abas. Fica atrás dos dias (que são translúcidos), então aparece passando por baixo */}
             {bolhaDia && (
               <span
                 aria-hidden
-                className="bolha-aba pointer-events-none absolute inset-y-0 left-0 rounded-[18px] bg-bronze shadow-[0_8px_20px_rgba(0,0,0,0.35)]"
+                className="bolha-aba pointer-events-none absolute inset-y-0 left-0 rounded-[14px] bg-dourado"
                 style={{ transform: `translateX(${bolhaDia.x}px)`, width: bolhaDia.largura, transitionProperty: "transform, width" }}
               />
             )}
@@ -368,15 +373,15 @@ export default function AgendaPage() {
                   onClick={() => setDia(d)}
                   aria-pressed={escolhido}
                   aria-label={`${formatarData(d)}${bloqueioDoDia(empresa.config, d) ? " (sem atender)" : ""}`}
-                  className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[18px] transition-colors duration-300 active:scale-95 ${
+                  className={`relative flex h-[62px] flex-col items-center justify-center gap-0.5 rounded-[14px] transition-colors duration-300 active:scale-95 ${
                     escolhido
                       ? "text-grafite"
-                      : `bg-white/[0.07] text-perola ${d === hoje ? "ring-[1.5px] ring-bronze" : "ring-1 ring-bronze/25"}`
+                      : `bg-carvao text-perola ${d === hoje ? "ring-[1.5px] ring-white/40" : ""}`
                   }`}
                 >
-                  <span className="text-xs font-semibold opacity-85">{DIAS_SEMANA[semanaIdx]}</span>
+                  <span className="text-xs font-semibold opacity-85">{escolhido && d === hoje ? "Hoje" : DIAS_SEMANA[semanaIdx]}</span>
                   {/* Dia sem atender: número riscado */}
-                  <span className={`font-serif text-[22px] leading-none font-semibold ${bloqueioDoDia(empresa.config, d) ? "line-through decoration-[#C9897A] decoration-2 opacity-60" : ""}`}>
+                  <span className={`text-[18px] leading-none font-extrabold ${bloqueioDoDia(empresa.config, d) ? "line-through decoration-[#B4432F] decoration-2 opacity-60" : ""}`}>
                     {Number(d.slice(8))}
                   </span>
                   {/* Pontinho: dia com horário marcado */}
@@ -393,14 +398,14 @@ export default function AgendaPage() {
           <button
             onClick={() => irParaSemana(7)}
             aria-label="Próxima semana"
-            className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-inativo"
+            className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-campo/70"
           >
             ›
           </button>
         </div>
       </header>
 
-      <h2 className="mt-5 text-center font-serif text-[24px] font-semibold">
+      <h2 className="mt-5 text-center text-[20px] font-bold">
         Clientes do dia
         {ok && naLinha.length > 0 && <span className="ml-2 align-middle text-base font-bold text-bronze-escuro">{naLinha.length}</span>}
       </h2>
@@ -427,11 +432,11 @@ export default function AgendaPage() {
             {b.motivo && ` · ${b.motivo}`}. A IA não marca ninguém nesse período.
           </p>
         ))}
-        {!dados && <p className="text-texto-2">Carregando…</p>}
+        {!dados && <p className="carregando-calmo text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
         {ok && (
-          <>
+          <div className="chegar-suave">
             {visiveis.length === 0 && <Vazio texto="Dia livre. Nenhum horário marcado." />}
             <ol className="flex flex-col gap-3">
               {/* Concluídos e faltas: fora da linha do tempo, recolhidos; tocar mostra a lista deles */}
@@ -511,7 +516,7 @@ export default function AgendaPage() {
                 );
               })}
             </ol>
-          </>
+          </div>
         )}
       </section>
 
@@ -578,8 +583,8 @@ const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string;
   // grafite cheio pesava demais quando havia mais de uma cliente no horário)
   agora: {
     rotulo: "Agora",
-    cartao: "bg-card ring-[1.5px] ring-bronze shadow-[0_10px_26px_rgba(168,138,104,0.28)]",
-    selo: "bg-bronze text-grafite",
+    cartao: "bg-card ring-2 ring-grafite",
+    selo: "bg-grafite text-perola",
     sub: "text-texto-2",
   },
   atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
@@ -598,8 +603,8 @@ function situacaoDe(a: Atendimento): Situacao {
 
 // Círculo de concluído ao lado do cartão: vazio = a atender, ✓ = realizado, ✕ = faltou
 const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string; rotulo: string }> = {
-  agendado: { simbolo: "", classe: "border-[1.5px] border-bronze bg-card", rotulo: "Marcar como realizado" },
-  realizado: { simbolo: "✓", classe: "bg-[#5E7A50] text-white", rotulo: "Realizado (tocar desfaz)" },
+  agendado: { simbolo: "", classe: "border-[1.5px] border-claro bg-card", rotulo: "Marcar como realizado" },
+  realizado: { simbolo: "✓", classe: "bg-[#2F7D5B] text-white", rotulo: "Realizado (tocar desfaz)" },
   faltou: { simbolo: "✕", classe: "bg-rose-texto text-white", rotulo: "Faltou (tocar desfaz)" },
   cancelado: { simbolo: "–", classe: "bg-borda text-white", rotulo: "Cancelado" },
 };
@@ -678,7 +683,7 @@ function ItemLinhaDoTempo({
         className={`flex w-8 shrink-0 items-start justify-center ${resolvido ? "pt-2.5" : "pt-3.5"}`}
       >
         <span className="relative flex h-[26px] w-[26px]">
-          {celebrar && <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#5E7A50]" />}
+          {celebrar && <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#2F7D5B]" />}
           <span className={`relative flex h-full w-full items-center justify-center rounded-full text-xs font-bold ${icone.classe} ${celebrar ? "selo-pop" : ""}`}>
             {a.status === "realizado" ? (
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -717,7 +722,7 @@ function LinhaConcluidos({
         aria-expanded={aberto}
         className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[20px] border border-borda px-4 py-2.5 text-left active:scale-[0.99]"
       >
-        <span key={quantidade} className="selo-pop flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#5E7A50] text-white">
+        <span key={quantidade} className="selo-pop flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#2F7D5B] text-white">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m5 12 5 5L20 7" />
           </svg>
@@ -823,7 +828,7 @@ function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento
   return (
     <div className="rounded-[22px] bg-card p-[18px]">
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="font-serif text-2xl font-semibold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
+        <p className="text-2xl font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
         {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
       </div>
       <Intencao avaliacao={intencao} />
