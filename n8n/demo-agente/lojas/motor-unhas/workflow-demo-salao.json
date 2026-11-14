@@ -1271,7 +1271,7 @@
         "description": "Consulta a agenda do salão e devolve 2 horários para oferecer (um de manhã e um de tarde, quando há) e o QUADRO DO DIA (manhã, almoço e tarde), só para você tirar 1 ou 2 inícios novos se a cliente pedir outros horários. Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-agenda-id",
+          "value": "zya8BmibMoptM61b",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1414,7 +1414,7 @@
         "description": "=Lista os horários futuros desta cliente (marcados pela IA ou pela {{ $('Loja').first().json.dona }}). SEMPRE use quando ela perguntar o horário dela (\"que horas é meu horário?\", \"que dia marquei?\"), mesmo se a ficha já mostrar um: a ficha pode estar desatualizada. Use também antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-agenda-id",
+          "value": "zya8BmibMoptM61b",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1555,7 +1555,7 @@
         "description": "MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo agendamento passa para o novo horário). Use sempre que ela quiser remarcar/trocar/mudar/adiantar/atrasar o horário. NUNCA use criar_agendamento para remarcar. Só diga que remarcou se a resposta começar com REMARCADO.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-agenda-id",
+          "value": "zya8BmibMoptM61b",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1698,7 +1698,7 @@
         "description": "Cancela (remove da agenda) um agendamento que a cliente já tem. Use só depois que ela confirmar que quer cancelar. Só diga que cancelou se a resposta começar com CANCELADO.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-agenda-id",
+          "value": "zya8BmibMoptM61b",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1840,7 +1840,7 @@
         "description": "Cria um agendamento NOVO na agenda do salão. Use SOMENTE depois que a cliente escolheu um dos horários de consultar_horarios_livres e confirmou serviço e nome. NÃO use para remarcar (para isso existe remarcar_agendamento). Se a resposta não começar com AGENDADO, o horário NÃO foi marcado. Se a loja pede sinal por Pix, só grava depois que a cliente mandou a foto do comprovante (o sistema confere); senão volta NÃO AGENDADO com o motivo.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-agenda-id",
+          "value": "zya8BmibMoptM61b",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1986,7 +1986,7 @@
         "description": "=Passa a conversa para a {{ $('Loja').first().json.dona }} e PAUSA a IA para esta cliente por 12h. A {{ $('Loja').first().json.dona }} recebe no WhatsApp o resumo e o link da conversa no app, para não precisar ler tudo. Use nos casos do bloco QUANDO PRECISA DA {{ $('Loja').first().json.dona_maiuscula }} (passar a conversa). Dúvida que só a {{ $('Loja').first().json.dona }} decide (levar cachorro, criança, atraso, serviço fora da tabela) é perguntar_para_gleide, que não pausa, MESMO que a cliente diga \"quero falar com a {{ $('Loja').first().json.dona }}\" por causa disso: a resposta da {{ $('Loja').first().json.dona }} chega sozinha para a cliente.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-pausa-id",
+          "value": "un0EwFQNep6dCUry",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2234,7 +2234,7 @@
         "description": "Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse dela (serviço, mão ou pé, gel ou alongamento, cor, ocasião) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente. Quando a cliente combinar de voltar a falar numa data (\"semana que vem te falo\", \"segunda ou terça te aviso\", \"depois do dia 10 eu vejo\"), preencha data_retorno e assunto_retorno. Sem dia ou prazo dito por ela (\"entro em contato\", \"vou ver\", \"depois te falo\"), deixe vazio: nunca invente uma data. A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-crm-id",
+          "value": "JLnT7FZ2LXVmVGAh",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3100,7 +3100,7 @@
         "description": "=Manda para a cliente um ÁUDIO pronto (voz de terceiro, não diga que é a {{ $('Loja').first().json.dona }}) explicando um assunto (temas em ÁUDIOS PRONTOS, no fim das instruções). Use quando a pergunta dela for exatamente sobre um desses temas. A resposta diz se o áudio foi enviado e o que ele fala.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-audios-id",
+          "value": "T3GCNFQfOAFLy7Hz",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3328,7 +3328,7 @@
         "description": "=Pergunta à {{ $('Loja').first().json.dona }} uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Nunca use para agendamento: dia, horário, passar sem marcar, plantão ou falta de tempo você resolve sozinha. Coisas de bom senso (levar o filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à cliente sozinha. Use quando não for preciso a {{ $('Loja').first().json.dona }} assumir a conversa. Para reclamação, dor ou pedido de falar com ela, use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à {{ $('Loja').first().json.dona }}, sem prometer valor.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-pergunta-id",
+          "value": "IlcixkEZGmaQLyAL",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4457,7 +4457,7 @@
         "description": "Manda para a cliente o link do catálogo do studio no WhatsApp, com os serviços e fotos dos trabalhos. Use quando ela pedir o catálogo, fotos de trabalhos ou a lista de serviços. Preço você responde em texto. A resposta diz se foi enviado (FOTOS ENVIADAS / CATÁLOGO NÃO ENVIADO).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-catalogo-id",
+          "value": "dcP3qCjdCZEIbFAt",
           "mode": "id"
         },
         "workflowInputs": {
@@ -6537,6 +6537,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "mC3mr8auBX4MiFz9"
   }
 }

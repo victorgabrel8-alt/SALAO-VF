@@ -920,7 +920,7 @@
         "description": "Procura clientes pelo nome ou telefone; acha também nome escrito ou falado um pouco diferente (aí vem nome_aproximado = true). Devolve id, telefone, status, etapa do funil, pré-avaliação, valor orçado, observações e os horários marcados (com agendamento_id).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1323,7 +1323,7 @@
         "description": "Lista os horários de um dia (com agendamento_id, hora, fim, cliente, serviço, status, se chegou e serviços a mais).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1726,7 +1726,7 @@
         "description": "=Grava como foi uma avaliação que a {{ $('Loja').first().json.dona }} contou (fechou, ficou de pensar, não fechou). Use na hora, sem pedir confirmação; gravar de novo corrige a anterior.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2142,7 +2142,7 @@
         "description": "=Marca um horário como realizado (veio), faltou ou cancelado. Veio ou faltou que a {{ $('Loja').first().json.dona }} contou: use na hora. Cancelado: só depois do sim dela.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2548,7 +2548,7 @@
         "description": "=Registra um atendimento que já aconteceu e não estava na agenda (cliente veio sem marcar). Use na hora quando a {{ $('Loja').first().json.dona }} contar.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2956,7 +2956,7 @@
         "description": "=Acrescenta uma anotação na ficha da cliente (alergia, preferência, combinado). Não apaga as anteriores. Use na hora quando a {{ $('Loja').first().json.dona }} mandar anotar.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3361,7 +3361,7 @@
         "description": "=Cliente atrasada que NÃO veio: marca falta e oferece o resto do horário para quem tem horário mais tarde hoje. Só use quando a {{ $('Loja').first().json.dona }} disser \"libera\" ou \"não veio\" para essa cliente. Nunca por conta própria.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3850,7 +3850,7 @@
         "description": "Horários livres de um dia para um serviço, de 30 em 30 min (mesmas regras do app: expediente, almoço, dias sem atender, sem encavalar).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4255,7 +4255,7 @@
         "description": "=Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Use na hora quando a {{ $('Loja').first().json.dona }} mandou marcar e disse cliente, dia, hora e serviço; se foi ideia sua, só depois do sim dela. Nunca use para conseguir falar com uma cliente: para isso existe chamar_cliente.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4665,7 +4665,7 @@
         "description": "Muda quanto tempo leva um horário JÁ marcado, sem mudar o início (ex.: \"a da Vitória vai levar só uma hora e meia\"). Pode usar direto quando ela disse qual horário e quanto tempo.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -5071,7 +5071,7 @@
         "description": "Muda o horário (e o serviço, se ela pedir) do MESMO agendamento. Pode usar direto quando ela disse qual horário e para quando.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -5478,7 +5478,7 @@
         "description": "=Empurra (ou adianta, minutos negativos) todos os horários a atender do dia a partir de uma hora. Só use DEPOIS do sim da {{ $('Loja').first().json.dona }}.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -5883,7 +5883,7 @@
         "description": "=O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Use na hora quando a {{ $('Loja').first().json.dona }} contar que atendeu.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -6290,7 +6290,7 @@
         "description": "A cliente chegou ao salão (botão \"Chegou\" do app): a IA não cobra atraso dela.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -6695,7 +6695,7 @@
         "description": "=Apaga de vez um horário lançado por engano (cliente que desmarcou é status_atendimento cancelado). Só use DEPOIS do sim da {{ $('Loja').first().json.dona }}.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -7099,7 +7099,7 @@
         "description": "=Marca dias sem atender (viagem, folga, curso): o app e a IA de atendimento param de oferecer horário. Devolve os horários já marcados nesses dias. Só use DEPOIS do sim da {{ $('Loja').first().json.dona }}.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -7504,7 +7504,7 @@
         "description": "=Tira o bloqueio que cobre um dia (o salão volta a atender). Só use DEPOIS do sim da {{ $('Loja').first().json.dona }}.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -7907,7 +7907,7 @@
         "description": "=Marca um período sem atender num dia (ex.: das 14:00 às 16:00): o app e a IA de atendimento param de oferecer esse período. Devolve os horários já marcados nele. Só use DEPOIS do sim da {{ $('Loja').first().json.dona }}.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -8313,7 +8313,7 @@
         "description": "=Tira os períodos sem atender de um dia; com hora_inicio, só o que cobre essa hora. Só use DEPOIS do sim da {{ $('Loja').first().json.dona }}.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -8717,7 +8717,7 @@
         "description": "Lista os períodos sem atender de um dia ou, sem data, de hoje em diante.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -9120,7 +9120,7 @@
         "description": "Pausa por 12 h (ou reativa) a IA de atendimento para uma cliente, como no app.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -9525,7 +9525,7 @@
         "description": "=Corrige o nome ou grava o aniversário da cliente, quando a {{ $('Loja').first().json.dona }} pedir.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -9930,7 +9930,7 @@
         "description": "Salva uma cliente na lista, sem criar horário e sem mandar mensagem. Se o número já existir, usa a ficha que já existe. Devolve o cliente_id.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -10335,7 +10335,7 @@
         "description": "=Manda pelo número do salão uma mensagem para uma cliente, sem precisar de horário. Use quando a {{ $('Loja').first().json.dona }} pediu para falar com a cliente (o pedido dela já é o sim).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -10740,7 +10740,7 @@
         "description": "=Marca um dia para a IA de atendimento mandar mensagem para a cliente (\"dá um toque nela em janeiro\", \"chama ela dia 20\"). Nesse dia a IA manda sozinha, de manhã. Um por cliente: marcar de novo troca a data. Use quando a {{ $('Loja').first().json.dona }} pediu (o pedido dela já é o sim).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -11146,7 +11146,7 @@
         "description": "=Manda mensagem para a cliente pelo número do salão sobre um horário dela. Use quando a {{ $('Loja').first().json.dona }} pediu (o pedido dela já é o sim).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -11552,7 +11552,7 @@
         "description": "=Guarda uma regra fixa que a {{ $('Loja').first().json.dona }} pediu para você seguir sempre (\"a partir de agora…\", \"sempre que…\", \"nunca mais…\"). Fica valendo até ela pedir para tirar. Só para o jeito de VOCÊ trabalhar; regra para a IA de atendimento das clientes você não consegue mudar.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -11955,7 +11955,7 @@
         "description": "=Tira uma regra fixa que a {{ $('Loja').first().json.dona }} não quer mais.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -12529,7 +12529,7 @@
         "description": "=Lista as dúvidas de clientes que a {{ $('Loja').first().json.dona }} já respondeu e que a IA de atendimento responde sozinha (numeradas). Use quando ela perguntar o que a IA aprendeu, o que está guardado, ou antes de tirar uma.",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -12931,7 +12931,7 @@
         "description": "=Tira uma resposta guardada: a IA de atendimento volta a perguntar à {{ $('Loja').first().json.dona }} quando alguma cliente tiver essa dúvida. Use quando ela disser \"esquece a resposta sobre…\", \"isso não vale mais\", \"apaga essa\".",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -13334,7 +13334,7 @@
         "description": "Guarda uma resposta para a IA de atendimento usar com as clientes (\"quando perguntarem X, responde Y\", \"pode avisar que…\"). Só informação e regra do salão; NÃO use para preço (preço fica em Serviços e preços no app).",
         "workflowId": {
           "__rl": true,
-          "value": "PENDENTE.workflow-assistente-ferramentas-id",
+          "value": "4Wn0XP75OOPQaGkl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -14713,6 +14713,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "saveManualExecutions": true
+    "saveManualExecutions": true,
+    "errorWorkflow": "mC3mr8auBX4MiFz9"
   }
 }
