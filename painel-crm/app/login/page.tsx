@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { supabase, supabaseConfigurado } from "@/lib/supabase/client";
-import { SALAO } from "@/lib/config";
+import { LogoOi } from "@/components/Logo";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -30,10 +30,11 @@ export default function LoginPage() {
     <main className="flex min-h-dvh flex-col justify-center px-6 pt-safe pb-safe">
       <div className="mx-auto w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={SALAO.icone} alt="" className="mx-auto h-20 w-20 rounded-2xl" />
-          <h1 className="font-serif text-[40px] leading-tight font-semibold">{SALAO.nomeApp}</h1>
-          <p className="text-lg text-texto-2">Entre para ver suas clientes</p>
+          <div className="flex justify-center">
+            <LogoOi tamanho={44} />
+          </div>
+          <h1 className="pt-4 font-serif text-[30px] leading-tight">Painel da agência</h1>
+          <p className="text-[17px] text-texto-2">Entre para ver as lojas e as clientes</p>
         </div>
 
         {!supabaseConfigurado && (

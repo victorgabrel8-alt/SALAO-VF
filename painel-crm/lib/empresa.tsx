@@ -82,7 +82,7 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
   return <EmpresaContext value={{ empresa, empresas: estado.empresas, trocar }}>{children}</EmpresaContext>;
 }
 
-function usePainel(): Painel {
+export function usePainel(): Painel {
   const painel = useContext(EmpresaContext);
   if (!painel) throw new Error("useEmpresa precisa estar dentro do EmpresaProvider");
   return painel;

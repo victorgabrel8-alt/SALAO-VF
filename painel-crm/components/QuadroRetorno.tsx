@@ -342,7 +342,7 @@ function Card({
       }}
       onDragEnd={aoSoltar}
       onClick={aoAbrir}
-      className={`cursor-grab rounded-2xl border border-grafite/10 bg-card p-4 shadow-[0_1px_2px_rgba(33,22,16,0.05),0_4px_14px_rgba(33,22,16,0.05)] transition hover:shadow-md active:cursor-grabbing ${
+      className={`cursor-grab rounded-2xl border border-borda bg-card p-4 transition hover:shadow-md active:cursor-grabbing ${
         arrastado ? "opacity-40" : ""
       }`}
     >

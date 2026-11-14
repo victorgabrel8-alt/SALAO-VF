@@ -115,7 +115,7 @@ export function PainelManutencao({ busca }: { busca: string }) {
                 {linhas.length} {linhas.length === 1 ? "cliente" : "clientes"} · {f.detalhe}
               </span>
             </h2>
-            <div className="overflow-hidden rounded-2xl border border-grafite/10 bg-card shadow-[0_1px_2px_rgba(33,22,16,0.05),0_4px_14px_rgba(33,22,16,0.05)]">
+            <div className="overflow-hidden rounded-2xl border border-borda bg-card">
               <table className="w-full text-left">
                 <thead className="bg-campo/60 text-sm text-texto-2">
                   <tr>

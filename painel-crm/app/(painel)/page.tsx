@@ -160,7 +160,7 @@ function Crm() {
     <>
       <div className="flex items-end justify-between gap-4 pt-8 pb-4">
         <div>
-          <h1 className="font-serif text-[40px] leading-tight font-semibold">Clientes</h1>
+          <h1 className="font-serif text-[30px] leading-tight">Clientes</h1>
           <p className="text-texto-2">
             {contagem ? `${contagem.todas} clientes` : "…"} · {empresa.nome}
           </p>
@@ -265,7 +265,7 @@ function Crm() {
           {erroAcao && <p className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">{erroAcao}</p>}
           {lista?.erro && <p className="rounded-xl bg-rose p-4 text-rose-texto">Erro ao ler as clientes: {lista.erro}</p>}
 
-          <div className="overflow-hidden rounded-2xl border border-grafite/10 bg-card shadow-[0_1px_2px_rgba(33,22,16,0.05),0_4px_14px_rgba(33,22,16,0.05)]">
+          <div className="overflow-hidden rounded-2xl border border-borda bg-card">
             <table className="w-full text-left">
               <thead className="bg-campo/60 text-sm text-texto-2">
                 <tr>

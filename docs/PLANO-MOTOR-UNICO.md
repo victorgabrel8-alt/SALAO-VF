@@ -267,6 +267,19 @@ tolerada pelo fluxo. O texto do alerta foi conferido rodando o código gerado co
 **Painel: WhatsApp repetido (14/11).** O pedido de cadastro avisa quando o WhatsApp informado já é o número da
 dona de outra loja. Conferido na tela com um pedido de teste.
 
+**Painel com a identidade Oi Studio (15/11).** Pedido do Victor: mais simples, intuitivo e com cores melhores.
+- Base de design: a especificação `oi-studio-design-handoff.md`, a mesma do app da dona (Ônix e Porcelana, fonte
+  Manrope, cartão branco com borda e sem sombra, ouro só no pingo da logo e na etiqueta IA). Os nomes antigos de
+  cor do painel continuam valendo e apontam para as cores novas (`painel-crm/app/globals.css`).
+- Cores de dados (etapas do quadro de clientes): quatro cores em ordem fixa, conferidas para daltonismo.
+- Menu lateral em dois níveis: AGÊNCIA (Lojas) e SALÃO (o salão escolhido, com Clientes e Serviços).
+- Tela Lojas lida de cima para baixo: resumo com quatro números (lojas no ar, em implantação, pedidos de cadastro,
+  conversas do mês com custo estimado de IA); pedidos de cadastro; lojas em implantação, cada uma com os três
+  passos (conectar o WhatsApp, dona preenche o app, testar e liberar) e o próximo passo em destaque; lojas no ar em
+  linhas, com o uso do mês contra o teto. Nova loja, QR e ajustes abrem numa folha por cima e fecham com Esc.
+- Conferido no navegador: Lojas, Clientes, Serviços, folha Nova loja e folha de ajustes (salvar funcionou).
+- Não revisto tela a tela: a ficha da cliente e o quadro de manutenção só ganharam as cores e a fonte novas.
+
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
 - [ ] Modelo **Unhas**, a partir do prompt da Caroline, sem o que é só dela

@@ -1,47 +1,66 @@
 @import "tailwindcss";
 
-/* "Neutros vivos": a mesma família do app da dona. 90% neutro quente, 10% cor (cobre). */
+/* Identidade Oi Studio (oi-studio-design-handoff.md), a mesma do app da dona: quase só Ônix e Porcelana,
+   uma fonte (Manrope), cartão branco com borda e sem sombra, ouro raro.
+   Os nomes antigos (grafite, perola, card, campo, cobre...) continuam valendo para não espalhar troca pelas
+   telas, mas agora apontam para as cores novas. */
 @theme {
-  /* Neutros quentes */
-  --color-perola: #f3eadf;      /* fundo da página */
-  --color-card: #fffaf4;        /* cartões, tabela, topo, campos, botões secundários */
-  --color-campo: #ece0d0;       /* colunas do quadro, cabeçalho da tabela, hover, controle segmentado */
-  --color-borda: #dfcfbb;       /* contorno de campos, botões e divisórias fortes */
-  --color-grafite: #211c1a;     /* texto principal, logo */
-  --color-texto-2: #685a4f;     /* texto secundário (5.6:1 no pérola) */
-  --color-inativo: #9a8a7c;     /* só ícones decorativos e o separador "|" dos filtros, nunca texto */
+  /* Base */
+  --color-onix: #1b1719;
+  --color-porcelana: #faf6f3;
+  --color-perola: #faf6f3;      /* fundo da página (Porcelana) */
+  --color-card: #ffffff;        /* cartões, tabela, campos, botões secundários */
+  --color-campo: #efe6e1;       /* Pérola: cartões secundários, chips neutros, cabeçalho de tabela, hover */
+  --color-borda: #e4d9d3;       /* borda de cartão e divisores */
+  --color-borda-forte: #c9bbb3; /* borda de botão secundário, tracejados */
+  --color-grafite: #1b1719;     /* Ônix: texto principal, botão principal, menu */
+  --color-carvao: #2b2629;      /* item sobre fundo Ônix */
+  --color-texto-2: #4a3c45;     /* descrições */
+  --color-apoio: #7a5870;       /* rótulos, datas, item inativo do menu */
+  --color-inativo: #c9bbb3;     /* só detalhe decorativo, nunca texto */
+  --color-dourado: #d8bd8a;     /* só sobre Ônix: pingo da logo, ponto da etiqueta IA */
+  --color-ouro-antigo: #94702e; /* o mesmo pingo em fundo claro (só gráfico) */
 
-  /* Marca */
-  --color-cobre: #b8764a;       /* cor principal: chip ativo (texto grafite), anéis de foco, borda de arraste */
-  --color-cobre-escuro: #8a4f2a;/* cobre como TEXTO: links, seta dos cards, "Ver ficha" */
-  --color-cobre-claro: #f1dcc6; /* realce: linha selecionada, coluna sob arraste, etiquetas */
+  /* Antigos nomes de "cobre": o caramelo saiu */
+  --color-cobre: #94702e;       /* só marca de dado (barra, ponto) */
+  --color-cobre-escuro: #7a5870;/* links e rótulos de apoio */
+  --color-cobre-claro: #efe6e1; /* realce neutro: linha selecionada, etiqueta */
 
-  /* Acentos (pouco) */
-  --color-terracota: #c4613f;
-  --color-salvia-viva: #6c8a58;
-  --color-mel-vivo: #d9a03a;
-  --color-nevoa-viva: #5d7f8a;
+  /* Estados: fundo / texto. Sálvia = tudo certo, mel = atenção leve, rosé = precisa de alguém */
+  --color-rose: #f6e4df;   --color-rose-texto: #7a2617;
+  --color-salvia: #e1efe8; --color-salvia-texto: #1f5c42;
+  --color-mel: #f5ead2;    --color-mel-texto: #6b4a12;
+  --color-taupe: #efe6e1;  --color-taupe-texto: #4a3c45;
+  --color-atencao: #b4432f;
+  --color-ok: #2f7d5b;
 
-  /* Pares fundo / texto */
-  --color-rose: #f6ddd3;   --color-rose-texto: #8e3a26;
-  --color-salvia: #e1e8d6; --color-salvia-texto: #3a5230;
-  --color-mel: #f7e5bf;    --color-mel-texto: #6f4d12;
-  --color-taupe: #eadccb;  --color-taupe-texto: #5c4330;
+  /* Acentos antigos, agora nas cores de estado */
+  --color-terracota: #b4432f;
+  --color-salvia-viva: #2f7d5b;
+  --color-mel-vivo: #eda100;
+  --color-nevoa-viva: #2a78d6;
 
-  /* Status (pontinhos) */
-  --color-status-em-dia: #6c8a58;
-  --color-status-chegando: #d9a03a;
-  --color-status-atrasada: #d97a3c;
-  --color-status-inativa: #a63b2e;
-  --color-status-sem-visita: #cdbfae;
+  /* Status das clientes (pontinhos, sempre com o nome ao lado) */
+  --color-status-em-dia: #2f7d5b;
+  --color-status-chegando: #eda100;
+  --color-status-atrasada: #ec835a;
+  --color-status-inativa: #b4432f;
+  --color-status-sem-visita: #c9bbb3;
 
-  --font-sans: var(--fonte-jost), system-ui, sans-serif;
-  --font-serif: var(--fonte-cormorant), Georgia, serif;
+  /* Cores de dados (etapas do quadro): ordem fixa, conferida para daltonismo (azul, laranja, verde-água, amarelo) */
+  --color-serie-1: #2a78d6;
+  --color-serie-2: #eb6834;
+  --color-serie-3: #1baf7a;
+  --color-serie-4: #eda100;
+
+  /* Uma fonte só: Manrope (variável criada pelo next/font no layout) */
+  --font-sans: var(--fonte-manrope), system-ui, sans-serif;
+  --font-serif: var(--fonte-manrope), system-ui, sans-serif;
 }
 
 :root {
-  --background: #f3eadf;
-  --foreground: #211c1a;
+  --background: #faf6f3;
+  --foreground: #1b1719;
   color-scheme: light;
 }
 
@@ -52,15 +71,46 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* A Cormorant desenha o "1" como um "I": números alinhados nos títulos */
+/* Títulos: a fonte com serifa saiu; font-serif agora é Manrope com o desenho dos títulos */
 .font-serif {
-  font-variant-numeric: lining-nums;
+  letter-spacing: -0.03em;
+  font-weight: 700;
 }
 
-/* Opção escolhida (filtros, serviço, status...): cobre cheio com texto grafite */
+/* Rótulo pequeno em MAIÚSCULAS, bem espaçado ("LOJAS NO AR") */
+@utility rotulo {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-apoio);
+}
+
+/* Etiqueta "IA": marca o que a IA fez ou está fazendo sozinha */
+@utility ia-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--color-onix);
+  color: var(--color-porcelana);
+  border-radius: 999px;
+  padding: 2px 8px 2px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+@utility ia-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-dourado);
+}
+
+/* Opção escolhida (filtros, serviço, status...): Ônix cheio com texto Porcelana */
 @utility chip-ativo {
-  background: var(--color-cobre);
-  color: var(--color-grafite);
+  background: var(--color-onix);
+  color: var(--color-porcelana);
 }
 
 /* Área segura do iPhone (notch e barra inferior) */
