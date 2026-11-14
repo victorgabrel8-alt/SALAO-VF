@@ -815,7 +815,10 @@ if (LOJA) {
   lojas.dadosDoSalao(workflow);
   lojas.tirarOrcamentoCabelo(workflow, LOJA);
   // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
-  if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
+  // sinal_sem_bloco (loja.json): o sistema confere o comprovante, mas as regras da conversa ficam no prompt da loja
+  // (como na Gleide). O modelo de mega hair usa: o prompt lê o sinal de cada loja em "SINAL DA LOJA".
+  if (LOJA.sinal_pix && LOJA.sinal_sem_bloco) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA, semBloco: true, dona: 'Gleide' });
+  else if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
   // Google Agenda da dona também ocupa horário (google-agenda.js), até as clientes dela estarem todas no app
   // preco_livre (loja.json): o filtro "valor só quando a cliente pergunta" é regra da Gleide. Na loja de ticket baixo
   // o preço e o valor do sinal saem sempre (Marcia, 12/11: a IA escreveu "A manicure fica R$ 50" e "sinal de R$ 20"

@@ -237,7 +237,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ $('Supabase: gravar agendamento').item.json.id ? 'AGENDADO com sucesso na agenda do salão: ' + $('Calcular').item.json.quando + '. Agora confirme para a cliente o serviço, o dia e a hora.' : 'NÃO AGENDADO: a agenda falhou ao gravar. Peça desculpas e use transferir_para_humano para a equipe marcar.' }}",
+              "value": "={{ (() => { const g = $('Supabase: gravar agendamento').item.json.id; const mo = $('Montar agendamento').first().json; const s = mo.sinal || {}; const f = (v) => Number(v || 0).toFixed(2).replace('.', ','); const base = ($('Supabase: gravar agendamento').item.json.id ? 'AGENDADO com sucesso na agenda do salão: ' + $('Calcular').item.json.quando + '. Agora confirme para a cliente o serviço, o dia e a hora.' : 'NÃO AGENDADO: a agenda falhou ao gravar. Peça desculpas e use transferir_para_humano para a equipe marcar.'); if (g && mo.corpo && mo.corpo.sinal_codigo) return base + ' SINAL: o comprovante de R$ ' + f(mo.corpo.sinal_valor) + ' foi conferido e ficou registrado no agendamento. Diga que o sinal fica descontado do valor no dia.'; const motivos = { sem_comprovante: () => 'NÃO AGENDADO: ainda não chegou a foto do comprovante do Pix do sinal. Se ainda não passou, passe o valor do sinal e a chave Pix e peça o print do comprovante. Só chame criar_agendamento de novo depois que a foto chegar.', ja_usado: () => 'NÃO AGENDADO: o comprovante que ela mandou já foi usado para outro horário. Peça com educação o comprovante do Pix deste horário.', valor: () => 'NÃO AGENDADO: o comprovante é de R$ ' + f(s.valor_pago) + ', menor que o sinal de R$ ' + f(s.valor_sinal) + ('. Explique com educação o valor do sinal. Se ela fizer outro Pix para completar, use transferir_para_humano para a ' + $('Loja').first().json.dona + ' conferir.'), recebedor: () => 'NÃO AGENDADO: o Pix do comprovante não foi para a conta do salão (recebedor no comprovante: ' + ((s.comprovante || {}).recebedor || 'não aparece') + '). Sem acusar, pergunte se ela usou a chave certa e passe a chave de novo.', data: () => 'NÃO AGENDADO: o comprovante é de outra data (' + ((s.comprovante || {}).data || 'sem data') + '). Peça o comprovante do Pix feito para este horário.', situacao: () => 'NÃO AGENDADO: o comprovante mostra o Pix como agendado ou pendente, ainda não caiu. Peça o comprovante quando o Pix for concluído.', ilegivel: () => 'NÃO AGENDADO: não deu para ler o valor no comprovante. Peça um print mais nítido, com o comprovante inteiro.', suspeito: () => 'NÃO AGENDADO: o comprovante parece recortado ou editado. Sem acusar, peça o print inteiro do comprovante. Se ela mandar de novo e continuar assim, use transferir_para_humano.', erro: () => 'NÃO AGENDADO: não consegui conferir o comprovante agora. Peça desculpas e use transferir_para_humano.' }; if (!g && mo.motivoSinal) return (motivos[mo.motivoSinal] || motivos.erro)(); return base; })() }}",
               "type": "string"
             }
           ]
@@ -561,7 +561,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "\n// Serviço: o da lista do Supabase mais parecido com o que a IA escreveu, pela proporção de\n// palavras em comum (desempata nomes parecidos: \"Manutenção de queratina\" -> \"Manutenção – queratina\",\n// \"Mega hair com queratina\" -> \"Aplicação de mega hair – queratina\"). Sem nada parecido: fica sem\n// serviço e o nome vai nas observações (o CRM mostra; a a dona ajusta no ✓).\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));\nconst pedido = $('Preparar').first().json;\nconst horario = $('Calcular').first().json.evento;\nconst cliente = $('Supabase: cliente e serviços').first().json;\nconst servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);\nconst prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);\nconst alvo = palavras(pedido.servico);\n// A IA às vezes manda só \"Queratina\" e deixa o \"manutenção\" no motivo (\"manutenção queratina\"):\n// sem isso virava a aplicação (240 min, outro preço e outro retorno)\nif (!alvo.includes('manutencao') && palavras(pedido.motivo).includes('manutencao')) alvo.push('manutencao');\nlet melhor = null, nota = 0;\n// Manutenção só se o pedido falar em manutenção (\"Tela adesiva\" é aplicação). E precisa de pelo menos\n// uma palavra em comum que não seja genérica (\"Corte de cabelo\" não vira \"Visita para escolher cabelo\").\nconst GENERICAS = ['cabelo', 'mega', 'hair'];\n// e o contrário: pediu manutenção, só serviço de manutenção (\"Manutenção de mega hair – mão de obra\" tem mais\n// palavras em comum com \"Aplicação de mega hair – mão de obra\" do que com \"Manutenção – mão de obra\")\nconst temManutencao = servicos.some((s) => palavras(s.nome).includes('manutencao'));\nfor (const s of servicos) {\n  const ps = palavras(s.nome);\n  if (ps.includes('manutencao') && !alvo.includes('manutencao')) continue;\n  if (!ps.includes('manutencao') && alvo.includes('manutencao') && temManutencao) continue;\n  const comuns = ps.filter((p) => alvo.includes(p));\n  if (!comuns.some((p) => !GENERICAS.includes(p))) continue;\n  const n = comuns.length / new Set([...ps, ...alvo]).size;\n  if (n > nota) { melhor = s; nota = n; }\n}\n// mão de obra é um serviço só para qualquer técnica (supabase/021): \"Mega hair com queratina\", \"Fita adesiva\"\n// sem nada parecido vira a aplicação (ou a manutenção, se pediu manutenção)\nconst TECNICA = ['mega', 'hair', 'queratina', 'fita', 'tela', 'adesiva', 'costurada', 'ponto', 'americano', 'aplicacao'];\nif (!melhor && alvo.some((p) => TECNICA.includes(p)))\n  melhor = servicos.find((s) => palavras(s.nome).includes(alvo.includes('manutencao') ? 'manutencao' : 'aplicacao')) || null;\n// a ficha é criada na 1ª mensagem (n8n_registrar_entrada); sem ela não há onde marcar\nif (!cliente.id) return [{ json: { pular: true, motivo: 'cliente não está no Supabase' } }];\nconst obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');\nreturn [{ json: { pular: false, corpo: {\n  empresa_id: ('' + $('Loja').first().json.empresa_id + ''), cliente_id: cliente.id, servico_id: melhor ? melhor.id : null,\n  profissional_id: prof[0] ? prof[0].id : null,\n  inicio: horario.start.dateTime, fim: horario.end.dateTime,\n  status: 'agendado', origem: 'ia', observacoes: obs || null,\n} } }];\n"
+        "jsCode": "\n// Serviço: o da lista do Supabase mais parecido com o que a IA escreveu, pela proporção de\n// palavras em comum (desempata nomes parecidos: \"Manutenção de queratina\" -> \"Manutenção – queratina\",\n// \"Mega hair com queratina\" -> \"Aplicação de mega hair – queratina\"). Sem nada parecido: fica sem\n// serviço e o nome vai nas observações (o CRM mostra; a a dona ajusta no ✓).\nconst sem = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');\nconst palavras = (s) => sem(s).split(/[^a-z0-9]+/).filter((p) => p.length > 2 && !['com', 'para', 'das', 'dos', 'que'].includes(p));\nconst pedido = $('Preparar').first().json;\nconst horario = $('Calcular').first().json.evento;\nconst cliente = $('Supabase: cliente e serviços').first().json;\nconst servicos = $('Supabase: serviços').all().map((i) => i.json).filter((s) => s.id);\nconst prof = $('Supabase: profissionais').all().map((i) => i.json).filter((p) => p.id);\nconst alvo = palavras(pedido.servico);\n// A IA às vezes manda só \"Queratina\" e deixa o \"manutenção\" no motivo (\"manutenção queratina\"):\n// sem isso virava a aplicação (240 min, outro preço e outro retorno)\nif (!alvo.includes('manutencao') && palavras(pedido.motivo).includes('manutencao')) alvo.push('manutencao');\nlet melhor = null, nota = 0;\n// Manutenção só se o pedido falar em manutenção (\"Tela adesiva\" é aplicação). E precisa de pelo menos\n// uma palavra em comum que não seja genérica (\"Corte de cabelo\" não vira \"Visita para escolher cabelo\").\nconst GENERICAS = ['cabelo', 'mega', 'hair'];\n// e o contrário: pediu manutenção, só serviço de manutenção (\"Manutenção de mega hair – mão de obra\" tem mais\n// palavras em comum com \"Aplicação de mega hair – mão de obra\" do que com \"Manutenção – mão de obra\")\nconst temManutencao = servicos.some((s) => palavras(s.nome).includes('manutencao'));\nfor (const s of servicos) {\n  const ps = palavras(s.nome);\n  if (ps.includes('manutencao') && !alvo.includes('manutencao')) continue;\n  if (!ps.includes('manutencao') && alvo.includes('manutencao') && temManutencao) continue;\n  const comuns = ps.filter((p) => alvo.includes(p));\n  if (!comuns.some((p) => !GENERICAS.includes(p))) continue;\n  const n = comuns.length / new Set([...ps, ...alvo]).size;\n  if (n > nota) { melhor = s; nota = n; }\n}\n// mão de obra é um serviço só para qualquer técnica (supabase/021): \"Mega hair com queratina\", \"Fita adesiva\"\n// sem nada parecido vira a aplicação (ou a manutenção, se pediu manutenção)\nconst TECNICA = ['mega', 'hair', 'queratina', 'fita', 'tela', 'adesiva', 'costurada', 'ponto', 'americano', 'aplicacao'];\nif (!melhor && alvo.some((p) => TECNICA.includes(p)))\n  melhor = servicos.find((s) => palavras(s.nome).includes(alvo.includes('manutencao') ? 'manutencao' : 'aplicacao')) || null;\n// a ficha é criada na 1ª mensagem (n8n_registrar_entrada); sem ela não há onde marcar\nif (!cliente.id) return [{ json: { pular: true, motivo: 'cliente não está no Supabase' } }];\nconst sinal = $('Supabase: conferir sinal').first().json || {};\nif (typeof sinal.exige !== 'boolean') return [{ json: { pular: true, motivoSinal: 'erro', sinal } }];\nif (sinal.exige && !sinal.ok) return [{ json: { pular: true, motivoSinal: sinal.motivo || 'sem_comprovante', sinal } }];\nconst obs = [melhor ? null : 'Serviço pedido: ' + pedido.servico, pedido.motivo || null].filter(Boolean).join(' · ');\nreturn [{ json: { pular: false, corpo: {\n  empresa_id: ('' + $('Loja').first().json.empresa_id + ''), cliente_id: cliente.id, servico_id: melhor ? melhor.id : null,\n  profissional_id: prof[0] ? prof[0].id : null,\n  inicio: horario.start.dateTime, fim: horario.end.dateTime,\n  status: 'agendado', origem: 'ia', observacoes: obs || null,\n  ...(sinal.exige ? { sinal_valor: sinal.valor_pago, sinal_codigo: sinal.codigo, sinal_pago_em: new Date().toISOString(), sinal_comprovante: sinal.comprovante } : {}),\n} } }];\n"
       }
     },
     {
@@ -799,6 +799,45 @@
       "alwaysOutputData": true
     },
     {
+      "id": "b1a7c0de-5a1a-4c1d-9f1e-0000000e0a0a",
+      "name": "Supabase: conferir sinal",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_sinal_conferir",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_telefone: (() => { const d = String($('Preparar').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }) }}"
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
       "id": "35280c87-a305-43fb-878a-21d0268ab9b4",
       "name": "Loja",
       "type": "n8n-nodes-base.code",
@@ -972,7 +1011,7 @@
       "main": [
         [
           {
-            "node": "Montar agendamento",
+            "node": "Supabase: conferir sinal",
             "type": "main",
             "index": 0
           }
@@ -1056,6 +1095,17 @@
         ]
       ]
     },
+    "Supabase: conferir sinal": {
+      "main": [
+        [
+          {
+            "node": "Montar agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Loja": {
       "main": [
         [
@@ -1083,6 +1133,7 @@
     "executionOrder": "v1",
     "timezone": "America/Cuiaba",
     "saveDataSuccessExecution": "all",
-    "callerPolicy": "workflowsFromSameOwner"
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": "REhgaxPhMgKea3pS"
   }
 }
