@@ -20,6 +20,9 @@ export default function PainelLayout({ children }: { children: ReactNode }) {
               <Link href="/servicos" className="rounded-lg px-3 py-2 text-texto-2 hover:bg-campo/60 hover:text-grafite">
                 Serviços
               </Link>
+              <Link href="/lojas" className="rounded-lg px-3 py-2 text-texto-2 hover:bg-campo/60 hover:text-grafite">
+                Lojas
+              </Link>
             </nav>
           </div>
           <div className="flex items-center gap-3">
