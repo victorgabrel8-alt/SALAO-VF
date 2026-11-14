@@ -325,12 +325,24 @@ export async function mudarLoja(id: string, m: Mudanca) {
 // ---------- Pedidos de cadastro (supabase/050 e 051): a dona pede pelo app, a agência aprova aqui ----------
 // "preso" = pedido marcado como aprovado, mas a loja não chegou a ser criada (queda no meio da aprovação):
 // aparece na lista para poder ser reaberto.
-export type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; preso: boolean };
+// "jaUsadoEm" = nome da loja que já tem esse WhatsApp como número da dona (vazio se nenhuma)
+export type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; preso: boolean; jaUsadoEm: string };
 type LinhaCadastro = { id: string; criado_em: string; nome_loja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; status: string; empresa_id: string | null };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CAMPOS_CADASTRO = "id,criado_em,nome_loja,ramo,dona,whatsapp,cidade,email,status,empresa_id";
-const paraTela = (c: LinhaCadastro, preso: boolean): Cadastro => ({ id: c.id, criadoEm: c.criado_em, nomeLoja: c.nome_loja, ramo: c.ramo, dona: c.dona, whatsapp: c.whatsapp, cidade: c.cidade, email: c.email, preso });
+const paraTela = (c: LinhaCadastro, preso: boolean, donas: Map<string, string>): Cadastro => ({ id: c.id, criadoEm: c.criado_em, nomeLoja: c.nome_loja, ramo: c.ramo, dona: c.dona, whatsapp: c.whatsapp, cidade: c.cidade, email: c.email, preso, jaUsadoEm: donas.get(sem9(digitos(c.whatsapp))) ?? "" });
+
+// WhatsApp das donas das lojas que já existem (número da assistente e número de avisos), sem o 9, -> nome da loja
+async function whatsappDasDonas(): Promise<Map<string, string>> {
+  const lojas = await banco<{ nome: string; config: Config }[]>("/rest/v1/empresas?select=nome,config");
+  const mapa = new Map<string, string>();
+  for (const l of lojas) {
+    const numeros = [...(Array.isArray(l.config?.assistente_numeros) ? l.config.assistente_numeros : []), l.config?.whatsapp_alerta];
+    for (const n of numeros) if (n) mapa.set(sem9(digitos(n)), l.nome);
+  }
+  return mapa;
+}
 
 // Os mais antigos primeiro (quem pediu antes é atendida antes e pedido real não some atrás de pedido falso).
 // Falha aqui não derruba a tela Lojas: a lista de pedidos só vem vazia.
@@ -338,11 +350,12 @@ export async function listarCadastros(): Promise<{ cadastros: Cadastro[]; penden
   try {
     const dezMin = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const semana = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-    const [pendentes, presos] = await Promise.all([
+    const [pendentes, presos, donas] = await Promise.all([
       banco<LinhaCadastro[]>(`/rest/v1/motor_cadastros?select=${CAMPOS_CADASTRO}&status=eq.pendente&order=criado_em.asc&limit=200`),
       banco<LinhaCadastro[]>(`/rest/v1/motor_cadastros?select=${CAMPOS_CADASTRO}&status=eq.aprovado&empresa_id=is.null&resolvido_em=lt.${dezMin}&resolvido_em=gt.${semana}&order=criado_em.asc&limit=20`),
+      whatsappDasDonas().catch(() => new Map<string, string>()),
     ]);
-    return { cadastros: [...presos.map((c) => paraTela(c, true)), ...pendentes.map((c) => paraTela(c, false))], pendentes: pendentes.length };
+    return { cadastros: [...presos.map((c) => paraTela(c, true, donas)), ...pendentes.map((c) => paraTela(c, false, donas))], pendentes: pendentes.length };
   } catch (e) {
     console.error("[lojas] listarCadastros", e);
     return { cadastros: [], pendentes: 0 };

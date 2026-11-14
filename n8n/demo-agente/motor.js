@@ -241,8 +241,24 @@ function tirarNo(wf, nome) {
   delete wf.connections[nome];
 }
 
+// Depois do nó "Loja", a execução anota no Redis de qual loja é (chave motor:exec:<id da execução>, 1 hora).
+// O "Alerta de erro" não tem como ler a ficha da execução que falhou: é por essa chave que ele sabe a loja.
+// Se o Redis falhar aqui, a execução segue normalmente.
+function anotarExecucao(wf, credRedis) {
+  if (!credRedis) throw new Error('motor: não achei a credencial do Redis para anotar a loja da execução');
+  const loja = wf.nodes.find((nd) => nd.name === 'Loja');
+  const nome = 'Loja: anotar execução';
+  wf.nodes.push({
+    id: uuid(`${wf.name}:${nome}`), name: nome, type: 'n8n-nodes-base.redis', typeVersion: 1, position: [loja.position[0], loja.position[1] - 160],
+    parameters: { operation: 'set', key: '=motor:exec:{{ $execution.id }}', value: `={{ ${REF}.nome }}`, keyType: 'string', expire: true, ttl: 3600 },
+    credentials: credRedis, onError: 'continueRegularOutput', alwaysOutputData: true,
+  });
+  wf.connections[nome] = wf.connections.Loja;
+  wf.connections.Loja = { main: [[{ node: nome, type: 'main', index: 0 }]] };
+}
+
 // Entrada de cada workflow. Devolve as rotinas (gatilhos de horário) que o workflow "Rotinas" vai disparar.
-function entradas(wf, nicho) {
+function entradas(wf, nicho, credRedis) {
   const gatilhos = wf.nodes.filter(ehGatilho);
   if (!gatilhos.length) return []; // alerta de erro: não tem loja (ver instancia_alerta)
   if (wf.nodes.some((nd) => nd.name === 'Loja' || nd.name === 'Entrada')) throw new Error(`motor: "${wf.name}" já tem um nó chamado Loja ou Entrada`);
@@ -279,6 +295,7 @@ function entradas(wf, nicho) {
     wf.nodes.push(...novos);
     wf.connections['Entrada do motor'] = { main: [[{ node: 'Loja', type: 'main', index: 0 }]] };
     wf.connections.Loja = { main: [saidas] };
+    anotarExecucao(wf, credRedis);
     return rotinas;
   }
 
@@ -322,6 +339,7 @@ return ${ref}.all();`
   wf.connections[g.name] = { main: [[{ node: primeiro, type: 'main', index: 0 }]] };
   wf.connections.Loja = { main: [[{ node: 'Entrada', type: 'main', index: 0 }]] };
   wf.connections.Entrada = { main: [para] };
+  anotarExecucao(wf, credRedis);
   return [];
 }
 
@@ -372,6 +390,30 @@ function semCatalogo(wf) {
   });
   wf.connections.Entrada = { main: [[{ node: 'Tem catálogo?', type: 'main', index: 0 }]] };
   wf.connections['Tem catálogo?'] = { main: [para, [{ node: 'Resposta (sem catálogo)', type: 'main', index: 0 }]] };
+}
+
+// Alerta de erro do motor: diz de qual loja foi a execução que falhou (lida da chave anotada em anotarExecucao).
+function alertaComLoja(wf, credRedis) {
+  const gatilho = wf.nodes.find((nd) => nd.type === 'n8n-nodes-base.errorTrigger');
+  const montar = wf.nodes.find((nd) => nd.name === 'Montar alerta');
+  if (!gatilho || !montar || !credRedis) throw new Error('motor: o workflow de alerta mudou (não achei o gatilho, "Montar alerta" ou o Redis)');
+  const nome = 'Loja da execução';
+  wf.nodes.push({
+    id: uuid(`${wf.name}:${nome}`), name: nome, type: 'n8n-nodes-base.redis', typeVersion: 1, position: [gatilho.position[0] + 110, gatilho.position[1] - 160],
+    parameters: { operation: 'get', key: "=motor:exec:{{ $json.execution?.id || 'sem-id' }}", propertyName: 'loja', keyType: 'string', options: {} },
+    credentials: credRedis, onError: 'continueRegularOutput', alwaysOutputData: true,
+  });
+  wf.connections[gatilho.name] = { main: [[{ node: nome, type: 'main', index: 0 }]] };
+  wf.connections[nome] = { main: [[{ node: montar.name, type: 'main', index: 0 }]] };
+  const trocas = [
+    ['const e = $input.first().json;', `const e = $(${JSON.stringify(gatilho.name)}).first().json;\nconst loja = String(($input.first().json || {}).loja || '');`],
+    ['if (visto[wf] && Date.now() - visto[wf] < 10 * 60 * 1000) return [];\nvisto[wf] = Date.now();', "const chave = wf + '|' + loja;\nif (visto[chave] && Date.now() - visto[chave] < 10 * 60 * 1000) return [];\nvisto[chave] = Date.now();"],
+    ["\\nWorkflow: ' + wf +", "\\nLoja: ' + (loja || 'não identificada') + '\\nWorkflow: ' + wf +"],
+  ];
+  for (const [de, para] of trocas) {
+    if (montar.parameters.jsCode.split(de).length !== 2) throw new Error(`motor: o código de "Montar alerta" mudou (${de.slice(0, 40)})`);
+    montar.parameters.jsCode = montar.parameters.jsCode.split(de).join(para);
+  }
 }
 
 // Workflow "Rotinas": cada horário chama a rotina uma vez por loja ativa no motor
@@ -512,6 +554,7 @@ function aplicar(conjunto, loja) {
   const prefixo = `${loja.slug}:`;
   const rotinasPorWf = [];
   let blocos = 0;
+  const credRedis = (conjunto.flatMap((c) => c.wf.nodes).find((nd) => nd.type === 'n8n-nodes-base.redis') || {}).credentials;
   for (const { wf, arquivoId } of conjunto) {
     // nome do conjunto no lugar do nome da loja; chave do Redis com o id da loja no lugar do nome do conjunto
     let s = JSON.stringify(wf).split(`"name":"[MOTORxNOME] `).join(`"name":"[${loja.rotulo}] `);
@@ -539,16 +582,22 @@ function aplicar(conjunto, loja) {
       // sem instancia_alerta no loja.json o conjunto é gerado, mas o envio é recusado (montar-workflow.js)
       const t = JSON.stringify(wf).split('MOTORxINSTANCIA').join(loja.instancia_alerta || 'FALTA-INSTANCIA-ALERTA');
       Object.assign(wf, JSON.parse(t));
+      alertaComLoja(wf, credRedis);
     }
     // workflow que não usa nada da loja (ex.: transcrever áudio) fica como está
     const usaLoja = /MOTOR[xX][A-Z0-9]+/.test(JSON.stringify(wf)) || wf.nodes.some((nd) => /toolWorkflow$|executeWorkflow$/.test(nd.type));
     if (!usaLoja) continue;
-    const lista = entradas(wf, loja.nicho);
+    const lista = entradas(wf, loja.nicho, credRedis);
     if (lista.length) rotinasPorWf.push({ arquivoId, lista });
     mandarFicha(wf);
     if (arquivoId === '.workflow-catalogo-id') semCatalogo(wf);
     if (loja.bloco_minutos) blocos += blocoDaLoja(wf, loja.bloco_minutos);
     for (const nd of wf.nodes) converterNo(nd, wf.name);
+    // aviso "a IA falhou" (vai para a agência): diz de qual loja foi
+    for (const nd of wf.nodes) {
+      const corpo = nd.parameters && nd.parameters.jsonBody;
+      if (typeof corpo === 'string' && corpo.includes("'⚠️ A IA falhou")) nd.parameters.jsonBody = corpo.split("'⚠️ A IA falhou").join(`'[' + ${REF}.nome + '] ⚠️ A IA falhou`);
+    }
     // Chamada à Evolution sem limite de tempo trava a execução quando o WhatsApp da loja está desconectado
     // (instância criada e ainda sem QR lido, celular sem internet). No motor uma loja assim não pode prender as outras.
     for (const nd of wf.nodes) {
@@ -562,7 +611,7 @@ function aplicar(conjunto, loja) {
       for (const k of ['key', 'keyPattern', 'sessionKey', 'list']) {
         const v = nd.parameters[k];
         // chave escrita no workflow ("=pausa:{{…}}"); a que vem de um dado ("={{ $json.chave }}") já foi lida com a loja
-        if (typeof v === 'string' && /^=?[a-z_]+:/.test(v)) throw new Error(`motor: chave do Redis sem a loja em "${wf.name}" / "${nd.name}": ${v.slice(0, 80)}`);
+        if (typeof v === 'string' && /^=?[a-z_]+:/.test(v) && !v.startsWith('=motor:exec:')) throw new Error(`motor: chave do Redis sem a loja em "${wf.name}" / "${nd.name}": ${v.slice(0, 80)}`);
       }
     }
   }

@@ -541,6 +541,32 @@
         },
         "options": {}
       }
+    },
+    {
+      "id": "e84a57bc-9e11-497d-82ac-0f1084d5042c",
+      "name": "Loja: anotar execução",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -440,
+        -160
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=motor:exec:{{ $execution.id }}",
+        "value": "={{ $('Loja').first().json.nome }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 3600
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -731,6 +757,17 @@
       ]
     },
     "Loja": {
+      "main": [
+        [
+          {
+            "node": "Loja: anotar execução",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja: anotar execução": {
       "main": [
         [
           {

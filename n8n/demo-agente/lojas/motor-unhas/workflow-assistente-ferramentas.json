@@ -635,6 +635,32 @@
       "parameters": {
         "jsCode": "// devolve o pedido que chegou, sem a ficha da loja\nreturn $(\"Recebe pedido da assistente\").all().map((i) => { const { loja_json, ...resto } = i.json; return { json: resto }; });"
       }
+    },
+    {
+      "id": "4228ea2e-7d7f-408c-85b0-a677865cfc26",
+      "name": "Loja: anotar execução",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -360
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=motor:exec:{{ $execution.id }}",
+        "value": "={{ $('Loja').first().json.nome }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 3600
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -847,7 +873,7 @@
       "main": [
         [
           {
-            "node": "Entrada",
+            "node": "Loja: anotar execução",
             "type": "main",
             "index": 0
           }
@@ -859,6 +885,17 @@
         [
           {
             "node": "Montar chamada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja: anotar execução": {
+      "main": [
+        [
+          {
+            "node": "Entrada",
             "type": "main",
             "index": 0
           }

@@ -218,6 +218,32 @@
       }
     },
     {
+      "id": "711f438e-379a-48c1-8d49-ac38ad6cee2e",
+      "name": "Loja: anotar execução",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -360
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=motor:exec:{{ $execution.id }}",
+        "value": "={{ $('Loja').first().json.nome }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 3600
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
       "id": "1d8e587a-cef4-4726-885a-9b9494f67d1e",
       "name": "Tem catálogo?",
       "type": "n8n-nodes-base.if",
@@ -331,7 +357,7 @@
       "main": [
         [
           {
-            "node": "Entrada",
+            "node": "Loja: anotar execução",
             "type": "main",
             "index": 0
           }
@@ -343,6 +369,17 @@
         [
           {
             "node": "Tem catálogo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja: anotar execução": {
+      "main": [
+        [
+          {
+            "node": "Entrada",
             "type": "main",
             "index": 0
           }

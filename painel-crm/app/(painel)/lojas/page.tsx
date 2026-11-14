@@ -27,7 +27,7 @@ type Loja = {
   temRecado: boolean;
   sinal: Sinal;
 };
-type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; preso: boolean };
+type Cadastro = { id: string; criadoEm: string; nomeLoja: string; ramo: string; dona: string; whatsapp: string; cidade: string; email: string; preso: boolean; jaUsadoEm: string };
 type Qr = { lojaId: string; nome: string; imagem: string; codigo: string; conectado: boolean; avisos?: string[] };
 
 const RAMO: Record<string, string> = { manicure: "Unhas", mega_hair: "Mega hair", estudio_beleza: "Estúdio de beleza" };
@@ -404,6 +404,12 @@ function CartaoCadastro({ cadastro, aoMudar, aoAprovar }: { cadastro: Cadastro; 
             {c.cidade && ` · ${c.cidade}`}
           </p>
           <p className="text-sm text-texto-2">Pedido em {new Date(c.criadoEm).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}</p>
+          {c.jaUsadoEm && (
+            <p className="mt-2 rounded-xl bg-mel p-3 text-sm text-mel-texto">
+              Este WhatsApp já é o número da dona de <b>{c.jaUsadoEm}</b>. Se for a mesma pessoa abrindo outra loja, tudo bem; senão,
+              confira com ela antes de aprovar.
+            </p>
+          )}
           {c.preso && (
             <p role="alert" className="mt-2 rounded-xl bg-rose p-3 text-sm text-rose-texto">
               Este pedido ficou marcado como aprovado, mas a loja não foi criada. Reabra para aprovar de novo, ou recuse.

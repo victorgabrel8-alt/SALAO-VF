@@ -3549,7 +3549,7 @@
         "description": "=Troca a avaliação da cliente entre presencial e online, no mesmo dia e hora. Use quando ela pedir ou aceitar a troca, sem perguntar à {{ $('Loja').first().json.dona }} e sem transferir. Só diga que mudou se a resposta começar com MUDADO. Para mudar o dia ou a hora, use remarcar_agendamento.",
         "workflowId": {
           "__rl": true,
-          "value": "cSii8uVEAnwyfYuz",
+          "value": "ID_DO_WORKFLOW_MODALIDADE",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3959,7 +3959,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '». Veja em n8n → Executions.' }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '[' + $('Loja').first().json.nome + '] ⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '». Veja em n8n → Executions.' }) }}",
         "options": {
           "timeout": 30000
         }
@@ -5091,6 +5091,32 @@
       "parameters": {
         "jsCode": "// Teto de conversas: a loja chegou ao limite do mês e esta cliente ainda não falou com a IA hoje.\n// A mensagem para aqui, sem resposta automática. A dona continua passando (assistente).\nconst L = $('Loja').first().json;\nif (L.conversa_barrada) {\n  const sem9 = (n) => { const d = String(n).replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; };\n  const k = ($(\"Webhook Evolution\").first().json.body.data || {}).key || {};\n  const tel = String((k.remoteJid || '').endsWith('@lid') && k.remoteJidAlt ? k.remoteJidAlt : (k.remoteJid || '')).split('@')[0];\n  if (!String(L.assist_sem9 || '').split(',').filter(Boolean).includes(sem9(tel))) return [];\n}\n// devolve a mensagem que chegou, como se o nó \"Loja\" não existisse no caminho\nreturn $(\"Webhook Evolution\").all();"
       }
+    },
+    {
+      "id": "8eafcc3a-f32b-418b-89af-c57d2c821af2",
+      "name": "Loja: anotar execução",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -360
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=motor:exec:{{ $execution.id }}",
+        "value": "={{ $('Loja').first().json.nome }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 3600
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -6730,7 +6756,7 @@
       "main": [
         [
           {
-            "node": "Entrada",
+            "node": "Loja: anotar execução",
             "type": "main",
             "index": 0
           }
@@ -6742,6 +6768,17 @@
         [
           {
             "node": "Extrair dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja: anotar execução": {
+      "main": [
+        [
+          {
+            "node": "Entrada",
             "type": "main",
             "index": 0
           }

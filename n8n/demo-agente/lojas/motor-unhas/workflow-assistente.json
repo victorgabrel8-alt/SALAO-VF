@@ -13828,6 +13828,32 @@
       "parameters": {
         "jsCode": "// devolve a mensagem que chegou, como se o nó \"Loja\" não existisse no caminho\nreturn $(\"Webhook assistente\").all();"
       }
+    },
+    {
+      "id": "c5195bf0-9459-476e-8b33-454364ba07f1",
+      "name": "Loja: anotar execução",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        220,
+        -360
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=motor:exec:{{ $execution.id }}",
+        "value": "={{ $('Loja').first().json.nome }}",
+        "keyType": "string",
+        "expire": true,
+        "ttl": 3600
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     }
   ],
   "connections": {
@@ -14698,7 +14724,7 @@
       "main": [
         [
           {
-            "node": "Entrada",
+            "node": "Loja: anotar execução",
             "type": "main",
             "index": 0
           }
@@ -14710,6 +14736,17 @@
         [
           {
             "node": "Extrair dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja: anotar execução": {
+      "main": [
+        [
+          {
+            "node": "Entrada",
             "type": "main",
             "index": 0
           }
