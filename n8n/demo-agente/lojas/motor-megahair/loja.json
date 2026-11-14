@@ -1,0 +1,38 @@
+{
+  "slug": "motor-megahair",
+  "motor": true,
+  "guardar_execucoes": true,
+  "rotulo": "Motor Mega Hair",
+  "nome": "MOTORxNOME",
+  "nicho": "mega_hair",
+  "empresa_id": "MOTORxEMPRESA",
+  "instancia": "MOTORxINSTANCIA",
+  "instancia_alerta": "salao-demo",
+  "numero_agencia": "556699270860",
+  "dona": "MOTORxDONA",
+  "cidade": "MOTORxCIDADE",
+  "assistente_numeros": [
+    "MOTORxASSIST"
+  ],
+  "permitidos": [
+    "MOTORxPERMITIDOS"
+  ],
+  "trocas": [
+    [
+      "Salão: Toda Bonita Mega Hair, Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT. Mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8. Nunca peça o endereço à Gleide.",
+      "Salão: Toda Bonita Mega Hair, em Sinop. O endereço é o que está cadastrado no app (Dados do salão). Nunca peça o endereço à Gleide."
+    ],
+    [
+      "“A manutenção fica a partir de R$ 150 por tela.”",
+      "“A manutenção fica [valor da lista].”"
+    ],
+    [
+      "/m[ãa]o de obra/i.test(nome) ? ' por tela' : ''",
+      "false ? ' por tela' : '' /* a unidade do preço, se houver, vai no nome do serviço */"
+    ]
+  ],
+  "catalogo_link": "https://wa.me/c/5500000000000",
+  "preco_livre": true,
+  "sinal_pix": true,
+  "sinal_sem_bloco": true
+}

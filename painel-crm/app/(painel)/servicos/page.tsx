@@ -67,7 +67,7 @@ export default function ServicosPage() {
   return (
     <>
       <div className="pt-8 pb-4">
-        <h1 className="font-serif text-[40px] leading-tight font-semibold">Serviços</h1>
+        <h1 className="font-serif text-[30px] leading-tight">Serviços</h1>
         <p className="text-texto-2">
           O que a IA oferece e marca, e em quantos dias cada serviço pede retorno · {empresa.nome}
         </p>
@@ -82,11 +82,11 @@ export default function ServicosPage() {
       )}
 
       {dados && !dados.erro && (
-        <div className="overflow-hidden rounded-2xl border border-grafite/10 bg-card shadow-[0_1px_2px_rgba(33,22,16,0.05),0_4px_14px_rgba(33,22,16,0.05)]">
+        <div className="overflow-x-auto rounded-2xl border border-borda bg-card">
           <table className="w-full text-left">
             <thead className="bg-campo/60 text-sm text-texto-2">
               <tr>
-                <th className="px-4 py-3 font-medium">Serviço</th>
+                <th className="min-w-56 px-4 py-3 font-medium">Serviço</th>
                 {dados.com004 && <th className="px-4 py-3 font-medium">Categoria</th>}
                 <th className="w-28 px-4 py-3 font-medium">Preço (R$)</th>
                 <th className="w-28 px-4 py-3 font-medium">Duração (min)</th>

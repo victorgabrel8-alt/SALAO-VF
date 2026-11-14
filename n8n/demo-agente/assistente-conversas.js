@@ -32,13 +32,13 @@ module.exports = ({ assistenteWorkflow: wf }) => {
   const TEXTO = "{{ (() => { try { const ms = $('Ler conversas').all().map((i) => i.json).filter((m) => m && m.conteudo && m.criado_em); if (!ms.length) return '(nenhuma mensagem de cliente nas últimas 3 horas)'; " +
     "const por = {}; for (const m of ms) { const c = m.clientes || {}; const k = (c.nome || 'sem nome') + ' (…' + String(c.telefone || '').slice(-4) + ')'; (por[k] = por[k] || []).push(m); } " +
     "return Object.entries(por).slice(0, 10).map(([k, l]) => '• ' + k + ': ' + l.slice(0, 6).reverse().map((m) => '[' + DateTime.fromISO(m.criado_em).setZone('America/Cuiaba').toFormat('HH:mm') + '] ' + " +
-    "(m.direcao === 'entrada' ? 'CLIENTE' : (m.autor === 'humano' ? 'CAROLINE (celular)' : 'SALÃO (você ou a IA de atendimento)')) + ': «' + String(m.conteudo).split(String.fromCharCode(10)).join(' ').slice(0, 170) + '»').join(' | ')).join(String.fromCharCode(10)); " +
+    "(m.direcao === 'entrada' ? 'CLIENTE' : (m.autor === 'humano' ? 'GLEIDE (celular)' : 'SALÃO (você ou a IA de atendimento)')) + ': «' + String(m.conteudo).split(String.fromCharCode(10)).join(' ').slice(0, 170) + '»').join(' | ')).join(String.fromCharCode(10)); " +
     "} catch (e) { return '(não consegui ler as conversas agora)'; } })() }}";
   const o = achar('Agente assistente').parameters.options;
   if (!String(o.systemMessage).startsWith('=')) throw new Error('assistente_conversas: o prompt da assistente não é expressão');
   o.systemMessage += '\n\nCONVERSAS COM AS CLIENTES NAS ÚLTIMAS 3 HORAS (lidas do sistema agora; é o que foi dito de verdade)\n' + TEXTO + '\n' +
-    '- ANTES de mandar mensagem a uma cliente, mudar o horário dela ou responder à Caroline sobre ela, leia aqui o que ela já respondeu.\n' +
-    '- Se a cliente já recusou um horário, não ofereça de novo. Se ela já aceitou um horário (com você ou com a IA de atendimento), esse é o horário dela: conte isso à Caroline antes de mexer.\n' +
-    '- Se a Caroline perguntar "ela respondeu?", responda com o que está aqui, citando a hora. Não diga "ainda não respondeu" sem olhar.\n' +
+    '- ANTES de mandar mensagem a uma cliente, mudar o horário dela ou responder à Gleide sobre ela, leia aqui o que ela já respondeu.\n' +
+    '- Se a cliente já recusou um horário, não ofereça de novo. Se ela já aceitou um horário (com você ou com a IA de atendimento), esse é o horário dela: conte isso à Gleide antes de mexer.\n' +
+    '- Se a Gleide perguntar "ela respondeu?", responda com o que está aqui, citando a hora. Não diga "ainda não respondeu" sem olhar.\n' +
     '- Se o salão já mandou a mesma coisa há pouco, não mande de novo.';
 };

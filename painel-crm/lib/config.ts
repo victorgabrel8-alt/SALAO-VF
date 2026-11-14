@@ -1,8 +1,7 @@
-// Painel CRM da agência (computador). Segue a identidade da VF, como o app da dona: cobre.
-// Cobre não aguenta texto branco por cima (3.5:1): botões primários são grafite.
+// Painel da agência (computador). Segue a identidade Oi Studio, como o app da dona: Ônix e Porcelana.
 export const SALAO = {
-  nomeApp: "Painel CRM",
-  corPrincipal: "#b8764a",
+  nomeApp: "Oi Studio · Painel",
+  corPrincipal: "#1b1719",
   icone: "/icone-192.png",
 };
 

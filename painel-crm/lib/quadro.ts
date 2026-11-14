@@ -16,10 +16,10 @@ import type { ClienteStatus } from "@/lib/tipos";
 export type Etapa = "para_chamar" | "enviada" | "respondeu" | "agendado" | "em_dia";
 
 export const ETAPAS: { chave: Etapa; titulo: string; ponto: string }[] = [
-  { chave: "para_chamar", titulo: "Para chamar", ponto: "bg-terracota" },
-  { chave: "enviada", titulo: "Mensagem enviada", ponto: "bg-cobre" },
-  { chave: "respondeu", titulo: "Respondeu", ponto: "bg-nevoa-viva" },
-  { chave: "agendado", titulo: "Agendado", ponto: "bg-salvia-viva" },
+  { chave: "para_chamar", titulo: "Para chamar", ponto: "bg-serie-1" },
+  { chave: "enviada", titulo: "Mensagem enviada", ponto: "bg-serie-2" },
+  { chave: "respondeu", titulo: "Respondeu", ponto: "bg-serie-3" },
+  { chave: "agendado", titulo: "Agendado", ponto: "bg-serie-4" },
   { chave: "em_dia", titulo: "Em dia", ponto: "bg-status-sem-visita" },
 ];
 

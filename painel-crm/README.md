@@ -48,3 +48,18 @@ lib/                       ← mesmas regras do app da dona (formato, status, or
 
 O código de `lib/` e `components/` foi copiado do app da dona. Se uma regra mudar
 (ex.: status da cliente), atualizar nos dois.
+
+## Lojas (motor único)
+
+A tela **Lojas** cria uma loja nova no motor de IA do ramo dela (Unhas ou Mega hair), mostra o QR para
+conectar o WhatsApp, e deixa liberar a IA, definir o teto de conversas, o tempo por cliente e o sinal por Pix.
+Plano e regras em `docs/PLANO-MOTOR-UNICO.md`.
+
+- As ações rodam no **servidor do painel** (`app/api/lojas`, `lib/servidor`), com a chave de serviço do
+  Supabase e a chave da Evolution. Essas chaves ficam só no `.env.local` (ver `.env.local.example`) e nunca
+  vão para o navegador.
+- Só entra quem está logado no painel **e** tem o e-mail em `AGENCIA_EMAILS`.
+- A loja nova nasce com a IA em teste: só o `AGENCIA_WHATSAPP` recebe resposta até clicar em **Liberar a IA**.
+- Lojas com conjunto próprio de workflows (as que não estão no motor) aparecem na lista, mas não são
+  alteradas por esta tela.
+- O mesmo pode ser feito pela linha de comando: `n8n/demo-agente/nova-loja.js`.

@@ -809,12 +809,16 @@ const aplicarRespostas = () => {
 if (!LOJA) aplicarRespostas();
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
+let rotinasWorkflow = null; // só no motor único (motor.js): chama cada rotina uma vez por loja
 if (LOJA) {
   const ids = lojas.mapaIds(dir, LOJA);
   lojas.dadosDoSalao(workflow);
   lojas.tirarOrcamentoCabelo(workflow, LOJA);
   // sinal por Pix para reservar (sinal-pix.js): foto de manicure/comprovante, conferência antes de gravar e bloco no prompt
-  if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
+  // sinal_sem_bloco (loja.json): o sistema confere o comprovante, mas as regras da conversa ficam no prompt da loja
+  // (como na Gleide). O modelo de mega hair usa: o prompt lê o sinal de cada loja em "SINAL DA LOJA".
+  if (LOJA.sinal_pix && LOJA.sinal_sem_bloco) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA, semBloco: true, dona: 'Gleide' });
+  else if (LOJA.sinal_pix) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: LOJA });
   // Google Agenda da dona também ocupa horário (google-agenda.js), até as clientes dela estarem todas no app
   // preco_livre (loja.json): o filtro "valor só quando a cliente pergunta" é regra da Gleide. Na loja de ticket baixo
   // o preço e o valor do sinal saem sempre (Marcia, 12/11: a IA escreveu "A manicure fica R$ 50" e "sinal de R$ 20"
@@ -890,6 +894,23 @@ if (LOJA) {
     console.error(`\nNÃO GEREI a loja "${LOJA.slug}": sobrou coisa da Gleide ou o conjunto tem problema.\n- ${erros.join('\n- ')}\n`);
     process.exit(1);
   }
+  // motor único (motor.js): os dados da loja deixam de ficar escritos nos workflows e passam a ser lidos na hora
+  if (LOJA.motor) {
+    const conjunto = [[agendaWorkflow, agendaIdFile], [pausaWorkflow, pausaIdFile], [crmWorkflow, crmIdFile], [assistente.ferramentasWorkflow, assistente.ferramentasIdFile],
+      [assistente.assistenteWorkflow, '.workflow-assistente-id'], [assistente.pendenciasWorkflow, '.workflow-assistente-pendencias-id'], [audios.enviarWorkflow, audios.idFile],
+      [audios.transcreverWorkflow, '.workflow-audios-transcrever-id'], [catalogo.enviarWorkflow, catalogo.idFile], [faltas.faltasWorkflow, faltas.idFile], [retomar.retomarWorkflow, retomar.idFile],
+      [retorno.retornoWorkflow, retorno.idFile], [pedidos.perguntaWorkflow, pedidos.idFile], [alerta.alertaWorkflow, alerta.idFile], [workflow, '.workflow-id']]
+      .map(([wf, arq]) => ({ wf, arquivoId: path.basename(arq) }));
+    if (LOJA.nicho === 'mega_hair') conjunto.push({ wf: pedidos.modalidadeWorkflow, arquivoId: path.basename(pedidos.modalidadeIdFile) });
+    try {
+      rotinasWorkflow = require('./motor.js').aplicar(conjunto, LOJA);
+    } catch (e) {
+      console.error(`\nNÃO GEREI o motor "${LOJA.slug}": ${e.message}\n`);
+      process.exit(1);
+    }
+    if (fs.existsSync(saida(alerta.idFile))) alerta.ligarEm([rotinasWorkflow], fs.readFileSync(saida(alerta.idFile), 'utf8').trim());
+    fs.writeFileSync(saida('workflow-rotinas.json'), JSON.stringify(rotinasWorkflow, null, 2));
+  }
 }
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 const alertaIdFile = saida(alerta.idFile);
@@ -935,8 +956,12 @@ if (process.argv.includes('--enviar') && !process.argv.includes('--forcar')) {
   }
 }
 
+if (process.argv.includes('--enviar') && LOJA && LOJA.motor && !LOJA.instancia_alerta) {
+  console.error(`\nNÃO ENVIEI o motor "${LOJA.slug}": falta "instancia_alerta" no loja.json (o WhatsApp que manda o alerta de erro).\n`);
+  process.exit(1);
+}
 if (process.argv.includes('--enviar')) {
-  const base = `${env.N8N_URL || 'http://localhost:5678'}/api/v1/workflows`;
+  const base =`${env.N8N_URL || 'http://localhost:5678'}/api/v1/workflows`;
   const headers = { 'X-N8N-API-KEY': env.N8N_API_KEY, 'Content-Type': 'application/json' };
   const upsert = async (wf, arquivoId) => {
     // loja: o id fica na pasta dela; e nunca envia nada que aponte para (ou grave em cima de) um workflow da Gleide
@@ -996,6 +1021,16 @@ if (process.argv.includes('--enviar')) {
     if (process.argv.includes('--ativar')) await ativar(retomarId);
     const retornoId = await upsert(retorno.retornoWorkflow, retorno.idFile);
     if (process.argv.includes('--ativar')) await ativar(retornoId);
+    // motor único: o "Rotinas" dispara cada rotina uma vez por loja; vai depois delas, porque aponta para os ids delas
+    if (rotinasWorkflow) {
+      const idRotina = { '.workflow-assistente-pendencias-id': pendenciasId, [path.basename(faltas.idFile)]: faltasId,
+        [path.basename(retomar.idFile)]: retomarId, [path.basename(retorno.idFile)]: retornoId };
+      require('./motor.js').apontarRotinas(rotinasWorkflow, (arq) => idRotina[arq]);
+      alerta.ligarEm([rotinasWorkflow], alertaId);
+      fs.writeFileSync(saida('workflow-rotinas.json'), JSON.stringify(rotinasWorkflow, null, 2));
+      const rotinasId = await upsert(rotinasWorkflow, '.workflow-rotinas-id');
+      if (process.argv.includes('--ativar')) await ativar(rotinasId);
+    }
     const perguntaId = await upsert(pedidos.perguntaWorkflow, pedidos.idFile);
     if (process.argv.includes('--ativar')) await ativar(perguntaId);
     // presencial/online é da avaliação de mega hair: as outras lojas não têm a ferramenta nem o workflow
@@ -1016,7 +1051,8 @@ if (process.argv.includes('--enviar')) {
     const assistenteId = await upsert(assistente.assistenteWorkflow, path.join(dir, '.workflow-assistente-id'));
     if (process.argv.includes('--ativar')) await ativar(assistenteId);
     // loja: a IA já lê a tela Dados do salão; liga o aviso da tela (config.ia_usa_dados_loja), sem mexer no resto do config
-    if (LOJA) {
+    // (no motor não há uma loja só: quem entra no motor é ligado no banco, loja por loja)
+    if (LOJA && !LOJA.motor) {
       const supa = { apikey: env.SUPABASE_SERVICE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`, 'Content-Type': 'application/json' };
       const rota = `${env.SUPABASE_URL}/rest/v1/empresas?id=eq.${LOJA.empresa_id}`;
       const res = await fetch(`${rota}&select=config`, { headers: supa });

@@ -242,7 +242,7 @@ function travarEnvios(workflows, loja) {
         position: [nd.position[0], nd.position[1] - 120],
         parameters: {
           conditions: { options: { caseSensitive: true, leftValue: '', typeValidation: 'loose', version: 2 },
-            conditions: [{ id: 'trava1', leftValue: `={{ ${lista}.includes(${numero}) }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
+            conditions: [{ id: 'trava1', leftValue: loja.motor ? `={{ ((p, a, n) => !p.length || [...p, ...a].includes(n))('MOTORxPERMITIDOS'.split(',').filter(Boolean), 'MOTORxASSISTSEM9'.split(',').filter(Boolean), ${numero}) }}` : `={{ ${lista}.includes(${numero}) }}`, rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }],
             combinator: 'and' },
           options: {},
         },

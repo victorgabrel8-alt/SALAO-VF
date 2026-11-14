@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const ROTAS_PUBLICAS = ["/login"];
+const ROTAS_PUBLICAS = ["/login", "/cadastro"];
+// páginas públicas que continuam abrindo para quem já entrou (o login manda quem já entrou para o início)
+const PUBLICAS_COM_LOGIN = ["/cadastro"];
 
 // Renova a sessão do Supabase a cada requisição e manda para o login quem não entrou.
 export async function atualizarSessao(request: NextRequest) {
@@ -36,7 +38,7 @@ export async function atualizarSessao(request: NextRequest) {
   if (!logado && !publica) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
-  if (logado && publica) {
+  if (logado && publica && !PUBLICAS_COM_LOGIN.includes(request.nextUrl.pathname)) {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
