@@ -1,4 +1,4 @@
-// A IA de atendimento só cancela um horário se a cliente pediu (entra em TODA loja nova; a Gleide não passa por aqui).
+// A IA de atendimento só cancela um horário se a cliente pediu (vale para a Gleide e para toda loja).
 // 14/11/2026, Caroline: a dona mandou a assistente reservar um horário e avisar a cliente. A cliente respondeu
 // "pode, obrigada". A IA de atendimento viu o horário já marcado, quis acrescentar um serviço, CANCELOU o horário
 // para marcar de novo, não conseguiu (o bloco não cabia mais) e passou a conversa para a dona. Resultado: horário
@@ -19,6 +19,8 @@ const RESPOSTA = 'NÃO CANCELADO: a cliente não pediu para cancelar nem desmarc
 module.exports = ({ node, workflow, agendaWorkflow }) => {
   const achar = (wf, nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error(`cancelar_so_se_pediu: não achei "${nome}"`); return n; };
   if (RESPOSTA.includes("'")) throw new Error('cancelar_so_se_pediu: aspas simples na resposta');
+  // já aplicado (o gerador chama para todas; uma loja pode chamar de novo): não aplica duas vezes
+  if (agendaWorkflow.nodes.some((x) => x.name === 'Cancelar: a cliente pediu?')) return;
 
   // 1. o sinal
   const sobre = achar(workflow, 'Sobre esta cliente');
