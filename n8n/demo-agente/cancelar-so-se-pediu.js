@@ -23,15 +23,15 @@ module.exports = ({ node, workflow, agendaWorkflow }) => {
   // 1. o sinal
   const sobre = achar(workflow, 'Sobre esta cliente');
   const de = 'return [{ json: { texto: ';
-  if (sobre.parameters.jsCode.split(de).length !== 2) throw new Error('cancelar_so_se_pediu: o fim de "Sobre esta cliente" mudou');
-  sobre.parameters.jsCode = sobre.parameters.jsCode.replace(de, () => [
-    '// cancelar-so-se-pediu.js: a cliente pediu para cancelar/desmarcar (2 h), ou respondeu a uma pergunta da IA sobre cancelar (30 min)?',
-    `const PEDIDO_CANCELAR = new RegExp(${JSON.stringify(PEDIDO)}, 'i');`,
-    'const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000;',
-    "const pediuCancelar = recentes.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && PEDIDO_CANCELAR.test(String(m.conteudo || ''))) ||",
-    "  recentes.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || '')));",
-    'return [{ json: { pediuCancelar, texto: ',
-  ].join('\n'));
+  if (sobre.parameters.jsCode.split(de).length < 2) throw new Error('cancelar_so_se_pediu: o fim de "Sobre esta cliente" mudou');
+  // o nó tem mais de uma saída (cliente sem ficha, cliente com ficha): todas levam o sinal, calculado na hora
+  const SINAL = "((ms) => { const pede = new RegExp(" + JSON.stringify(PEDIDO) + ", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; " +
+    "return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || " +
+    "ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })" +
+    "($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao))";
+  if (!sobre.parameters.jsCode.includes("$('Supabase: últimas mensagens')")) throw new Error('cancelar_so_se_pediu: "Sobre esta cliente" não lê mais as últimas mensagens');
+  // cancelar-so-se-pediu.js: a cliente pediu para cancelar/desmarcar (2 h), ou respondeu a uma pergunta da IA sobre cancelar (30 min)?
+  sobre.parameters.jsCode = sobre.parameters.jsCode.split(de).join('return [{ json: { pediuCancelar: ' + SINAL + ', texto: ');
 
   // 2. a ferramenta leva o sinal (o campo motivo não é usado no cancelamento)
   const tool = achar(workflow, 'cancelar_agendamento');
