@@ -14,7 +14,7 @@
 --
 -- Nada muda para quem lê: mesmas 21 colunas, na mesma ordem, com os mesmos tipos e valores.
 -- Conferido em 14/11/2026 comparando linha a linha com a view antiga (230 clientes, 0 diferença).
--- É troca de view em produção: aplicar só com o ok do Victor.
+-- Aplicada em produção em 14/11/2026, com o ok do Victor (resultado conferido igual antes e depois).
 -- Para voltar atrás: rodar de novo o `create or replace view clientes_status` do arquivo 010.
 -- =====================================================================
 
