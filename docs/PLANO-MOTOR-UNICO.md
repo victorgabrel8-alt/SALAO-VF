@@ -163,6 +163,21 @@ de 12 h, resumo da noite às 19h, almoço flexível, e sinal por Pix e Google Ag
 loja tiver os dados cadastrados). O restante do texto do prompt (tom, roteiro de venda) continua sendo o
 que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manicure mostrar o que ajustar.
 
+**Comando Nova loja (14/11): `n8n/demo-agente/nova-loja.js`.** É a sequência que o botão do painel vai chamar.
+- `node nova-loja.js --ramo unhas --nome "Studio da Ana" --dona Ana --whatsapp-dona 5566…` (opcionais:
+  `--cidade`, `--limite`, `--bloco`, `--email`) cria a instância na Evolution já apontada para o motor,
+  a loja no banco (profissional e serviços padrão sem preço) e salva o QR em `qr-<instancia>.png`.
+- `--qr <instancia>` gera QR novo (vale menos de 1 minuto); `--status` mostra conexão, trava, uso do mês e
+  o que falta preencher; `--liberar` e `--travar` mudam quem a IA responde.
+- A loja nasce com a trava de teste: só o número da agência recebe resposta até o `--liberar`.
+- Testado com uma loja descartável: instância criada com o webhook do motor, QR gerado, ficha achada pelo
+  motor (dona, cidade e teto certos). Sem preço nem horário cadastrados, a IA passou a conversa para a dona:
+  a loja só atende de verdade depois que a dona preenche o app. Loja e instância foram apagadas no fim.
+- Não testado: `--email` (convite de login) e a leitura do QR por um celular.
+- Achado no teste: chamada à Evolution sem limite de tempo prende a execução quando o WhatsApp da loja
+  está desconectado. No motor todas as chamadas passaram a ter 30 s. Os conjuntos da Gleide e da Caroline
+  continuam sem esse limite (não foram tocados).
+
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
 - [ ] Modelo **Unhas**, a partir do prompt da Caroline, sem o que é só dela
