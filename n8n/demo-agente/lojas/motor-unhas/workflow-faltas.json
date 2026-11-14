@@ -120,7 +120,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -262,7 +264,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -410,7 +414,8 @@
               "batchSize": 1,
               "batchInterval": 8000
             }
-          }
+          },
+          "timeout": 30000
         }
       },
       "retryOnFail": true,
@@ -553,7 +558,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -682,7 +689,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -812,7 +821,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -954,7 +965,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -1120,7 +1133,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -1324,7 +1339,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,

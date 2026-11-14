@@ -217,7 +217,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').first().json.msgId } }, convertToMp4: false }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -3776,7 +3778,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ readMessages: [{ remoteJid: $('Extrair dados').first().json.jid, fromMe: false, id: $('Extrair dados').first().json.msgId }] }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -3833,7 +3837,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, presence: 'composing', delay: $('Ritmo humano').first().json.delay }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -12369,7 +12375,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, text: $('Conferir resposta').first().json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,

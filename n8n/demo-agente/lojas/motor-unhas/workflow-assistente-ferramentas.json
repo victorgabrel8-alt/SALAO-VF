@@ -329,7 +329,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: JSON.parse($json.data).telefone, text: JSON.parse($json.data).mensagem }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,

@@ -108,7 +108,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.') }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,

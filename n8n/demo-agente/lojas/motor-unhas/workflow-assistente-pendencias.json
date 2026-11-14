@@ -120,7 +120,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,

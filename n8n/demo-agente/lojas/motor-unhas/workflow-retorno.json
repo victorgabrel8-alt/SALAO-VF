@@ -249,7 +249,8 @@
               "batchSize": 1,
               "batchInterval": 8000
             }
-          }
+          },
+          "timeout": 30000
         }
       },
       "retryOnFail": true,

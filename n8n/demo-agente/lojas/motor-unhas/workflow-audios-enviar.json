@@ -258,7 +258,8 @@
               "batchSize": 1,
               "batchInterval": 7500
             }
-          }
+          },
+          "timeout": 30000
         }
       },
       "onError": "continueRegularOutput"
@@ -287,7 +288,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Recebe pedido da IA').item.json.jid, audio: $('Para base64').item.json.data, encoding: true, delay: 2000 }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput",
       "retryOnFail": true,

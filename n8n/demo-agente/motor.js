@@ -549,6 +549,13 @@ function aplicar(conjunto, loja) {
     if (arquivoId === '.workflow-catalogo-id') semCatalogo(wf);
     if (loja.bloco_minutos) blocos += blocoDaLoja(wf, loja.bloco_minutos);
     for (const nd of wf.nodes) converterNo(nd, wf.name);
+    // Chamada à Evolution sem limite de tempo trava a execução quando o WhatsApp da loja está desconectado
+    // (instância criada e ainda sem QR lido, celular sem internet). No motor uma loja assim não pode prender as outras.
+    for (const nd of wf.nodes) {
+      if (!nd.type.endsWith('httpRequest') || !/EVOLUTION_URL/.test(nd.parameters.url || '')) continue;
+      nd.parameters.options = nd.parameters.options || {};
+      if (!nd.parameters.options.timeout) nd.parameters.options.timeout = 30000;
+    }
     // toda chave do Redis tem que começar pela loja
     for (const nd of wf.nodes) {
       if (!/redis|memoryRedisChat/i.test(nd.type)) continue;

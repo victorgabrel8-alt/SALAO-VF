@@ -434,7 +434,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ message: { key: { id: $('Extrair dados').first().json.msgId } }, convertToMp4: false }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -967,7 +969,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'unavailable', delay: 1000 }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -1091,7 +1095,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Montar entrada').first().json.jid, presence: 'available', delay: 1000 }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -1161,7 +1167,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ readMessages: [{ remoteJid: $('Leitura: próxima').item.json.jid, fromMe: false, id: $('Leitura: próxima').item.json.id }] }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "onError": "continueRegularOutput"
     },
@@ -2162,7 +2170,8 @@
               "batchSize": 1,
               "batchInterval": "={{ $json.delay }}"
             }
-          }
+          },
+          "timeout": 30000
         }
       },
       "onError": "continueRegularOutput"
@@ -2191,7 +2200,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify(Object.assign({ number: $('Um balão por vez').item.json.jid, text: $('Um balão por vez').item.json.texto }, $('Um balão por vez').item.json.citar ? { quoted: { key: { id: $('Um balão por vez').item.json.citar } } } : {})) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -3558,7 +3569,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Pedido: preparar').first().json.jid, text: $json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -3689,7 +3702,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: $('Extrair dados').first().json.jid, text: 'Avisei ' + ($('Pedido: preparar').first().json.nome ? 'a ' + $('Pedido: preparar').first().json.nome : 'a cliente') + ' ✓\\n' + $('Pedido: texto').first().json.texto }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
@@ -3768,7 +3783,9 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '». Veja em n8n → Executions.' }) }}",
-        "options": {}
+        "options": {
+          "timeout": 30000
+        }
       },
       "retryOnFail": true,
       "maxTries": 3,
