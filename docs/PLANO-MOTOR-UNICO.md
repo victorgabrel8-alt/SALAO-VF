@@ -178,6 +178,21 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
   está desconectado. No motor todas as chamadas passaram a ter 30 s. Os conjuntos da Gleide e da Caroline
   continuam sem esse limite (não foram tocados).
 
+**Motor de Mega Hair, primeira versão (14/11): `lojas/motor-megahair/`.** Gera com
+`node montar-workflow.js --loja motor-megahair`; 17 workflows "[Motor Mega Hair]" no n8n, desligados.
+- Modelo copiado do conjunto da Gleide. Endereço, mapa, Instagram, site e catálogo saíram do texto e vêm
+  dos dados de cada loja (DADOS DO SALÃO e `config.loja.catalogo_link`).
+- Testado com uma loja descartável de mega hair (preço e endereço diferentes dos da Gleide, apagada depois):
+  a IA usou o preço do app da loja (R$ 400) e o endereço dela.
+- **Ainda são regras da Gleide dentro do modelo** (decidir com o Victor se viram padrão do ramo ou dado da loja):
+  mão de obra "R$ 150 por tela" (11 trechos do prompt e um filtro no código); sinal de R$ 20 para quem faltou
+  (5 trechos e o filtro); "primeira avaliação gratuita" (10 trechos); manutenção em até 60 dias; "atende sozinha";
+  origens de cabelo (brasileiro do Sul, regional, vietnamita, indiano) e técnicas; pagamento "Pix e cartão com juros";
+  durações de referência (aplicação 240 min, manutenção 210 min).
+- O sinal conferido pelo sistema (comprovante) da Gleide entra só no conjunto dela; no motor depende de `sinal_pix`.
+- Em 14/11 a branch foi atualizada com a `main` (conflito em `sinal-pix.js` resolvido com a versão da main); a Gleide
+  gerada desta branch saiu byte a byte igual à gerada da `main` pura.
+
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
 - [ ] Modelo **Unhas**, a partir do prompt da Caroline, sem o que é só dela
