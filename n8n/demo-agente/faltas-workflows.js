@@ -148,7 +148,7 @@ const linha = (a) => {
       ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'
       : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';
   }
-  return '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + '). Quer chamar você mesma?';
+  return '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + ').'; // sem "Quer chamar você mesma?" (Victor, 14/11/2026): chamar cliente é papel da IA
 };
 const texto = as.map(linha).join('\n');
 const itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));
