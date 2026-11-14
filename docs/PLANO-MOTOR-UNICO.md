@@ -91,8 +91,21 @@ conjunto: `motor-unhas` e, depois, `motor-megahair`. São 2 conjuntos no total, 
 - Dona falando com a assistente: a assistente respondeu com a agenda da Loja Teste.
 - Nenhum alerta de erro disparou.
 
-**Ainda não provado:** o workflow Rotinas (não foi ligado), o envio real da resposta pelo WhatsApp, duas
-lojas ao mesmo tempo com o mesmo número de cliente, e o tempo e a memória por atendimento.
+**Teste das rotinas (13/11, noite).** Com o Rotinas ligado por alguns minutos e a Loja Teste no motor:
+- Os gatilhos de horário (1 min, 5 min, 10 min) e os quatro disparos manuais chamaram cada rotina com a
+  ficha da Loja Teste.
+- Disparo manual sem `empresa_id`: para em "Tem loja?", não roda rotina nenhuma.
+- Faltas: fora do horário do salão parou em "Horário do salão?"; pelo disparo manual passou pelas 8 buscas.
+- Retomada e retorno: rodaram a busca; não havia ninguém para chamar.
+- Pendências: montou a mensagem, passou pela trava e falhou só no envio, porque a instância da Loja Teste
+  não existe (de propósito).
+- Depois do teste os 16 workflows ficaram desligados de novo.
+- `"guardar_execucoes": true` no `loja.json` do motor guarda no n8n também as execuções que deram certo.
+  Serve para a fase de teste; tirar antes de pôr várias lojas (a retomada roda a cada minuto por loja).
+
+**Ainda não provado:** uma rotina mandando mensagem de verdade (lembrete, retomada, retorno com cliente
+para chamar), o envio real da resposta pelo WhatsApp, duas lojas ao mesmo tempo com o mesmo número de
+cliente, e o tempo e a memória por atendimento.
 
 **Limites conhecidos do motor hoje:** o alerta de erro não diz de qual loja foi; "Sinop", "MT" e o fuso de
 Cuiabá continuam fixos; cada mensagem faz uma consulta a mais ao banco.
