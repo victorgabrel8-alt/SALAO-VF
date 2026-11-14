@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { TelaDaAba } from "@/components/TelaDaAba";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
-import { FolhaConfirmar } from "@/components/FolhaConfirmar";
-import { Intencao } from "@/components/Intencao";
+import { Folha } from "@/components/Folha";
+import { FolhaConfirmar, type TelaConfirmar } from "@/components/FolhaConfirmar";
+import { FormAtendimento } from "@/components/FormAtendimento";
 import { Observacao } from "@/components/Observacao";
 import {
   buscarAtendimentosDoDia,
@@ -26,9 +27,8 @@ import {
   resumoDosServicos,
   ultimoReagendamento,
   type Atendimento,
-  type StatusAtendimento,
 } from "@/lib/atendimentos";
-import { lerAlmoco, textoAlmoco } from "@/lib/almoco";
+import { lerAlmoco } from "@/lib/almoco";
 import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
 import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
@@ -43,16 +43,12 @@ import {
 import { supabase } from "@/lib/supabase/client";
 import { useAgora } from "@/lib/relogio";
 import { useTempoReal } from "@/lib/tempoReal";
+import { abrirWhatsApp } from "@/lib/whatsapp";
 import type { Profissional, ServicoAtivo } from "@/lib/tipos";
 
-// Agenda (design/salao-redesign): topo grafite com os dias da semana e o dia como uma lista de
-// cartões (Concluído / Agora / A atender), com os intervalos livres e o almoço entre eles.
-// O círculo à direita confirma o atendimento ("Foi isso" ou "Fez outra coisa", e em seguida
-// "Já combinou a volta?"); tocar no cartão abre todos os detalhes.
-
-// "Clientes do dia": só quem ainda vai ser atendida fica na linha do tempo. Concluídas e faltas
-// saem dela e vão para o grupo recolhido ("N concluídos"). Cancelados não aparecem.
-const DIAS_SEMANA = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+// Agenda (desenho Oi Studio): mês e "+" no topo, faixa da semana (deslizar troca de semana) e o dia
+// numa lista só, em ordem de hora, com a situação de cada horário à direita, o almoço e os
+// intervalos livres ("Encaixar"). Tocar num horário abre a folha com Chegou, Concluir e Faltou.
 const DIAS_LONGOS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
@@ -80,10 +76,6 @@ async function buscarDia(empresaId: string, dia: string): Promise<Dia> {
   };
 }
 
-type Entrada =
-  | { tipo: "atendimento"; atendimento: Atendimento; inicio: number; fim: number }
-  | { tipo: "almoco"; inicio: number; fim: number };
-
 function minutos(a: Atendimento): number {
   if (!a.fim) return 60;
   return Math.max(15, Math.round((Date.parse(a.fim) - Date.parse(a.inicio)) / 60_000));
@@ -95,6 +87,7 @@ function duracao(min: number): string {
   return h && m ? `${h}h${String(m).padStart(2, "0")}` : h ? `${h}h` : `${m} min`;
 }
 
+
 export default function AgendaPage() {
   return (
     <TelaDaAba>
@@ -103,23 +96,22 @@ export default function AgendaPage() {
   );
 }
 
+// Iniciais dos dias na faixa da semana (de segunda a domingo)
+const LETRAS = ["S", "T", "Q", "Q", "S", "S", "D"];
+
 function AgendaPageConteudo() {
   const empresa = useEmpresa();
   const [dia, setDia] = useState(hojeNoSalao());
   const [resultado, setResultado] = useState<{ dia: string; dados: Dia } | null>(null);
   const [versao, setVersao] = useState(0);
+  // Folha do horário tocado (ações e detalhes)
   const [aberto, setAberto] = useState<string | null>(null);
-  const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
+  // Folha "Foi isso / Fez outra coisa / Faltou / Remarcar"
+  const [confirmando, setConfirmando] = useState<{ atendimento: Atendimento; tela: TelaConfirmar } | null>(null);
+  // "+" e "Encaixar": novo horário marcado pela dona, já com o dia (e a hora do intervalo livre)
+  const [novo, setNovo] = useState<{ hora?: string } | null>(null);
   const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
-  // Concluído agora há pouco: quando a folha fecha, o cartão dele acende em verde por um instante
-  const confirmadoAgora = useRef<string | null>(null);
-  const [celebrando, setCelebrando] = useState<string | null>(null);
-  // Concluídos e faltas ficam recolhidos numa linha "✓ 4 concluídos" que abre ao tocar
-  const [verConcluidos, setVerConcluidos] = useState(false);
-  // Não atendidas (passou 1 h e ninguém confirmou) saem da linha do tempo e ficam recolhidas numa
-  // linha rosé, como no Início; tocar mostra quem é, e o ✓ de cada uma resolve
   const agora = useAgora();
-  const [verNaoAtendidas, setVerNaoAtendidas] = useState(false);
   const { dialogo, perguntar, avisar } = useDialogo();
   const recarregar = () => setVersao((v) => v + 1);
 
@@ -156,74 +148,61 @@ function AgendaPageConteudo() {
   const dados = resultado?.dia === dia ? resultado.dados : null;
   const ok = dados && !("erro" in dados) ? dados : null;
   const ordem = ok ? ok.profissionais.map((p) => p.id) : [];
+  // Cor por profissional só quando a loja tem mais de uma
+  const variasProfissionais = ordem.length > 1;
   const segunda = inicioDaSemana(dia);
-  // Seg a Sáb; o domingo só aparece se o salão abre nesse dia, se tem horário nele ou se é o dia escolhido
-  const abreDomingo = Boolean((empresa.config.horario_funcionamento as Record<string, string | null> | undefined)?.dom);
-  const semana = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i)).filter(
-    (d, i) => i < 6 || abreDomingo || d === dia || ok?.comHorario.has(d),
-  );
-  const [, mes] = dia.split("-").map(Number);
-
-  // Onde está o dia escolhido, para a bolha bronze deslizar até ele (o domingo pode entrar ou
-  // sair da semana, então mede de novo quando a lista de dias muda)
-  const botoesDia = useRef(new Map<string, HTMLButtonElement>());
-  const [bolhaDia, setBolhaDia] = useState<{ x: number; largura: number } | null>(null);
-  useLayoutEffect(() => {
-    const medir = () => {
-      const el = botoesDia.current.get(dia);
-      if (el) setBolhaDia({ x: el.offsetLeft, largura: el.offsetWidth });
-    };
-    medir();
-    // Os dias têm largura fluida: girou o celular, mede de novo
-    window.addEventListener("resize", medir);
-    return () => window.removeEventListener("resize", medir);
-  }, [dia, semana.join("|")]); // eslint-disable-line react-hooks/exhaustive-deps
+  const semana = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i));
+  const [ano, mes] = dia.split("-").map(Number);
 
   const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
   const selecionado = visiveis.find((a) => a.id === aberto) ?? null;
-  // O que a IA anotou de cada cliente do dia (pré-avaliação), para aparecer no cartão
+  // O que a IA anotou de cada cliente do dia (pré-avaliação)
   const intencoes = useIntencoes(
     visiveis.flatMap((a) => (a.clientes ? [a.clientes.id] : [])),
     versao,
   );
   const intencaoDe = (a: Atendimento) => (a.clientes ? intencoes[a.clientes.id] : undefined);
-  // Concluídos e faltas saem da linha do tempo e vão para o grupo recolhido. O que acabou de ser
-  // concluído fica à vista até terminar de acender.
-  const concluidos = visiveis.filter((a) => (a.status === "realizado" || a.status === "faltou") && a.id !== celebrando);
-  // Passou 1 h do horário e ninguém confirmou: sai da linha do tempo e vai para "Não atendidas"
-  const naoAtendidas = visiveis.filter((a) => naoAtendida(a, agora));
-  const naLinha = visiveis.filter((a) => !concluidos.includes(a) && !naoAtendidas.includes(a));
   // Mesma cliente com mais de um horário no dia (ex.: mudou de horário e alguém criou outro em vez
-  // de remarcar): o cartão avisa, para a Gleide conferir
+  // de remarcar): a linha avisa, para a dona conferir
   const horariosDaCliente = new Map<string, number>();
   for (const a of visiveis) if (a.clientes && a.status !== "faltou") horariosDaCliente.set(a.clientes.id, (horariosDaCliente.get(a.clientes.id) ?? 0) + 1);
   const repetidaNoDia = (a: Atendimento) => (a.clientes ? (horariosDaCliente.get(a.clientes.id) ?? 0) : 0);
-  const faltas = concluidos.filter((a) => a.status === "faltou").length;
 
-  // Linha do tempo: os horários a atender e o bloco do almoço no lugar certo (dia livre mostra
-  // só "Dia livre", sem o almoço sozinho embaixo)
+  // O dia numa lista só, em ordem de hora: horários (inclusive concluídos e faltas, com a situação
+  // à direita), o almoço e os intervalos livres de 30 min ou mais entre eles
   const almoco = lerAlmoco(empresa.config);
-  const entradas: Entrada[] = [
-    ...naLinha.map((a) => ({
-      tipo: "atendimento" as const,
-      atendimento: a,
-      inicio: Date.parse(a.inicio),
-      fim: Date.parse(a.inicio) + minutos(a) * 60_000,
-    })),
+  const blocos = [
+    ...visiveis.map((a) => ({ tipo: "atendimento" as const, atendimento: a, inicio: Date.parse(a.inicio), fim: Date.parse(a.inicio) + minutos(a) * 60_000 })),
     ...(almoco && visiveis.length > 0
-      ? [
-          {
-            tipo: "almoco" as const,
-            inicio: Date.parse(instanteNoSalao(dia, almoco.inicio)),
-            fim: Date.parse(instanteNoSalao(dia, almoco.fim)),
-          },
-        ]
+      ? [{ tipo: "almoco" as const, inicio: Date.parse(instanteNoSalao(dia, almoco.inicio)), fim: Date.parse(instanteNoSalao(dia, almoco.fim)) }]
       : []),
   ].sort((x, y) => x.inicio - y.inicio);
+  // Encaixar só de agora em diante: hoje, a partir da próxima meia hora; precisa sobrar 30 min
+  const inicioDoEncaixe = (l: { inicio: number; minutos: number }) => {
+    if (dia > hoje) return l.inicio;
+    if (dia < hoje) return null;
+    const proximaMeiaHora = Math.ceil(agora / (30 * 60_000)) * 30 * 60_000;
+    const inicio = Math.max(l.inicio, proximaMeiaHora);
+    return l.inicio + l.minutos * 60_000 - inicio >= 30 * 60_000 ? inicio : null;
+  };
+  const linhas: Linha[] = [];
+  let fimAte: number | null = null;
+  for (const b of blocos) {
+    // Falta não ocupa a agenda: o horário dela conta como livre (inclusive quando é o primeiro do dia)
+    const falta = b.tipo === "atendimento" && b.atendimento.status === "faltou";
+    if (falta && fimAte === null) fimAte = b.inicio;
+    if (fimAte !== null && b.inicio - fimAte >= 30 * 60_000) linhas.push({ tipo: "livre", inicio: fimAte, minutos: Math.round((b.inicio - fimAte) / 60_000) });
+    linhas.push(b);
+    if (!falta) fimAte = Math.max(fimAte ?? 0, b.fim);
+  }
+  // Na mesma hora, o "Livre" vem antes da falta que liberou o horário
+  linhas.sort((x, y) => x.inicio - y.inicio || (x.tipo === "livre" ? -1 : y.tipo === "livre" ? 1 : 0));
+  // Conta clientes que vêm (faltas não entram)
+  const clientesDoDia = visiveis.filter((a) => a.status !== "faltou").length;
+  const marcadoPelaIa = visiveis.some((a) => a.origem === "ia");
 
   // Trocar de semana: na semana de hoje, abre hoje; nas outras, abre no mesmo dia da semana e,
-  // se ele estiver vazio, pula para o primeiro dia que tem horário. Antes ficava no dia vazio
-  // (ex.: sexta 30) e parecia que a cliente marcada na terça não estava na Agenda.
+  // se ele estiver vazio, pula para o primeiro dia que tem horário
   async function irParaSemana(delta: number) {
     const novaSegunda = somarDias(segunda, delta);
     const dias = Array.from({ length: 7 }, (_, i) => somarDias(novaSegunda, i));
@@ -239,13 +218,11 @@ function AgendaPageConteudo() {
     if (primeiro) setDia((atual) => (atual === provisorio ? primeiro : atual));
   }
 
-  // A atender -> abre a folha "Foi isso / Fez outra coisa / Faltou". Realizado ou faltou -> desfaz
-  // (volta para a linha do tempo; pergunta antes quando algo vai sumir: os serviços feitos junto).
-  async function alternarRealizado(a: Atendimento) {
-    if (a.status === "agendado") {
-      setConfirmando(a);
-      return;
-    }
+  // Deslizar a faixa da semana para o lado troca de semana
+  const toque = useRef<{ x: number; y: number } | null>(null);
+
+  // Concluído ou faltou -> desfaz (pergunta antes quando algo vai sumir: os serviços feitos junto)
+  async function desfazer(a: Atendimento) {
     let erro: string | undefined;
     if (a.status === "faltou") {
       if (!(await perguntar(`Desfazer a falta de ${a.clientes?.nome ?? "a cliente"}? Ela volta para os clientes do dia.`, { confirmar: "Desfazer" }))) return;
@@ -267,37 +244,32 @@ function AgendaPageConteudo() {
   // A folha continua aberta depois de salvar: em seguida pergunta se já combinou a volta
   async function confirmar(a: Atendimento, servicoIds: string[]) {
     const erro = await confirmarAtendimento(empresa.id, a, servicoIds);
-    if (!erro) {
-      confirmadoAgora.current = a.id;
-      recarregar();
-    }
+    if (!erro) recarregar();
     return erro;
   }
 
   // Avaliação: o ✓ já leva o resultado (Fechou / Ficou de pensar / Não fechou)
   async function confirmarComResultado(a: Atendimento, resultado: ResultadoAvaliacao) {
     const erro = await confirmarAvaliacao(a.id, a.observacoes, resultado);
-    if (!erro) {
-      confirmadoAgora.current = a.id;
-      recarregar();
-    }
+    if (!erro) recarregar();
     return erro;
   }
 
-  // Botões do cartão de hoje: "Chegou" marca a chegada (a IA para de cobrar atraso) e
-  // "Faltou" pergunta antes e marca a falta, como a folha faz
+  // "Chegou" marca a chegada (a IA para de cobrar atraso)
   async function chegou(a: Atendimento, sim = true) {
     const erro = await marcarChegou(a.id, sim);
     if (erro) await avisar(`Não deu certo: ${erro}`);
     recarregar();
   }
+
+  // Faltou: pergunta antes; a IA vê a falta na ficha
   async function faltou(a: Atendimento) {
     if (!(await perguntar(`${a.clientes?.nome ?? "A cliente"} faltou?`, { confirmar: "Faltou" }))) return;
     const erro = await marcarFalta(a);
     if (erro) await avisar(`Não deu certo: ${erro}`);
+    else setAberto(null);
   }
 
-  // Faltou: sai da linha do tempo e vai para o grupo recolhido; a IA vê a falta na ficha
   async function marcarFalta(a: Atendimento) {
     const erro = await mudarStatus(a.id, "faltou");
     if (!erro) recarregar();
@@ -318,133 +290,113 @@ function AgendaPageConteudo() {
     return erro;
   }
 
-  function fecharConfirmar() {
-    setConfirmando(null);
-    const id = confirmadoAgora.current;
-    if (!id) return;
-    confirmadoAgora.current = null;
-    setCelebrando(id);
-    setTimeout(() => setCelebrando((atual) => (atual === id ? null : atual)), 2000);
+  // Da folha do horário para a de confirmar (Concluir) ou direto para Remarcar
+  function abrirConfirmar(a: Atendimento, tela: TelaConfirmar) {
+    setAberto(null);
+    setConfirmando({ atendimento: a, tela });
   }
+
+  const nomeDoMes = MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1);
+  const diaSemana = (d: string) => (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7;
+  const tituloDoDia = dia === hoje ? "Hoje" : `${DIAS_LONGOS[diaSemana(dia)]}, ${Number(dia.slice(8))}`;
 
   return (
     <>
-      {/* Topo grafite: mês, resumo do dia e os dias da semana */}
-      <header className="relative -mt-[env(safe-area-inset-top)] flex flex-col gap-[18px] overflow-hidden rounded-b-[28px] bg-grafite px-5 pt-[calc(56px+env(safe-area-inset-top))] pb-6">
-        <div className="relative flex items-end justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-0.5">
-            <span className="truncate text-[13px] font-semibold text-dourado">
-              {MESES[mes - 1].charAt(0).toUpperCase() + MESES[mes - 1].slice(1)} de {dia.slice(0, 4)}
-              {ok && ` · ${visiveis.length === 1 ? "1 horário" : `${visiveis.length} horários`}`}
-            </span>
-            <h1 className="text-[30px] leading-tight font-bold tracking-[-0.035em] text-perola">Agenda</h1>
+      <header className="px-5 pt-6">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-col">
+            {/* Tocar no mês abre as próximas semanas e meses numa lista só */}
+            <Link
+              href="/agenda/proximas"
+              className="-ml-1 flex h-11 w-fit items-center gap-1 rounded-lg px-1 text-[14px] font-semibold text-rotulo active:bg-campo"
+            >
+              {nomeDoMes} de {ano}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </Link>
+            <h1 className="text-[30px] leading-tight font-bold tracking-[-0.035em]">Agenda</h1>
           </div>
-          <div className="flex items-center gap-2">
-            {dia !== hoje && (
-              <button onClick={() => setDia(hoje)} className="h-11 rounded-full border border-white/25 px-4 text-[13px] font-bold text-perola active:scale-95">
+          <div className="flex items-center gap-1">
+            {!semana.includes(hoje) && (
+              <button onClick={() => setDia(hoje)} className="h-11 rounded-full px-3 text-[14px] font-bold underline underline-offset-2 active:bg-campo">
                 Hoje
               </button>
             )}
-            {/* Todas as clientes dos próximos dias e meses, numa lista só */}
-            <Link
-              href="/agenda/proximas"
-              className="flex h-11 items-center gap-1.5 rounded-full bg-[#FAF6F3] pr-3.5 pl-3 text-[13px] font-bold text-grafite active:scale-95"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+            <button onClick={() => setNovo({})} aria-label="Novo horário" className="flex h-12 w-12 items-center justify-center rounded-full active:bg-campo">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden>
+                <path d="M12 5v14M5 12h14" />
               </svg>
-              Próximas
-            </Link>
+            </button>
           </div>
         </div>
-        <div className="relative flex items-center gap-1">
-          <button
-            onClick={() => irParaSemana(-7)}
-            aria-label="Semana anterior"
-            className="-ml-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-campo/70"
-          >
-            ‹
-          </button>
-          <div className={`relative grid flex-1 gap-1.5 ${semana.length === 7 ? "grid-cols-7" : "grid-cols-6"}`}>
-            {/* Bolha dourada do dia escolhido (única exceção à regra do ouro): desliza até o dia tocado na mesma mola da barra de
-                abas. Fica atrás dos dias (que são translúcidos), então aparece passando por baixo */}
-            {bolhaDia && (
-              <span
-                aria-hidden
-                className="bolha-aba pointer-events-none absolute inset-y-0 left-0 rounded-[14px] bg-dourado"
-                style={{ transform: `translateX(${bolhaDia.x}px)`, width: bolhaDia.largura, transitionProperty: "transform, width" }}
-              />
-            )}
-            {semana.map((d) => {
-              const escolhido = d === dia;
-              const semanaIdx = (new Date(`${d}T12:00:00Z`).getUTCDay() + 6) % 7;
-              return (
-                <button
-                  key={d}
-                  ref={(el) => {
-                    if (el) botoesDia.current.set(d, el);
-                    else botoesDia.current.delete(d);
-                  }}
-                  onClick={() => setDia(d)}
-                  aria-pressed={escolhido}
-                  aria-label={`${formatarData(d)}${bloqueioDoDia(empresa.config, d) ? " (sem atender)" : ""}`}
-                  className={`relative flex h-[62px] flex-col items-center justify-center gap-0.5 rounded-[14px] transition-colors duration-300 active:scale-95 ${
-                    escolhido
-                      ? "text-grafite"
-                      : `bg-carvao text-perola ${d === hoje ? "ring-[1.5px] ring-white/40" : ""}`
-                  }`}
+
+        {/* Faixa da semana: deslizar para o lado troca de semana. Pontinho = dia com horário;
+            número riscado = dia sem atender */}
+        <div
+          className="mt-3 grid touch-pan-y grid-cols-7 text-center"
+          onTouchStart={(e) => {
+            toque.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+          }}
+          onTouchEnd={(e) => {
+            const t = toque.current;
+            toque.current = null;
+            if (!t) return;
+            const dx = e.changedTouches[0].clientX - t.x;
+            const dy = e.changedTouches[0].clientY - t.y;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) irParaSemana(dx < 0 ? 7 : -7);
+          }}
+        >
+          {semana.map((d, i) => {
+            const escolhido = d === dia;
+            const bloqueado = Boolean(bloqueioDoDia(empresa.config, d));
+            return (
+              <button
+                key={d}
+                onClick={() => setDia(d)}
+                aria-pressed={escolhido}
+                aria-label={`${formatarData(d)}${d === hoje ? " (hoje)" : ""}${bloqueado ? " (sem atender)" : ""}`}
+                className="flex flex-col items-center gap-1 py-1"
+              >
+                <span className={`text-[12px] ${escolhido || d === hoje ? "font-extrabold text-texto" : "font-semibold text-rotulo"}`}>{LETRAS[i]}</span>
+                <span
+                  className={`flex h-11 w-11 items-center justify-center rounded-full text-[17px] transition-colors duration-200 ${
+                    escolhido ? "bg-grafite font-extrabold text-perola" : d === hoje ? "font-extrabold text-texto ring-[1.5px] ring-grafite" : "font-medium"
+                  } ${bloqueado && !escolhido ? "text-claro line-through decoration-2" : ""}`}
                 >
-                  <span className="text-xs font-semibold opacity-85">{escolhido && d === hoje ? "Hoje" : DIAS_SEMANA[semanaIdx]}</span>
-                  {/* Dia sem atender: número riscado */}
-                  <span className={`text-[18px] leading-none font-extrabold ${bloqueioDoDia(empresa.config, d) ? "line-through decoration-[#B4432F] decoration-2 opacity-60" : ""}`}>
-                    {Number(d.slice(8))}
-                  </span>
-                  {/* Pontinho: dia com horário marcado */}
-                  <span
-                    aria-hidden
-                    className={`absolute bottom-1.5 h-1 w-1 rounded-full ${
-                      ok?.comHorario.has(d) ? (escolhido ? "bg-grafite" : "bg-bronze") : "bg-transparent"
-                    }`}
-                  />
-                </button>
-              );
-            })}
-          </div>
-          <button
-            onClick={() => irParaSemana(7)}
-            aria-label="Próxima semana"
-            className="-mr-2 flex h-16 w-6 shrink-0 items-center justify-center text-2xl text-campo/70"
-          >
-            ›
-          </button>
+                  {Number(d.slice(8))}
+                </span>
+                <span aria-hidden className={`h-1 w-1 rounded-full ${ok?.comHorario.has(d) ? "bg-claro" : "bg-transparent"}`} />
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      <h2 className="mt-5 px-5 text-[16px] font-bold">
-        {DIAS_LONGOS[(new Date(`${dia}T12:00:00Z`).getUTCDay() + 6) % 7]}, {Number(dia.slice(8))}
-        {ok && ` · ${visiveis.length === 1 ? "1 cliente" : `${visiveis.length} clientes`}`}
-      </h2>
-
       <section className="mt-3 px-5">
+        <p className="pb-2 text-[14px] font-semibold text-rotulo">
+          {tituloDoDia}
+          {ok && clientesDoDia > 0 && ` · ${clientesDoDia === 1 ? "1 cliente" : `${clientesDoDia} clientes`}`}
+        </p>
+
         {/* Dia bloqueado (viagem, folga...): a IA não marca ninguém; quem já estava marcado aparece abaixo */}
         {bloqueioDoDia(empresa.config, dia) && (
-          <Link href="/agenda/bloqueios" className="mb-3 flex items-center gap-3 rounded-[18px] bg-rose px-4 py-3 text-rose-texto active:scale-[0.99]">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
-              <rect x="3" y="4" width="18" height="18" rx="2" />
-              <path d="M16 2v4M8 2v4M3 10h18M9 14l6 6M15 14l-6 6" />
-            </svg>
+          <Link href="/agenda/bloqueios" className="mb-3 flex min-h-12 items-center gap-2.5 rounded-[14px] bg-rose px-4 py-3 text-rose-texto active:scale-[0.99]">
+            <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-atencao" />
             <span className="min-w-0 flex-1 text-[15px]">
               <b>Dia sem atender</b>
-              {bloqueioDoDia(empresa.config, dia)?.motivo && ` · ${bloqueioDoDia(empresa.config, dia)?.motivo}`}. A IA não marca ninguém nesse dia.
+              {bloqueioDoDia(empresa.config, dia)?.motivo && ` · ${bloqueioDoDia(empresa.config, dia)?.motivo}`}
             </span>
             <span aria-hidden className="text-lg">›</span>
           </Link>
         )}
-        {/* Horas sem atender, que a Gleide pede à assistente */}
+        {/* Horas sem atender, que a dona pede à assistente */}
         {bloqueiosHorarioDoDia(empresa.config, dia).map((b) => (
-          <p key={`${b.inicio}-${b.fim}`} className="mb-3 rounded-[18px] bg-rose px-4 py-3 text-[15px] text-rose-texto">
-            <b>Sem atender das {b.inicio} às {b.fim}</b>
-            {b.motivo && ` · ${b.motivo}`}. A IA não marca ninguém nesse período.
+          <p key={`${b.inicio}-${b.fim}`} className="mb-3 rounded-[14px] bg-rose px-4 py-3 text-[15px] text-rose-texto">
+            <b>
+              Sem atender das {b.inicio} às {b.fim}
+            </b>
+            {b.motivo && ` · ${b.motivo}`}
           </p>
         ))}
         {!dados && <p className="carregando-calmo text-texto-2">Carregando…</p>}
@@ -452,472 +404,347 @@ function AgendaPageConteudo() {
 
         {ok && (
           <div className="chegar-suave">
-            {visiveis.length === 0 && <Vazio texto="Dia livre. Nenhum horário marcado." />}
-            <ol className="flex flex-col gap-3">
-              {/* Concluídos e faltas: fora da linha do tempo, recolhidos; tocar mostra a lista deles */}
-              {concluidos.length > 0 && (
-                <li className="flex flex-col gap-3">
-                  <LinhaConcluidos
-                    quantidade={concluidos.length - faltas}
-                    faltas={faltas}
-                    aberto={verConcluidos}
-                    tudoFeito={naLinha.length === 0 && naoAtendidas.length === 0}
-                    aoAlternar={() => setVerConcluidos((v) => !v)}
-                  />
-                  {verConcluidos &&
-                    concluidos.map((a) => (
-                      <ItemLinhaDoTempo
-                        key={a.id}
-                        atendimento={a}
-                        intencao={intencaoDe(a)}
-                        vezesNoDia={repetidaNoDia(a)}
-                        barra={corDaProfissional(a.profissional_id, ordem).ponto}
-                        celebrar={false}
-                        aoAbrir={() => setAberto(a.id)}
-                        aoMarcar={() => alternarRealizado(a)}
-                      />
-                    ))}
-                </li>
-              )}
-              {naoAtendidas.length > 0 && (
-                <li className="flex flex-col gap-3">
-                  <LinhaNaoAtendidas
-                    quantidade={naoAtendidas.length}
-                    aberto={verNaoAtendidas}
-                    aoAlternar={() => setVerNaoAtendidas((v) => !v)}
-                  />
-                  {verNaoAtendidas &&
-                    naoAtendidas.map((a) => (
-                      <ItemLinhaDoTempo
-                        key={a.id}
-                        atendimento={a}
-                        intencao={intencaoDe(a)}
-                        vezesNoDia={repetidaNoDia(a)}
-                        barra={corDaProfissional(a.profissional_id, ordem).ponto}
-                        celebrar={false}
-                        aoAbrir={() => setAberto(a.id)}
-                        aoMarcar={() => alternarRealizado(a)}
-                        aoChegou={dia === hoje ? (sim) => chegou(a, sim) : undefined}
-                        aoFaltou={dia === hoje ? () => faltou(a) : undefined}
-                      />
-                    ))}
-                </li>
-              )}
-              {entradas.map((e, i) => {
-                // Os concluídos também ocupavam a agenda: contam para o intervalo livre
-                const antes = [
-                  ...entradas.slice(0, i).map((x) => x.fim),
-                  ...concluidos
-                    .filter((a) => a.status === "realizado" && Date.parse(a.inicio) < e.inicio)
-                    .map((a) => Date.parse(a.inicio) + minutos(a) * 60_000),
-                ];
-                const fimAnterior = antes.length ? Math.max(...antes) : null;
-                const livre = fimAnterior ? Math.round((e.inicio - fimAnterior) / 60_000) : 0;
-                return (
-                  <li key={e.tipo === "almoco" ? "almoco" : e.atendimento.id} className="flex flex-col gap-3">
-                    {livre >= 30 && fimAnterior && <IntervaloLivre inicio={fimAnterior} minutos={livre} semCirculo={dia === hoje} />}
-                    {e.tipo === "almoco" ? (
-                      <BlocoAlmoco texto={textoAlmoco(almoco!)} semCirculo={dia === hoje} />
-                    ) : (
-                      <ItemLinhaDoTempo
-                        atendimento={e.atendimento}
-                        intencao={intencaoDe(e.atendimento)}
-                        vezesNoDia={repetidaNoDia(e.atendimento)}
-                        barra={corDaProfissional(e.atendimento.profissional_id, ordem).ponto}
-                        celebrar={celebrando === e.atendimento.id && e.atendimento.status === "realizado"}
-                        aoAbrir={() => setAberto(e.atendimento.id)}
-                        aoMarcar={() => alternarRealizado(e.atendimento)}
-                        aoChegou={dia === hoje ? (sim) => chegou(e.atendimento, sim) : undefined}
-                        aoFaltou={dia === hoje ? () => faltou(e.atendimento) : undefined}
-                      />
-                    )}
-                  </li>
-                );
-              })}
-            </ol>
+            {visiveis.length === 0 ? (
+              <div className="flex flex-col items-center gap-3 border-t border-campo py-10 text-center">
+                <span className="text-[17px] font-bold">Dia livre</span>
+                <span className="text-[15px] text-texto-2">Nenhum horário marcado.</span>
+                {(dia >= hoje) && (
+                  <button onClick={() => setNovo({})} className="mt-1 h-12 rounded-[13px] border border-claro bg-card px-5 text-[16px] font-bold active:bg-campo">
+                    Marcar horário
+                  </button>
+                )}
+              </div>
+            ) : (
+              <ul>
+                {linhas.map((l) =>
+                  l.tipo === "atendimento" ? (
+                    <LinhaHorario
+                      key={l.atendimento.id}
+                      atendimento={l.atendimento}
+                      cor={variasProfissionais ? corDaProfissional(l.atendimento.profissional_id, ordem).ponto : null}
+                      vezesNoDia={repetidaNoDia(l.atendimento)}
+                      agora={agora}
+                      aoTocar={() => setAberto(l.atendimento.id)}
+                    />
+                  ) : l.tipo === "almoco" ? (
+                    <li key="almoco" className="flex min-h-[52px] items-center gap-3 border-t border-campo text-[15px] text-rotulo">
+                      <span className="w-[52px] shrink-0 font-semibold">{almoco!.inicio}</span>
+                      <span>Almoço até {almoco!.fim}</span>
+                    </li>
+                  ) : (
+                    <li key={`livre-${l.inicio}`} className="flex min-h-[52px] items-center gap-3 border-t border-campo text-[15px] text-rotulo">
+                      <span className="w-[52px] shrink-0 font-semibold">{formatarHora(new Date(l.inicio).toISOString())}</span>
+                      <span className="min-w-0 flex-1">Livre por {duracaoPorExtenso(l.minutos)}</span>
+                      {inicioDoEncaixe(l) !== null && (
+                        <button
+                          onClick={() => setNovo({ hora: formatarHora(new Date(inicioDoEncaixe(l)!).toISOString()) })}
+                          className="-mr-2 h-11 shrink-0 rounded-lg px-2 text-[15px] font-bold text-texto active:bg-campo"
+                        >
+                          Encaixar
+                        </button>
+                      )}
+                    </li>
+                  ),
+                )}
+              </ul>
+            )}
+            {marcadoPelaIa && (
+              <p className="mt-4 flex items-center gap-2 text-[13px] text-rotulo">
+                <span aria-hidden className="h-2 w-2 rounded-full bg-ouro-antigo" />
+                Marcado pela IA
+              </p>
+            )}
           </div>
         )}
       </section>
 
-      {/* Sem "+ Novo horário": quem marca os horários é a IA */}
       <div className="h-6" />
 
       {dialogo}
 
-      {confirmando && (
-        <FolhaConfirmar
-          atendimento={confirmando}
-          servicos={servicos}
-          aoConfirmar={(ids) => confirmar(confirmando, ids)}
-          aoResultado={(r) => confirmarComResultado(confirmando, r)}
-          aoFaltou={() => marcarFalta(confirmando)}
-          aoRemarcar={(inicio) => remarcar(confirmando, inicio)}
-          aoCancelar={() => cancelar(confirmando)}
-          intencao={intencaoDe(confirmando)}
-          aoFechar={fecharConfirmar}
+      {selecionado && (
+        <FolhaHorario
+          atendimento={selecionado}
+          intencao={intencaoDe(selecionado)}
+          vezesNoDia={repetidaNoDia(selecionado)}
+          ehHoje={dia === hoje}
+          noPassado={dia < hoje}
+          agora={agora}
+          aoChegou={(sim) => chegou(selecionado, sim)}
+          aoConcluir={() => abrirConfirmar(selecionado, "pergunta")}
+          aoFaltou={() => faltou(selecionado)}
+          aoRemarcar={() => abrirConfirmar(selecionado, "remarcar")}
+          aoDesfazer={async () => {
+            setAberto(null);
+            await desfazer(selecionado);
+          }}
+          aoFechar={() => setAberto(null)}
         />
       )}
 
-      {/* Detalhes do horário: tudo do cartão completo, numa folha que sobe de baixo */}
-      {selecionado && (
-        <div className="fixed inset-0 z-20 flex items-end bg-black/40" onClick={() => setAberto(null)}>
-          <div
-            role="dialog"
-            aria-modal="true"
-            onClick={(e) => e.stopPropagation()}
-            className="mx-auto max-h-[85dvh] w-full max-w-xl overflow-y-auto rounded-t-3xl bg-[var(--background)] px-4 pt-3 pb-safe"
-          >
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-borda" />
-            <DetalheHorario atendimento={selecionado} intencao={intencaoDe(selecionado)} />
-            <button
-              onClick={() => setAberto(null)}
-              className="my-4 h-12 w-full rounded-2xl border border-borda bg-card font-semibold active:bg-campo"
-            >
-              Fechar
-            </button>
-          </div>
-        </div>
+      {confirmando && (
+        <FolhaConfirmar
+          atendimento={confirmando.atendimento}
+          servicos={servicos}
+          telaInicial={confirmando.tela}
+          aoConfirmar={(ids) => confirmar(confirmando.atendimento, ids)}
+          aoResultado={(r) => confirmarComResultado(confirmando.atendimento, r)}
+          aoFaltou={() => marcarFalta(confirmando.atendimento)}
+          aoRemarcar={(inicio) => remarcar(confirmando.atendimento, inicio)}
+          aoCancelar={() => cancelar(confirmando.atendimento)}
+          intencao={intencaoDe(confirmando.atendimento)}
+          aoFechar={() => setConfirmando(null)}
+        />
+      )}
+
+      {novo && (
+        <FormAtendimento
+          modo="agendar"
+          dia={dia < hoje ? hoje : dia}
+          horaInicial={novo.hora}
+          aoFechar={() => setNovo(null)}
+          aoSalvar={() => {
+            setNovo(null);
+            recarregar();
+          }}
+        />
       )}
     </>
   );
 }
 
-function Vazio({ texto }: { texto: string }) {
+type Linha =
+  | { tipo: "atendimento"; atendimento: Atendimento; inicio: number; fim: number }
+  | { tipo: "almoco"; inicio: number; fim: number }
+  | { tipo: "livre"; inicio: number; minutos: number };
+
+// "1 hora", "1 hora e 30 min", "45 min"
+function duracaoPorExtenso(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  const horas = h ? `${h} ${h === 1 ? "hora" : "horas"}` : "";
+  return h && m ? `${horas} e ${m} min` : h ? horas : `${m} min`;
+}
+
+// Situação à direita de cada horário: o que já aconteceu fica escrito; "a atender" não leva nada
+function Situacao({ atendimento: a, agora }: { atendimento: Atendimento; agora: number }) {
+  if (a.status === "realizado") return <span className="shrink-0 text-[14px] font-bold text-salvia-texto">✓ Concluído</span>;
+  if (a.status === "faltou") return <span className="shrink-0 text-[14px] font-bold text-rose-texto">Faltou</span>;
+  if (a.chegou_em) return <span className="shrink-0 rounded-full bg-salvia px-2.5 py-1 text-[13px] font-bold text-salvia-texto">Chegou</span>;
+  if (naoAtendida(a, agora)) return <span className="shrink-0 text-[14px] font-bold text-rose-texto">Sem baixa</span>;
+  const inicio = Date.parse(a.inicio);
+  if (agora >= inicio && agora < inicio + minutos(a) * 60_000)
+    return <span className="shrink-0 rounded-full bg-grafite px-2.5 py-1 text-[13px] font-bold text-perola">Agora</span>;
+  return null;
+}
+
+// Um horário na lista: hora, nome (bolinha dourada = marcado pela IA), serviço e a situação.
+// Tocar abre a folha com as ações.
+function LinhaHorario({
+  atendimento: a,
+  cor,
+  vezesNoDia,
+  agora,
+  aoTocar,
+}: {
+  atendimento: Atendimento;
+  cor: string | null;
+  vezesNoDia: number;
+  agora: number;
+  aoTocar: () => void;
+}) {
+  const resolvido = a.status === "realizado" || a.status === "faltou";
+  const nome = a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente");
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-[22px] bg-card px-5 py-7 text-center">
-      <span className="text-base font-bold">{texto}</span>
-    </div>
+    <li className="border-t border-campo">
+      <button onClick={aoTocar} className="flex min-h-[64px] w-full items-center gap-3 py-3 text-left active:bg-campo/60">
+        <span className={`w-[52px] shrink-0 text-[17px] tracking-[-0.02em] ${resolvido ? "font-semibold text-rotulo" : "font-extrabold"}`}>{formatarHora(a.inicio)}</span>
+        {cor && <span aria-hidden className={`h-9 w-1 shrink-0 rounded-full ${cor}`} />}
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className={`flex items-center gap-2 text-[16px] font-bold ${resolvido ? "text-texto-2" : ""}`}>
+            {a.origem === "ia" && <span role="img" aria-label="Marcado pela IA" className="h-2 w-2 shrink-0 rounded-full bg-ouro-antigo" />}
+            <span className="truncate">{primeiroESegundo(nome)}</span>
+          </span>
+          <span className="line-clamp-2 text-[14px] text-texto-2">
+            {resumoDosServicos(a)} · {duracao(minutos(a))}
+          </span>
+          {vezesNoDia > 1 && <span className="text-[13px] font-bold text-rose-texto">{vezesNoDia} horários dela hoje · conferir</span>}
+        </span>
+        <Situacao atendimento={a} agora={agora} />
+      </button>
+    </li>
   );
 }
 
-// Situação do cartão (como no desenho): Concluído, Agora (cartão grafite), A atender ou
-// Não atendida (passou 1 h e ninguém confirmou)
-type Situacao = "concluido" | "agora" | "atender" | "faltou" | "naoAtendida";
-
-const SITUACAO: Record<Situacao, { rotulo: string; cartao: string; selo: string; sub: string }> = {
-  // Concluído e Faltou saem da frente: sem fundo cheio nem sombra, só um contorno e bem mais claros,
-  // para os pendentes (cartão creme com sombra) saltarem aos olhos
-  concluido: { rotulo: "Concluído", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-salvia text-salvia-texto", sub: "text-texto-2" },
-  // Em atendimento agora: o mesmo cartão claro, destacado com contorno e brilho bronze (o
-  // grafite cheio pesava demais quando havia mais de uma cliente no horário)
-  agora: {
-    rotulo: "Agora",
-    cartao: "bg-card ring-2 ring-grafite",
-    selo: "bg-grafite text-perola",
-    sub: "text-texto-2",
-  },
-  atender: { rotulo: "A atender", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-taupe text-taupe-texto", sub: "text-texto-2" },
-  faltou: { rotulo: "Faltou", cartao: "border border-borda bg-transparent opacity-55", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
-  naoAtendida: { rotulo: "Não atendida", cartao: "bg-card shadow-[0_2px_10px_rgba(30,23,20,0.05)]", selo: "bg-rose text-rose-texto", sub: "text-texto-2" },
-};
-
-function situacaoDe(a: Atendimento): Situacao {
-  if (a.status === "realizado") return "concluido";
-  if (a.status === "faltou") return "faltou";
-  if (naoAtendida(a)) return "naoAtendida";
-  const agora = Date.now();
-  const inicio = Date.parse(a.inicio);
-  return agora >= inicio && agora < inicio + minutos(a) * 60_000 ? "agora" : "atender";
+// "Cleris Fernanda Gonçalves da Silva" -> "Cleris Fernanda" (telefone fica como está)
+function primeiroESegundo(nome: string): string {
+  const partes = nome.trim().split(/\s+/);
+  if (/^\(?\d/.test(nome)) return nome;
+  const [p, s] = partes;
+  const curtas = ["da", "de", "do", "das", "dos", "e"];
+  return s && !curtas.includes(s.toLowerCase()) ? `${p} ${s}` : p;
 }
 
-// Círculo de concluído ao lado do cartão: vazio = a atender, ✓ = realizado, ✕ = faltou
-const ICONE_STATUS: Record<StatusAtendimento, { simbolo: string; classe: string; rotulo: string }> = {
-  agendado: { simbolo: "", classe: "border-[1.5px] border-claro bg-card", rotulo: "Marcar como realizado" },
-  realizado: { simbolo: "✓", classe: "bg-[#2F7D5B] text-white", rotulo: "Realizado (tocar desfaz)" },
-  faltou: { simbolo: "✕", classe: "bg-rose-texto text-white", rotulo: "Faltou (tocar desfaz)" },
-  cancelado: { simbolo: "–", classe: "bg-borda text-white", rotulo: "Cancelado" },
-};
-
-// Um horário: hora à esquerda, cartão (toque abre os detalhes) e o círculo de concluído.
-// A bolinha antes do nome tem a cor da profissional.
-function ItemLinhaDoTempo({
+// Folha que sobe ao tocar num horário: o principal em cima (Chegou, Concluir, Faltou) e os atalhos
+// embaixo (WhatsApp, Ficha, Remarcar). Os detalhes (serviços, telefone, reagendado) vêm por último.
+function FolhaHorario({
   atendimento: a,
   intencao,
   vezesNoDia,
-  barra,
-  celebrar,
-  aoAbrir,
-  aoMarcar,
+  ehHoje,
+  noPassado,
+  agora,
   aoChegou,
+  aoConcluir,
   aoFaltou,
+  aoRemarcar,
+  aoDesfazer,
+  aoFechar,
 }: {
   atendimento: Atendimento;
   intencao: Avaliacao | undefined;
   vezesNoDia: number;
-  barra: string;
-  celebrar: boolean;
-  aoAbrir: () => void;
-  aoMarcar: () => void;
-  // Só hoje: no lugar do círculo, os botões Chegou/Faltou (e Concluir depois que ela chegou)
-  aoChegou?: (sim: boolean) => void;
-  aoFaltou?: () => void;
+  ehHoje: boolean;
+  noPassado: boolean;
+  agora: number;
+  aoChegou: (sim: boolean) => void;
+  aoConcluir: () => void;
+  aoFaltou: () => void;
+  aoRemarcar: () => void;
+  aoDesfazer: () => void;
+  aoFechar: () => void;
 }) {
-  const min = minutos(a);
-  const icone = ICONE_STATUS[a.status];
-  const situacao = situacaoDe(a);
-  const s = SITUACAO[situacao];
-  // Já resolvido (concluído ou faltou): cartão compacto, só nome e serviço
-  const resolvido = situacao === "concluido" || situacao === "faltou";
+  const nome = a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente");
+  const pendente = a.status === "agendado";
   const reagendado = ultimoReagendamento(a);
-  const comBotoes = !resolvido && a.status === "agendado" && Boolean(aoChegou && aoFaltou);
+  const resumoIa = pendente ? intencao?.pre_resumo?.trim() : undefined;
+  // Chegou/Concluir/Faltou: nos dias que já passaram (sem baixa) e, hoje, a partir de 1 h antes do horário
+  const daParaFechar = pendente && (noPassado || (ehHoje && Date.parse(a.inicio) - agora < 60 * 60_000));
+  const quando = `${ehHoje ? "Hoje" : formatarData(a.inicio).slice(0, 5)} às ${formatarHora(a.inicio)}`;
 
   return (
-    <div className="flex items-stretch gap-3">
-      <span
-        className={`w-[52px] shrink-0 tracking-[-0.02em] ${resolvido ? "pt-2.5 text-[17px] font-bold text-inativo" : "pt-3 text-[20px] font-extrabold text-texto"}`}
-      >
-        {formatarHora(a.inicio)}
-      </span>
+    <Folha rotulo={`Horário de ${nome}`} aoFechar={aoFechar} className="bg-perola px-5 pt-2.5">
+      <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-claro" />
+      <p className="text-[14px] text-rotulo">
+        {quando} · {resumoDosServicos(a)} · {duracao(minutos(a))}
+      </p>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <h2 className="text-[24px] leading-tight font-bold tracking-[-0.02em]">{nome}</h2>
+        {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
+      </div>
+      {pendente && !daParaFechar && ehHoje && (
+        <p className="mt-3 text-[14px] text-rotulo">Chegou, Concluir e Faltou aparecem a partir de 1 hora antes do horário.</p>
+      )}
+      {(a.origem === "ia" || resumoIa) && (
+        <p className="mt-2 flex gap-2 text-[15px] leading-[1.45] text-texto-2">
+          <span aria-hidden className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-ouro-antigo" />
+          <span>
+            {a.origem === "ia" && "Marcado pela IA. "}
+            {intencao?.resultado === "pensando" && <b>Ficou de pensar. </b>}
+            {resumoIa}
+          </span>
+        </p>
+      )}
+      <Observacao texto={a.clientes?.observacoes} />
+      {vezesNoDia > 1 && <p className="mt-2 text-[14px] font-bold text-rose-texto">{vezesNoDia} horários dela neste dia · conferir</p>}
 
-      <div className={`flex min-w-0 flex-1 flex-col rounded-[18px] ${s.cartao} ${celebrar ? "cartao-confirmado" : ""}`}>
-        <button
-          onClick={aoAbrir}
-          className={`flex min-w-0 flex-col gap-1 rounded-[18px] px-4 text-left ${resolvido ? "py-2.5" : "py-3.5"}`}
-        >
-          <span className="flex items-center justify-between gap-2">
-            <span className="flex min-w-0 items-center gap-2">
-              <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${barra}`} />
-              <span className="truncate text-[17px] font-bold">
-                {a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}
-              </span>
-            </span>
-            <span className={`shrink-0 rounded-full px-[9px] py-[5px] text-[11px] font-bold whitespace-nowrap ${s.selo} ${celebrar ? "selo-pop" : ""}`}>
-              {s.rotulo}
-            </span>
-          </span>
-          <span className={`text-[15px] ${s.sub}`}>
-            {resumoDosServicos(a)} · {duracao(min)}
-          </span>
-          {/* Marcado pela IA: a etiqueta; com resumo, ela vem junto do resumo (Intencao) */}
-          {a.origem === "ia" && !(intencao?.pre_resumo?.trim() && !resolvido) && (
-            <span className="ia-tag mt-0.5 w-fit">
-              <span className="ia-dot" />
-              IA
-            </span>
-          )}
-          {/* Também nos concluídos: é lá que costuma ficar o horário em dobro */}
-          {vezesNoDia > 1 && (
-            <span className="w-fit rounded-full bg-rose px-2 py-0.5 text-[11px] font-bold text-rose-texto">
-              {vezesNoDia} horários dela neste dia · conferir
-            </span>
-          )}
-          {!resolvido && (
-            <>
-              {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
-              <Intencao avaliacao={intencao} />
-              <Observacao texto={a.clientes?.observacoes} />
-              {reagendado && <span className={`text-xs ${s.sub}`}>{reagendado}</span>}
-            </>
-          )}
-        </button>
-        {comBotoes && (
-          <div className="flex flex-col gap-2 px-4 pb-3.5">
+      {/* Ações principais */}
+      <div className="mt-4 flex flex-col gap-2">
+        {daParaFechar && (
+          <>
             {a.chegou_em ? (
-              <>
-                <p className="flex items-center justify-between gap-2 text-[14px] text-texto-2">
-                  <span>
-                    <b className="text-salvia-texto">Chegou</b> às {formatarHora(a.chegou_em)}
-                  </span>
-                  <button onClick={() => aoChegou!(false)} className="h-11 px-1 text-[14px] font-semibold underline underline-offset-2">
-                    Desfazer
-                  </button>
-                </p>
-                <button onClick={aoMarcar} className="h-12 rounded-[13px] bg-grafite text-[16px] font-bold text-perola active:scale-[0.99]">
-                  Concluir atendimento
+              <p className="flex min-h-11 items-center justify-between rounded-[13px] bg-salvia px-4 text-[15px] text-salvia-texto">
+                <span>
+                  <b>Chegou</b> às {formatarHora(a.chegou_em)}
+                </span>
+                <button onClick={() => aoChegou(false)} className="h-11 font-semibold underline underline-offset-2">
+                  Desfazer
                 </button>
-              </>
+              </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => aoChegou!(true)} className="h-12 rounded-[13px] bg-grafite text-[16px] font-bold text-perola active:scale-[0.98]">
+              ehHoje && (
+                <button onClick={() => aoChegou(true)} className="h-12 rounded-[13px] bg-grafite text-[16px] font-bold text-perola active:scale-[0.99]">
                   Chegou
                 </button>
-                <button onClick={aoFaltou} className="h-12 rounded-[13px] border border-claro bg-card text-[16px] font-bold text-grafite active:scale-[0.98]">
-                  Faltou
-                </button>
-              </div>
+              )
             )}
-          </div>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={aoConcluir}
+                className={`h-12 rounded-[13px] text-[16px] font-bold active:scale-[0.98] ${
+                  a.chegou_em || !ehHoje ? "bg-grafite text-perola" : "border border-claro bg-card"
+                }`}
+              >
+                Concluir
+              </button>
+              <button onClick={aoFaltou} className="h-12 rounded-[13px] border border-claro bg-card text-[16px] font-bold text-rose-texto active:scale-[0.98]">
+                Faltou
+              </button>
+            </div>
+          </>
+        )}
+        {!pendente && (
+          <p className="flex min-h-12 items-center justify-between rounded-[13px] bg-card px-4 text-[15px] borda-suave">
+            <b className={a.status === "faltou" ? "text-rose-texto" : "text-salvia-texto"}>{a.status === "faltou" ? "Faltou" : "✓ Concluído"}</b>
+            <button onClick={aoDesfazer} className="h-11 font-semibold underline underline-offset-2">
+              Desfazer
+            </button>
+          </p>
         )}
       </div>
 
-      {/* Círculo de concluído: um toque marca realizado (nos outros dias e nos já resolvidos) */}
-      {!comBotoes && (
-        <button
-          onClick={aoMarcar}
-          disabled={a.status === "cancelado"}
-          aria-label={icone.rotulo}
-          className={`flex w-8 shrink-0 items-start justify-center ${resolvido ? "pt-2.5" : "pt-3.5"}`}
-        >
-          <span className="relative flex h-[26px] w-[26px]">
-            {celebrar && <span aria-hidden className="onda-confirmar absolute inset-0 rounded-full bg-[#2F7D5B]" />}
-            <span className={`relative flex h-full w-full items-center justify-center rounded-full text-xs font-bold ${icone.classe} ${celebrar ? "selo-pop" : ""}`}>
-              {a.status === "realizado" ? (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path className={celebrar ? "check-desenhar" : ""} d="m5 12 5 5L20 7" />
-                </svg>
-              ) : (
-                icone.simbolo
-              )}
-            </span>
-          </span>
-        </button>
-      )}
-    </div>
-  );
-}
-
-// Os concluídos do dia recolhidos numa linha só; tocar abre (ou esconde) os cartões deles.
-// O número "pula" quando mais um entra, para a dona ver que contou.
-function LinhaConcluidos({
-  quantidade,
-  faltas,
-  aberto,
-  tudoFeito,
-  aoAlternar,
-}: {
-  quantidade: number;
-  faltas: number;
-  aberto: boolean;
-  tudoFeito: boolean;
-  aoAlternar: () => void;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-[52px] shrink-0" />
-      <button
-        onClick={aoAlternar}
-        aria-expanded={aberto}
-        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[20px] border border-borda px-4 py-2.5 text-left active:scale-[0.99]"
-      >
-        <span key={quantidade} className="selo-pop flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#2F7D5B] text-white">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="m5 12 5 5L20 7" />
-          </svg>
-        </span>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-salvia-texto">
-          {aberto
-            ? "Esconder concluídos"
-            : [
-                // "Tudo atendido" só quando não houve falta, para o texto caber numa linha
-                tudoFeito && !faltas ? "Tudo atendido" : null,
-                quantidade ? (quantidade === 1 ? "1 concluído" : `${quantidade} concluídos`) : null,
-                faltas ? (faltas === 1 ? "1 faltou" : `${faltas} faltaram`) : null,
-              ]
-                .filter(Boolean)
-                .join(" · ")}
-        </span>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={`shrink-0 text-texto-2 transition-transform duration-300 ${aberto ? "rotate-180" : ""}`}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
-      <span className="w-8 shrink-0" />
-    </div>
-  );
-}
-
-// Não atendidas do dia numa linha rosé (a mesma do Início); tocar abre (ou esconde) os cartões
-function LinhaNaoAtendidas({ quantidade, aberto, aoAlternar }: { quantidade: number; aberto: boolean; aoAlternar: () => void }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-[52px] shrink-0" />
-      <button
-        onClick={aoAlternar}
-        aria-expanded={aberto}
-        className="flex min-w-0 flex-1 items-center gap-2.5 rounded-[20px] border border-rose-texto/30 bg-rose/60 px-4 py-2.5 text-left active:scale-[0.99]"
-      >
-        <span className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-rose-texto text-[13px] font-bold text-white">!</span>
-        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-rose-texto">
-          {aberto ? "Esconder" : quantidade === 1 ? "1 não atendida" : `${quantidade} não atendidas`}
-        </span>
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-          className={`shrink-0 text-rose-texto transition-transform duration-300 ${aberto ? "rotate-180" : ""}`}
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
-      <span className="w-8 shrink-0" />
-    </div>
-  );
-}
-
-// Almoço na agenda: uma faixa discreta, sem ações
-// semCirculo: no dia de hoje os cartões não têm o círculo à direita, então o almoço vai até a borda
-function BlocoAlmoco({ texto, semCirculo }: { texto: string; semCirculo?: boolean }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-[52px] shrink-0 text-[17px] font-bold text-inativo">{texto.slice(0, 5)}</span>
-      <p className="flex-1 rounded-[16px] bg-campo px-4 py-3 text-[15px] text-texto-2">
-        <span className="font-bold text-texto">Almoço</span> · {texto}
-      </p>
-      {!semCirculo && <span className="w-8 shrink-0" />}
-    </div>
-  );
-}
-
-const ROTULO_STATUS: Record<StatusAtendimento, string> = {
-  agendado: "A atender",
-  realizado: "Realizado",
-  faltou: "Faltou",
-  cancelado: "Cancelado",
-};
-
-// Folha ao tocar no horário: só informação (sem ações nem valores — quem cuida da agenda
-// e dos valores é a IA). Dá para abrir a ficha da cliente.
-function DetalheHorario({ atendimento: a, intencao }: { atendimento: Atendimento; intencao: Avaliacao | undefined }) {
-  const reagendado = ultimoReagendamento(a);
-  const linhas: [string, ReactNode][] = [
-    ["Horário", `${formatarHora(a.inicio)}${a.fim ? ` até ${formatarHora(a.fim)}` : ""}`],
-    [a.extras?.length ? "Serviços" : "Serviço", <ServicosDoHorario key="servicos" atendimento={a} />],
-    ...(a.clientes ? ([["Telefone", formatarTelefone(a.clientes.telefone)]] as [string, string][]) : []),
-    ["Situação", ROTULO_STATUS[a.status]],
-    ...(reagendado ? ([["Reagendado", reagendado.replace("Reagendado de ", "era ")]] as [string, string][]) : []),
-    ...(a.origem === "ia" ? ([["Marcado por", "IA"]] as [string, string][]) : []),
-  ];
-  return (
-    <div className="rounded-[22px] bg-card p-[18px]">
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-        <p className="text-2xl font-bold">{a.clientes?.nome ?? (a.clientes ? formatarTelefone(a.clientes.telefone) : "Cliente")}</p>
-        {a.clientes && <Etiquetas etiquetas={a.clientes.etiquetas} className="" />}
+      {/* Atalhos */}
+      <div className="mt-4 flex gap-2 text-center text-[13px] font-semibold text-texto-2 [&>*]:flex-1">
+        {a.clientes && (
+          <button onClick={() => abrirWhatsApp(a.clientes!.telefone)} className="flex h-16 flex-col items-center justify-center gap-1 rounded-[13px] active:bg-campo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" />
+            </svg>
+            WhatsApp
+          </button>
+        )}
+        {a.clientes && (
+          <Link href={`/clientes/${a.clientes.id}`} className="flex h-16 flex-col items-center justify-center gap-1 rounded-[13px] active:bg-campo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21a8 8 0 0 1 16 0" />
+            </svg>
+            Ficha
+          </Link>
+        )}
+        {pendente && (
+          <button onClick={aoRemarcar} className="flex h-16 flex-col items-center justify-center gap-1 rounded-[13px] active:bg-campo">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18M12 14v4M10 16h4" />
+            </svg>
+            Remarcar
+          </button>
+        )}
       </div>
-      <Intencao avaliacao={intencao} />
-      <Observacao texto={a.clientes?.observacoes} />
-      <dl className="mt-3 divide-y divide-borda">
-        {linhas.map(([rotulo, valor]) => (
-          <div key={rotulo} className="flex justify-between gap-4 py-2">
-            <dt className="text-texto-2">{rotulo}</dt>
-            <dd className="text-right font-medium whitespace-pre-line">{valor}</dd>
+
+      {/* Detalhes */}
+      <dl className="mt-3 mb-5 border-t border-campo text-[15px]">
+        <div className="flex justify-between gap-4 py-2.5">
+          <dt className="text-texto-2">{a.extras?.length ? "Serviços" : "Serviço"}</dt>
+          <dd className="text-right font-medium">
+            <ServicosDoHorario atendimento={a} />
+          </dd>
+        </div>
+        {a.clientes && (
+          <div className="flex justify-between gap-4 border-t border-campo py-2.5">
+            <dt className="text-texto-2">Telefone</dt>
+            <dd className="font-medium">{formatarTelefone(a.clientes.telefone)}</dd>
           </div>
-        ))}
+        )}
+        {reagendado && (
+          <div className="flex justify-between gap-4 border-t border-campo py-2.5">
+            <dt className="text-texto-2">Reagendado</dt>
+            <dd className="text-right font-medium">{reagendado.replace("Reagendado de ", "era ")}</dd>
+          </div>
+        )}
       </dl>
-      {a.clientes && (
-        <Link
-          href={`/clientes/${a.clientes.id}`}
-          className="mt-3 flex h-12 items-center justify-center rounded-[18px] bg-grafite font-semibold text-white"
-        >
-          Ver ficha da cliente
-        </Link>
-      )}
-    </div>
+    </Folha>
   );
 }
 
@@ -945,23 +772,6 @@ function ServicosDoHorario({ atendimento: a }: { atendimento: Atendimento }) {
         {aberto ? "Mostrar menos" : `+ ${extras.length} ${extras.length === 1 ? "serviço" : "serviços"}`}
       </button>
     </span>
-  );
-}
-
-// Só informa o tempo livre entre os horários (quem marca é a IA)
-// Intervalo livre: linha tracejada com "11:00 · 1h livre"
-function IntervaloLivre({ inicio, minutos: min, semCirculo }: { inicio: number; minutos: number; semCirculo?: boolean }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="w-[52px] shrink-0" />
-      <p className="flex flex-1 items-center gap-2.5 text-[13px] font-semibold text-rotulo">
-        <span className="shrink-0">
-          {formatarHora(new Date(inicio).toISOString())} · {duracao(min)} livre
-        </span>
-        <span aria-hidden className="h-0 flex-1 border-t-[1.5px] border-dashed border-claro" />
-      </p>
-      {!semCirculo && <span className="w-8 shrink-0" />}
-    </div>
   );
 }
 

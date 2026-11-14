@@ -28,7 +28,8 @@ import type { ServicoAtivo } from "@/lib/tipos";
 // (vai para o funil e a IA lê na próxima conversa com a cliente).
 // "Faltou / remarcou": faltou marca a falta (a IA chama a cliente para remarcar, supabase/007); remarcou leva o mesmo horário
 // para outro dia.
-type Tela = "pergunta" | "mudou" | "faltou" | "remarcar";
+export type TelaConfirmar = "pergunta" | "mudou" | "faltou" | "remarcar";
+type Tela = TelaConfirmar;
 
 export function FolhaConfirmar({
   atendimento: a,
@@ -40,6 +41,7 @@ export function FolhaConfirmar({
   aoRemarcar,
   aoCancelar,
   aoFechar,
+  telaInicial = "pergunta",
 }: {
   atendimento: Atendimento;
   servicos: ServicoAtivo[];
@@ -51,8 +53,10 @@ export function FolhaConfirmar({
   // Ela desmarcou (ligou, mandou mensagem): o horário sai da agenda e a vaga fica livre para a IA
   aoCancelar?: () => Promise<string | undefined>;
   aoFechar: () => void;
+  // A Agenda abre direto em "remarcar" pelo atalho da folha do horário
+  telaInicial?: Tela;
 }) {
-  const [tela, setTela] = useState<Tela>("pergunta");
+  const [tela, setTela] = useState<Tela>(telaInicial);
   // Já vem marcado o que estava no horário: o principal e os escolhidos junto ao marcar (supabase/034)
   const [escolhidos, setEscolhidos] = useState<string[]>([...(a.servico_id ? [a.servico_id] : []), ...(a.extrasMarcados ?? [])]);
   const [salvando, setSalvando] = useState(false);

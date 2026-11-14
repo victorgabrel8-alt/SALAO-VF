@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Cabecalho } from "@/components/Cabecalho";
 import { lerAlmoco } from "@/lib/almoco";
-import { BotaoSair, useEmpresa } from "@/lib/empresa";
+import { BotaoSair, useEmpresa, useTrocarConfig } from "@/lib/empresa";
+import { mostrarFrase } from "@/lib/frases";
 import { formatarTelefone, normalizarTelefone, telefoneValido } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 
@@ -34,6 +35,7 @@ export default function ConfiguracoesPage() {
         </Link>
         <AlertaWhatsApp />
         <HorarioAlmoco />
+        <FraseDoDiaLigada />
         <Link
           href="/configuracoes/servicos"
           className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-borda bg-white p-4 active:bg-campo"
@@ -62,6 +64,48 @@ async function salvarConfig(empresaId: string, mudanca: Record<string, unknown>)
   const config = { ...(atual.data.config as Record<string, unknown>), ...mudanca };
   const { error } = await db.from("empresas").update({ config }).eq("id", empresaId);
   return error?.message;
+}
+
+// Frase do dia no Início (versículo curto): liga e desliga na hora, sem botão de salvar
+function FraseDoDiaLigada() {
+  const empresa = useEmpresa();
+  const trocarConfig = useTrocarConfig();
+  const ligada = mostrarFrase(empresa.config);
+  const [salvando, setSalvando] = useState(false);
+  const [aviso, setAviso] = useState("");
+
+  async function alternar() {
+    setSalvando(true);
+    setAviso("");
+    const erro = await salvarConfig(empresa.id, { frase_do_dia: !ligada });
+    setSalvando(false);
+    if (erro) return setAviso(`Não foi possível salvar: ${erro}`);
+    trocarConfig({ ...empresa.config, frase_do_dia: !ligada }, empresa.nome);
+  }
+
+  return (
+    <section className="mx-4 rounded-2xl border border-borda bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span>
+          <span className="block text-lg font-semibold">Frase do dia</span>
+          <span className="block text-texto-2">Um versículo curto da Bíblia no Início, diferente a cada dia.</span>
+        </span>
+        <button
+          onClick={alternar}
+          disabled={salvando}
+          role="switch"
+          aria-checked={ligada}
+          aria-label="Mostrar a frase do dia no Início"
+          className="-mr-1 flex h-12 w-16 shrink-0 items-center justify-center disabled:opacity-60"
+        >
+          <span className={`relative h-8 w-14 rounded-full transition-colors ${ligada ? "bg-grafite" : "bg-claro"}`}>
+            <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${ligada ? "left-7" : "left-1"}`} />
+          </span>
+        </button>
+      </div>
+      {aviso && <p className="mt-2 text-[14px] text-rose-texto">{aviso}</p>}
+    </section>
+  );
 }
 
 // Horário de almoço: a Agenda não deixa marcar nem reagendar nesse intervalo, e a IA
