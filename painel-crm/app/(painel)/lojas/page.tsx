@@ -14,7 +14,7 @@ type Loja = {
   ramo: string;
   instancia: string | null;
   noMotor: boolean;
-  whatsapp: "conectado" | "desconectado" | "sem instância";
+  whatsapp: "conectado" | "desconectado" | "sem instância" | "não conferido";
   dona: string;
   liberada: boolean;
   permitidos: string[];
@@ -27,7 +27,7 @@ type Loja = {
   temRecado: boolean;
   sinal: Sinal;
 };
-type Qr = { lojaId: string; nome: string; imagem: string; codigo: string; conectado: boolean };
+type Qr = { lojaId: string; nome: string; imagem: string; codigo: string; conectado: boolean; avisos?: string[] };
 
 const RAMO: Record<string, string> = { manicure: "Unhas", mega_hair: "Mega hair", estudio_beleza: "Estúdio de beleza" };
 const campo = "h-11 w-full rounded-xl border border-borda bg-card px-3 outline-none focus:border-cobre";
@@ -36,13 +36,30 @@ const botaoForte = "h-11 rounded-xl bg-grafite px-5 font-bold text-perola disabl
 
 async function chamar<T>(rota: string, opcoes?: RequestInit): Promise<T> {
   const r = await fetch(rota, { ...opcoes, headers: { "Content-Type": "application/json" } });
-  const corpo = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(corpo.erro || "Não deu certo agora. Tente de novo.");
+  // sessão vencida: o painel manda para a tela de login e a resposta deixa de ser JSON
+  if (r.redirected || !(r.headers.get("content-type") ?? "").includes("application/json")) {
+    throw new Error("Sua sessão no painel venceu. Recarregue a página e entre de novo.");
+  }
+  const corpo = await r.json().catch(() => null);
+  if (!r.ok || !corpo) throw new Error(corpo?.erro || "Não deu certo agora. Tente de novo.");
   return corpo as T;
 }
 
-// "" vira null; número inteiro vira número; resto fica como está para o servidor recusar
-const inteiro = (texto: string): number | null => (texto.trim() === "" ? null : Number(texto.replace(",", ".")));
+// Campo de número inteiro: "" vira null; "1.000", "abc" ou "12,5" são recusados aqui, antes de ir para o servidor
+function inteiro(texto: string, nome: string): number | null {
+  const t = texto.trim();
+  if (t === "") return null;
+  if (!/^\d{1,6}$/.test(t)) throw new Error(`${nome}: use só números, sem ponto nem vírgula.`);
+  return Number(t);
+}
+
+// Valor em reais: "25", "25,50" ou "25.50"
+function reais(texto: string): number | null {
+  const t = texto.trim();
+  if (t === "") return null;
+  if (!/^\d{1,5}([.,]\d{1,2})?$/.test(t)) throw new Error("Valor do sinal: escreva como 20 ou 20,50.");
+  return Number(t.replace(",", "."));
+}
 
 export default function LojasPage() {
   const [lojas, setLojas] = useState<Loja[] | null>(null);
@@ -78,7 +95,7 @@ export default function LojasPage() {
         )}
       </div>
 
-      {erro && <p className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">{erro}</p>}
+      {erro && <p role="alert" className="mb-4 rounded-xl bg-rose p-4 text-rose-texto">{erro}</p>}
       {!lojas && !erro && <p className="py-8 text-texto-2">Carregando…</p>}
 
       {criando && (
@@ -132,10 +149,19 @@ function NovaLoja({ aoFechar, aoCriar }: { aoFechar: () => void; aoCriar: (qr: Q
     try {
       const r = await chamar<{ id: string; qr: { imagem: string; codigo: string }; avisos: string[] }>("/api/lojas", {
         method: "POST",
-        body: JSON.stringify({ ramo, nome, dona, whatsappDona: whats, cidade, limiteMes: inteiro(limite), blocoMin: inteiro(bloco), email }),
+        body: JSON.stringify({
+          ramo,
+          nome,
+          dona,
+          whatsappDona: whats,
+          cidade,
+          limiteMes: inteiro(limite, "Teto de conversas"),
+          blocoMin: inteiro(bloco, "Tempo por cliente"),
+          email,
+        }),
       });
-      if (r.avisos.length) setErro(r.avisos.join(" "));
-      aoCriar({ lojaId: r.id, nome, imagem: r.qr.imagem, codigo: r.qr.codigo, conectado: false });
+      // os avisos (convite que falhou, por exemplo) seguem para o painel do QR, que é o que fica na tela
+      aoCriar({ lojaId: r.id, nome, imagem: r.qr.imagem, codigo: r.qr.codigo, conectado: false, avisos: r.avisos });
     } catch (e) {
       setErro((e as Error).message);
       setEnviando(false);
@@ -186,7 +212,7 @@ function NovaLoja({ aoFechar, aoCriar }: { aoFechar: () => void; aoCriar: (qr: Q
         A loja nasce com a IA em teste: só o WhatsApp da agência recebe resposta até você liberar. Com e-mail preenchido, a dona recebe
         um convite de login na hora.
       </p>
-      {erro && <p className="rounded-xl bg-rose p-3 text-rose-texto">{erro}</p>}
+      {erro && <p role="alert" className="rounded-xl bg-rose p-3 text-rose-texto">{erro}</p>}
       <div className="flex gap-3">
         <button type="submit" disabled={enviando} className={botaoForte}>
           {enviando ? "Criando…" : "Criar loja e gerar o QR"}
@@ -206,12 +232,24 @@ function PainelQr({ qr, aoMudar, aoFechar }: { qr: Qr; aoMudar: (q: Qr) => void;
 
   useEffect(() => {
     if (qr.conectado) return;
+    // vivo = este painel ainda está aberto para esta loja; pedido que voltar depois de fechar é ignorado
+    let vivo = true;
+    let pedindo = false;
+    const inicio = Date.now();
     const t = setInterval(() => {
+      // para de conferir depois de 5 minutos (aba esquecida) e não empilha pedidos
+      if (Date.now() - inicio > 5 * 60 * 1000) return clearInterval(t);
+      if (pedindo) return;
+      pedindo = true;
       chamar<{ conectado: boolean }>(`/api/lojas/${qr.lojaId}`)
-        .then((r) => r.conectado && aoMudar({ ...qr, conectado: true }))
-        .catch(() => {});
+        .then((r) => vivo && r.conectado && aoMudar({ ...qr, conectado: true }))
+        .catch(() => {})
+        .finally(() => (pedindo = false));
     }, 4000);
-    return () => clearInterval(t);
+    return () => {
+      vivo = false;
+      clearInterval(t);
+    };
   }, [qr, aoMudar]);
 
   async function novo() {
@@ -229,6 +267,11 @@ function PainelQr({ qr, aoMudar, aoFechar }: { qr: Qr; aoMudar: (q: Qr) => void;
   return (
     <div className="mb-6 rounded-2xl border border-grafite/10 bg-card p-6 shadow-[0_4px_14px_rgba(33,22,16,0.05)]">
       <h2 className="text-xl font-bold">Conectar o WhatsApp · {qr.nome}</h2>
+      {qr.avisos && qr.avisos.length > 0 && (
+        <p role="alert" className="mt-3 rounded-xl bg-mel p-3 text-mel-texto">
+          {qr.avisos.join(" ")}
+        </p>
+      )}
       {qr.conectado ? (
         <p className="mt-3 rounded-xl bg-salvia p-4 font-semibold text-salvia-texto">WhatsApp conectado. A loja já está ligada ao motor.</p>
       ) : (
@@ -259,7 +302,7 @@ function PainelQr({ qr, aoMudar, aoFechar }: { qr: Qr; aoMudar: (q: Qr) => void;
           </div>
         </div>
       )}
-      {erro && <p className="mt-3 rounded-xl bg-rose p-3 text-rose-texto">{erro}</p>}
+      {erro && <p role="alert" className="mt-3 rounded-xl bg-rose p-3 text-rose-texto">{erro}</p>}
       <button onClick={aoFechar} className={botao + " mt-4"}>
         Fechar
       </button>
@@ -331,7 +374,7 @@ function CartaoLoja({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Selo cor={loja.whatsapp === "conectado" ? "salvia" : "rose"}>WhatsApp {loja.whatsapp}</Selo>
+          <Selo cor={loja.whatsapp === "conectado" ? "salvia" : loja.whatsapp === "não conferido" ? "mel" : "rose"}>WhatsApp {loja.whatsapp}</Selo>
           {loja.noMotor ? (
             <Selo cor={loja.liberada ? "salvia" : "mel"}>{loja.liberada ? "IA liberada" : "IA em teste"}</Selo>
           ) : (
@@ -374,7 +417,7 @@ function CartaoLoja({
               Liberar a IA
             </button>
           )}
-          <button onClick={aoAbrir} className={botao}>
+          <button onClick={aoAbrir} aria-expanded={aberta} className={botao}>
             {aberta ? "Fechar ajustes" : "Teto, tempo e sinal"}
           </button>
         </div>
@@ -382,15 +425,34 @@ function CartaoLoja({
         <p className="mt-3 text-sm text-texto-2">Esta loja usa os workflows próprios dela no n8n. Não é configurada por esta tela.</p>
       )}
 
-      {aberta && loja.noMotor && <Ajustes loja={loja} salvar={(m) => mudar(m)} ocupado={ocupado} />}
+      {aberta && loja.noMotor && <Ajustes loja={loja} salvar={(m) => mudar(m)} avisar={avisar} ocupado={ocupado} />}
     </div>
   );
 }
 
-function Ajustes({ loja, salvar, ocupado }: { loja: Loja; salvar: (m: object) => void; ocupado: boolean }) {
+function Ajustes({
+  loja,
+  salvar,
+  avisar,
+  ocupado,
+}: {
+  loja: Loja;
+  salvar: (m: object) => void;
+  avisar: (texto: string) => Promise<void>;
+  ocupado: boolean;
+}) {
   const [limite, setLimite] = useState(loja.limiteMes?.toString() ?? "");
   const [bloco, setBloco] = useState(loja.blocoMin?.toString() ?? "");
   const [sinal, setSinal] = useState({ ...loja.sinal, valor: loja.sinal.valor?.toString() ?? "" });
+
+  // número escrito errado é avisado aqui e nada é enviado
+  function enviar(montar: () => object) {
+    try {
+      salvar(montar());
+    } catch (e) {
+      void avisar((e as Error).message);
+    }
+  }
 
   return (
     <div className="mt-4 grid gap-6 border-t border-borda/60 pt-4 md:grid-cols-2">
@@ -404,7 +466,11 @@ function Ajustes({ loja, salvar, ocupado }: { loja: Loja; salvar: (m: object) =>
           Tempo mínimo por cliente, em minutos (vazio = tempo do serviço)
           <input value={bloco} onChange={(e) => setBloco(e.target.value)} inputMode="numeric" className={campo} />
         </label>
-        <button onClick={() => salvar({ limiteMes: inteiro(limite), blocoMin: inteiro(bloco) })} disabled={ocupado} className={botao}>
+        <button
+          onClick={() => enviar(() => ({ limiteMes: inteiro(limite, "Teto de conversas"), blocoMin: inteiro(bloco, "Tempo por cliente") }))}
+          disabled={ocupado}
+          className={botao}
+        >
           Salvar
         </button>
         {loja.permitidos.length > 0 && !loja.liberada && <p className="text-sm text-texto-2">Em teste, a IA só responde: {loja.permitidos.join(", ")}.</p>}
@@ -441,7 +507,7 @@ function Ajustes({ loja, salvar, ocupado }: { loja: Loja; salvar: (m: object) =>
           </>
         )}
         <button
-          onClick={() => salvar({ sinal: { ...sinal, valor: sinal.valor.trim() === "" ? null : Number(sinal.valor.replace(",", ".")) } })}
+          onClick={() => enviar(() => ({ sinal: { ...sinal, valor: reais(sinal.valor) } }))}
           disabled={ocupado}
           className={botao}
         >

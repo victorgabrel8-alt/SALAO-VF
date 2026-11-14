@@ -206,6 +206,22 @@ que foi escrito para a Caroline: serve de modelo de Unhas até uma segunda manic
 - Em 14/11 a branch foi atualizada com a `main` (conflito em `sinal-pix.js` resolvido com a versão da main); a Gleide
   gerada desta branch saiu byte a byte igual à gerada da `main` pura.
 
+**Tela Lojas no painel (14/11): `painel-crm/app/(painel)/lojas`, rotas em `painel-crm/app/api/lojas`.**
+- Lista as lojas com o estado de cada uma (WhatsApp, IA em teste ou liberada, conversas do mês, o que falta a dona
+  preencher), cria loja nova com o QR na tela, libera ou trava a IA e ajusta teto, tempo por cliente e sinal por Pix.
+- Roda no servidor do painel com as chaves de serviço (`.env.local`, ver `.env.local.example`). Só entra quem está
+  logado e tem o e-mail em `AGENCIA_EMAILS`. Lojas com conjunto próprio aparecem, mas não são alteradas.
+- Os ajustes são gravados pela função `motor_configurar` (`supabase/049`), que troca só `config.ia` e
+  `config.loja.sinal_pix`: o que a dona salvar no app ao mesmo tempo não é sobrescrito.
+- Testado no navegador com o login do Victor: loja descartável criada pelo formulário, QR na tela, sinal salvo, IA
+  liberada; número escrito errado é recusado; a Gleide é recusada. Um testador revisou segurança e código; os 10
+  problemas achados foram corrigidos (checagem de origem atrás de proxy, sessão vencida, avisos que sumiam, "1.000"
+  virando 1, instância órfã se a Evolution demora, gravação por cima da config, erro do banco indo para a tela).
+- Não testado: convite por e-mail, o aviso "conectado" depois de ler o QR (depende do chip), login de quem não é da
+  agência, e o painel publicado atrás de proxy (hoje ele roda no computador).
+- Pendências conhecidas: a lista faz duas consultas por loja (rever com dezenas de lojas); o diálogo de confirmação
+  não fecha com Esc; não há trava no servidor contra criar duas lojas iguais.
+
 ### Etapa 2 — Modelos por ramo
 - [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
 - [ ] Modelo **Unhas**, a partir do prompt da Caroline, sem o que é só dela

@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   const acesso = await conferirAgencia(request);
   if (!acesso.ok) return Response.json({ erro: acesso.erro }, { status: acesso.status });
   try {
-    const dados = (await request.json()) as NovaLoja;
+    const dados = (await request.json().catch(() => null)) as NovaLoja;
     return Response.json(await criarLoja(dados, acesso.userId));
   } catch (e) {
     return comErro(e);

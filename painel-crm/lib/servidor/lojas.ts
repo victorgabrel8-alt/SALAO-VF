@@ -31,15 +31,15 @@ async function banco<T>(rota: string, opcoes: RequestInit = {}): Promise<T> {
     headers: { apikey: chave, Authorization: `Bearer ${chave}`, "Content-Type": "application/json", ...(opcoes.headers ?? {}) },
   });
   const texto = await r.text();
-  if (!r.ok) throw new ErroLoja(`banco ${r.status}: ${texto.slice(0, 300)}`);
+  if (!r.ok) throw new Error(`banco ${r.status}: ${texto.slice(0, 300)}`); // erro comum: a tela recebe só a mensagem genérica
   return (texto ? JSON.parse(texto) : null) as T;
 }
 
-async function evo(rota: string, opcoes: RequestInit = {}) {
+async function evo(rota: string, opcoes: RequestInit = {}, limiteMs = 20000) {
   const r = await fetch(`${env("EVOLUTION_URL").replace(/\/$/, "")}${rota}`, {
     ...opcoes,
     cache: "no-store",
-    signal: AbortSignal.timeout(20000),
+    signal: AbortSignal.timeout(limiteMs),
     headers: { apikey: env("EVOLUTION_API_KEY"), "Content-Type": "application/json", ...(opcoes.headers ?? {}) },
   });
   const texto = await r.text();
@@ -61,7 +61,7 @@ export type Loja = {
   ramo: string;
   instancia: string | null;
   noMotor: boolean;
-  whatsapp: "conectado" | "desconectado" | "sem instância";
+  whatsapp: "conectado" | "desconectado" | "sem instância" | "não conferido";
   dona: string;
   liberada: boolean;
   permitidos: string[];
@@ -77,21 +77,21 @@ export type Loja = {
 
 const SELECAO = "id,nome,nicho,ativo,instancia_whatsapp,config,criado_em";
 
-async function montar(e: LinhaEmpresa, estados: Map<string, string>): Promise<Loja> {
+async function montar(e: LinhaEmpresa, estados: Map<string, string> | null): Promise<Loja> {
   const ia: Config = e.config?.ia ?? {};
   const sinal: Config = e.config?.loja?.sinal_pix ?? {};
   const [uso, servicos] = await Promise.all([
     banco<number>("/rest/v1/rpc/motor_uso_mes", { method: "POST", body: JSON.stringify({ p_empresa_id: e.id }) }),
     banco<{ preco: number | null }[]>(`/rest/v1/servicos?select=preco&ativo=eq.true&empresa_id=eq.${e.id}`),
   ]);
-  const estado = e.instancia_whatsapp ? estados.get(e.instancia_whatsapp) : undefined;
+  const estado = e.instancia_whatsapp && estados ? estados.get(e.instancia_whatsapp) : undefined;
   return {
     id: e.id,
     nome: e.nome,
     ramo: e.nicho,
     instancia: e.instancia_whatsapp,
     noMotor: ia.motor === true,
-    whatsapp: estado === "open" ? "conectado" : estado ? "desconectado" : "sem instância",
+    whatsapp: !e.instancia_whatsapp ? "sem instância" : !estados ? "não conferido" : estado === "open" ? "conectado" : estado ? "desconectado" : "sem instância",
     dona: String(ia.dona ?? ""),
     liberada: ia.liberada === true,
     permitidos: Array.isArray(ia.permitidos) ? ia.permitidos.map(String) : [],
@@ -113,10 +113,11 @@ async function montar(e: LinhaEmpresa, estados: Map<string, string>): Promise<Lo
 }
 
 // estado de conexão de todas as instâncias, numa chamada só
-async function estadosDaEvolution(): Promise<Map<string, string>> {
+async function estadosDaEvolution(): Promise<Map<string, string> | null> {
   const r = await evo("/instance/fetchInstances").catch(() => null);
+  if (!r?.ok || !Array.isArray(r.corpo)) return null; // Evolution fora do ar: o estado fica "não conferido"
   const mapa = new Map<string, string>();
-  if (r?.ok && Array.isArray(r.corpo)) for (const i of r.corpo as any[]) if (i?.name) mapa.set(String(i.name), String(i.connectionStatus ?? ""));
+  for (const i of r.corpo as any[]) if (i?.name) mapa.set(String(i.name), String(i.connectionStatus ?? ""));
   return mapa;
 }
 
@@ -126,9 +127,9 @@ export async function listarLojas(): Promise<Loja[]> {
 }
 
 async function lerEmpresa(id: string): Promise<LinhaEmpresa> {
-  if (!/^[0-9a-f-]{36}$/.test(id)) throw new ErroLoja("loja inválida");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) throw new ErroLoja("Loja inválida.");
   const l = await banco<LinhaEmpresa[]>(`/rest/v1/empresas?select=${SELECAO}&id=eq.${id}`);
-  if (!l.length) throw new ErroLoja("loja não encontrada");
+  if (!l.length) throw new ErroLoja("Loja não encontrada.");
   return l[0];
 }
 
@@ -150,6 +151,7 @@ export type NovaLoja = {
 };
 
 export async function criarLoja(dados: NovaLoja, criadoPor: string) {
+  if (!dados || typeof dados !== "object") throw new ErroLoja("Preencha os dados da loja.");
   const ramo = RAMOS[dados.ramo as Ramo];
   if (!ramo) throw new ErroLoja("Escolha o ramo.");
   const nome = String(dados.nome ?? "").trim();
@@ -157,7 +159,8 @@ export async function criarLoja(dados: NovaLoja, criadoPor: string) {
   const whats = digitos(dados.whatsappDona);
   const cidade = String(dados.cidade ?? "").trim();
   const email = String(dados.email ?? "").trim();
-  if (nome.length < 3) throw new ErroLoja("Escreva o nome da loja.");
+  if (nome.length < 3 || nome.length > 80) throw new ErroLoja("Escreva o nome da loja (até 80 letras).");
+  if (dona.length > 40 || cidade.length > 60 || email.length > 120) throw new ErroLoja("Nome da dona, cidade ou e-mail longo demais.");
   if (!dona) throw new ErroLoja("Escreva o nome da dona.");
   if (!/^55\d{10,11}$/.test(whats)) throw new ErroLoja("WhatsApp da dona: 55 + DDD + número.");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new ErroLoja("E-mail inválido.");
@@ -179,7 +182,13 @@ export async function criarLoja(dados: NovaLoja, criadoPor: string) {
 
   // 1. instância do WhatsApp, já apontada para o motor do ramo
   const n8n = (env("N8N_URL_INTERNA") || "http://n8n:5678").replace(/\/$/, "");
-  const criada = await evo("/instance/create", {
+  const apagarInstancia = () =>
+    evo(`/instance/delete/${encodeURIComponent(instancia)}`, { method: "DELETE" })
+      .then((r) => r.ok)
+      .catch(() => false);
+  const criada = await evo(
+    "/instance/create",
+    {
     method: "POST",
     body: JSON.stringify({
       instanceName: instancia,
@@ -187,6 +196,14 @@ export async function criarLoja(dados: NovaLoja, criadoPor: string) {
       qrcode: true,
       webhook: { url: `${n8n}/webhook/${ramo.motor}-whatsapp-salao`, byEvents: false, base64: true, headers: { "x-webhook-token": token }, events: ["MESSAGES_UPSERT"] },
     }),
+    },
+    45000,
+  ).catch(async () => {
+    // a Evolution demorou: a instância pode ter sido criada mesmo assim; tenta apagar para não ficar órfã
+    const apagou = await apagarInstancia();
+    throw new ErroLoja(
+      `A Evolution demorou para criar o WhatsApp da loja e nada foi criado no banco.${apagou ? "" : ` Confira na Evolution se ficou a instância "${instancia}".`} Tente de novo.`,
+    );
   });
   if (!criada.ok) throw new ErroLoja(`A Evolution não criou a instância (${criada.status}).`);
 
@@ -202,8 +219,9 @@ export async function criarLoja(dados: NovaLoja, criadoPor: string) {
       body: JSON.stringify({ p_nome: nome, p_nicho: ramo.nicho, p_profissional: dona, p_instancia: instancia, p_config: config }),
     });
   } catch (e) {
-    await evo(`/instance/delete/${encodeURIComponent(instancia)}`, { method: "DELETE" }).catch(() => null);
-    throw new ErroLoja(`Não criei a loja no banco: ${e instanceof Error ? e.message : e}`);
+    console.error("[lojas] criar_loja", e);
+    const apagou = await apagarInstancia();
+    throw new ErroLoja(`Não consegui criar a loja no banco.${apagou ? "" : ` A instância "${instancia}" ficou na Evolution: apague por lá.`} Tente de novo.`);
   }
 
   // 3. quem criou passa a ver a loja no painel (o painel mostra as lojas ligadas ao login)
@@ -227,6 +245,7 @@ export async function criarLoja(dados: NovaLoja, criadoPor: string) {
 
 export async function novoQr(id: string) {
   const e = await lerEmpresa(id);
+  if (e.config?.ia?.motor !== true) throw new ErroLoja("Esta loja não está no motor.");
   if (!e.instancia_whatsapp) throw new ErroLoja("Esta loja não tem instância de WhatsApp.");
   const r = await evo(`/instance/connect/${encodeURIComponent(e.instancia_whatsapp)}`);
   if (!r.ok) throw new ErroLoja(`A Evolution não devolveu o QR (${r.status}).`);
@@ -238,6 +257,7 @@ export async function novoQr(id: string) {
 
 export async function estadoDoWhatsapp(id: string) {
   const e = await lerEmpresa(id);
+  if (e.config?.ia?.motor !== true) throw new ErroLoja("Esta loja não está no motor.");
   if (!e.instancia_whatsapp) return { conectado: false };
   const r = await evo(`/instance/connectionState/${encodeURIComponent(e.instancia_whatsapp)}`);
   return { conectado: r.ok && r.corpo?.instance?.state === "open" };
@@ -251,38 +271,50 @@ export type Mudanca = {
 };
 
 // Só mexe em config.ia e config.loja.sinal_pix, e só em loja que está no motor: as lojas com conjunto
-// próprio (Gleide, Caroline) não são alteradas por aqui.
+// próprio (Gleide, Caroline) não são alteradas por aqui. A gravação é feita pela função motor_configurar
+// (supabase/049), que troca só esses campos: o que a dona salvar no app ao mesmo tempo não é sobrescrito.
 export async function mudarLoja(id: string, m: Mudanca) {
+  if (!m || typeof m !== "object") throw new ErroLoja("Nada para mudar.");
   const e = await lerEmpresa(id);
-  const ia: Config = { ...(e.config?.ia ?? {}) };
-  if (ia.motor !== true) throw new ErroLoja("Esta loja não está no motor: ela é configurada pelo conjunto próprio dela.");
-  const config: Config = { ...e.config, ia };
+  if (e.config?.ia?.motor !== true) throw new ErroLoja("Esta loja não está no motor: ela é configurada pelo conjunto próprio dela.");
+  const ia: Config = {};
+  const remover: string[] = [];
+  let sinal: Config | null = null;
 
-  if (m.liberada !== undefined) ia.liberada = m.liberada === true;
+  if (m.liberada !== undefined) {
+    if (typeof m.liberada !== "boolean") throw new ErroLoja("Liberar: sim ou não.");
+    ia.liberada = m.liberada;
+  }
   if (m.limiteMes !== undefined) {
-    if (m.limiteMes === null) delete ia.limite_mes;
+    if (m.limiteMes === null) remover.push("limite_mes");
     else if (Number.isInteger(m.limiteMes) && m.limiteMes > 0 && m.limiteMes < 1000000) ia.limite_mes = m.limiteMes;
     else throw new ErroLoja("Teto de conversas: um número inteiro, ou vazio para não ter teto.");
   }
   if (m.blocoMin !== undefined) {
-    if (m.blocoMin === null) delete ia.bloco_min;
+    if (m.blocoMin === null) remover.push("bloco_min");
     else if (Number.isInteger(m.blocoMin) && m.blocoMin >= 30 && m.blocoMin <= 480) ia.bloco_min = m.blocoMin;
     else throw new ErroLoja("Tempo por cliente: de 30 a 480 minutos, ou vazio.");
   }
   if (m.sinal !== undefined) {
     const s = m.sinal;
+    if (!s || typeof s !== "object" || typeof s.ativo !== "boolean" || typeof s.soParaQuemFaltou !== "boolean") throw new ErroLoja("Sinal: dados incompletos.");
     const chave = String(s.chave ?? "").trim();
     const nome = String(s.nome ?? "").trim();
+    if (chave.length > 120 || nome.length > 80) throw new ErroLoja("Sinal: chave ou nome longo demais.");
+    if (s.valor !== null && !(typeof s.valor === "number" && Number.isFinite(s.valor) && s.valor > 0 && s.valor < 100000)) throw new ErroLoja("Sinal: escreva o valor em reais.");
     if (s.ativo) {
-      if (!(typeof s.valor === "number" && s.valor > 0 && s.valor < 100000)) throw new ErroLoja("Sinal: escreva o valor.");
+      if (s.valor === null) throw new ErroLoja("Sinal: escreva o valor.");
       if (!chave) throw new ErroLoja("Sinal: escreva a chave Pix.");
       if (!nome) throw new ErroLoja("Sinal: escreva o nome de quem recebe o Pix (o sistema confere no comprovante).");
     }
-    const antes: Config = e.config?.loja?.sinal_pix ?? {};
-    config.loja = {
-      ...(e.config?.loja ?? {}),
-      sinal_pix: { ...antes, ativo: s.ativo === true, valor: s.valor, chave, nome_recebedor: nome, so_para_quem_faltou: s.soParaQuemFaltou === true },
-    };
+    // a loja pode aceitar mais de um nome de recebedor (lista): a tela edita o primeiro e os outros ficam
+    const antes = e.config?.loja?.sinal_pix?.nome_recebedor;
+    const nomes = Array.isArray(antes) && antes.length > 1 ? [nome, ...antes.slice(1)] : nome;
+    sinal = { ativo: s.ativo, valor: s.valor === null ? null : Math.round(s.valor * 100) / 100, chave, nome_recebedor: nomes, so_para_quem_faltou: s.soParaQuemFaltou };
   }
-  await banco(`/rest/v1/empresas?id=eq.${id}`, { method: "PATCH", body: JSON.stringify({ config }) });
+  const feito = await banco<boolean>("/rest/v1/rpc/motor_configurar", {
+    method: "POST",
+    body: JSON.stringify({ p_empresa_id: id, p_ia: ia, p_ia_remover: remover, p_sinal: sinal }),
+  });
+  if (feito !== true) throw new ErroLoja("Esta loja não está no motor.");
 }

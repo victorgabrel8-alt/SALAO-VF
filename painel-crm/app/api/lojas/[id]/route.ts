@@ -18,7 +18,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const acesso = await conferirAgencia(request);
   if (!acesso.ok) return Response.json({ erro: acesso.erro }, { status: acesso.status });
   try {
-    await mudarLoja((await params).id, (await request.json()) as Mudanca);
+    await mudarLoja((await params).id, (await request.json().catch(() => null)) as Mudanca);
     return Response.json({ ok: true });
   } catch (e) {
     return comErro(e);
