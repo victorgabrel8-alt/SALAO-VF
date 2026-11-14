@@ -739,6 +739,10 @@ require('./resposta-velha.js')({ node, main, ifNode, cond, REDIS, D })(workflow)
 // preço pedido e ainda não entregue: o filtro de preço não apaga e o balão descartado volta (preco-pendente.js)
 require('./preco-pendente.js')({ node, REDIS, D })(workflow);
 
+// comprovante do sinal conferido pelo sistema, em foto ou PDF (sinal-pix.js). Na Gleide o banco só exige o
+// comprovante de quem faltou (config.loja.sinal_pix.so_para_quem_faltou, supabase/047); as lojas ligam o delas mais abaixo
+if (!LOJA) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: { slug: 'gleide' }, semBloco: true, dona: 'Gleide' });
+
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');
 organizar(workflow, 'Atendimento das clientes (WhatsApp)', [
