@@ -1,0 +1,1614 @@
+{
+  "name": "[Motor Unhas] Rotinas",
+  "nodes": [
+    {
+      "id": "bed44a77-f470-4c79-8fee-1474f348ede3",
+      "name": "A cada 1 h · assistente-pendencias",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cf40b8f5-0a1b-4485-8609-9f3b10402ba0",
+      "name": "Lojas: A cada 1 h · assistente-pendencias",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\" }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "60e6f32a-74b5-4067-85cc-fc740eb07acd",
+      "name": "Tem loja? A cada 1 h · assistente-pendencias",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "690ec1aa-0561-4c99-8df3-fb7d49ff6a09",
+      "name": "Rodar: A cada 1 h · assistente-pendencias",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        0
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-assistente-pendencias-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "A cada 1 h"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "eef99ff7-777c-4b2d-89a0-aab411d0f5a6",
+      "name": "Disparar agora (teste) · assistente-pendencias",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        180
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "motor-unhas-rotina-assistente-pendencias",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "8d0e0e22-baeb-4645-870f-610c4d0f3650",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "4b7262fb-a9f5-41f1-8d75-b6d7998c1d0a",
+      "name": "Lojas: Disparar agora (teste) · assistente-pendencias",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\", p_empresa_id: ($json.query || {}).empresa_id || ($json.body || {}).empresa_id || '00000000-0000-0000-0000-000000000000' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "aa60d491-4d8c-4e65-80a9-bf81b6f9e1dc",
+      "name": "Tem loja? Disparar agora (teste) · assistente-pendencias",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "14d23d33-7801-4ba3-8765-a8e8e6edf1b4",
+      "name": "Rodar: Disparar agora (teste) · assistente-pendencias",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        180
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-assistente-pendencias-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "Disparar agora (teste)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "346bf21e-7931-40b5-8828-87465192b6fe",
+      "name": "A cada 5 min · faltas",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        360
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6c330480-540d-4d04-8c3b-0eef8fb59da7",
+      "name": "Lojas: A cada 5 min · faltas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        360
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\" }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "48ee0863-e300-4ba9-815f-a48fabb0a6e6",
+      "name": "Tem loja? A cada 5 min · faltas",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        440
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "996d5bfb-61f5-41f8-80f4-9f1937592dd9",
+      "name": "Rodar: A cada 5 min · faltas",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        360
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-faltas-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "A cada 5 min"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "5d6e36e4-4210-4bf3-8a04-724f59431d9e",
+      "name": "Disparar agora (teste) · faltas",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        540
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "motor-unhas-rotina-faltas",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "ae9b5dcf-549f-426a-88b0-3a26daaf3d05",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "a2f679e0-7d13-4c79-82f1-8096e1668f78",
+      "name": "Lojas: Disparar agora (teste) · faltas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        540
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\", p_empresa_id: ($json.query || {}).empresa_id || ($json.body || {}).empresa_id || '00000000-0000-0000-0000-000000000000' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "30b4a6eb-b9d0-40ae-802e-b621e4b420bf",
+      "name": "Tem loja? Disparar agora (teste) · faltas",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        620
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fe385892-ab83-41a2-83ea-99d1aeba9f4a",
+      "name": "Rodar: Disparar agora (teste) · faltas",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        540
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-faltas-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "Disparar agora (teste)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c1369e76-1b7c-47cb-8f55-57d609ba7073",
+      "name": "Toda noite (resumo de amanhã) · faltas",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        720
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 19 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "617cf37c-6fbc-4620-8345-9aae150e82d4",
+      "name": "Lojas: Toda noite (resumo de amanhã) · faltas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        720
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\" }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "d056be34-28e5-4a6e-8ebb-8b82327d5b39",
+      "name": "Tem loja? Toda noite (resumo de amanhã) · faltas",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        800
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "aff679b7-5a6e-45c5-859e-f1391fbf2a48",
+      "name": "Rodar: Toda noite (resumo de amanhã) · faltas",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        720
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-faltas-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "Toda noite (resumo de amanhã)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "36103c68-95cc-4c7e-870f-f796f1abff36",
+      "name": "A cada 1 min · retomar",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        900
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5b21b7a3-55e3-4e6f-8fad-4c7ad000e4d4",
+      "name": "Lojas: A cada 1 min · retomar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        900
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\" }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "b7ca3670-3650-41d3-85bc-90183187fa9c",
+      "name": "Tem loja? A cada 1 min · retomar",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        980
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "136a76c3-078c-4df2-8f6c-c02d6d8cc558",
+      "name": "Rodar: A cada 1 min · retomar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        900
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-retomar-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "A cada 1 min"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "2133e424-6bef-41b5-8ef7-420bd09fd6f3",
+      "name": "Disparar agora (teste) · retomar",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1080
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "motor-unhas-rotina-retomar",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "20978727-5b75-4087-8309-f33a6124eb06",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "3afc7ea3-401f-4304-8815-476bc684fa12",
+      "name": "Lojas: Disparar agora (teste) · retomar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1080
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\", p_empresa_id: ($json.query || {}).empresa_id || ($json.body || {}).empresa_id || '00000000-0000-0000-0000-000000000000' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "7fe0a2fc-9253-449b-806d-b7c8cc2213b3",
+      "name": "Tem loja? Disparar agora (teste) · retomar",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        1160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "3dfb75f7-0562-49bc-8543-728d2658a162",
+      "name": "Rodar: Disparar agora (teste) · retomar",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        1080
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-retomar-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "Disparar agora (teste)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "3fa5a42f-9cbb-441d-817a-e433235e03b2",
+      "name": "A cada 10 min · retorno",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1260
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "5675d1ec-a085-4a5a-86a5-8fb10d6d40f3",
+      "name": "Lojas: A cada 10 min · retorno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\" }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "de0839b8-f6c4-483c-8155-b336032eb928",
+      "name": "Tem loja? A cada 10 min · retorno",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        1340
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b0a16162-832f-4b21-8d26-967e34a0f341",
+      "name": "Rodar: A cada 10 min · retorno",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        1260
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-retorno-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "A cada 10 min"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6fc0976e-a818-489f-8086-d64775b7ace3",
+      "name": "Disparar agora (teste) · retorno",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        1440
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "motor-unhas-rotina-retorno",
+        "authentication": "headerAuth",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "webhookId": "009d0ba7-f693-4a40-8589-38cd22c35e2f",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "tV8sJuiNWidQ4Dnn",
+          "name": "Webhook WhatsApp (senha da Evolution)"
+        }
+      }
+    },
+    {
+      "id": "c774e840-c6a9-46e9-82d2-246b45b90fd9",
+      "name": "Lojas: Disparar agora (teste) · retorno",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        1440
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/motor_lojas",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_nicho: \"manicure\", p_empresa_id: ($json.query || {}).empresa_id || ($json.body || {}).empresa_id || '00000000-0000-0000-0000-000000000000' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 1000,
+      "alwaysOutputData": true
+    },
+    {
+      "id": "d2ef5d19-f4d3-4ee1-8b22-1d581d4439d8",
+      "name": "Tem loja? Disparar agora (teste) · retorno",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        330,
+        1520
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "t1",
+              "leftValue": "={{ !!$json.empresa_id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "7e5881df-076c-4075-89a0-5fa76de3efc6",
+      "name": "Rodar: Disparar agora (teste) · retorno",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        440,
+        1440
+      ],
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PENDENTE.workflow-retorno-id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "loja_json": "={{ JSON.stringify($json) }}",
+            "gatilho": "Disparar agora (teste)"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "loja_json",
+              "displayName": "loja_json",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gatilho",
+              "displayName": "gatilho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ]
+        },
+        "mode": "each",
+        "options": {
+          "waitForSubWorkflow": false
+        }
+      },
+      "onError": "continueRegularOutput"
+    }
+  ],
+  "connections": {
+    "A cada 1 h · assistente-pendencias": {
+      "main": [
+        [
+          {
+            "node": "Lojas: A cada 1 h · assistente-pendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: A cada 1 h · assistente-pendencias": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? A cada 1 h · assistente-pendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? A cada 1 h · assistente-pendencias": {
+      "main": [
+        [
+          {
+            "node": "Rodar: A cada 1 h · assistente-pendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste) · assistente-pendencias": {
+      "main": [
+        [
+          {
+            "node": "Lojas: Disparar agora (teste) · assistente-pendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: Disparar agora (teste) · assistente-pendencias": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? Disparar agora (teste) · assistente-pendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? Disparar agora (teste) · assistente-pendencias": {
+      "main": [
+        [
+          {
+            "node": "Rodar: Disparar agora (teste) · assistente-pendencias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A cada 5 min · faltas": {
+      "main": [
+        [
+          {
+            "node": "Lojas: A cada 5 min · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: A cada 5 min · faltas": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? A cada 5 min · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? A cada 5 min · faltas": {
+      "main": [
+        [
+          {
+            "node": "Rodar: A cada 5 min · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste) · faltas": {
+      "main": [
+        [
+          {
+            "node": "Lojas: Disparar agora (teste) · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: Disparar agora (teste) · faltas": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? Disparar agora (teste) · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? Disparar agora (teste) · faltas": {
+      "main": [
+        [
+          {
+            "node": "Rodar: Disparar agora (teste) · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Toda noite (resumo de amanhã) · faltas": {
+      "main": [
+        [
+          {
+            "node": "Lojas: Toda noite (resumo de amanhã) · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: Toda noite (resumo de amanhã) · faltas": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? Toda noite (resumo de amanhã) · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? Toda noite (resumo de amanhã) · faltas": {
+      "main": [
+        [
+          {
+            "node": "Rodar: Toda noite (resumo de amanhã) · faltas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A cada 1 min · retomar": {
+      "main": [
+        [
+          {
+            "node": "Lojas: A cada 1 min · retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: A cada 1 min · retomar": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? A cada 1 min · retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? A cada 1 min · retomar": {
+      "main": [
+        [
+          {
+            "node": "Rodar: A cada 1 min · retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste) · retomar": {
+      "main": [
+        [
+          {
+            "node": "Lojas: Disparar agora (teste) · retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: Disparar agora (teste) · retomar": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? Disparar agora (teste) · retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? Disparar agora (teste) · retomar": {
+      "main": [
+        [
+          {
+            "node": "Rodar: Disparar agora (teste) · retomar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "A cada 10 min · retorno": {
+      "main": [
+        [
+          {
+            "node": "Lojas: A cada 10 min · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: A cada 10 min · retorno": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? A cada 10 min · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? A cada 10 min · retorno": {
+      "main": [
+        [
+          {
+            "node": "Rodar: A cada 10 min · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Disparar agora (teste) · retorno": {
+      "main": [
+        [
+          {
+            "node": "Lojas: Disparar agora (teste) · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lojas: Disparar agora (teste) · retorno": {
+      "main": [
+        [
+          {
+            "node": "Tem loja? Disparar agora (teste) · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tem loja? Disparar agora (teste) · retorno": {
+      "main": [
+        [
+          {
+            "node": "Rodar: Disparar agora (teste) · retorno",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveManualExecutions": true,
+    "saveDataSuccessExecution": "none"
+  }
+}

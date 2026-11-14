@@ -1,0 +1,149 @@
+# Plano: motor único e cadastro simples (mega hair e unhas)
+
+Combinado com o Victor em 13/11/2026. Complementa o `PLANO-VARIAS-LOJAS.md`: adianta a fase 9 de lá
+("juntar tudo") e muda o jeito de entrar loja nova.
+
+## Decisões
+
+- O Victor vende só para **dois ramos**: **mega hair** e **unhas** (manicure e pedicure juntos).
+  Menos ramos, mais fácil de escalar.
+- **Um motor só** de IA no n8n para todas as lojas. Acabam o conjunto de 15 fluxos por loja, o prompt
+  por loja e a lista de trocas de texto do `loja.json`.
+- **Um modelo por ramo**, mantido pela agência: prompt, serviços padrão, textos de foto e de retomada.
+- Cada loja só tem **dados**, preenchidos pela dona no app: horários, serviços com preço e duração,
+  endereço, formas de pagamento, regras de sinal e atraso, número dela para avisos e um recado para a IA.
+- **Um banco só** (decisão de 03/11): cada loja é uma linha em `empresas`, tudo separado por `empresa_id`.
+- A IA de loja nova **só responde clientes depois que a agência aprova**.
+
+## Custo do Gemini (decidido em 13/11)
+
+A conta do Gemini é da agência e entra na mensalidade. O que protege a agência é um **teto por loja**:
+
+- Cada plano inclui uma quantidade de conversas por mês (`empresas.config.ia_limite_mes`).
+- O motor soma o uso de cada loja no mês a partir de `registros_ia`.
+- Com 80% do teto: aviso para a agência e para a dona.
+- Com 100%: a IA daquela loja para de responder sozinha e avisa a dona, até a agência liberar.
+- Opção para loja grande: chave própria do Gemini na ficha da loja. Com chave própria, o motor usa a
+  dela e não conta no teto. (Conferir na etapa 1 como trocar a chave por loja no n8n.)
+- Antes de fechar o preço dos planos: conferir o custo por conversa (cerca de R$ 0,50 em 04/11) com a
+  fatura do Google. Ligar também um alerta de orçamento na conta do Google.
+
+## Regra de ouro (continua valendo)
+
+Nada muda o que a Gleide e a Caroline usam durante a obra. O motor roda ao lado, com outros nomes,
+outros webhooks e só na Loja Teste, até provar que funciona. No banco, só mudança que soma.
+
+## Como o motor funciona
+
+1. Chega mensagem no webhook único. A instância da Evolution diz de qual número veio.
+2. O motor acha a loja por `empresas.instancia_whatsapp`. Loja inativa ou não aprovada: não responde.
+3. Lê do banco: ramo, nome da dona, fuso, horários, serviços e preços, endereço, pagamento, regras, recado.
+4. Monta o prompt na hora: **base comum + modelo do ramo + dados da loja**.
+5. Memória, pausa e filas no Redis com a loja na chave (`<empresa_id>:memoria:…`).
+6. As rotinas (retomada, faltas, lembrete, retorno, pendências) percorrem todas as lojas ativas.
+
+Preço ou horário mudado no app vale na conversa seguinte, sem gerar nem enviar fluxo.
+
+## Entrada de loja nova
+
+Enquanto forem poucas lojas por mês, quem cria é a agência, no painel:
+
+1. **Nova loja**: nome, ramo, nome, e-mail e WhatsApp da dona.
+2. O servidor chama `criar_loja` (loja, profissional, serviços padrão do ramo sem preço), manda o convite
+   de login e cria a instância na Evolution com o webhook do motor.
+3. O **QR aparece na tela**; a dona escaneia.
+4. A dona preenche no app Dados do salão e Serviços e preços.
+5. A IA nasce com a trava de teste (só o número da agência). A agência testa e libera por botão.
+
+Quando o volume pedir: tela **Criar minha conta** no app (salão, dona, e-mail, senha, telefone, ramo,
+cidade). Cria a mesma coisa, com a loja em "aguardando aprovação", e o QR aparece dentro do app.
+
+## Como foi construído (13/11)
+
+**Um motor por ramo.** Mega hair e unhas têm ferramentas e prompt diferentes, então cada ramo tem o seu
+conjunto: `motor-unhas` e, depois, `motor-megahair`. São 2 conjuntos no total, com qualquer número de lojas.
+
+- O motor é gerado pelo mesmo gerador: `node montar-workflow.js --loja motor-unhas`.
+- `lojas/motor-unhas/` é uma loja modelo. O `loja.json` tem `"motor": true` e marcas (`MOTORxEMPRESA`,
+  `MOTORxDONA`…) no lugar dos dados. O `motor.js` troca cada marca por uma leitura da ficha da loja.
+- Levantamento: cada loja tinha cerca de 550 pontos fixos em 15 workflows (id da loja, instância, nome
+  da dona, números, chaves do Redis). No motor todos viram leitura da ficha.
+- Cada workflow ganha o nó **Loja** logo na entrada. No webhook, a ficha vem do banco pela instância
+  (`motor_loja`, `supabase/047`). Nos subworkflows, quem chama manda a ficha junto (`loja_json`).
+- As rotinas (faltas, retomada, retorno, pendências) são disparadas pelo workflow **Rotinas**, uma vez por
+  loja do motor (`motor_lojas`).
+- Uma loja entra no motor com `empresas.config.ia.motor = true`. Em 13/11 nenhuma loja está no motor.
+- Trava de teste por loja: `empresas.config.ia.permitidos`. A IA só responde todas as clientes com
+  `empresas.config.ia.liberada = true`; sem lista e sem liberação, não responde nenhuma cliente.
+- Só ligar `motor = true` numa loja **sem conjunto próprio ativo** no n8n (senão as rotinas rodam em dobro).
+- Teste de rotina numa loja só: `GET /webhook/motor-unhas-rotina-<faltas|retomar|retorno|assistente-pendencias>?empresa_id=<id>`.
+- Um testador comparou o motor com o conjunto da Caroline, nó a nó: com a ficha dela, o motor dá o mesmo
+  texto. Os 6 problemas que ele achou foram corrigidos (memória da assistente sem a loja, trava com e sem
+  o 9, catálogo sem link, teste das rotinas, alerta de erro nas rotinas, loja de outro ramo).
+
+**Ainda não provado, porque nada rodou no n8n:** se a Evolution manda `body.instance`; o que o nó HTTP
+devolve quando a loja não existe; se a lista vazia de lojas para as rotinas; se a descrição das ferramentas
+aceita a ficha; se `loja_json` chega inteiro nos subworkflows. É o primeiro teste a fazer na Loja Teste.
+
+**Limites conhecidos do motor hoje:** o alerta de erro não diz de qual loja foi; "Sinop", "MT" e o fuso de
+Cuiabá continuam fixos; cada mensagem faz uma consulta a mais ao banco.
+- Os conjuntos da Gleide e da Caroline, gerados depois da mudança, saíram byte a byte iguais aos de antes.
+
+## Etapas
+
+### Etapa 1 — Motor único na Loja Teste
+- [x] Levantar tudo que hoje é fixo por loja no gerador (`lojas.js`, `montar-workflow.js`, `trocas`)
+- [x] Webhook único que descobre a loja pela instância e carrega os dados dela (gerado, não enviado)
+- [x] Redis com a loja na chave; nada sem prefixo (gerado, não enviado)
+- [x] Ferramentas da IA (agenda, CRM, pausa, pergunta para a dona, catálogo) recebendo a loja (gerado, não enviado)
+- [x] Rotinas percorrendo as lojas ativas (gerado, não enviado; o fuso continua fixo em Cuiabá)
+- [x] Trava `permitidos` por loja, guardada no banco
+- [x] Funções do banco `motor_ficha`, `motor_loja`, `motor_lojas` (no ar; só leitura)
+- [ ] `instancia_alerta` no `loja.json` do motor: qual WhatsApp manda o alerta de erro (sem isso o envio é recusado)
+- [ ] Enviar o motor ao n8n desligado e ligar só para a Loja Teste (precisa de uma instância de WhatsApp de teste
+  com o webhook apontando para `motor-unhas-whatsapp-salao`)
+- [ ] Medir memória e tempo por atendimento, para saber quantas lojas o servidor aguenta
+- [ ] Teto de conversas por loja (`ia_limite_mes`): ainda não construído
+- [ ] Chave própria do Gemini por loja: ainda não construído
+- [ ] Teste: o mesmo número de cliente falando com duas lojas; nada vaza
+
+O que o modelo de Unhas ainda carrega da Caroline (vira ajuste por loja na etapa 2): bloco de 2h30 por
+cliente, memória de 12 h, resumo da noite às 19h, sinal por Pix, Google Agenda, almoço flexível e o texto
+do prompt dela.
+
+### Etapa 2 — Modelos por ramo
+- [ ] Base comum: jeito de escrever, segurança, agenda, preços sempre do app
+- [ ] Modelo **Unhas**, a partir do prompt da Caroline, sem o que é só dela
+- [ ] Modelo **Mega hair**, a partir do prompt da Gleide, sem o que é só dela (catálogo de cabelo e
+  avaliação online entram como recursos do ramo)
+- [ ] Dados da loja lidos de `empresas.config` e `servicos`; recado da dona no fim do prompt
+- [ ] Textos por ramo (foto, retomada, exemplos das ferramentas) no modelo, não em trocas
+- [ ] Bateria de conversas de teste por ramo
+
+### Etapa 3 — Painel da agência
+- [ ] Banco: `agencias`, `agencia_usuarios`, `empresas.agencia_id`, `minhas_empresas()` com as lojas da agência
+- [ ] Lista de lojas: WhatsApp conectado, IA ligada, mensagens do dia, custo
+- [ ] Nova loja + convite + instância e QR (no servidor, com as chaves de serviço)
+- [ ] Botões: liberar a IA, ligar e desligar, trava de teste
+
+### Etapa 4 — Caroline no motor
+- [ ] Rodar a loja dela no motor com a trava de teste e comparar com as respostas de hoje
+- [ ] Trocar o webhook da instância num horário calmo, com volta rápida para o conjunto antigo
+- [ ] A 3ª cliente já entra direto pelo motor
+
+### Etapa 5 — Cadastro pela dona
+- [ ] Tela Criar minha conta, QR dentro do app, loja em "aguardando aprovação"
+
+### Etapa 6 — Gleide por último
+- [ ] O que é só dela vira recurso do ramo ou configuração da loja
+- [ ] Troca num horário calmo, com volta rápida
+
+## Riscos
+
+1. **Misturar dados entre lojas.** Toda consulta filtrada pela loja, Redis com prefixo e o teste do mesmo
+   número em duas lojas antes de abrir.
+2. **Qualidade menor que a de hoje.** O modelo de ramo não nasce com os ajustes finos da Gleide. Comparar
+   com conversas reais antes de migrar cada loja.
+3. **Um erro derruba todas.** Com um motor só, deploy errado afeta todas as lojas. Testar sempre na Loja
+   Teste antes e manter o alerta.
+4. **Custo.** Loja sem aprovação não gasta Gemini; custo por loja no painel.

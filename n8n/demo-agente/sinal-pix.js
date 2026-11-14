@@ -21,7 +21,7 @@ const FOTO_COMPROVANTE = 'SE A IMAGEM FOR COMPROVANTE de Pix ou de transferênci
 const MOTIVOS = {
   sem_comprovante: "'NÃO AGENDADO: ainda não chegou a foto do comprovante do Pix do sinal. Se ainda não passou, passe o valor do sinal e a chave Pix e peça o print do comprovante. Só chame criar_agendamento de novo depois que a foto chegar.'",
   ja_usado: "'NÃO AGENDADO: o comprovante que ela mandou já foi usado para outro horário. Peça com educação o comprovante do Pix deste horário.'",
-  valor: "'NÃO AGENDADO: o comprovante é de R$ ' + f(s.valor_pago) + ', menor que o sinal de R$ ' + f(s.valor_sinal) + '. Explique com educação o valor do sinal. Se ela fizer outro Pix para completar, use transferir_para_humano para a Caroline conferir.'",
+  valor: "'NÃO AGENDADO: o comprovante é de R$ ' + f(s.valor_pago) + ', menor que o sinal de R$ ' + f(s.valor_sinal) + '. Explique com educação o valor do sinal. Se ela fizer outro Pix para completar, use transferir_para_humano para a Gleide conferir.'",
   recebedor: "'NÃO AGENDADO: o Pix do comprovante não foi para a conta do studio (recebedor no comprovante: ' + ((s.comprovante || {}).recebedor || 'não aparece') + '). Sem acusar, pergunte se ela usou a chave certa e passe a chave de novo.'",
   data: "'NÃO AGENDADO: o comprovante é de outra data (' + ((s.comprovante || {}).data || 'sem data') + '). Peça o comprovante do Pix feito para este horário.'",
   situacao: "'NÃO AGENDADO: o comprovante mostra o Pix como agendado ou pendente, ainda não caiu. Peça o comprovante quando o Pix for concluído.'",

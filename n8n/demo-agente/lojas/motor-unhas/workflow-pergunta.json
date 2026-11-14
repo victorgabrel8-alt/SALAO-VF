@@ -1,0 +1,301 @@
+{
+  "name": "[Motor Unhas] Perguntar para a dona",
+  "nodes": [
+    {
+      "id": "00000000-0000-4000-9000-000000000014",
+      "name": "Nota 14",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -40,
+        -206
+      ],
+      "parameters": {
+        "content": "## Perguntar para a a dona\nChamado pelo agente (perguntar_para_gleide): manda a dúvida da cliente para a a dona e guarda para repassar a resposta quando ela tocar em Responder.",
+        "width": 1400,
+        "height": 146,
+        "color": 1
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000319",
+      "name": "Recebe pergunta da IA",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "telefone"
+            },
+            {
+              "name": "jid"
+            },
+            {
+              "name": "nome"
+            },
+            {
+              "name": "pergunta"
+            },
+            {
+              "name": "contexto"
+            },
+            {
+              "name": "tipo"
+            },
+            {
+              "name": "loja_json"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000320",
+      "name": "Supabase: número de alerta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ ('' + $('Loja').first().json.empresa_id + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000321",
+      "name": "Enviar pergunta à a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.') }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput",
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000322",
+      "name": "Guardar pedido",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $('Loja').first().json.empresa_id }}:pedido:{{ $json.key?.id || 'falhou' }}",
+        "expire": true,
+        "ttl": 259200,
+        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta, tipo: $('Recebe pergunta da IA').first().json.tipo || 'pergunta', empresa: ('' + $('Loja').first().json.empresa_id + '') }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000323",
+      "name": "Memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:assistente:{{ $('Supabase: número de alerta').first().json.alerta }}",
+        "tail": false,
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? ('Pedi à ' + $('Loja').first().json.dona + ' o orçamento de cabelo de ') : ('Perguntei à ' + $('Loja').first().json.dona + ' sobre ')) + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000324",
+      "name": "Resposta",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ $('Enviar pergunta à a dona').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? ('ORÇAMENTO PEDIDO: a ' + $('Loja').first().json.dona + ' recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da ' + $('Loja').first().json.dona + ' chega à cliente automaticamente.') : ('PERGUNTADO: a ' + $('Loja').first().json.dona + ' recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a ' + $('Loja').first().json.dona + ' e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a ' + $('Loja').first().json.dona + ' responder, a resposta chega à cliente automaticamente.')) : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se a cliente precisar resolver já.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "b0270294-2e8a-4539-8eea-ea56b1697bb2",
+      "name": "Loja",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        220,
+        -200
+      ],
+      "parameters": {
+        "jsCode": "// Ficha da loja deste atendimento (motor único). Tudo o que muda de uma loja para outra sai daqui.\nconst bruto = $(\"Recebe pergunta da IA\").first().json.loja_json;\nconst f = typeof bruto === 'string' ? JSON.parse(bruto || 'null') : bruto;\nif (!f || !f.empresa_id) return [];\nconst sem9 = (n) => { const d = String(n).replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; };\nconst lista = (v) => (Array.isArray(v) ? v : String(v || '').split(',')).map((s) => String(s).trim()).filter(Boolean);\nconst dona = String(f.dona || 'responsável').trim();\n// Trava de teste: números com e sem o 9 (o principal compara como o WhatsApp manda; as rotinas, sem o 9).\n// Loja ainda não liberada pela agência (config.ia.liberada) e sem lista: ninguém recebe, só a dona.\nlet permitidos = [...new Set(lista(f.permitidos).flatMap((n) => [n.replace(/\\D/g, ''), sem9(n)]).filter(Boolean))];\nif (f.liberada !== true && !permitidos.length) permitidos = ['0'];\nif (f.liberada === true) permitidos = [];\nreturn [{ json: {\n  empresa_id: f.empresa_id, nome: f.nome || '', nicho: f.nicho || '', instancia: f.instancia || '',\n  dona, dona_maiuscula: dona.toUpperCase(), nome_maiusculo: String(f.nome || '').toUpperCase(), cidade: f.cidade || '', fuso: f.fuso || 'America/Cuiaba',\n  assist: lista(f.assist).join(','), assist_sem9: lista(f.assist).map(sem9).join(','),\n  permitidos: permitidos.join(','), catalogo_link: f.catalogo_link || '',\n} }];"
+      }
+    },
+    {
+      "id": "cd8e8015-15f2-4b4c-8288-9654512c7b75",
+      "name": "Entrada",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        -200
+      ],
+      "parameters": {
+        "jsCode": "// devolve o pedido que chegou, sem a ficha da loja\nreturn $(\"Recebe pergunta da IA\").all().map((i) => { const { loja_json, ...resto } = i.json; return { json: resto }; });"
+      }
+    }
+  ],
+  "connections": {
+    "Recebe pergunta da IA": {
+      "main": [
+        [
+          {
+            "node": "Loja",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase: número de alerta": {
+      "main": [
+        [
+          {
+            "node": "Enviar pergunta à a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enviar pergunta à a dona": {
+      "main": [
+        [
+          {
+            "node": "Guardar pedido",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Guardar pedido": {
+      "main": [
+        [
+          {
+            "node": "Memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Memória da assistente": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loja": {
+      "main": [
+        [
+          {
+            "node": "Entrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Entrada": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Cuiaba",
+    "saveDataSuccessExecution": "all",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}
