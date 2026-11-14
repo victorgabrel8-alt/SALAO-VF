@@ -28,6 +28,26 @@ A conta do Gemini é da agência e entra na mensalidade. O que protege a agênci
 - Antes de fechar o preço dos planos: conferir o custo por conversa (cerca de R$ 0,50 em 04/11) com a
   fatura do Google. Ligar também um alerta de orçamento na conta do Google.
 
+**Como ficou construído (14/11, `supabase/048` e `motor.js`):**
+- **Conversa** = uma cliente num dia em que a IA mandou pelo menos uma mensagem para ela (resposta,
+  lembrete, retomada ou retorno). Conta o mês corrente, no fuso da loja. Só conta mensagem que saiu de
+  verdade (gravada em `mensagens` com autor `ia`).
+- **Teto:** `empresas.config.ia.limite_mes`. Sem a chave, a loja não tem teto.
+- **No teto:** quem já falou com a IA hoje continua sendo atendida; conversa nova fica sem resposta
+  automática; retomada e retorno param; lembretes de horário, avisos e a assistente da dona continuam.
+- **Avisos:** de hora em hora o Rotinas confere; em 80% e em 100% manda, uma vez por nível no mês, um
+  WhatsApp para a dona (pelo número da loja) e outro para a agência (`numero_agencia` no `loja.json`).
+- **Para liberar:** aumentar `limite_mes`.
+- Uso em 14/11, pela mesma conta: Gleide 151 conversas no mês, Caroline 19 (elas não estão no motor).
+
+Testado na Loja Teste em 14/11 com o teto igual ao uso: cliente nova parou na entrada; a dona passou para
+a assistente; quem já tinha conversa no dia foi atendida; o aviso de 100% saiu para a agência e não se
+repetiu no segundo disparo. O aviso para a dona falhou só por a instância da Loja Teste não existir.
+
+Limites conhecidos: a mensagem da cliente barrada não entra no app (a dona só fica sabendo pelo aviso de
+100%); se o envio do aviso falhar, ele não é tentado de novo; a chave própria do Gemini por loja não foi
+feita; o custo real por conversa ainda precisa ser conferido com a fatura do Google.
+
 ## Regra de ouro (continua valendo)
 
 Nada muda o que a Gleide e a Caroline usam durante a obra. O motor roda ao lado, com outros nomes,
@@ -125,7 +145,7 @@ Cuiabá continuam fixos; cada mensagem faz uma consulta a mais ao banco.
 - [ ] Enviar o motor ao n8n desligado e ligar só para a Loja Teste (precisa de uma instância de WhatsApp de teste
   com o webhook apontando para `motor-unhas-whatsapp-salao`)
 - [ ] Medir memória e tempo por atendimento, para saber quantas lojas o servidor aguenta
-- [ ] Teto de conversas por loja (`ia_limite_mes`): ainda não construído
+- [x] Teto de conversas por loja (`config.ia.limite_mes`), com avisos de 80% e 100%
 - [ ] Chave própria do Gemini por loja: ainda não construído
 - [ ] Teste: o mesmo número de cliente falando com duas lojas; nada vaza
 
