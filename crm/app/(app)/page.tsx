@@ -3,11 +3,10 @@
 import Link from "next/link";
 import { TelaDaAba } from "@/components/TelaDaAba";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { FolhaConfirmar } from "@/components/FolhaConfirmar";
 import { FormAtendimento } from "@/components/FormAtendimento";
-import { Intencao } from "@/components/Intencao";
 import { LinhaDeslizante, type AcaoDeslizante } from "@/components/LinhaDeslizante";
 import {
   buscarAtendimentosDoDia,
@@ -20,9 +19,10 @@ import {
   resumoDosServicos,
   type Atendimento,
 } from "@/lib/atendimentos";
-import { confirmarAvaliacao, useIntencoes } from "@/lib/avaliacoes";
+import { confirmarAvaliacao, useIntencoes, type Avaliacao } from "@/lib/avaliacoes";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
+import { fraseDoDia, mostrarFrase } from "@/lib/frases";
 import {
   agoraNoSalao,
   dataNoSalao,
@@ -134,6 +134,7 @@ function duracao(min: number): string {
 // "em 25 min", "em 2h", "agora"
 function quandoComeca(a: Atendimento): string {
   const falta = Math.round((Date.parse(a.inicio) - Date.now()) / 60_000);
+  if (Date.parse(a.inicio) + minutosDe(a) * 60_000 <= Date.now()) return "passou da hora";
   if (falta <= 0) return "agora";
   if (falta < 60) return `em ${falta} min`;
   return `em ${Math.round(falta / 60)}h`;
@@ -144,10 +145,11 @@ function emAndamento(a: Atendimento): boolean {
   return Date.now() >= inicio && Date.now() < inicio + minutosDe(a) * 60_000;
 }
 
-// A próxima da fila: o primeiro horário a atender que ainda não terminou
+// A próxima da fila: o primeiro horário a atender que ainda não virou "sem baixa". Um horário que já
+// passou continua aqui (com "passou da hora") até a dona dar baixa ou ele ir para "sem baixa"
 function proximaCliente(hoje: Atendimento[]): Atendimento | null {
   const agora = Date.now();
-  return hoje.find((a) => a.status === "agendado" && Date.parse(a.inicio) + minutosDe(a) * 60_000 > agora) ?? null;
+  return hoje.find((a) => a.status === "agendado" && !naoAtendida(a, agora)) ?? null;
 }
 
 // Selo da lista "Hoje", nas mesmas cores da Agenda
@@ -162,18 +164,6 @@ function selo(a: Atendimento): { rotulo: string; classe: string } {
 
 function nomeDe(c: { nome: string | null; telefone: string } | null | undefined): string {
   return c?.nome ?? (c ? formatarTelefone(c.telefone) : "Cliente");
-}
-
-function Secao({ titulo, extra, children }: { titulo: string; extra?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="flex flex-col gap-2.5">
-      <div className="flex items-baseline justify-between">
-        <h2 className="rotulo">{titulo}</h2>
-        {extra}
-      </div>
-      {children}
-    </section>
-  );
 }
 
 export default function InicioPage() {
@@ -200,7 +190,7 @@ function InicioPageConteudo() {
   const agora = useAgora();
   const diaAtual = hojeNoSalao();
 
-  // Para a folha "Foi isso / Fez outra coisa" (a mesma do ✓ da Agenda)
+  // Para a folha "Foi isso / Fez outra coisa" (a mesma da Agenda)
   useEffect(() => {
     supabase()
       .from("servicos")
@@ -226,17 +216,15 @@ function InicioPageConteudo() {
 
   const ok = resumo && !("erro" in resumo) ? resumo : null;
   const proxima = ok ? proximaCliente(ok.hoje) : null;
-  // Passou 1 h do horário e ninguém confirmou: sai da lista de hoje e vai para "Não atendidas",
-  // junto com as de dias anteriores que ficaram sem conclusão
-  const [verNaoAtendidas, setVerNaoAtendidas] = useState(false);
-  const naoAtendidas = ok ? [...ok.pendentes, ...ok.hoje.filter((a) => naoAtendida(a, agora))] : [];
-  const hojeNaLista = ok ? ok.hoje.filter((a) => !naoAtendida(a, agora)) : [];
-  // A lista de baixo não repete a cliente que já está no cartão da próxima
-  const depois = hojeNaLista.filter((a) => a.id !== proxima?.id);
-  // "Depois" só quando não sobra horário de antes dela (concluídos, faltas); senão, "Hoje"
-  const soDepois = !!proxima && depois.every((a) => Date.parse(a.inicio) >= Date.parse(proxima.inicio));
-  // O que a IA anotou das clientes de hoje (pré-avaliação)
-  const intencoes = useIntencoes(ok ? ok.hoje.flatMap((a) => (a.clientes ? [a.clientes.id] : [])) : [], versao);
+  // Passou 1 h do horário e ninguém deu baixa: junta com os de dias anteriores sem conclusão
+  const [verSemBaixa, setVerSemBaixa] = useState(false);
+  const semBaixa = ok ? [...ok.pendentes, ...ok.hoje.filter((a) => naoAtendida(a, agora))] : [];
+  // Quem vem depois da próxima (só as que ainda vão ser atendidas)
+  const depois = ok && proxima ? ok.hoje.filter((a) => a.status === "agendado" && a.id !== proxima.id && Date.parse(a.inicio) >= Date.parse(proxima.inicio)) : [];
+  // Sem próxima hoje: o destaque vira a primeira cliente de amanhã
+  const primeiraDeAmanha = ok && !proxima ? (ok.amanha.find((a) => a.status === "agendado") ?? null) : null;
+  // O que a IA anotou das clientes de hoje e de amanhã (pré-avaliação)
+  const intencoes = useIntencoes(ok ? [...ok.hoje, ...ok.amanha].flatMap((a) => (a.clientes ? [a.clientes.id] : [])) : [], versao);
   // "Chegou" (ou desfazer): grava e atualiza a tela
   const chegou = async (a: Atendimento, sim = true) => {
     const erro = await marcarChegou(a.id, sim);
@@ -245,160 +233,103 @@ function InicioPageConteudo() {
   };
 
   return (
-    <>
+    // A tela ocupa a altura toda: a cliente no meio e as linhas de aviso embaixo, perto do polegar
+    <div className="flex min-h-[calc(100dvh-100px-env(safe-area-inset-top)-env(safe-area-inset-bottom))] flex-col">
       <IndicadorPuxar puxado={puxado} atualizando={atualizando} />
-      <Topo
-        titulo={saudacao(agoraNoSalao().hora)}
-        subtitulo={empresa.nome}
-        alerta={!!ok && ok.precisam.length > 0}
-        aoRegistrar={() => setRegistrando(true)}
-      />
+      <Topo titulo={saudacao(agoraNoSalao().hora)} alerta={!!ok && ok.precisam.length > 0} aoRegistrar={() => setRegistrando(true)} />
+      {/* Versículo curto do dia, logo abaixo da saudação (a dona desliga em Configurações) */}
+      {mostrarFrase(empresa.config) && <FraseDoDia dia={diaAtual} />}
 
       {!resumo && <p className="carregando-calmo p-5 text-texto-2">Carregando…</p>}
       {resumo && "erro" in resumo && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler o banco: {resumo.erro}</p>}
 
       {ok && (
-        <div className="chegar-suave flex flex-col gap-[22px] px-5 pt-4">
-          {/* O mais urgente primeiro, empilhado como as notificações do iPhone */}
-          {ok.precisam.length > 0 && (
-            <Faixa
-              href="/conversas"
-              texto={ok.precisam.length === 1 ? "1 cliente esperando você" : `${ok.precisam.length} clientes esperando você`}
-              acao="Responder"
-            />
-          )}
+        <div className="chegar-suave flex flex-1 flex-col px-5">
+          <div className="pt-7">
+            {proxima ? (
+              <Destaque
+                rotulo="Próxima cliente"
+                atendimento={proxima}
+                quando={quandoComeca(proxima)}
+                intencao={proxima.clientes ? intencoes[proxima.clientes.id] : undefined}
+                // "Chegou" a partir de 1 h antes; depois que ela chega, o principal vira "Concluir"
+                acao={
+                  proxima.chegou_em
+                    ? { rotulo: "Concluir atendimento", aoTocar: () => setConfirmando(proxima) }
+                    : Date.parse(proxima.inicio) - agora < 60 * 60_000
+                      ? { rotulo: `${primeiroNome(nomeDe(proxima.clientes)) || "Ela"} chegou`, aoTocar: () => chegou(proxima) }
+                      : null
+                }
+                aoDesfazerChegada={() => chegou(proxima, false)}
+              />
+            ) : primeiraDeAmanha ? (
+              <Destaque
+                rotulo={ok.hoje.length ? "Hoje acabou · amanhã começa com" : "Dia livre hoje · amanhã começa com"}
+                atendimento={primeiraDeAmanha}
+                intencao={primeiraDeAmanha.clientes ? intencoes[primeiraDeAmanha.clientes.id] : undefined}
+                acao={null}
+              />
+            ) : (
+              <div className="flex flex-col gap-2">
+                <span className="text-[14px] font-semibold text-rotulo">{ok.hoje.length ? "Hoje" : "Agenda"}</span>
+                <span className="text-[34px] leading-tight font-extrabold tracking-[-0.04em]">{ok.hoje.length ? "Tudo atendido" : "Dia livre"}</span>
+                <span className="text-[16px] text-texto-2">Nenhum horário marcado para amanhã ainda.</span>
+              </div>
+            )}
+          </div>
 
-          {/* Não atendidas (de hoje e de dias anteriores): recolhidas numa linha rosé, também em dia
-              livre; tocar mostra quem é, e o ✓ de cada uma resolve */}
-          {naoAtendidas.length > 0 && (
-            <div className="flex flex-col gap-2.5">
-              <button
-                onClick={() => setVerNaoAtendidas((v) => !v)}
-                aria-expanded={verNaoAtendidas}
-                className="flex min-h-12 items-center gap-2.5 rounded-[14px] bg-rose px-4 py-3 text-left active:scale-[0.99]"
-              >
-                <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-atencao" />
-                <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-rose-texto">
-                  {verNaoAtendidas ? "Esconder" : naoAtendidas.length === 1 ? "1 não atendida" : `${naoAtendidas.length} não atendidas`}
-                </span>
-                <Seta pequena />
-              </button>
-              {verNaoAtendidas && (
-                <ListaHorarios
-                  atendimentos={naoAtendidas}
-                  linhaAberta={linhaAberta}
-                  aoAbrirLinha={setLinhaAberta}
-                  aoConcluir={setConfirmando}
-                  comSelo
+          {/* Avisos embaixo, perto do polegar. Cada linha só aparece quando tem algo */}
+          <ul className="mt-auto pt-8">
+            {ok.precisam.length > 0 && (
+              <LinhaRodape
+                href="/conversas"
+                ponto="bg-atencao"
+                forte
+                texto={ok.precisam.length === 1 ? "1 cliente esperando você" : `${ok.precisam.length} clientes esperando você`}
+              />
+            )}
+            {semBaixa.length > 0 && (
+              <>
+                <LinhaRodape
+                  ponto="bg-claro"
+                  texto={semBaixa.length === 1 ? "1 horário sem baixa" : `${semBaixa.length} horários sem baixa`}
+                  aberta={verSemBaixa}
+                  aoTocar={() => setVerSemBaixa((v) => !v)}
                 />
-              )}
-            </div>
-          )}
-
-          {ok.hoje.length === 0 ? (
-            <>
-              {/* Dia livre: um cartão só, em vez de "ninguém hoje" repetido em três lugares */}
-              <div className="flex flex-col gap-2.5">
-                <Link
-                  href="/agenda"
-                  className="flex items-center gap-3.5 rounded-[22px] bg-card borda-suave p-4 shadow-[0_10px_26px_rgba(30,23,20,0.08)] active:scale-[0.99]"
-                >
-                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-ouro">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={1.8} strokeLinecap="round" aria-hidden>
-                      <circle cx="12" cy="12" r="4" />
-                      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
-                    </svg>
-                  </span>
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <span className="text-[18px] font-bold">Dia livre hoje</span>
-                    <span className="text-[13px] text-texto-2">Nenhum horário marcado. Se a IA marcar alguém, aparece aqui.</span>
-                  </span>
-                  <Seta />
-                </Link>
-                <CartaoAssistente iaConversou={ok.iaConversou} iaMarcou={ok.iaMarcou} />
-              </div>
-
-              {/* Num dia parado, o que importa é o dia seguinte: a lista de amanhã já aberta */}
-              <Secao titulo={`Amanhã · ${diaDaSemana(somarDias(hojeNoSalao(), 1))}`} extra={<LinkAgenda />}>
-                {ok.amanha.length === 0 ? (
-                  <p className="rounded-[22px] bg-card borda-suave p-4 text-[15px] text-texto-2">Nenhum horário marcado amanhã ainda.</p>
-                ) : (
-                  <ListaHorarios atendimentos={ok.amanha} linhaAberta={linhaAberta} aoAbrirLinha={setLinhaAberta} />
+                {verSemBaixa && (
+                  <li className="pb-3">
+                    <ListaHorarios
+                      atendimentos={semBaixa}
+                      linhaAberta={linhaAberta}
+                      aoAbrirLinha={setLinhaAberta}
+                      aoConcluir={setConfirmando}
+                      comSelo
+                    />
+                  </li>
                 )}
-              </Secao>
-            </>
-          ) : (
-            <>
-              {/* O que a IA fez hoje e a próxima cliente, com a hora em destaque */}
-              <div className="flex flex-col gap-2.5">
-                <CartaoAssistente iaConversou={ok.iaConversou} iaMarcou={ok.iaMarcou} />
-                <div className="flex flex-col gap-3 rounded-[20px] border border-borda bg-card p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="rotulo">Próxima cliente</span>
-                    {proxima && <span className="rounded-full bg-campo px-2.5 py-1 text-[13px] font-bold text-grafite">{quandoComeca(proxima)}</span>}
-                  </div>
-                  {proxima ? (
-                    <>
-                      <Link href={proxima.clientes ? `/clientes/${proxima.clientes.id}` : "/agenda"} className="flex items-center gap-3.5 active:opacity-70">
-                        <span className="text-[30px] leading-none font-extrabold tracking-[-0.04em]">{formatarHora(proxima.inicio)}</span>
-                        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-                          <span className="truncate text-[18px] font-bold">{nomeDe(proxima.clientes)}</span>
-                          <span className="truncate text-[15px] text-texto-2">
-                            {resumoDosServicos(proxima)} · {duracao(minutosDe(proxima))}
-                          </span>
-                        </span>
-                        <Seta />
-                      </Link>
-                      {/* Resumo da IA num bloco Porcelana, com a etiqueta IA */}
-                      {proxima.clientes && intencoes[proxima.clientes.id]?.pre_resumo?.trim() && (
-                        <div className="rounded-[14px] bg-perola px-3.5 py-3 [&>p]:mt-0 [&>p]:line-clamp-3 [&>p]:text-[15px] [&>p]:leading-[1.45]">
-                          <Intencao avaliacao={intencoes[proxima.clientes.id]} />
-                        </div>
-                      )}
-                      {proxima.clientes && (
-                        <Link
-                          href={`/conversas/${proxima.clientes.id}`}
-                          className="flex h-12 items-center justify-center rounded-[13px] bg-grafite text-[16px] font-bold text-perola active:scale-[0.99]"
-                        >
-                          Ver conversa
-                        </Link>
-                      )}
-                    </>
-                  ) : (
-                    <Link href="/agenda" className="flex items-center justify-between gap-3">
-                      <span className="text-[16px] text-texto-2">Ninguém mais para atender hoje.</span>
-                      <Seta />
-                    </Link>
-                  )}
-                </div>
-                {/* Um toque quando ela entra no salão: a IA para de cobrar atraso. Aparece a partir de
-                    1 h antes do horário */}
-                {proxima && Date.parse(proxima.inicio) - agora < 60 * 60_000 && (
-                  <BotaoChegou atendimento={proxima} aoMarcar={(sim) => chegou(proxima, sim)} />
-                )}
-              </div>
-
-              {/* A lista do dia, com a situação de cada horário e amanhã no rodapé */}
-              <Secao titulo={soDepois ? "Depois" : "Hoje"} extra={<LinkAgenda />}>
-                {depois.length > 0 ? (
-                  <ListaHorarios
-                    atendimentos={depois}
-                    linhaAberta={linhaAberta}
-                    aoAbrirLinha={setLinhaAberta}
-                    aoConcluir={setConfirmando}
-                    aoChegou={(a) => chegou(a)}
-                    comSelo
-                  />
-                ) : (
-                  <p className="rounded-[18px] bg-card borda-suave p-4 text-[15px] text-texto-2">
-                    {proxima ? "Depois dela, nenhum outro horário hoje." : "Os horários de hoje já passaram. Veja as não atendidas acima."}
-                  </p>
-                )}
-              </Secao>
-            </>
-          )}
-
-          {ok.aniversariantes.length > 0 && <Aniversarios lista={ok.aniversariantes} />}
+              </>
+            )}
+            {(ok.iaConversou > 0 || ok.iaMarcou > 0) && (
+              <LinhaRodape
+                href="/conversas"
+                ponto="bg-ouro-antigo"
+                texto={[
+                  ok.iaConversou ? `A IA conversou com ${ok.iaConversou === 1 ? "1 cliente" : `${ok.iaConversou} clientes`}` : null,
+                  ok.iaMarcou ? `${ok.iaConversou ? "marcou" : "A IA marcou"} ${ok.iaMarcou === 1 ? "1 horário" : `${ok.iaMarcou} horários`}` : null,
+                ]
+                  .filter(Boolean)
+                  .join(" e ")}
+              />
+            )}
+            {ok.aniversariantes.length > 0 && <Aniversarios lista={ok.aniversariantes} />}
+            {depois.length > 0 && (
+              <LinhaRodape
+                href="/agenda"
+                texto={`Depois, às ${formatarHora(depois[0].inicio)}, ${primeiroESegundo(nomeDe(depois[0].clientes))}${depois.length > 1 ? ` e mais ${depois.length - 1}` : ""}`}
+              />
+            )}
+            {!proxima && ok.hoje.length > 0 && <LinhaRodape href="/agenda" texto="Ver o dia na agenda" />}
+          </ul>
         </div>
       )}
 
@@ -446,53 +377,155 @@ function InicioPageConteudo() {
           aoFechar={() => setConfirmando(null)}
         />
       )}
+    </div>
+  );
+}
+
+// "Cleris Fernanda Gonçalves da Silva" -> "Cleris Fernanda" (telefone fica como está)
+function primeiroESegundo(nome: string): string {
+  if (/^\(?\d/.test(nome)) return nome;
+  const [p, s] = nome.trim().split(/\s+/);
+  return s && !["da", "de", "do", "das", "dos", "e"].includes(s.toLowerCase()) ? `${p} ${s}` : p;
+}
+
+// A cliente em destaque: a hora bem grande, o nome, o serviço, o que a IA anotou e uma ação só
+function Destaque({
+  rotulo,
+  atendimento: a,
+  quando,
+  intencao,
+  acao,
+  aoDesfazerChegada,
+}: {
+  rotulo: string;
+  atendimento: Atendimento;
+  quando?: string;
+  intencao: Avaliacao | undefined;
+  acao: { rotulo: string; aoTocar: () => void } | null;
+  aoDesfazerChegada?: () => void;
+}) {
+  const resumoIa = intencao?.pre_resumo?.trim();
+  const conversa = a.clientes ? `/conversas/${a.clientes.id}` : null;
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="text-[14px] font-semibold text-rotulo">{rotulo}</span>
+        {quando && <span className="shrink-0 text-[14px] font-bold">{quando}</span>}
+      </div>
+      <Link href={a.clientes ? `/clientes/${a.clientes.id}` : "/agenda"} className="flex flex-col active:opacity-70">
+        <span className="text-[64px] leading-none font-extrabold tracking-[-0.05em]">{formatarHora(a.inicio)}</span>
+        <span className="mt-3 truncate text-[20px] font-bold">{primeiroESegundo(nomeDe(a.clientes))}</span>
+        <span className="text-[16px] text-texto-2">
+          {resumoDosServicos(a)} · {duracao(minutosDe(a))}
+        </span>
+      </Link>
+      {(resumoIa || a.origem === "ia") && (
+        <p className="mt-3 flex gap-2 text-[15px] leading-[1.45] text-texto-2">
+          <span aria-hidden className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-ouro-antigo" />
+          <span className="line-clamp-3">
+            {intencao?.resultado === "pensando" && <b>Ficou de pensar. </b>}
+            {resumoIa ?? "Marcado pela IA."}
+          </span>
+        </p>
+      )}
+      {a.chegou_em && (
+        <p className="mt-4 flex min-h-11 items-center justify-between rounded-[13px] bg-salvia px-4 text-[15px] text-salvia-texto">
+          <span>
+            <b>Chegou</b> às {formatarHora(a.chegou_em)}
+          </span>
+          {aoDesfazerChegada && (
+            <button onClick={aoDesfazerChegada} className="h-11 font-semibold underline underline-offset-2">
+              Desfazer
+            </button>
+          )}
+        </p>
+      )}
+      {acao ? (
+        <>
+          <button onClick={acao.aoTocar} className="mt-4 h-[52px] rounded-[14px] bg-grafite text-[17px] font-bold text-perola active:scale-[0.99]">
+            {acao.rotulo}
+          </button>
+          {conversa && (
+            <Link href={conversa} className="mx-auto flex h-11 items-center px-3 text-[15px] font-bold underline underline-offset-2">
+              Ver conversa
+            </Link>
+          )}
+        </>
+      ) : (
+        conversa && (
+          <Link
+            href={conversa}
+            className="mt-4 flex h-[52px] items-center justify-center rounded-[14px] bg-grafite text-[17px] font-bold text-perola active:scale-[0.99]"
+          >
+            Ver conversa
+          </Link>
+        )
+      )}
+    </div>
+  );
+}
+
+// Frase do dia: o versículo entre aspas e a referência pequena ao lado
+function FraseDoDia({ dia }: { dia: string }) {
+  const f = fraseDoDia(dia);
+  return (
+    <p className="px-5 pt-3 text-[15px] leading-[1.45] text-texto-2">
+      “{f.texto}” <span className="text-[13px] font-semibold whitespace-nowrap text-rotulo">{f.referencia}</span>
+    </p>
+  );
+}
+
+// Linha de aviso do rodapé do Início: bolinha (opcional), texto e seta. Vai para outra tela
+// (href) ou abre/fecha algo logo abaixo (aoTocar)
+function LinhaRodape({
+  texto,
+  ponto,
+  forte,
+  href,
+  aoTocar,
+  aberta,
+}: {
+  texto: string;
+  ponto?: string;
+  forte?: boolean;
+  href?: string;
+  aoTocar?: () => void;
+  aberta?: boolean;
+}) {
+  const conteudo = (
+    <>
+      {ponto && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${ponto}`} />}
+      <span className={`min-w-0 flex-1 truncate text-[16px] ${forte ? "font-bold" : ""}`}>{texto}</span>
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="#7A5870"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        className={`shrink-0 transition-transform duration-200 ${aberta ? "rotate-90" : ""}`}
+      >
+        <path d="m9 18 6-6-6-6" />
+      </svg>
     </>
   );
-}
-
-// Logo abaixo do cartão da próxima cliente: "Chegou" num toque; depois, a hora e o desfazer
-function BotaoChegou({ atendimento, aoMarcar }: { atendimento: Atendimento; aoMarcar: (sim: boolean) => Promise<void> }) {
-  const [salvando, setSalvando] = useState(false);
-  const marcar = async (sim: boolean) => {
-    setSalvando(true);
-    await aoMarcar(sim);
-    setSalvando(false);
-  };
-  if (atendimento.chegou_em) {
-    return (
-      <div className="flex items-center justify-between gap-3 rounded-[18px] bg-ouro px-4 py-2.5 text-sm text-ouro-texto">
-        <span className="font-semibold">Chegou às {formatarHora(atendimento.chegou_em)}</span>
-        <button onClick={() => marcar(false)} disabled={salvando} className="text-[13px] font-semibold underline underline-offset-2 disabled:opacity-50">
-          Desfazer
+  const classe = "flex min-h-14 w-full items-center gap-3 text-left active:opacity-60";
+  return (
+    <li className="border-t border-borda">
+      {href ? (
+        <Link href={href} className={classe}>
+          {conteudo}
+        </Link>
+      ) : (
+        <button onClick={aoTocar} aria-expanded={aberta} className={classe}>
+          {conteudo}
         </button>
-      </div>
-    );
-  }
-  return (
-    <button
-      onClick={() => marcar(true)}
-      disabled={salvando}
-      className="flex items-center justify-center gap-2 rounded-[18px] bg-grafite px-4 py-3 text-[15px] font-semibold text-perola active:scale-[0.99] disabled:opacity-50"
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <path d="m5 12 5 5L20 7" />
-      </svg>
-      {salvando ? "Marcando…" : `${nomeDe(atendimento.clientes).split(" ")[0]} chegou`}
-    </button>
+      )}
+    </li>
   );
-}
-
-function LinkAgenda() {
-  return (
-    <Link href="/agenda" className="flex h-11 items-center text-[14px] font-bold text-texto underline underline-offset-2">
-      Ver agenda
-    </Link>
-  );
-}
-
-// "2026-10-23" -> "sexta"
-function diaDaSemana(data: string): string {
-  return DIAS_SEMANA[new Date(`${data}T12:00:00Z`).getUTCDay()];
 }
 
 // Lista de horários (hoje ou amanhã). Toque abre a ficha; deslizar mostra os atalhos.
@@ -543,35 +576,6 @@ function ListaHorarios({
         );
       })}
     </ul>
-  );
-}
-
-// "Sua assistente cuidou disso": cartão Ônix com o que a IA fez hoje (some quando ela não fez nada)
-function CartaoAssistente({ iaConversou, iaMarcou }: { iaConversou: number; iaMarcou: number }) {
-  if (!iaConversou && !iaMarcou) return null;
-  const partes = [
-    iaConversou ? `conversou com ${iaConversou === 1 ? "1 cliente" : `${iaConversou} clientes`}` : null,
-    iaMarcou ? `marcou ${iaMarcou === 1 ? "1 horário" : `${iaMarcou} horários`}` : null,
-  ].filter(Boolean);
-  return (
-    <Link href="/conversas" className="flex flex-col gap-1.5 rounded-[20px] bg-grafite p-4 active:scale-[0.99]">
-      <span className="flex items-center gap-2">
-        <span aria-hidden className="h-3 w-3 rounded-full bg-dourado" />
-        <span className="text-[13px] font-bold text-dourado">Sua assistente cuidou disso</span>
-      </span>
-      <span className="text-[16px] leading-[1.45] text-perola">Hoje ela {partes.join(" e ")}.</span>
-    </Link>
-  );
-}
-
-// Faixa de atenção (quem espera a dona): o texto em vermelho escuro e a ação sublinhada
-function Faixa({ href, texto, acao }: { href: string; texto: string; acao: string }) {
-  return (
-    <Link href={href} className="flex min-h-12 items-center gap-2.5 rounded-[14px] bg-rose px-4 py-3 active:scale-[0.99]">
-      <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-atencao" />
-      <span className="min-w-0 flex-1 truncate text-[15px] font-bold text-rose-texto">{texto}</span>
-      <span className="shrink-0 text-[15px] font-bold text-rose-texto underline underline-offset-2">{acao}</span>
-    </Link>
   );
 }
 
@@ -710,7 +714,7 @@ function IndicadorPuxar({ puxado, atualizando }: { puxado: number; atualizando: 
 
 // Título grande como no iPhone (Mail, Saúde, App Store): data, saudação e nome do salão.
 // Ao rolar, o título sai de cena e uma barra de vidro com a saudação pequena aparece no topo.
-function Topo({ titulo, subtitulo, alerta, aoRegistrar }: { titulo: string; subtitulo: string; alerta: boolean; aoRegistrar: () => void }) {
+function Topo({ titulo, alerta, aoRegistrar }: { titulo: string; alerta: boolean; aoRegistrar: () => void }) {
   const marco = useRef<HTMLDivElement>(null);
   const [encolhido, setEncolhido] = useState(false);
 
@@ -732,9 +736,9 @@ function Topo({ titulo, subtitulo, alerta, aoRegistrar }: { titulo: string; subt
       >
         <div className="mx-auto flex h-[52px] max-w-xl items-center justify-between gap-3 px-5">
           {/* Mesma largura das bolhas da direita, para o título ficar no centro */}
-          <span className="w-[80px] shrink-0" aria-hidden />
+          <span className="w-[96px] shrink-0" aria-hidden />
           <span className="truncate text-[17px] font-semibold">{titulo}</span>
-          <div className="flex w-[80px] shrink-0 justify-end gap-2">
+          <div className="flex w-[96px] shrink-0 justify-end gap-2">
             <BolhaRegistrar aoTocar={aoRegistrar} pequena />
             <BolhaConfiguracoes alerta={alerta} pequena />
           </div>
@@ -745,7 +749,6 @@ function Topo({ titulo, subtitulo, alerta, aoRegistrar }: { titulo: string; subt
         <div className="flex min-w-0 flex-col">
           <span className="text-[13px] font-semibold text-rotulo">{formatarDiaLongo(hojeNoSalao())}</span>
           <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">{titulo}</h1>
-          <span className="truncate text-[14px] text-texto-2">{subtitulo}</span>
           {/* Quando este ponto sai da tela, o topo encolhe */}
           <div ref={marco} aria-hidden className="h-px" />
         </div>
@@ -764,7 +767,7 @@ function BolhaConfiguracoes({ alerta, pequena }: { alerta: boolean; pequena?: bo
     <Link
       href="/configuracoes"
       aria-label={alerta ? "Configurações (alguém precisa de você)" : "Configurações"}
-      className={`relative flex shrink-0 items-center justify-center rounded-full active:scale-95 ${pequena ? "vidro h-9 w-9" : "h-12 w-12 border border-claro bg-card"}`}
+      className={`relative flex shrink-0 items-center justify-center rounded-full active:scale-95 ${pequena ? "vidro h-11 w-11" : "h-11 w-11 border border-claro bg-card"}`}
     >
       <svg width={pequena ? 17 : 20} height={pequena ? 17 : 20} viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <circle cx="12" cy="12" r="3" />
@@ -781,9 +784,9 @@ function BolhaRegistrar({ aoTocar, pequena }: { aoTocar: () => void; pequena?: b
     <button
       onClick={aoTocar}
       aria-label="Registrar atendimento"
-      className={`flex shrink-0 items-center justify-center rounded-full active:scale-95 ${pequena ? "h-9 w-9 bg-grafite" : "h-12 w-12 bg-grafite"}`}
+      className={`flex shrink-0 items-center justify-center rounded-full active:scale-95 ${pequena ? "vidro h-11 w-11" : "h-11 w-11 active:bg-campo"}`}
     >
-      <svg width={pequena ? 18 : 21} height={pequena ? 18 : 21} viewBox="0 0 24 24" fill="none" stroke="#FAF6F3" strokeWidth={2} strokeLinecap="round" aria-hidden>
+      <svg width={pequena ? 18 : 24} height={pequena ? 18 : 24} viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2} strokeLinecap="round" aria-hidden>
         <path d="M12 5v14M5 12h14" />
       </svg>
     </button>
@@ -795,27 +798,23 @@ function Aniversarios({ lista }: { lista: Aniversariante[] }) {
   const [aberta, setAberta] = useState(false);
   const deHoje = lista.filter((c) => c.dia === hojeNoSalao());
   const resumo = deHoje.length
-    ? `Hoje: ${deHoje.map((c) => primeiroNome(c.nome) || nomeDe(c)).join(", ")}${lista.length > deHoje.length ? ` · +${lista.length - deHoje.length} na semana` : ""}`
+    ? `Aniversário hoje: ${deHoje.map((c) => primeiroNome(c.nome) || nomeDe(c)).join(", ")}${lista.length > deHoje.length ? ` · +${lista.length - deHoje.length} na semana` : ""}`
     : `${lista.length} ${lista.length === 1 ? "aniversário" : "aniversários"} esta semana`;
 
   return (
-    <section className="flex flex-col gap-2.5">
-      <button
-        onClick={() => setAberta((a) => !a)}
-        aria-expanded={aberta}
-        className={`flex items-center gap-3 rounded-[20px] borda-suave px-3.5 py-3 text-left ${deHoje.length ? "bg-ouro" : "bg-card"}`}
-      >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={deHoje.length ? "#1B1719" : "#7A5870"} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
+    <li className="border-t border-borda">
+      <button onClick={() => setAberta((a) => !a)} aria-expanded={aberta} className="flex min-h-14 w-full items-center gap-3 text-left active:opacity-60">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
           <rect x="3" y="8" width="18" height="4" rx="1" />
           <path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5" />
         </svg>
-        <span className={`min-w-0 flex-1 truncate text-[15px] font-semibold ${deHoje.length ? "text-ouro-texto" : ""}`}>{resumo}</span>
+        <span className={`min-w-0 flex-1 truncate text-[16px] ${deHoje.length ? "font-bold" : ""}`}>{resumo}</span>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={`shrink-0 transition-transform ${aberta ? "rotate-90" : ""}`}>
           <path d="m9 18 6-6-6-6" />
         </svg>
       </button>
       {aberta && (
-        <ul className="rounded-[20px] bg-card borda-suave">
+        <ul className="mb-3 rounded-[18px] bg-card borda-suave">
           {lista.map((c, i) => {
             const ehHoje = c.dia === hojeNoSalao();
             const quando = ehHoje ? "hoje" : DIAS_SEMANA[new Date(`${c.dia}T12:00:00Z`).getUTCDay()];
@@ -837,15 +836,7 @@ function Aniversarios({ lista }: { lista: Aniversariante[] }) {
           })}
         </ul>
       )}
-    </section>
-  );
-}
-
-function Seta({ pequena }: { pequena?: boolean }) {
-  return (
-    <svg width={pequena ? 16 : 20} height={pequena ? 16 : 20} viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0">
-      <path d="m9 18 6-6-6-6" />
-    </svg>
+    </li>
   );
 }
 

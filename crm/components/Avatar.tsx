@@ -4,7 +4,8 @@
 function iniciais(nome: string | null): string {
   const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
-  return (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+  // Uma letra só, como no desenho Oi Studio (mais limpo e legível no círculo pequeno)
+  return partes[0][0].toUpperCase();
 }
 
 // O id continua no tipo para as telas que já o passam.
