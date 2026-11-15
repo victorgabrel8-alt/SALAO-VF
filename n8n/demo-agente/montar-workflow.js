@@ -811,6 +811,8 @@ const aplicarRespostas = () => {
 if (!LOJA) aplicarRespostas();
 // a assistente cobra menos a dona: cada pendência uma vez, juntas, ao meio-dia e às 18h (pendencias-loja.js); pedido do Victor em 14/11
 if (!LOJA) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: [12, 18] });
+// o lembrete não repete o combinado que a cliente ouviu hoje na conversa (lembrete-sem-repetir.js); pedido do Victor em 14/11
+if (!LOJA) require('./lembrete-sem-repetir.js')({ faltasWorkflow: faltas.faltasWorkflow });
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 if (LOJA) {
