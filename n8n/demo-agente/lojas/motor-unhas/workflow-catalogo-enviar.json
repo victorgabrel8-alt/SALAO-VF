@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000390",
+      "id": "00000000-0000-4000-8000-000000000408",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -43,7 +43,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000398",
+      "id": "00000000-0000-4000-8000-000000000416",
       "name": "Enviar link",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -77,7 +77,7 @@
       "waitBetweenTries": 2000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000394",
+      "id": "00000000-0000-4000-8000-000000000412",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -111,7 +111,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000395",
+      "id": "00000000-0000-4000-8000-000000000413",
       "name": "Registrar no CRM",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -146,7 +146,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000396",
+      "id": "00000000-0000-4000-8000-000000000414",
       "name": "Resposta (enviado)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -169,7 +169,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000397",
+      "id": "00000000-0000-4000-8000-000000000415",
       "name": "Resposta (falhou)",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

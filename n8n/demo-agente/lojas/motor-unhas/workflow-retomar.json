@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000289",
+      "id": "00000000-0000-4000-8000-000000000306",
       "name": "Quem retomar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -50,7 +50,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000290",
+      "id": "00000000-0000-4000-8000-000000000307",
       "name": "Pausas",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -73,7 +73,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000291",
+      "id": "00000000-0000-4000-8000-000000000308",
       "name": "Memórias",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -96,7 +96,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000292",
+      "id": "00000000-0000-4000-8000-000000000309",
       "name": "Preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -109,7 +109,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000293",
+      "id": "00000000-0000-4000-8000-000000000310",
       "name": "Escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -139,7 +139,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000294",
+      "id": "00000000-0000-4000-8000-000000000311",
       "name": "Decidir",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -152,7 +152,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000295",
+      "id": "00000000-0000-4000-8000-000000000312",
       "name": "Enviar?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -186,7 +186,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000296",
+      "id": "00000000-0000-4000-8000-000000000313",
       "name": "Pular?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -220,7 +220,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000297",
+      "id": "00000000-0000-4000-8000-000000000314",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -259,7 +259,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000298",
+      "id": "00000000-0000-4000-8000-000000000315",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -293,7 +293,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000299",
+      "id": "00000000-0000-4000-8000-000000000316",
       "name": "Registrar retomada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -325,7 +325,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000300",
+      "id": "00000000-0000-4000-8000-000000000317",
       "name": "Memória (aviso)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -348,7 +348,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000301",
+      "id": "00000000-0000-4000-8000-000000000318",
       "name": "Memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -371,7 +371,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000302",
+      "id": "00000000-0000-4000-8000-000000000319",
       "name": "Registrar pulada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
