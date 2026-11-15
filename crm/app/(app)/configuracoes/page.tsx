@@ -1,5 +1,6 @@
 "use client";
 
+import { Voltar } from "@/components/Voltar";
 import Link from "next/link";
 import { useState } from "react";
 import { Cabecalho } from "@/components/Cabecalho";
@@ -15,9 +16,9 @@ export default function ConfiguracoesPage() {
       <Cabecalho
         titulo="Configurações"
         acao={
-          <Link href="/" className="flex h-11 items-center px-2 text-lg font-semibold text-[var(--cor-principal)]">
+          <Voltar para="/" className="flex h-11 items-center px-2 text-lg font-semibold text-[var(--cor-principal)]">
             Voltar
-          </Link>
+          </Voltar>
         }
       />
       <div className="space-y-4">

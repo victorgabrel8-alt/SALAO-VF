@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { Suspense, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { Suspense, useLayoutEffect, useState } from "react";
+import { registrarTela } from "@/lib/rastro";
+import { podeAnimarTroca, telaTrocou, trocarDeAba } from "@/lib/trocaDeAba";
 
 const ABAS = [
   { href: "/", rotulo: "Início", icone: "M3 10.5 12 3l9 7.5M5 9.5V21h14V9.5M10 21v-6h4v6" },
@@ -17,7 +19,7 @@ function indiceDa(caminho: string): number {
 
 // Barra fixa no rodapé (identidade Oi Studio): branca, borda de cima fina, 76px + área segura do
 // iPhone. O conteúdo termina acima dela (pb-abas no layout). A troca de tela anima em
-// components/TelaDaAba.tsx. Fica atrás de um <Suspense> porque
+// lib/trocaDeAba.ts. Fica atrás de um <Suspense> porque
 // usePathname() lê a URL; enquanto isso, a mesma barra aparece sem aba marcada.
 export function BarraAbas() {
   return (
@@ -28,10 +30,17 @@ export function BarraAbas() {
 }
 
 function AbasComRota() {
-  return <Abas caminho={usePathname()} />;
+  const caminho = usePathname();
+  // A tela nova acabou de entrar: libera a animação da troca e anota o caminho para o "Voltar"
+  useLayoutEffect(() => {
+    registrarTela(caminho);
+    telaTrocou();
+  }, [caminho]);
+  return <Abas caminho={caminho} />;
 }
 
 function Abas({ caminho }: { caminho: string }) {
+  const router = useRouter();
   // A pílula já vai para a aba no toque, sem esperar a tela nova carregar; quando a URL muda,
   // volta a seguir a URL
   const [toque, setToque] = useState<{ indice: number; caminho: string } | null>(null);
@@ -47,7 +56,7 @@ function Abas({ caminho }: { caminho: string }) {
   }
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-10 border-t border-borda bg-card pb-[env(safe-area-inset-bottom)]">
+    <nav className="barra-abas fixed inset-x-0 bottom-0 z-10 touch-manipulation border-t border-borda bg-card pb-[env(safe-area-inset-bottom)] select-none [-webkit-touch-callout:none]">
       <ul className="relative mx-auto grid h-[76px] max-w-xl grid-cols-3 items-center">
         {/* Uma pílula só, que desliza numa mola até a aba tocada (atrás dos ícones) */}
         {ativa >= 0 && (
@@ -65,8 +74,7 @@ function Abas({ caminho }: { caminho: string }) {
             <li key={aba.href} className="relative">
               <Link
                 href={aba.href}
-                // Direção da animação da tela: aba à direita entra pela direita, e vice-versa
-                transitionTypes={daUrl >= 0 && i !== daUrl ? [i > daUrl ? "aba-direita" : "aba-esquerda"] : undefined}
+                draggable={false}
                 onClick={(e) => {
                   // Tocar na aba em que já está (na tela principal dela): volta suave ao topo
                   if (caminho === aba.href) {
@@ -75,6 +83,10 @@ function Abas({ caminho }: { caminho: string }) {
                     return;
                   }
                   if (i !== ativa) setToque({ indice: i, caminho });
+                  // As telas se cruzam suavemente (lib/trocaDeAba.ts); sem suporte, troca direto
+                  if (e.metaKey || e.ctrlKey || e.shiftKey || !podeAnimarTroca()) return;
+                  e.preventDefault();
+                  trocarDeAba(() => router.push(aba.href));
                 }}
                 aria-current={i === daUrl ? "page" : undefined}
                 className={`group flex h-[76px] flex-col items-center justify-center gap-1 text-[13px] transition-colors duration-300 ease-out ${

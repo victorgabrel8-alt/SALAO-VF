@@ -1,5 +1,6 @@
 "use client";
 
+import { Voltar } from "@/components/Voltar";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -154,11 +155,11 @@ function ConversaCliente() {
     <div className="-mt-[env(safe-area-inset-top)] min-h-dvh bg-[radial-gradient(rgb(27_23_25/0.05)_1px,transparent_1px)] [background-size:18px_18px]">
       <header className="vidro-barra sticky top-0 z-10 pt-[env(safe-area-inset-top)]">
         <div className="flex items-center gap-2 px-3 py-2">
-          <Link href="/conversas" aria-label="Voltar para Conversas" className="vidro flex h-10 w-10 shrink-0 items-center justify-center rounded-full active:scale-95">
+          <Voltar para="/conversas" aria-label="Voltar para Conversas" className="vidro flex h-10 w-10 shrink-0 items-center justify-center rounded-full active:scale-95">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="m15 18-6-6 6-6" />
             </svg>
-          </Link>
+          </Voltar>
           <Link href={`/clientes/${cliente.id}`} className="flex min-w-0 flex-1 items-center gap-2.5">
             <span className="relative shrink-0">
               <Avatar id={cliente.id} nome={cliente.nome} tamanho="h-10 w-10 text-base" />
