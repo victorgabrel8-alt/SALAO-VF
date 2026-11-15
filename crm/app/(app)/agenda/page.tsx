@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { TelaDaAba } from "@/components/TelaDaAba";
 import { useEffect, useRef, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Etiquetas } from "@/components/Etiquetas";
@@ -90,11 +89,7 @@ function duracao(min: number): string {
 
 
 export default function AgendaPage() {
-  return (
-    <TelaDaAba>
-      <AgendaPageConteudo />
-    </TelaDaAba>
-  );
+  return <AgendaPageConteudo />;
 }
 
 // Iniciais dos dias na faixa da semana (de segunda a domingo)

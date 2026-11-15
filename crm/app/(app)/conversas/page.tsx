@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { TelaDaAba } from "@/components/TelaDaAba";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -211,11 +210,7 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
 }
 
 export default function ConversasPage() {
-  return (
-    <TelaDaAba>
-      <ConversasPageConteudo />
-    </TelaDaAba>
-  );
+  return <ConversasPageConteudo />;
 }
 
 function ConversasPageConteudo() {

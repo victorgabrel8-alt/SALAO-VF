@@ -1,5 +1,6 @@
 "use client";
 
+import { Voltar } from "@/components/Voltar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -150,12 +151,12 @@ export default function ProximasPage() {
     <>
       <header className="flex flex-col gap-3 px-4 pt-4">
         <div className="flex items-center justify-between gap-2">
-          <Link href="/agenda" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
+          <Voltar para="/agenda" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="m15 18-6-6 6-6" />
             </svg>
             Agenda
-          </Link>
+          </Voltar>
           {/* Viagem, folga, imprevisto: bloquear dias e ver quem é afetado */}
           <Link href="/agenda/bloqueios" className="vidro flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold active:scale-95">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#7A2617" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>

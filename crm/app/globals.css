@@ -208,8 +208,9 @@ body {
   }
 }
 
-/* Troca de aba (components/TelaDaAba.tsx), no jeito do iPhone: as duas telas se cruzam ao mesmo
-   tempo (sem "buraco" entre uma e outra). A barra de abas fica parada. */
+/* Troca de aba (lib/trocaDeAba.ts): a tela antiga apaga rápido e a nova acende por cima, sem
+   deslizar nem desfocar. A foto é da tela inteira do celular (root), nunca da lista toda; a barra
+   de abas fica de fora (nome próprio), parada e sempre por cima. */
 :root {
   --mola: linear(0, 0.043, 0.146, 0.277, 0.415, 0.545, 0.66, 0.758, 0.836, 0.897, 0.942, 0.974, 0.995, 1.009, 1.016, 1.019, 1.02, 1.018, 1.016, 1.013, 1.011, 1.008, 1.006, 1.004, 1.003, 1.002, 1.001, 1, 1);
   --mola-rapida: cubic-bezier(0.32, 0.72, 0, 1); /* a curva das folhas e menus do iOS */
@@ -220,23 +221,27 @@ body {
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
+  mix-blend-mode: normal;
 }
-/* Sem deslizar nem desfocar: na troca de abas do iPhone a tela não anda para o lado, ela se
-   cruza com a outra. A antiga apaga sem pressa; a nova acende por cima e assenta com uma
-   aproximação quase imperceptível (99,4% → 100%), o que dá profundidade sem "mexer" a tela. */
-::view-transition-group(.aba-direita),
-::view-transition-group(.aba-esquerda) {
-  animation-duration: 0.42s;
+::view-transition-old(root) {
+  display: none;
 }
-::view-transition-old(.aba-direita),
-::view-transition-old(.aba-esquerda) {
-  animation: troca-apagar 0.3s cubic-bezier(0.4, 0, 0.6, 1) both;
+html[data-troca="aba"]::view-transition-old(root) {
+  display: block;
+  animation: troca-apagar 0.2s cubic-bezier(0.4, 0, 0.6, 1) both;
 }
-::view-transition-new(.aba-direita),
-::view-transition-new(.aba-esquerda) {
-  animation:
-    troca-acender 0.42s cubic-bezier(0.25, 0.1, 0.25, 1) 0.04s both,
-    troca-assentar 0.6s var(--mola) both;
+html[data-troca="aba"]::view-transition-new(root) {
+  animation: troca-acender 0.3s cubic-bezier(0.25, 0.1, 0.25, 1) 0.03s both;
+}
+.barra-abas {
+  view-transition-name: barra-abas;
+}
+::view-transition-group(barra-abas),
+::view-transition-new(barra-abas) {
+  animation: none;
+}
+::view-transition-old(barra-abas) {
+  display: none;
 }
 @keyframes troca-apagar {
   to {
@@ -246,11 +251,6 @@ body {
 @keyframes troca-acender {
   from {
     opacity: 0;
-  }
-}
-@keyframes troca-assentar {
-  from {
-    scale: 0.994;
   }
 }
 /* Dados que chegam depois da troca de tela (aba) (as telas leem o banco no navegador): a lista acende
