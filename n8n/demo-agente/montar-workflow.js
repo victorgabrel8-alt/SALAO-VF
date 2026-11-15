@@ -703,6 +703,8 @@ const { crmWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D,
 require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow });
 // Fotos na conversa do app: a foto da cliente (e da dona) vai para o Storage e o app mostra (ver fotos-workflows.js)
 require('./fotos-workflows.js')({ node, main, ifNode, cond, D, workflow });
+// A cliente ligou: a IA responde uma vez, com contexto, e a ligação nunca pausa a IA (ver ligacao.js)
+require('./ligacao.js')({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS });
 
 // Áudios prontos da Gleide: tool enviar_audio + catálogo no fim do prompt (ver audios-workflows.js)
 const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });
