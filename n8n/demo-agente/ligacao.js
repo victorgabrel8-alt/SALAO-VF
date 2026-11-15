@@ -9,7 +9,9 @@
 //   3. a dona só é avisada se a cliente tem horário nas próximas 24 h ou ligou 3 vezes em meia hora;
 //   4. ligação nunca pausa a IA: a mensagem automática antiga, se ainda sair, não conta como resposta da dona.
 // Banco: tabela ligacoes e n8n_ligacao_recebida (supabase/051).
-// Número que liga escondido (@lid, sem telefone): recebe a resposta, mas não entra no app (não dá para saber quem é).
+// Quem liga quase sempre chega com o número escondido (@lid; visto na ligação de teste de 15/11). O telefone verdadeiro
+// sai do histórico da conversa na Evolution (remoteJidAlt das mensagens antigas). Quem nunca escreveu continua escondido:
+// recebe a resposta, mas só entra no app quando mandar a primeira mensagem.
 
 const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()`;
 const EMPRESA = '$env.EMPRESA_ID';
@@ -31,8 +33,20 @@ if (permitidos.length && !permitidos.includes(digitos)) return [];
 return [{ json: { jid, digitos, telefone: escondido ? '' : digitos, numero: escondido ? jid : digitos } }];
 `;
 
-const O_QUE_DIZER = String.raw`
+const TELEFONE = String.raw`
+// número escondido: procura o telefone nas mensagens antigas dessa conversa (a Evolution guarda em key.remoteJidAlt)
 const l = $('Ligação: dados').first().json;
+if (l.telefone) return [{ json: l }];
+const r = $input.first().json || {};
+const lista = (r.messages && r.messages.records) || r.records || (Array.isArray(r) ? r : []);
+const alt = lista.map((x) => String((x.key && x.key.remoteJidAlt) || '')).find((j) => /^\d{10,15}@s\.whatsapp\.net$/.test(j));
+if (!alt) return [{ json: l }];
+const tel = alt.split('@')[0];
+return [{ json: { ...l, telefone: tel, digitos: tel } }];
+`;
+
+const O_QUE_DIZER = String.raw`
+const l = $('Ligação: telefone').first().json;
 let r = $input.first().json || {};
 if (typeof r === 'string') { try { r = JSON.parse(r); } catch (e) { r = {}; } }
 // o banco não respondeu: ainda assim a cliente recebe a resposta simples (melhor que silêncio)
@@ -96,6 +110,11 @@ module.exports = ({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS
   workflow.nodes.push(
     ifNode('É ligação?', [110, 0], [cond('lg1', "={{ String($json.body?.event || '').toLowerCase() === 'call' }}", sim)]),
     node('Ligação: dados', 'n8n-nodes-base.code', 2, [220, 420], { jsCode: DADOS }),
+    node('Ligação: histórico', 'n8n-nodes-base.httpRequest', 4.2, [330, 420], {
+      method: 'POST', url: `${EVO}/chat/findMessages/{{ $env.EVOLUTION_INSTANCE }}`, sendHeaders: true, headerParameters: apikeyHeader,
+      sendBody: true, specifyBody: 'json', jsonBody: '={{ JSON.stringify({ where: { key: { remoteJid: $json.jid } }, limit: 30 }) }}', options: { timeout: 10000 },
+    }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
+    node('Ligação: telefone', 'n8n-nodes-base.code', 2, [385, 420], { jsCode: TELEFONE }),
     rpc('Ligação: anotar', [440, 420], 'n8n_ligacao_recebida', `{ p_empresa_id: ${EMPRESA}, p_telefone: ${TEL_BR('$json.digitos')} }`),
     node('Ligação: o que dizer', 'n8n-nodes-base.code', 2, [660, 420], { jsCode: O_QUE_DIZER }),
     ifNode('Ligação: responde?', [880, 360], [cond('lg2', '={{ $json.responder }}', sim)]),
@@ -118,7 +137,9 @@ module.exports = ({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS
   Object.assign(workflow.connections, {
     'Webhook Evolution': main('É ligação?'),
     'É ligação?': { main: [[{ node: 'Ligação: dados', type: 'main', index: 0 }], [{ node: 'Extrair dados', type: 'main', index: 0 }]] },
-    'Ligação: dados': main('Ligação: anotar'),
+    'Ligação: dados': main('Ligação: histórico'),
+    'Ligação: histórico': main('Ligação: telefone'),
+    'Ligação: telefone': main('Ligação: anotar'),
     'Ligação: anotar': main('Ligação: o que dizer'),
     'Ligação: o que dizer': { main: [[{ node: 'Ligação: responde?', type: 'main', index: 0 }, { node: 'Ligação: avisa a dona?', type: 'main', index: 0 }]] },
     'Ligação: responde?': main('Ligação: responder'),
