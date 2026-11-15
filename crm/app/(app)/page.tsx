@@ -22,6 +22,7 @@ import {
 import { confirmarAvaliacao, useIntencoes, type Avaliacao } from "@/lib/avaliacoes";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
+import { guardar, lembrar } from "@/lib/memoriaTela";
 import { fraseDoDia, mostrarFrase } from "@/lib/frases";
 import {
   agoraNoSalao,
@@ -176,7 +177,11 @@ export default function InicioPage() {
 
 function InicioPageConteudo() {
   const empresa = useEmpresa();
-  const [resumo, setResumo] = useState<Resumo | { erro: string } | null>(null);
+  // Volta para a aba já com o que tinha (a busca nova atualiza por trás)
+  const chave = `inicio:${empresa.id}`;
+  const [resumo, setResumo] = useState<Resumo | { erro: string } | null>(() => lembrar(chave));
+  // A lista só "acende" quando chega depois de abrir a tela; vinda da memória, aparece direto
+  const [veioDaMemoria] = useState(() => lembrar(chave) !== null);
   const [versao, setVersao] = useState(0);
   const [registrando, setRegistrando] = useState(false);
   const recarregar = () => setVersao((v) => v + 1);
@@ -184,7 +189,11 @@ function InicioPageConteudo() {
   const [linhaAberta, setLinhaAberta] = useState<string | null>(null);
   const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
   const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
-  const { puxado, atualizando } = usePuxarParaAtualizar(async () => setResumo(await buscarResumo(empresa.id)));
+  const { puxado, atualizando } = usePuxarParaAtualizar(async () => {
+    const r = await buscarResumo(empresa.id);
+    guardar(`inicio:${empresa.id}`, r);
+    setResumo(r);
+  });
   // O relógio anda a cada minuto; quando vira o dia (app aberto de um dia para o outro), o
   // resumo é buscado de novo: "hoje" passa a ser o dia novo e o de ontem vai para os pendentes
   const agora = useAgora();
@@ -204,12 +213,13 @@ function InicioPageConteudo() {
   useEffect(() => {
     let ativo = true;
     buscarResumo(empresa.id).then((r) => {
+      guardar(chave, r);
       if (ativo) setResumo(r);
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, versao, diaAtual]);
+  }, [empresa.id, versao, diaAtual, chave]);
 
   // A IA grava sozinha: quando chega mensagem ou horário novo, a tela se atualiza
   useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, recarregar);
@@ -244,7 +254,7 @@ function InicioPageConteudo() {
       {resumo && "erro" in resumo && <p className="m-5 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler o banco: {resumo.erro}</p>}
 
       {ok && (
-        <div className="chegar-suave flex flex-1 flex-col px-5">
+        <div className={`${veioDaMemoria ? "" : "chegar-suave"} flex flex-1 flex-col px-5`}>
           <div className="pt-7">
             {proxima ? (
               <Destaque

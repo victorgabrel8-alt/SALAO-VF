@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
 import { useEmpresa } from "@/lib/empresa";
+import { guardar, lembrar } from "@/lib/memoriaTela";
 import { buscarExcluidas } from "@/lib/excluidas";
 import { dataNoSalao, formatarData, formatarHora, formatarTelefone, hojeNoSalao } from "@/lib/formato";
 import { situacaoIa } from "@/lib/ia";
@@ -219,7 +220,10 @@ export default function ConversasPage() {
 
 function ConversasPageConteudo() {
   const empresa = useEmpresa();
-  const [resultado, setResultado] = useState<Resultado | null>(null);
+  // Volta para a aba já com a lista que tinha (a busca nova atualiza por trás)
+  const chave = `conversas:${empresa.id}`;
+  const [resultado, setResultado] = useState<Resultado | null>(() => lembrar(chave));
+  const [veioDaMemoria] = useState(() => lembrar(chave) !== null);
   const [versao, setVersao] = useState(0);
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [busca, setBusca] = useState("");
@@ -231,12 +235,13 @@ function ConversasPageConteudo() {
   useEffect(() => {
     let ativo = true;
     buscarConversas(empresa.id).then((r) => {
+      guardar(chave, r);
       if (ativo) setResultado(r);
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, versao]);
+  }, [empresa.id, versao, chave]);
 
   // Mensagem nova ou IA pausada/reativada: a lista se atualiza sozinha
   useTempoReal(["mensagens", "clientes"], empresa.id, () => setVersao((v) => v + 1));
@@ -326,7 +331,7 @@ function ConversasPageConteudo() {
       {resultado && "erro" in resultado && <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler as conversas: {resultado.erro}</p>}
 
       {resultado && "conversas" in resultado && (
-        <section className="chegar-suave">
+        <section className={veioDaMemoria ? "" : "chegar-suave"}>
           {lista.length === 0 ? (
             <p className="mx-5 mt-8 text-center text-[15px] text-texto-2">
               {busca.trim() ? "Nenhuma conversa encontrada." : filtro === "precisa" ? "Ninguém esperando você agora." : "Nenhuma conversa ainda."}

@@ -5,7 +5,8 @@ function iniciais(nome: string | null): string {
   const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
   // Uma letra só, como no desenho Oi Studio (mais limpo e legível no círculo pequeno)
-  return partes[0][0].toUpperCase();
+  // Array.from pega a letra inteira (um emoji no começo do nome não vira "�")
+  return (Array.from(partes[0])[0] ?? "?").toUpperCase();
 }
 
 // O id continua no tipo para as telas que já o passam.

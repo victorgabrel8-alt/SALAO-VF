@@ -67,7 +67,9 @@ async function buscarFicha(id: string): Promise<Ficha | { erro: string }> {
 function iniciais(nome: string | null): string {
   const partes = (nome ?? "").trim().split(/\s+/).filter(Boolean);
   if (partes.length === 0) return "?";
-  return (partes[0][0] + (partes.length > 1 ? partes[partes.length - 1][0] : "")).toUpperCase();
+  // Array.from pega a letra inteira (um emoji no nome não vira "�")
+  const primeira = (p: string) => Array.from(p)[0] ?? "";
+  return (primeira(partes[0]) + (partes.length > 1 ? primeira(partes[partes.length - 1]) : "")).toUpperCase();
 }
 
 function dinheiro(valor: number): string {
