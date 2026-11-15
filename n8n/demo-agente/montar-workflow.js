@@ -703,6 +703,8 @@ const { crmWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D,
 require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow });
 // Fotos na conversa do app: a foto da cliente (e da dona) vai para o Storage e o app mostra (ver fotos-workflows.js)
 require('./fotos-workflows.js')({ node, main, ifNode, cond, D, workflow });
+// A cliente ligou: a IA responde uma vez, com contexto, e a ligação nunca pausa a IA (ver ligacao.js)
+require('./ligacao.js')({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS });
 
 // Áudios prontos da Gleide: tool enviar_audio + catálogo no fim do prompt (ver audios-workflows.js)
 const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub, workflow });
@@ -742,6 +744,8 @@ require('./preco-pendente.js')({ node, REDIS, D })(workflow);
 // comprovante do sinal conferido pelo sistema, em foto ou PDF (sinal-pix.js). Na Gleide o banco só exige o
 // comprovante de quem faltou (config.loja.sinal_pix.so_para_quem_faltou, supabase/047); as lojas ligam o delas mais abaixo
 if (!LOJA) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: { slug: 'gleide' }, semBloco: true, dona: 'Gleide' });
+// a IA só cancela um horário se a cliente pediu para cancelar ou desmarcar (cancelar-so-se-pediu.js): Gleide e todas as lojas
+require('./cancelar-so-se-pediu.js')({ node, workflow, agendaWorkflow });
 
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');
@@ -807,6 +811,10 @@ const aplicarRespostas = () => {
     dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
 };
 if (!LOJA) aplicarRespostas();
+// a assistente cobra menos a dona: cada pendência uma vez, juntas, ao meio-dia e às 18h (pendencias-loja.js); pedido do Victor em 14/11
+if (!LOJA) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: [12, 18] });
+// o lembrete não repete o combinado que a cliente ouviu hoje na conversa (lembrete-sem-repetir.js); pedido do Victor em 14/11
+if (!LOJA) require('./lembrete-sem-repetir.js')({ faltasWorkflow: faltas.faltasWorkflow });
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 let rotinasWorkflow = null; // só no motor único (motor.js): chama cada rotina uma vez por loja
@@ -836,6 +844,8 @@ if (LOJA) {
     pp.parameters.jsCode = pp.parameters.jsCode.replace(semValor, 'Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela.');
   }
   // a IA de atendimento vê o que o salão já mandou à cliente (assistente da dona incluída): contexto-saidas.js
+  // a IA só cancela se a cliente pediu (cancelar-so-se-pediu.js). Sem opção no loja.json: vale para toda loja nova
+  require('./cancelar-so-se-pediu.js')({ node, workflow, agendaWorkflow });
   if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
   // horário que a dona mandou oferecer: marca sem sinal e sem perguntar de novo (oferta-da-dona.js)
   if (LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./oferta-da-dona.js')({ workflow, agendaWorkflow });
@@ -883,6 +893,10 @@ if (LOJA) {
   if (LOJA.assistente_marcar) require('./assistente-marcar.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
   // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
   if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite });
+  // lembrete da loja na véspera e 2 horas antes, com o texto dela (lembrete-loja.js)
+  if (LOJA.lembrete_duplo) require('./lembrete-loja.js')({ faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
+  // a assistente cobra menos a dona: cada pendência uma vez, juntas, nas horas da lista (pendencias-loja.js)
+  if (LOJA.pendencias_horas) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: LOJA.pendencias_horas });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

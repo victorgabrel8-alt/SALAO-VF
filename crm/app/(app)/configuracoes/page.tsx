@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { Cabecalho } from "@/components/Cabecalho";
 import { lerAlmoco } from "@/lib/almoco";
-import { BotaoSair, useEmpresa } from "@/lib/empresa";
+import { BotaoSair, useEmpresa, useTrocarConfig } from "@/lib/empresa";
+import { mostrarFrase } from "@/lib/frases";
 import { formatarTelefone, normalizarTelefone, telefoneValido } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 
@@ -22,27 +23,28 @@ export default function ConfiguracoesPage() {
       <div className="space-y-4">
         <Link
           href="/configuracoes/loja"
-          className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm active:bg-neutral-50"
+          className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-borda bg-white p-4 active:bg-campo"
         >
           <span>
             <span className="block text-lg font-semibold">Dados do salão</span>
-            <span className="block text-neutral-600">Endereço, horário de funcionamento, pagamento e regras.</span>
+            <span className="block text-texto-2">Endereço, horário de funcionamento, pagamento e regras.</span>
           </span>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-rotulo" aria-hidden>
             <path d="m9 18 6-6-6-6" />
           </svg>
         </Link>
         <AlertaWhatsApp />
         <HorarioAlmoco />
+        <FraseDoDiaLigada />
         <Link
           href="/configuracoes/servicos"
-          className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm active:bg-neutral-50"
+          className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-borda bg-white p-4 active:bg-campo"
         >
           <span>
             <span className="block text-lg font-semibold">Serviços e preços</span>
-            <span className="block text-neutral-600">Valores, duração e retorno de cada serviço. A IA usa o que estiver aqui.</span>
+            <span className="block text-texto-2">Valores, duração e retorno de cada serviço. A IA usa o que estiver aqui.</span>
           </span>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-neutral-500" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-rotulo" aria-hidden>
             <path d="m9 18 6-6-6-6" />
           </svg>
         </Link>
@@ -62,6 +64,48 @@ async function salvarConfig(empresaId: string, mudanca: Record<string, unknown>)
   const config = { ...(atual.data.config as Record<string, unknown>), ...mudanca };
   const { error } = await db.from("empresas").update({ config }).eq("id", empresaId);
   return error?.message;
+}
+
+// Frase do dia no Início (versículo curto): liga e desliga na hora, sem botão de salvar
+function FraseDoDiaLigada() {
+  const empresa = useEmpresa();
+  const trocarConfig = useTrocarConfig();
+  const ligada = mostrarFrase(empresa.config);
+  const [salvando, setSalvando] = useState(false);
+  const [aviso, setAviso] = useState("");
+
+  async function alternar() {
+    setSalvando(true);
+    setAviso("");
+    const erro = await salvarConfig(empresa.id, { frase_do_dia: !ligada });
+    setSalvando(false);
+    if (erro) return setAviso(`Não foi possível salvar: ${erro}`);
+    trocarConfig({ ...empresa.config, frase_do_dia: !ligada }, empresa.nome);
+  }
+
+  return (
+    <section className="mx-4 rounded-2xl border border-borda bg-white p-4">
+      <div className="flex items-center justify-between gap-3">
+        <span>
+          <span className="block text-lg font-semibold">Frase do dia</span>
+          <span className="block text-texto-2">Um versículo curto da Bíblia no Início, diferente a cada dia.</span>
+        </span>
+        <button
+          onClick={alternar}
+          disabled={salvando}
+          role="switch"
+          aria-checked={ligada}
+          aria-label="Mostrar a frase do dia no Início"
+          className="-mr-1 flex h-12 w-16 shrink-0 items-center justify-center disabled:opacity-60"
+        >
+          <span className={`relative h-8 w-14 rounded-full transition-colors ${ligada ? "bg-grafite" : "bg-claro"}`}>
+            <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${ligada ? "left-7" : "left-1"}`} />
+          </span>
+        </button>
+      </div>
+      {aviso && <p className="mt-2 text-[14px] text-rose-texto">{aviso}</p>}
+    </section>
+  );
 }
 
 // Horário de almoço: a Agenda não deixa marcar nem reagendar nesse intervalo, e a IA
@@ -87,21 +131,21 @@ function HorarioAlmoco() {
     setAviso(erro ? `Não foi possível salvar: ${erro}` : "Salvo ✓");
   }
 
-  const campo = "h-12 w-full rounded-xl border border-neutral-300 bg-white px-3 text-lg";
+  const campo = "h-12 w-full rounded-xl border border-claro bg-white px-3 text-lg";
 
   return (
-    <section className="mx-4 space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+    <section className="mx-4 space-y-3 rounded-2xl border border-borda bg-white p-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold">Horário de almoço</h2>
-          <p className="text-neutral-600">Nesse intervalo não dá para marcar horário.</p>
+          <p className="text-texto-2">Nesse intervalo não dá para marcar horário.</p>
         </div>
         <button
           onClick={() => setAtivo(!ativo)}
           role="switch"
           aria-checked={ativo}
           aria-label="Bloquear horário de almoço"
-          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${ativo ? "bg-[var(--cor-principal)]" : "bg-neutral-300"}`}
+          className={`relative h-8 w-14 shrink-0 rounded-full transition-colors ${ativo ? "bg-[var(--cor-principal)]" : "bg-claro"}`}
         >
           <span className={`absolute top-1 h-6 w-6 rounded-full bg-white shadow transition-all ${ativo ? "left-7" : "left-1"}`} />
         </button>
@@ -168,10 +212,10 @@ function AlertaWhatsApp() {
   }
 
   return (
-    <section className="mx-4 space-y-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+    <section className="mx-4 space-y-3 rounded-2xl border border-borda bg-white p-4">
       <div>
         <h2 className="text-lg font-semibold">WhatsApp para alertas</h2>
-        <p className="text-neutral-600">
+        <p className="text-texto-2">
           A IA manda para este número o resumo de quem pediu para falar com você e as perguntas rápidas que ela não
           sabe responder. Para responder uma pergunta, toque em Responder na mensagem dela.
         </p>
@@ -181,7 +225,7 @@ function AlertaWhatsApp() {
         placeholder="(66) 99999-8888"
         value={telefone}
         onChange={(e) => setTelefone(e.target.value)}
-        className="h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
+        className="h-12 w-full rounded-xl border border-claro bg-white px-4 text-lg outline-none focus:border-[var(--cor-principal)]"
       />
       <button
         onClick={salvar}

@@ -17,7 +17,7 @@ export function situacaoIa(iaPausada: boolean, motivo: string | null): SituacaoI
 
 export const SELO_IA: Record<SituacaoIa, { rotulo: string; ponto: string }> = {
   // Mesmas cores do ponto na lista de Conversas
-  atendendo: { rotulo: "IA atendendo", ponto: "bg-[#5E7A50]" },
+  atendendo: { rotulo: "IA atendendo", ponto: "bg-[#2F7D5B]" },
   pausada: { rotulo: "Pausada", ponto: "bg-bronze" },
   precisa: { rotulo: "Precisa de você", ponto: "bg-rose-texto" },
 };

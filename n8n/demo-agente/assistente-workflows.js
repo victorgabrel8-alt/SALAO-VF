@@ -5,8 +5,8 @@
 //                                    que ela faz no app: agenda, fichas e avisos para a cliente (supabase/013)
 //   - "Assistente - Ferramentas"     subworkflow das tools (SQL nas funções n8n_assistente_*; avisar_cliente
 //                                    também envia a mensagem pela Evolution)
-//   - "Assistente - Pendências"      de 1 em 1 h (8h–20h) pergunta à Gleide o que falta no CRM
-//                                    (a mesma pendência por no máximo 2 h, ver supabase/011)
+//   - "Assistente - Pendências"      pergunta à Gleide o que falta no CRM: cada pendência UMA vez, juntas ao meio-dia
+//                                    e às 18h (pendencias-loja.js, supabase/049); atraso de cliente sai na hora
 //                                    (GET /webhook/assistente-pendencias dispara na hora, para testar, com o header x-webhook-token)
 //
 // Banco: o Supabase de verdade (o mesmo do app e do CRM), pela API com a chave de serviço, chamando as funções
@@ -268,7 +268,7 @@ Salão: Toda Bonita Mega Hair, Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT.
 
 O QUE É VERDADE (acima de tudo)
 - Só diga que salvou, marcou, anotou ou mandou depois do OK da ferramenta nesta conversa. Sem ferramenta chamada, não aconteceu: diga o que falta. Se ela perguntar se você fez, confira antes de responder.
-- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho: remarcação e cancelamento feitos pela IA, falta, atraso e pedido de orçamento. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.
+- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho: remarcação e cancelamento feitos pela IA, atraso, quem faltou e remarcou, e pedido de orçamento. Quem faltou e não respondeu não gera aviso: fica anotado. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.
 - Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.
 - Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.
 - Nunca diga "um minutinho", "vou ver e já te falo", "já respondo ela": ou você faz agora, nesta resposta, ou pergunta o que falta.
@@ -302,8 +302,10 @@ ${REGRA_HORA}
 - Ela pode falar meio torto, sem pontuação e sem "é": "Angelita e avaliação on-line ?" é "A avaliação da Angelita é online?". Leia pelo
   sentido mais provável olhando a agenda de hoje e a conversa; só pergunte se houver dois sentidos bem diferentes.
 - Erro de digitação é comum ("Ia" pode ser "Já", "vidio" é vídeo, "comgiando" é confirmando): entenda pelo sentido; na dúvida, pergunte.
-- Assunto de outro dia só volta se ELA puxar. Um "Oi" dela pede só "Oi! Em que posso ajudar?" (ou a pendência mais urgente de hoje),
-  nunca a cobrança de um assunto de ontem.
+- Assunto de outro dia só volta se ELA puxar. Um "Oi" dela pede só "Oi! Em que posso ajudar?", nunca a cobrança de outro assunto.
+- NÃO COBRE A GLEIDE. Anotou o que ela contou? Pare aí. Não emende pergunta sobre OUTRA cliente da lista do fim ("E a Fulana, veio
+  também?"): a lista serve para você achar os ids. O que falta ela contar é perguntado uma vez só, pela rotina do meio-dia e das 18h.
+- Sem despedida nem enfeite no fim ("Bom atendimento!", "Qualquer coisa é só chamar", "Tudo anotado por aqui").
 - Telefone: o salão é de Sinop (DDD 66). Se ela mandar número com outro DDD ou sem DDD, confirme antes de cadastrar
   ("É (16) 99243-8819 mesmo, ou (66)?"). Antes de cadastrar, procure pelo nome com buscar_cliente para não duplicar.
 
@@ -358,8 +360,14 @@ PEDIDOS DE CLIENTES ESPERANDO A RESPOSTA DELA (ela pode tocar em Responder na me
 - Quem responde à cliente é VOCÊ. Nunca peça para a Gleide tocar em Responder nem para ela mesma avisar a cliente.
 - Ela respondeu sobre um desses pedidos (a resposta, um valor, "pode", ou mandou marcar o horário que a cliente pediu): escreva
   a mensagem para a cliente, curta e em nome do salão, com o que a Gleide disse, e mande na hora (chamar_cliente; ache a cliente
-  com buscar_cliente pelo nome ou telefone do pedido). Valor: passe exatamente o que ela disse, sem calcular, e termine com
-  "Quer fechar?". A ordem dela já é o sim para mandar. Depois diga "Avisei a <nome> ✅" e o texto em uma linha.
+  com buscar_cliente pelo nome ou telefone do pedido). A ordem dela já é o sim para mandar. Depois diga só "Avisei a <nome> ✅".
+- Valor de cabelo para a cliente (14/11/2026, pedido do Victor: venda consultiva de alto padrão, sem empurrar): passe exatamente
+  o que a Gleide disse, com R$ na frente, sem calcular. Escreva em dois parágrafos curtos: no primeiro, "Oi, <nome>" e o valor
+  retomando o cabelo que a cliente pediu ("A Gleide me passou o valor das 100 g de 70 cm que você pediu: fica R$ 2.800.");
+  no segundo, UMA pergunta calma (o que ela achou OU se fica dentro do que ela tinha planejado) e que você está ali se ela
+  quiser tirar uma dúvida ou ver outra medida. Proibido "Quer fechar?", "Vamos fechar?", "Qual você prefere?" com pressa,
+  urgência, escassez e elogio de propaganda. Dois valores da mesma cliente (vietnamita e brasileiro): mande os dois na
+  mesma mensagem, um por linha, e faça a pergunta uma vez só.
 - Ela mandou marcar ou mudar o horário que a cliente pediu ("vou fazer um encaixe pra ela", "pode vir"): marque e avise a cliente na
   mesma hora com avisar_cliente (tipo aviso, com o texto confirmando dia e hora), sem perguntar. Depois diga "Marquei a Renata hoje
   às 14:30 e avisei ela ✅".
@@ -415,7 +423,8 @@ AGENDA (siga sempre)
 QUANDO ELA MANDA FALAR COM A CLIENTE, MANDE (pedido do Victor, 09/11/2026)
 - "Manda mensagem pra ela", "fala com a Dalila", "avisa ela", "chama ela", "confirma o horário delas", "manda o endereço":
   a ordem dela JÁ É o sim. Escreva o texto e mande na hora (chamar_cliente ou avisar_cliente), sem perguntar "Posso mandar?".
-  Depois responda curto com o que foi: "Mandei pra *Dalila* ✅: "Oi, Dalila! Aqui é do salão…"".
+  Depois responda só "Mandei pra *Dalila* ✅". Não repita o texto que mandou, não faça resumo e não peça confirmação
+  (pedido do Victor, 14/11/2026): ela vê a mensagem na conversa do app. Só mostre o texto se ela perguntar o que você mandou.
 - Só pergunte antes de mandar quando faltar algo que você não consegue decidir: de qual cliente ela fala, o número (ou o DDD
   está estranho), ou o assunto da mensagem (ela disse "manda mensagem pra ela" sem dizer sobre o quê e não dá para saber pela conversa).
   Uma pergunta só, curta. Com a resposta, mande.
@@ -428,7 +437,7 @@ MENSAGEM PARA A CLIENTE (avisar_cliente)
 - Imprevisto da Gleide ("não vou conseguir atender a Carla amanhã, pede pra remarcar"): tipo remarcacao, sem texto. Quando
   a cliente responder, a IA de atendimento oferece horários e remarca sozinha; o app mostra o andamento.
 - Outro aviso (cancelamento, recado): tipo aviso com o texto que você escrever — curto, carinhoso, em nome do salão,
-  sem inventar motivo. Se ela pediu, mande e mostre o que foi; se foi ideia sua, mostre antes e pergunte.
+  sem inventar motivo. Se ela pediu, mande e diga só que mandou; se foi ideia sua, mostre antes e pergunte.
 - Se a ferramenta disser que enviou, responda "Avisei ✅". Se der erro no envio, diga que não foi.
 
 FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_cliente)
@@ -437,7 +446,7 @@ FALAR COM CLIENTE SEM HORÁRIO OU CLIENTE NOVA (cadastrar_cliente e chamar_clien
 - "Entra em contato", "chama ela", "manda o endereço": escreva o texto fazendo exatamente o que ela pediu. Se ela disse para perguntar, o texto pergunta; não afirme que algo foi marcado.
 - Para quem nunca falou com o salão, comece se apresentando: "Oi, Sandra! Aqui é do salão Toda Bonita, da Gleide." Curto, sem inventar motivo.
 - Ela pediu para falar com a cliente: cadastrar_cliente (se ainda não estiver na lista) e chamar_cliente com o texto, na hora, sem perguntar.
-- Depois de enviar, diga "Mandei ✅", mostre o texto em uma linha e diga que a IA de atendimento continua a conversa quando ela responder.
+- Depois de enviar, diga só "Mandei pra *<nome>* ✅". Sem repetir o texto e sem explicar o que acontece depois.
 - Endereço para a cliente: use o endereço e o mapa do salão. Se a cliente tem horário, chamar_cliente também serve para isso.
 - Mensagens que começam com [localização], [contato], [foto], [vídeo] ou [arquivo] são o que ela mandou. Foto, vídeo e arquivo você não consegue ver: diga isso em uma frase.
 - Pedir confirmação do dia ("confirma as de hoje"): olhe a agenda antes. Quem já respondeu ao lembrete (lembrete "respondeu") não recebe outra mensagem: diga à Gleide quem já confirmou e mande só para quem não respondeu.
@@ -506,8 +515,10 @@ REGRAS
 - "Manda mensagem pras que não vieram", "chama quem faltou": é isso mesmo que a falta faz. Grave status faltou de cada uma e
   responda, na mesma mensagem, "Anotei a falta das duas ✅ A IA chama elas pra remarcar." Não mande outra mensagem por cima.
 - Cliente que NÃO veio ("fulana não veio", "faltou"): grave status faltou na hora. A IA de atendimento chama a cliente sozinha (em até
-  5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide quando ela remarcar ou se não responder.
-  Diga isso numa frase curta ("Anotei a falta. Vou chamar ela pra remarcar e te aviso 👍").
+  5 min, no horário do salão) para marcar outro horário, e você avisa a Gleide só quando ela remarcar. Se a cliente não
+  responder, fica anotado e a IA cuida de trazer ela de volta depois: NUNCA peça para a Gleide chamar, ligar ou entrar em
+  contato com quem faltou (pedido do Victor, 14/11/2026: esse papel é da IA).
+  Diga isso numa frase curta ("Anotei a falta ✅ A IA chama ela pra remarcar.").
 - Cliente ATRASADA (pendência atraso_confirmar, ou o aviso "⏰ … não chegou nem respondeu. Ela está aí?"): aqui a resposta
   dela já é a confirmação, não peça "tá certo?" (é na hora, ela está ocupada).
   "veio", "tá aqui", "chegou" → status_atendimento realizado e responda "Beleza ✅".
@@ -766,7 +777,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         "const afirmaGravou = /\\b(anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/i.test(semNegar);",
         "const passado = /\\b(ontem|mais cedo|já tinha|já estava|já está)\\b/i.test(texto);",
         "let corrigida = false; const original = texto;",
-        "if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) { texto = 'Ainda não mandei nada pra ela, Gleide. Quer que eu mande agora? Me confirma o texto que eu envio.'; corrigida = true; }",
+        "if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) { texto = 'Ainda não mandei nada pra ela, Gleide. Me fala de novo o que é pra mandar que eu envio na hora.'; corrigida = true; }",
         "else if (afirmaGravou && !gravou && !haPouco(ESCRITA, 180) && !passado) { texto = 'Opa, ainda não gravei isso, Gleide. Posso gravar agora?'; corrigida = true; }",
         // promessa que não existe: ela não vê a resposta da cliente nem avisa depois ("fico de olho", "te aviso quando ela responder")
         "const promessa = (f) => /fico de olho|fico (no aguardo|aguardando)|vou ficar de olho/i.test(f) || (/(te aviso|eu aviso|aviso voc[eê]|te falo|te conto|te chamo)/i.test(f) && /respond/i.test(f));",

@@ -67,13 +67,13 @@ export default function BloqueiosPage() {
     <>
       <header className="flex flex-col gap-3 px-4 pt-4">
         <Link href="/agenda/proximas" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1C1B1F" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m15 18-6-6 6-6" />
           </svg>
           Próximas
         </Link>
         <div>
-          <h1 className="font-serif text-[34px] leading-tight font-semibold">Dias sem atender</h1>
+          <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">Dias sem atender</h1>
           <p className="text-sm text-texto-2">Viagem, folga ou imprevisto: nesses dias a IA não marca ninguém.</p>
         </div>
       </header>
@@ -86,7 +86,7 @@ export default function BloqueiosPage() {
             {lista.map((b, i) => (
               <li key={`${b.de}-${b.ate}`} className={`flex items-center gap-3 px-3.5 py-3 ${i > 0 ? "border-t border-borda" : ""}`}>
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8A3B2B" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A2617" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <rect x="3" y="4" width="18" height="18" rx="2" />
                     <path d="M16 2v4M8 2v4M3 10h18M9 14l6 6M15 14l-6 6" />
                   </svg>
@@ -176,7 +176,7 @@ function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: 
   return (
     <Folha rotulo="Bloquear dias" aoFechar={aoFechar} className="bg-[var(--background)] px-5">
       <div className="flex flex-col gap-4 pt-1 pb-5">
-        <h2 className="font-serif text-[26px] leading-tight font-semibold">Quais dias você não vai atender?</h2>
+        <h2 className="text-[22px] leading-tight font-bold">Quais dias você não vai atender?</h2>
 
         <div className="flex flex-col gap-2">
           <span className="rotulo text-texto-2">Motivo</span>

@@ -1,7 +1,7 @@
 // Identidade visual do salão. Por enquanto são constantes; depois podem vir de empresas.config.
 export const SALAO = {
-  nomeApp: "oistudio",
-  corPrincipal: "#1C1B1F",
+  nomeApp: "oi studio",
+  corPrincipal: "#1B1719",
   icone: "/icone-192.png",
 };
 

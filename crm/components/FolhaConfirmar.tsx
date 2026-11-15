@@ -28,7 +28,8 @@ import type { ServicoAtivo } from "@/lib/tipos";
 // (vai para o funil e a IA lê na próxima conversa com a cliente).
 // "Faltou / remarcou": faltou marca a falta (a IA chama a cliente para remarcar, supabase/007); remarcou leva o mesmo horário
 // para outro dia.
-type Tela = "pergunta" | "mudou" | "faltou" | "remarcar";
+export type TelaConfirmar = "pergunta" | "mudou" | "faltou" | "remarcar";
+type Tela = TelaConfirmar;
 
 export function FolhaConfirmar({
   atendimento: a,
@@ -40,6 +41,7 @@ export function FolhaConfirmar({
   aoRemarcar,
   aoCancelar,
   aoFechar,
+  telaInicial = "pergunta",
 }: {
   atendimento: Atendimento;
   servicos: ServicoAtivo[];
@@ -51,8 +53,10 @@ export function FolhaConfirmar({
   // Ela desmarcou (ligou, mandou mensagem): o horário sai da agenda e a vaga fica livre para a IA
   aoCancelar?: () => Promise<string | undefined>;
   aoFechar: () => void;
+  // A Agenda abre direto em "remarcar" pelo atalho da folha do horário
+  telaInicial?: Tela;
 }) {
-  const [tela, setTela] = useState<Tela>("pergunta");
+  const [tela, setTela] = useState<Tela>(telaInicial);
   // Já vem marcado o que estava no horário: o principal e os escolhidos junto ao marcar (supabase/034)
   const [escolhidos, setEscolhidos] = useState<string[]>([...(a.servico_id ? [a.servico_id] : []), ...(a.extrasMarcados ?? [])]);
   const [salvando, setSalvando] = useState(false);
@@ -82,7 +86,7 @@ export function FolhaConfirmar({
   const nome = a.clientes?.nome ? primeiroNome(a.clientes.nome) : a.clientes ? formatarTelefone(a.clientes.telefone) : "A cliente";
   const servico = a.servicos?.nome ?? "Serviço não informado";
   const avaliacao = Boolean(aoResultado) && ehAvaliacao(a.servicos?.nome);
-  const concluido = { titulo: "Atendimento concluído", texto: `${nome} · ${formatarHora(a.inicio)} foi para os concluídos`, cor: "bg-[#5E7A50]" };
+  const concluido = { titulo: "Atendimento concluído", texto: `${nome} · ${formatarHora(a.inicio)} foi para os concluídos`, cor: "bg-[#2F7D5B]" };
 
   function salvar(escolha: string[]) {
     // Vários serviços: o que estava marcado continua o principal do horário (o cartão mostra o que
@@ -130,7 +134,7 @@ export function FolhaConfirmar({
               </span>
             </span>
             <div className="subir-suave flex flex-col gap-1">
-              <h2 className="font-serif text-[26px] leading-tight font-semibold">{feito.titulo}</h2>
+              <h2 className="text-[22px] leading-tight font-bold">{feito.titulo}</h2>
               <p className="text-[15px] text-texto-2">{feito.texto}</p>
             </div>
           </div>
@@ -139,13 +143,13 @@ export function FolhaConfirmar({
             {/* A pergunta, com o que estava marcado logo abaixo */}
             <div className="flex flex-col gap-1">
               <span className="rotulo text-texto-2">Atendimento das {formatarHora(a.inicio)}</span>
-              <h2 className="font-serif text-[26px] leading-tight font-semibold">
+              <h2 className="text-[22px] leading-tight font-bold">
                 {avaliacao ? `Como foi a avaliação de ${nome}?` : `Como foi o atendimento de ${nome}?`}
               </h2>
             </div>
             <div className="flex items-center gap-3 rounded-[18px] bg-card px-4 py-3.5 borda-suave">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-areia">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E5539" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A5870" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <circle cx="6" cy="6" r="3" />
                   <circle cx="6" cy="18" r="3" />
                   <path d="M20 4 8.1 15.9M14.5 14.5 20 20M8.1 8.1 12 12" />
@@ -204,7 +208,7 @@ export function FolhaConfirmar({
           <>
             <div className="flex flex-col gap-1">
               {voltar("pergunta")}
-              <h2 className="font-serif text-[26px] leading-tight font-semibold">O que {nome} fez?</h2>
+              <h2 className="text-[22px] leading-tight font-bold">O que {nome} fez?</h2>
               <p className="text-[15px] text-texto-2">Toque em tudo que foi feito. Pode ser mais de um.</p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -245,7 +249,7 @@ export function FolhaConfirmar({
           <>
             <div className="flex flex-col gap-1">
               {voltar("pergunta")}
-              <h2 className="font-serif text-[26px] leading-tight font-semibold">O que aconteceu com {nome}?</h2>
+              <h2 className="text-[22px] leading-tight font-bold">O que aconteceu com {nome}?</h2>
               <p className="text-[15px] text-texto-2">
                 {servico} · {formatarHora(a.inicio)}
               </p>
@@ -290,7 +294,7 @@ export function FolhaConfirmar({
           <>
             <div className="flex flex-col gap-1">
               {voltar("faltou")}
-              <h2 className="font-serif text-[26px] leading-tight font-semibold">Para quando {nome} remarcou?</h2>
+              <h2 className="text-[22px] leading-tight font-bold">Para quando {nome} remarcou?</h2>
             </div>
             <EscolherNovoHorario
               atendimento={a}
@@ -368,7 +372,7 @@ function EscolherNovoHorario({
               }`}
             >
               <span className="text-[10px] font-semibold uppercase">{DIAS_CURTOS[new Date(`${d}T12:00:00Z`).getUTCDay()]}</span>
-              <span className="font-serif text-[22px] leading-none font-semibold">{Number(d.slice(8))}</span>
+              <span className="text-[18px] leading-none font-bold">{Number(d.slice(8))}</span>
             </button>
           );
         })}

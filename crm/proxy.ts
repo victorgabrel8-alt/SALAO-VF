@@ -7,5 +7,5 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   // Tudo, menos arquivos estáticos, ícones e o manifest do PWA.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icone-.*\\.png|apple-icon.png).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|icone-.*\\.png|apple-icon.png|icon.svg|logo/).*)"],
 };
