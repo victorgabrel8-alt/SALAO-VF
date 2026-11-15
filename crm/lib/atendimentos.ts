@@ -18,6 +18,9 @@ export type Atendimento = {
   // Unidades do serviço principal (ex.: 2 unhas de reposição). 1 nos serviços comuns (supabase/034)
   quantidade?: number;
   observacoes: string | null;
+  // Sinal por Pix que a IA conferiu no comprovante antes de marcar (supabase/037): abater no acerto
+  sinal_valor?: number | null;
+  sinal_pago_em?: string | null;
   clientes: { id: string; nome: string | null; telefone: string; etiquetas: string[]; observacoes: string | null } | null;
   servicos: { nome: string } | null;
   // Serviços a mais feitos no mesmo horário (ver comExtras)
@@ -136,7 +139,7 @@ async function comExtras(lista: Atendimento[]): Promise<Atendimento[]> {
 // Sem valores: o painel do salão controla atendimentos, não dinheiro (a tabela de preços
 // fica com a profissional e a IA)
 const CAMPOS =
-  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, quantidade, observacoes, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
+  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, quantidade, observacoes, sinal_valor, sinal_pago_em, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
 
 // Atendimentos de um dia (no fuso do salão), em ordem de horário
 export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {
@@ -389,4 +392,13 @@ export async function buscarDiasComHorario(empresaId: string, de: string, ate: s
 export function corDaProfissional(profissionalId: string | null, ordem: string[]) {
   const i = profissionalId ? ordem.indexOf(profissionalId) : -1;
   return i < 0 ? SEM_PROFISSIONAL : CORES_PROFISSIONAL[i % CORES_PROFISSIONAL.length];
+}
+
+// "Sinal R$ 20,00 pago no Pix · descontar" (só quando a IA conferiu o comprovante ao marcar)
+export function textoDoSinal(a: Pick<Atendimento, "status" | "sinal_valor">): string | null {
+  if (a.sinal_valor == null) return null;
+  const valor = `R$ ${Number(a.sinal_valor).toFixed(2).replace(".", ",")}`;
+  if (a.status === "realizado") return `Sinal ${valor} pago no Pix · já descontado do valor`;
+  if (a.status === "agendado") return `Sinal ${valor} pago no Pix · descontar no acerto`;
+  return `Sinal ${valor} pago no Pix`;
 }
