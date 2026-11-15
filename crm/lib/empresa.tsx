@@ -1,5 +1,6 @@
 "use client";
 
+import { esquecerTudo } from "@/lib/memoriaTela";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase/client";
@@ -82,6 +83,7 @@ export function BotaoSair() {
 
   async function sair() {
     await supabase().auth.signOut();
+    esquecerTudo();
     router.replace("/login");
     router.refresh();
   }

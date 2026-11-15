@@ -32,6 +32,7 @@ import { lerAlmoco } from "@/lib/almoco";
 import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
 import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
+import { guardar, lembrar } from "@/lib/memoriaTela";
 import {
   formatarData,
   formatarHora,
@@ -128,6 +129,7 @@ function AgendaPageConteudo() {
   useEffect(() => {
     let ativo = true;
     buscarDia(empresa.id, dia).then((dados) => {
+      guardar(`agenda:${empresa.id}:${dia}`, dados);
       if (ativo) setResultado({ dia, dados });
     });
     return () => {
@@ -145,7 +147,10 @@ function AgendaPageConteudo() {
     setHojeVisto(hoje);
     if (dia === hojeVisto) setDia(hoje);
   }
-  const dados = resultado?.dia === dia ? resultado.dados : null;
+  // O dia que acabou de chegar do banco ou, enquanto ele não chega, o que já tinha na memória
+  const daMemoria = lembrar<Dia>(`agenda:${empresa.id}:${dia}`);
+  const dados = resultado?.dia === dia ? resultado.dados : daMemoria;
+  const [primeiraVez] = useState(() => daMemoria === null);
   const ok = dados && !("erro" in dados) ? dados : null;
   const ordem = ok ? ok.profissionais.map((p) => p.id) : [];
   // Cor por profissional só quando a loja tem mais de uma
@@ -403,7 +408,7 @@ function AgendaPageConteudo() {
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
         {ok && (
-          <div className="chegar-suave">
+          <div className={primeiraVez ? "chegar-suave" : ""}>
             {visiveis.length === 0 ? (
               <div className="flex flex-col items-center gap-3 border-t border-campo py-10 text-center">
                 <span className="text-[17px] font-bold">Dia livre</span>
