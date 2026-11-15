@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Voltar } from "@/components/Voltar";
 import { useEffect, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Folha } from "@/components/Folha";
@@ -98,12 +98,12 @@ export default function ServicosPage() {
   return (
     <>
       <header className="flex flex-col gap-3 px-4 pt-4">
-        <Link href="/configuracoes" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
+        <Voltar para="/configuracoes" className="vidro flex h-10 w-fit items-center gap-0.5 rounded-full pr-4 pl-2.5 text-[15px] font-semibold active:scale-95">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1B1719" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="m15 18-6-6 6-6" />
           </svg>
           Configurações
-        </Link>
+        </Voltar>
         <div>
           <h1 className="text-[30px] leading-tight tracking-[-0.035em] font-bold">Serviços e preços</h1>
           <p className="text-sm text-texto-2">A IA usa estes preços nas conversas. Toque num serviço para mudar.</p>

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { TelaDaAba } from "@/components/TelaDaAba";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
@@ -168,11 +167,7 @@ function nomeDe(c: { nome: string | null; telefone: string } | null | undefined)
 }
 
 export default function InicioPage() {
-  return (
-    <TelaDaAba>
-      <InicioPageConteudo />
-    </TelaDaAba>
-  );
+  return <InicioPageConteudo />;
 }
 
 function InicioPageConteudo() {
