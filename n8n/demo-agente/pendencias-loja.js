@@ -1,4 +1,5 @@
-// A assistente cobra menos a dona (só nas lojas com "pendencias_horas": [12, 18] no loja.json; a Gleide não passa por aqui).
+// A assistente cobra menos a dona. Vale para a Gleide (12h e 18h, ligado no montar-workflow.js) e para as lojas com
+// "pendencias_horas": [12, 18] no loja.json.
 // 14/11/2026, Caroline: a rotina "Assistente - Pendências" pergunta "fulana veio?" na hora, +1 h e +2 h para cada
 // horário sem baixa. Num sábado com 4 clientes foram 5 mensagens em 6 horas (3 só da mesma cliente), com a dona
 // atendendo e depois num casamento. Pedido do Victor: "a IA está cobrando demais a Caroline".
