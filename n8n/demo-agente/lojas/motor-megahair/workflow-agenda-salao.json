@@ -251,7 +251,7 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3000,
+        3300,
         200
       ],
       "parameters": {
@@ -298,7 +298,7 @@
       "typeVersion": 3.4,
       "position": [
         2700,
-        600
+        800
       ],
       "parameters": {
         "assignments": {
@@ -648,7 +648,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
+        2700,
         200
       ],
       "parameters": {
@@ -726,7 +726,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2700,
+        3000,
         200
       ],
       "parameters": {
@@ -797,6 +797,63 @@
       },
       "onError": "continueRegularOutput",
       "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000400",
+      "name": "Cancelar: a cliente pediu?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2400,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "cp1",
+              "leftValue": "={{ String($('Preparar').first().json.motivo || '') !== 'NAO_PEDIU' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e31",
+      "name": "Resposta (não cancelou: ela não pediu)",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2700,
+        600
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "value": "={{ 'NÃO CANCELADO: a cliente não pediu para cancelar nem desmarcar, então o horário dela CONTINUA MARCADO e vale. Nunca cancele um horário para marcar de novo. Se ela só concordou ou agradeceu (pode, ok, obrigada), responda confirmando o dia e a hora que já estão marcados, e mais nada. Se ela quer acrescentar ou trocar o serviço nesse mesmo horário, diga que anotou e use perguntar_para_gleide para a dona ajustar; não mexa no horário. Se ela realmente quer desmarcar, pergunte \"Quer que eu cancele o seu horário?\" e só chame cancelar_agendamento de novo depois que ela disser que sim.' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
     },
     {
       "id": "b1a7c0de-5a1a-4c1d-9f1e-0000000e0a0a",
@@ -946,7 +1003,7 @@
       "main": [
         [
           {
-            "node": "Supabase: cancelar agendamento",
+            "node": "Cancelar: a cliente pediu?",
             "type": "main",
             "index": 0
           }
@@ -1115,6 +1172,24 @@
         [
           {
             "node": "Resposta (remarcado)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cancelar: a cliente pediu?": {
+      "main": [
+        [
+          {
+            "node": "Supabase: cancelar agendamento",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta (não cancelou: ela não pediu)",
             "type": "main",
             "index": 0
           }

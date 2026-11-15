@@ -46,8 +46,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        300,
-        0
+        600,
+        200
       ],
       "parameters": {
         "assignments": {
@@ -123,8 +123,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1800,
-        400
+        2100,
+        800
       ],
       "parameters": {
         "conditions": {
@@ -163,6 +163,16 @@
                 "operation": "true",
                 "singleValue": true
               }
+            },
+            {
+              "id": "m4",
+              "leftValue": "={{ !/atendimento é só por mensagem|não atendo ligações por aqui/i.test($json.texto || '') }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
             }
           ],
           "combinator": "and"
@@ -176,8 +186,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2100,
-        400
+        2400,
+        800
       ],
       "parameters": {
         "conditions": {
@@ -209,8 +219,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2400,
-        400
+        2700,
+        800
       ],
       "parameters": {
         "operation": "delete",
@@ -229,8 +239,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3000,
-        1000
+        3300,
+        1400
       ],
       "parameters": {
         "operation": "set",
@@ -252,8 +262,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2100,
-        600
+        2400,
+        1000
       ],
       "parameters": {
         "conditions": {
@@ -325,8 +335,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        900,
-        1460
+        1200,
+        1860
       ],
       "parameters": {
         "operation": "get",
@@ -348,8 +358,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1200,
-        1460
+        1500,
+        1860
       ],
       "parameters": {
         "conditions": {
@@ -382,8 +392,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2400,
-        600
+        2700,
+        1000
       ],
       "parameters": {
         "conditions": {
@@ -416,8 +426,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2700,
-        600
+        3000,
+        1000
       ],
       "parameters": {
         "method": "POST",
@@ -446,8 +456,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3000,
-        600
+        3300,
+        1000
       ],
       "parameters": {
         "method": "POST",
@@ -473,8 +483,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        3300,
-        600
+        3600,
+        1000
       ],
       "parameters": {
         "assignments": {
@@ -496,8 +506,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1800,
-        1460
+        2100,
+        1860
       ],
       "parameters": {
         "operation": "push",
@@ -518,8 +528,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2100,
-        1460
+        2400,
+        1860
       ],
       "parameters": {
         "operation": "set",
@@ -541,8 +551,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2700,
-        1460
+        3000,
+        1860
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -557,8 +567,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3000,
-        1460
+        3300,
+        1860
       ],
       "parameters": {
         "operation": "get",
@@ -580,8 +590,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3300,
-        1460
+        3600,
+        1860
       ],
       "parameters": {
         "conditions": {
@@ -613,8 +623,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3600,
-        1460
+        3900,
+        1860
       ],
       "parameters": {
         "operation": "get",
@@ -636,8 +646,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3900,
-        1460
+        0,
+        2720
       ],
       "parameters": {
         "conditions": {
@@ -670,8 +680,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
-        2520
+        300,
+        2920
       ],
       "parameters": {
         "operation": "delete",
@@ -690,8 +700,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
-        2320
+        300,
+        2720
       ],
       "parameters": {
         "operation": "get",
@@ -713,8 +723,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        300,
-        2320
+        600,
+        2720
       ],
       "parameters": {
         "conditions": {
@@ -747,8 +757,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        600,
-        2520
+        900,
+        2920
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -763,8 +773,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1200,
-        2320
+        1500,
+        2720
       ],
       "parameters": {
         "operation": "set",
@@ -786,8 +796,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3000,
-        4600
+        3300,
+        5000
       ],
       "parameters": {
         "operation": "delete",
@@ -806,8 +816,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        600,
-        2320
+        900,
+        2720
       ],
       "parameters": {
         "operation": "keys",
@@ -828,8 +838,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        900,
-        2320
+        1200,
+        2720
       ],
       "parameters": {
         "conditions": {
@@ -862,8 +872,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        1200,
-        2520
+        1500,
+        2920
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -878,8 +888,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3300,
-        4600
+        3600,
+        5000
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -895,8 +905,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3600,
-        4600
+        3900,
+        5000
       ],
       "parameters": {
         "operation": "keys",
@@ -917,8 +927,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3900,
-        4600
+        0,
+        5860
       ],
       "parameters": {
         "conditions": {
@@ -951,8 +961,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
-        5460
+        300,
+        5860
       ],
       "parameters": {
         "method": "POST",
@@ -981,8 +991,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1500,
-        2320
+        1800,
+        2720
       ],
       "parameters": {
         "operation": "get",
@@ -1004,8 +1014,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1800,
-        2320
+        2100,
+        2720
       ],
       "parameters": {
         "operation": "delete",
@@ -1024,8 +1034,8 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2100,
-        2320
+        2400,
+        2720
       ],
       "parameters": {
         "assignments": {
@@ -1077,8 +1087,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
-        2320
+        2700,
+        2720
       ],
       "parameters": {
         "method": "POST",
@@ -1107,8 +1117,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2700,
-        2320
+        3000,
+        2720
       ],
       "parameters": {
         "jsCode": "// espera (s) antes de marcar cada mensagem como lida: a 1ª inclui 'abrir a conversa' (2-5 s)\nconst e = $('Montar entrada').first().json;\nlet ms = [];\ntry { ms = JSON.parse(e.mensagens || '[]'); } catch (err) {}\nif (!ms.length) ms = [{ id: e.msgId, texto: e.texto_cliente || '' }];\nconst ale = (a, b) => a + Math.random() * (b - a);\nconst ler = (t) => {\n  t = String(t || '');\n  if (/^\\[áudio\\]/i.test(t)) return Math.min(25, Math.max(3, t.length / 14)) * ale(0.9, 1.1); // ouvir (~14 letras/s)\n  if (/^\\[foto/i.test(t)) return ale(2, 4);\n  return Math.min(6, Math.max(0.8, t.length * 0.05)) * ale(0.8, 1.2); // ler (~20 letras/s)\n};\nreturn ms.filter((m) => m.id).map((m, i) => ({ json: { jid: e.jid, id: m.id,\n  espera: Math.round(((i === 0 ? ale(2, 5) : ale(0.4, 1.2)) + ler(m.texto)) * 10) / 10 }, pairedItem: 0 }));"
@@ -1120,8 +1130,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        3000,
-        2320
+        3300,
+        2720
       ],
       "parameters": {
         "options": {}
@@ -1133,8 +1143,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        3300,
-        2520
+        3600,
+        2920
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -1149,8 +1159,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3600,
-        2520
+        3900,
+        2920
       ],
       "parameters": {
         "method": "POST",
@@ -1179,8 +1189,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3300,
-        2320
+        3600,
+        2720
       ],
       "parameters": {
         "jsCode": "return [{ json: {}, pairedItem: 0 }];"
@@ -1193,8 +1203,8 @@
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
       "position": [
-        0,
-        3440
+        300,
+        3840
       ],
       "parameters": {
         "promptType": "define",
@@ -1215,8 +1225,8 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1,
       "position": [
-        0,
-        3620
+        300,
+        4020
       ],
       "parameters": {
         "modelName": "models/gemini-3-flash-preview",
@@ -1237,8 +1247,8 @@
       "type": "@n8n/n8n-nodes-langchain.memoryRedisChat",
       "typeVersion": 1.5,
       "position": [
-        180,
-        3620
+        480,
+        4020
       ],
       "parameters": {
         "sessionIdType": "customKey",
@@ -1259,8 +1269,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1140,
-        3440
+        1440,
+        3840
       ],
       "parameters": {
         "jsCode": "const jid = $('Montar entrada').first().json.jid;\n// caractere invisível (espaço de largura zero) não é texto: em 27/10 a IA respondeu só isso e saiu um balão em branco\nlet t = ($('Agente IA').first().json.output || '').replace(/[\\u200B-\\u200D\\u2060\\uFEFF]/g, '').trim().replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*');\n// Prompt: se o áudio respondeu tudo, a IA não escreve nada. Áudio enviado + resposta vazia = não manda balão\n// (sem isso cairia na mensagem de erro lá embaixo). [SEM TEXTO] também vale, se a IA usar.\nconst passos = $('Agente IA').first().json.intermediateSteps || [];\n// fotos do catálogo enviadas também são resposta: se elas responderam tudo, a IA pode não escrever nada\nconst audioEnviado = passos.some(p => (p.action?.tool === 'enviar_audio' && /ÁUDIO ENVIADO/.test(JSON.stringify(p.observation || ''))) ||\n  (p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || ''))));\n// Prompt v7.3: [[NAO_ENVIAR]] = a cliente só mandou um aceno (ok, assim) e a IA escolheu ficar quieta. Nunca vai pro WhatsApp\nconst semTexto = /\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/i.test(t);\nt = t.replace(/\\[SEM TEXTO\\]|\\[\\[\\s*NAO_ENVIAR\\s*\\]\\]/gi, '').trim();\nif ((audioEnviado || semTexto) && !t.replace(/\\[\\d{1,2}\\]/g, '').replace(/[\\s😊😉.!]/gu, '')) return [{ json: { jid, semTexto: true } }];\n// --- numa linha = a IA quer outra mensagem a partir dali (ver COMO A RESPOSTA CHEGA NO WHATSAPP)\nt = t.replace(/\\n?[ \\t]*-{3,}[ \\t]*(\\n|$)/g, '\\n\\n§§\\n\\n');\n// Cumprimento (pedido do Victor, 26/10): devolve o MESMO que a cliente usou ('Boa tarde' às 17h59 → 'Boa tarde',\n// não 'Boa noite' porque o relógio virou); se ela não cumprimentou, vale a hora do salão.\nconst hSalao = $now.setZone('America/Cuiaba').hour;\nconst dela = (String($('Montar entrada').first().json.texto_cliente || '').match(/bom dia|boa tarde|boa noite/gi) || []).pop();\nconst cumprimento = dela ? dela.toLowerCase() : hSalao < 12 ? 'bom dia' : hSalao < 18 ? 'boa tarde' : 'boa noite';\nt = t.replace(/^(\\s*(?:(?:oi|olá)[^.!?\\n]{0,25}[!,.]\\s*)?)(bom dia|boa tarde|boa noite)/i, (m, antes, g) => antes + (g[0] === g[0].toUpperCase() ? cumprimento[0].toUpperCase() + cumprimento.slice(1) : cumprimento));\n// Cumprimenta UMA vez: se a IA já respondeu esta cliente nas últimas 3 h, tira o 'Oi, Victor! Boa tarde.' / 'Boa noite!' do\n// começo (26/10: 'Boa tarde' e o áudio 30 s depois viraram duas respostas, cada uma com cumprimento)\nconst jaFalou = ($('Sobre esta cliente').first().json.texto || '').match(/Você já conversou com ela hoje \\(sua última resposta foi às (\\d\\d):(\\d\\d)/);\nif (jaFalou) {\n  const ultima = $now.setZone('America/Cuiaba').set({ hour: +jaFalou[1], minute: +jaFalou[2] });\n  if ($now.diff(ultima, 'hours').hours < 3) {\n    const semOi = t.replace(/^\\s*(?:(?:oi|olá)(?:,\\s*[^.!?\\n]{1,25})?[!.,]\\s*)?(?:(?:bom dia|boa tarde|boa noite)(?:,\\s*[^.!?\\n]{1,25})?[!.]\\s*)?/i, '').trim();\n    if (semOi) t = semOi[0].toUpperCase() + semOi.slice(1);\n  }\n}\n// já conversaram hoje (ficha): tira a reapresentação que a IA às vezes ainda põe ('Sou a assistente virtual da a dona.')\nif (/Você já conversou com ela hoje/.test($('Sobre esta cliente').first().json.texto || '')) {\n  const semApresentacao = t.replace(new RegExp(String.raw`(^|[.!?]\\s+|\\n)\\s*((Eu )?sou a assistente virtual( da ${String($('Loja').first().json.dona).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})?( Vieira)?|Aqui é a assistente( virtual)?( da ${String($('Loja').first().json.dona).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')})?)[^.!?\\n]*[.!?]?`, \"gi\"), '$1').trim();\n  if (semApresentacao) t = semApresentacao;\n}\n// sem negrito/markdown: mensagem de gente não tem *asterisco*\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');\n// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)\nconst semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(new RegExp(String.raw`, do ${String($('Loja').first().json.nome).replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&')}`, \"gi\"), '').trim();\nif (semRobo) t = semRobo;\n// sobras de chatbot no fim (humanizer §22): fecho automático que não diz nada; só sai se sobrar texto\n// \"Qualquer dúvida, estou à disposição.\" sai inteira: a frase do \"qualquer dúvida\" vem antes da do \"disposição\" (senão sobrava \"Qualquer dúvida,.\")\n// só quando o fecho é a frase inteira: no meio da frase (\"Quando decidir ou se precisar, é só me chamar\") cortava e sobrava \"Quando decidir ou.\" (10/11)\nconst semFecho = t.replace(/(^|[.!?\\n])\\s*(qualquer coisa|qualquer d[úu]vida|se precisar|se tiver (alguma|mais alguma) d[úu]vida)[^.!?\\n]*(estou|estamos|é só|me (chama|fala|avisa))[^.!?\\n]*[.!?]?/gi, '$1').replace(/\\s*(fico|ficamos|estou|estamos) (à|a) (sua )?disposi[çc][ãa]o[^.!?\\n]*[.!?]?/gi, '').replace(/\\s*espero ter ajudado[.!]?/gi, '').replace(/\\s*(e )?estou aqui (pra|para) (te |lhe )?ajudar[.!]?/gi, '').replace(/[\\s,;:]+$/, '').trim();\nif (semFecho && semFecho !== t) t = /[.!?😊😉]$/u.test(semFecho) ? semFecho : semFecho + '.';\n// palavra de controle das ferramentas (\"REMARCADO! Mudei…\"): é para a IA, não para a cliente\nt = t.replace(/\\b(REMARCADO|AGENDADO|CANCELADO|ANOTADO)\\b[!.:,]?\\s*/g, '').replace(/^\\s*([a-zà-ú])/, (m, l) => m.replace(l, l.toUpperCase()));\n// regra da a dona: valor de serviço só quando a cliente pergunta preço (prompt v5). Se ela não perguntou, tira\n// as frases com valor ou 'o valor depende…' (a IA às vezes solta mesmo assim) e o 'que legal' de robô\n// \"e a selagem?\" logo depois de um preço também é pergunta de preço (a IA só fala valor se fizer sentido)\nconst msgCliente = $('Montar entrada').first().json.texto_cliente || '';\n// \"só queria saber o total\", \"me dá uma base\", \"dá pra parcelar?\" também são pergunta de preço (10/11: a resposta saía sem o valor)\nlet precoPendente = false;\ntry { precoPendente = String($('Preço: ler pendência').first().json.pendente || '') === '1'; } catch (e) {}\nconst pediuPrecoAgora = /(quanto|valor|pre[cç]o|cust|or[cç]amento|caro|barat|cobra|tabela|\\btotal\\b|uma base|uma ideia|uma no[cç][ãa]o|m[ée]dia|pagar|pagamento|parcel|investimento)/i.test(msgCliente) || /^\\s*e (a|o|as|os|pra|para|no|na)\\b[^?]{0,40}\\?\\s*$/i.test(msgCliente);\nconst pediuPreco = true; // loja com preco_livre\nconst FRASES = /(?<=[.!?😊😉🥰])\\s+/u;\nconst QUANDO = /\\b\\d{1,2}(h|:\\d\\d)/;\n// valor em dinheiro: R$ 160, R$160,00 ou 350 reais\nconst PRECO_MANUT = /a partir de R\\$\\s?150(?:,00)?\\s+por tela/i;\nconst ofertaManut = /manuten[cç][aã]o/i.test(t) && QUANDO.test(t) && PRECO_MANUT.test(t) && (t.match(/R\\$\\s?\\d/g) || []).length === 1;\nconst VALOR = /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i;\n// limpa linha por linha: o quadro da agenda vem uma linha por período e precisa chegar assim\nconst limpar = (p) => p.split('\\n').map(limparLinha).filter(Boolean).join('\\n');\nconst limparLinha = (p) => {\n  let fs = p.split(FRASES).filter(f => !/^(ah,? )?que legal\\b/i.test(f));\n  // frase que também oferece horário (\"que fica R$ 450, eu tenho segunda às 13h\"): tira só o preço, senão a\n  // cliente recebe \"algum desses horários?\" sem horário nenhum\n  if (!pediuPreco) fs = fs.map(f => {\n    // exceção (13/11, Adriana): ao oferecer horário de manutenção a IA diz 'a partir de R$ 150 por tela' sem a cliente\n    // pedir, para ela não descobrir o valor depois de marcada. Só passa essa frase, e só se for o único valor do texto\n    // o sinal de R$ 20 de quem faltou (13/11) faz parte do combinado do horário: a frase com a palavra 'sinal' passa\n    if (!VALOR.test(f) || (ofertaManut && PRECO_MANUT.test(f)) || /\\bsinal\\b[^.!?]*R\\$\\s?20\\b|R\\$\\s?20\\b[^.!?]*\\bsinal\\b/i.test(f)) return f;\n    const s = f.replace(/,?\\s*(?:que\\s+)?(?:fica|custa|sai|é|está|no valor de|por)?\\s*(?:em\\s+|por\\s+|de\\s+)?(?:a partir de\\s+)?(?:R\\$\\s?\\d+(?:\\.\\d{3})*(?:,\\d{2})?(?:\\s*reais)?|\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais)/gi, '').replace(/\\s+,/g, ',').replace(/^[\\s,;:–-]+/, '').trim().replace(/^\\p{Ll}/u, (l) => l.toUpperCase());\n    return !VALOR.test(s) && !/R\\$/.test(s) && QUANDO.test(s) ? s : '';\n  }).filter(Boolean);\n  if (!pediuPreco && !ofertaManut) fs = fs.filter(f => !/\\bvalor\\b[^.?!]*\\bdepende/i.test(f));\n  return fs.join(' ').trim();\n};\n// [n] = parágrafo que responde a n-ª mensagem seguida dela. Número no meio do texto também abre parágrafo;\n// parágrafo sem número continua respondendo a mesma mensagem do anterior\nt = t.replace(/\\s*\\[(\\d{1,2})\\]\\s*/g, '\\n\\n[$1] ').trim();\nlet ref = 0;\nlet paragrafos = t.split(/\\n\\s*\\n/).map(s => { const m = s.trim().match(/^\\[(\\d{1,2})\\]\\s*/); if (m) ref = Number(m[1]); return { t: s.trim().slice(m ? m[0].length : 0).trim(), ref }; }).filter(p => p.t);\nconst limpos = paragrafos.map(p => ({ t: limpar(p.t), ref: p.ref })).filter(p => p.t);\n// só sobra §§ (marca do ---) = a limpeza tirou todo o texto: fica a resposta como veio\nif (limpos.some(p => p.t !== '§§')) paragrafos = limpos;\n// Rede de segurança: se a IA falhar e devolver vazio, a cliente não fica sem resposta\nconst falhou = !paragrafos.some(p => p.t !== '§§'); // o alerta-workflows.js avisa o Victor\nif (falhou) paragrafos = [{ t: 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊', ref: 0 }];\n// Como gente manda no WhatsApp (pedido do Victor, 26/10): um balão por parágrafo, na ordem, no máximo 2.\n// Parágrafo minúsculo (menos de 25 letras, ex.: 'Oi, Maria!') gruda no seguinte; parágrafo enorme (mais de\n// 300 letras) é cortado entre frases; se passar de 3, os do fim se juntam no 3º. O --- da IA conta como parágrafo.\nconst ps = paragrafos.filter(p => p.t !== '§§').map(p => p.t);\nlet baloes = [];\nlet junto = '';\nfor (const p of ps) {\n  junto = junto ? junto + '\\n\\n' + p : p;\n  if (junto.length >= 25) { baloes.push({ t: junto, ref: 0 }); junto = ''; }\n}\nif (junto) { if (baloes.length) baloes[baloes.length - 1].t += '\\n\\n' + junto; else baloes.push({ t: junto, ref: 0 }); }\nconst cortar = (t) => {\n  if (t.length <= 300 || t.includes('\\n')) return [t]; // quadro do dia (em linhas) vai inteiro\n  const fs = t.split(FRASES);\n  if (fs.length < 2) return [t];\n  let a = '', i = 0;\n  while (i < fs.length - 1 && (a + ' ' + fs[i]).trim().length < t.length / 2) a = (a + ' ' + fs[i++]).trim();\n  if (!a) a = fs[i++];\n  return [a, fs.slice(i).join(' ').trim()].filter(Boolean);\n};\nbaloes = baloes.flatMap((b) => cortar(b.t).map((t) => ({ t, ref: 0 })));\n// no máximo 2 balões (26/10: 3 balões era texto demais)\nif (baloes.length > 2) baloes = [baloes[0], { t: baloes.slice(1).map(b => b.t).join('\\n\\n'), ref: 0 }];\nbaloes = baloes.filter(b => b.t);\n// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10)\nbaloes.forEach(b => { b.t = b.t.replace(/(https?:\\/\\/\\S*?)[.,;:!?]+(?=\\s|$)/g, '$1'); });\n// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai\n// depois de outra e ficaria solta): cita a última mensagem do bloco\nlet msgs = [];\ntry { msgs = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) {}\nconst esperou = $('Aguardar 3s (IA respondendo)').isExecuted;\nconst citarDe = (b, i) => (esperou && i === 0 && msgs.length ? msgs[msgs.length - 1].id || '' : '');\n// Ritmo de gente (pedido do Victor, 25/10): o tempo depende do tamanho do texto.\n// pausa = 'pensando' antes do 'digitando…' (a leitura já foi feita antes, em Leitura: …): 1º balão 1-3 s;\n//         balões seguintes 1-2,5 s (respiro entre uma mensagem e outra).\n// delay = tempo de 'digitando…': 65-90 ms por letra (uns 12 caracteres por segundo, alguém rápido no celular),\n//         no mínimo 2,5 s e no máximo 22 s. Ex.: 40 letras ≈ 3 s; 120 ≈ 9 s; 250 ≈ 19 s.\nconst ale = (a, b) => a + Math.random() * (b - a);\nconst levaValor = baloes.some((b) => /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i.test(b.t));\nconst precoPendenteDepois = !falhou && pediuPreco && !levaValor ? '1' : (falhou && precoPendente ? '1' : '0');\nreturn baloes.map(({ t: texto, ref }, i) => ({ json: { jid, texto, falhou, precoPendenteDepois, citar: citarDe({ ref }, i),\n  pausa: Math.round((i === 0 ? ale(1, 3) : ale(1, 2.5)) * 10) / 10,\n  delay: Math.round(Math.min(22000, Math.max(2500, texto.length * ale(65, 90)))) } }));"
@@ -1272,8 +1282,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        360,
-        3620
+        660,
+        4020
       ],
       "parameters": {
         "description": "Consulta a agenda do salão e devolve 2 horários para oferecer (um de manhã e um de tarde, quando há) e o QUADRO DO DIA (manhã, almoço e tarde), só para você tirar 1 ou 2 inícios novos se a cliente pedir outros horários. Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.",
@@ -1415,8 +1425,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        0,
-        3780
+        300,
+        4180
       ],
       "parameters": {
         "description": "=Lista os horários futuros desta cliente (marcados pela IA ou pela {{ $('Loja').first().json.dona }}). SEMPRE use quando ela perguntar o horário dela (\"que horas é meu horário?\", \"que dia marquei?\"), mesmo se a ficha já mostrar um: a ficha pode estar desatualizada. Use também antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.",
@@ -1556,8 +1566,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        180,
-        3780
+        480,
+        4180
       ],
       "parameters": {
         "description": "MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo agendamento passa para o novo horário). Use sempre que ela quiser remarcar/trocar/mudar/adiantar/atrasar o horário. NUNCA use criar_agendamento para remarcar. Só diga que remarcou se a resposta começar com REMARCADO.",
@@ -1699,11 +1709,11 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        360,
-        3780
+        660,
+        4180
       ],
       "parameters": {
-        "description": "Cancela (remove da agenda) um agendamento que a cliente já tem. Use só depois que ela confirmar que quer cancelar. Só diga que cancelou se a resposta começar com CANCELADO.",
+        "description": "Cancela (remove da agenda) um agendamento que a cliente já tem. Use só depois que ela confirmar que quer cancelar. Só diga que cancelou se a resposta começar com CANCELADO. O sistema só cancela se a cliente pediu para cancelar ou desmarcar; nunca use para marcar de novo o mesmo horário.",
         "workflowId": {
           "__rl": true,
           "value": "ErKkLnRNCkYYYJ7p",
@@ -1715,6 +1725,7 @@
             "acao": "cancelar",
             "telefone": "={{ $('Montar entrada').first().json.telefone }}",
             "data_hora_inicio": "={{ $fromAI('data_hora_inicio', `Horário do agendamento a cancelar, AAAA-MM-DDTHH:mm (pode deixar vazio se ela só tem um)`, 'string') }}",
+            "motivo": "={{ $('Sobre esta cliente').first().json.pediuCancelar ? 'pediu' : 'NAO_PEDIU' }}",
             "loja_json": "={{ JSON.stringify($('Loja').first().json) }}"
           },
           "matchingColumns": [],
@@ -1841,8 +1852,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        540,
-        3620
+        840,
+        4020
       ],
       "parameters": {
         "description": "Cria um agendamento NOVO na agenda do salão. Use SOMENTE depois que a cliente escolheu um dos horários de consultar_horarios_livres e confirmou serviço e nome. NÃO use para remarcar (para isso existe remarcar_agendamento). Se a resposta não começar com AGENDADO, o horário NÃO foi marcado. Se a loja pede sinal por Pix, só grava depois que a cliente mandou a foto do comprovante (o sistema confere); senão volta NÃO AGENDADO com o motivo.",
@@ -1987,8 +1998,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        540,
-        3780
+        840,
+        4180
       ],
       "parameters": {
         "description": "=Passa a conversa para a {{ $('Loja').first().json.dona }} e PAUSA a IA para esta cliente por 12h. A {{ $('Loja').first().json.dona }} recebe no WhatsApp o resumo e o link da conversa no app, para não precisar ler tudo. Use nos casos do bloco QUANDO PRECISA DA {{ $('Loja').first().json.dona_maiuscula }} (passar a conversa). Dúvida que só a {{ $('Loja').first().json.dona }} decide (levar cachorro, criança, atraso, serviço fora da tabela) é perguntar_para_gleide, que não pausa, MESMO que a cliente diga \"quero falar com a {{ $('Loja').first().json.dona }}\" por causa disso: a resposta da {{ $('Loja').first().json.dona }} chega sozinha para a cliente.",
@@ -2070,8 +2081,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1440,
-        3440
+        1740,
+        3840
       ],
       "parameters": {
         "conditions": {
@@ -2104,8 +2115,8 @@
       "type": "n8n-nodes-base.splitInBatches",
       "typeVersion": 3,
       "position": [
-        1740,
-        3440
+        2040,
+        3840
       ],
       "parameters": {
         "options": {}
@@ -2117,8 +2128,8 @@
       "type": "n8n-nodes-base.wait",
       "typeVersion": 1.1,
       "position": [
-        2040,
-        3640
+        2340,
+        4040
       ],
       "parameters": {
         "resume": "timeInterval",
@@ -2133,8 +2144,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2340,
-        3640
+        2640,
+        4040
       ],
       "parameters": {
         "jsCode": "// o tempo de 'digitando…' em blocos iguais de até 7,5 s: cada chamada da Evolution dura o delay do bloco e o\n// próximo bloco começa um bloco depois (batchInterval = delay), então o tempo total é o delay calculado\nconst b = $input.first().json;\nconst n = Math.max(1, Math.ceil(b.delay / 7500));\nconst delay = Math.round(b.delay / n);\nreturn Array.from({ length: n }, () => ({ json: { jid: b.jid, delay }, pairedItem: 0 }));"
@@ -2146,8 +2157,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2640,
-        3640
+        2940,
+        4040
       ],
       "parameters": {
         "method": "POST",
@@ -2182,8 +2193,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3840,
-        3840
+        4140,
+        4240
       ],
       "parameters": {
         "method": "POST",
@@ -2216,8 +2227,8 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        2400,
-        2520
+        2700,
+        2920
       ],
       "parameters": {
         "operation": "executeQuery",
@@ -2238,8 +2249,8 @@
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        0,
-        3940
+        300,
+        4340
       ],
       "parameters": {
         "description": "Anota na ficha da cliente (CRM do salão) o que ela quer e um resumo curto da conversa. Use assim que descobrir o interesse dela (serviço, tipo de cabelo, química, orçamento) ou algo importante (objeção de preço, prazo, evento). Não avisa a cliente. Quando a cliente combinar de voltar a falar numa data (\"semana que vem te falo\", \"segunda ou terça te aviso\", \"depois do dia 10 eu vejo\"), preencha data_retorno e assunto_retorno. Sem dia ou prazo dito por ela (\"entro em contato\", \"vou ver\", \"depois te falo\"), deixe vazio: nunca invente uma data. A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.",
@@ -2343,8 +2354,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3600,
-        600
+        3900,
+        1000
       ],
       "parameters": {
         "method": "POST",
@@ -2382,8 +2393,8 @@
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1500,
-        1460
+        1800,
+        1860
       ],
       "parameters": {
         "operation": "delete",
@@ -2402,8 +2413,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3600,
-        2320
+        3900,
+        2720
       ],
       "parameters": {
         "method": "GET",
@@ -2441,8 +2452,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3900,
-        2320
+        0,
+        3380
       ],
       "parameters": {
         "method": "GET",
@@ -2480,11 +2491,11 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        900,
-        2980
+        1200,
+        3380
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst ficha = $('Supabase: ficha da cliente').first().json;\nconst hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);\nconst dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');\nconst data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');\nconst NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';\n// Mensagens dela que ficaram sem resposta (ex.: a IA falhou e só mandou o pedido de desculpas): não estão na\n// memória do Redis, mas estão no banco. Sem isso a IA esquece o que ela pediu antes.\nlet agora_ids = [];\ntry { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]').map((m) => m.id).filter(Boolean); } catch (e) {}\nconst recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);\nconst pendentes = [];\nfor (const m of recentes) {\n  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada\n  // aceno (\"ok\", \"assim\") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente\n  if (/^\\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\\s.!]*$/iu.test(m.conteudo || '')) continue;\n  if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);\n}\nconst SEM_RESPOSTA = pendentes.length ? '\\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +\n  pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';\n// Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo\nconst ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));\nconst JA_FALOU = ultimaIA ? '\\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +\n  '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '';\nif (!ficha.id) return [{ json: { texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA } }];\n// A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então \"sem visita\" sozinho não diz se é nova:\n// nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).\nconst recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });\nif (recente && !ficha.total_visitas && !hist.length) return [{ json: { texto: (ultimaIA ? 'Ainda não veio ao salão e não tem nada marcado.' : NOVA) + (ficha.observacoes ? ('\\nObservações da ' + $('Loja').first().json.dona + ': ') + ficha.observacoes : '') + JA_FALOU + SEM_RESPOSTA } }];\n\nconst SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',\n  inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };\nconst linhas = [];\nif (ficha.nome) linhas.push('Nome: ' + ficha.nome);\nlinhas.push('Situação: ' + (SITUACAO[ficha.status] || ficha.status));\nif (ficha.total_visitas) linhas.push('Veio ' + ficha.total_visitas + 'x; última visita em ' + data(ficha.ultima_visita) + '.');\n\nconst agora = DateTime.now();\nconst futuros = hist.filter((a) => a.status === 'agendado' && dia(a.inicio) > agora).reverse();\nfor (const a of futuros) linhas.push('Horário marcado: ' + dia(a.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' — ' + (a.servicos?.nome || 'serviço não informado'));\n\n// um por serviço (o mais recente), com o retorno previsto de cada um\nconst vistos = new Set();\nfor (const a of hist.filter((x) => x.status === 'realizado')) {\n  const nome = a.servicos?.nome || 'serviço não informado';\n  if (vistos.has(nome)) continue;\n  vistos.add(nome);\n  linhas.push('Já fez: ' + nome + ' em ' + data(a.inicio) + (a.retorno_previsto ? ' → voltar por volta de ' + data(a.retorno_previsto) : ''));\n}\nconst faltas = hist.filter((a) => a.status === 'faltou').length;\nif (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');\nif (ficha.observacoes) linhas.push(('Observações da ' + $('Loja').first().json.dona + ': ') + ficha.observacoes.replace(/\\s*\\n\\s*/g, ' | '));\n// a a dona chamou pelo CRM e esta mensagem é a resposta dela\nconst alo = $('Supabase: último alô').first().json;\n// remarcação: a a dona teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)\n// falta: ela não veio e a IA a chamou sozinha para marcar outro horário (ver supabase/007)\nif (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'antes') +\n  ' e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');\n// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)\nelse if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : 'hoje') +\n  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));\n// lembrete: a IA lembrou do horário na véspera ou no dia (ver supabase/027)\n// (só enquanto aquele horário ainda vale: remarcou, cancelou ou já passou, o lembrete não conta mais)\nelse if (alo.mensagem && alo.tipo === 'lembrete') {\n  if (alo.agendamentos?.status === 'agendado' && alo.agendamentos?.inicio && alo.horario_original &&\n      +dia(alo.agendamentos.inicio) === +dia(alo.horario_original) && dia(alo.horario_original) > DateTime.now()) linhas.push('ALÔ DE LEMBRETE: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você lembrou do horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.' +\n  // conversa da Lizete (08/11): respondeu à noite e a IA disse \"hoje\" para o horário do dia seguinte\n  (alo.horario_original ? (() => { const n = Math.round(dia(alo.horario_original).startOf('day').diff(DateTime.now().setZone(TZ).startOf('day'), 'days').days); return ' Esse horário é ' + (n === 0 ? 'HOJE' : n === 1 ? 'AMANHÃ' : 'daqui a ' + n + ' dias') + ': fale assim com ela.'; })() : ''));\n}\n// vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)\nelse if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'agora') +\n  ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)\n  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))\n    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));\nelse if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  (' a ' + $('Loja').first().json.dona + ' pediu para remarcar o horário de ') + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'ela') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');\n// aviso: a a dona pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)\nelse if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  (' a ' + $('Loja').first().json.dona + ' mandou avisar: «') + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');\n// retorno combinado: ela tinha combinado de voltar a falar nesta data e a IA chamou (ver supabase/028)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia') linhas.push('ALÔ DE RETORNO (combinado com ela): ela tinha ficado de falar com o salão nesta data e em ' +\n  dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. Siga o assunto que ficou combinado; se ela ainda não decidiu, acolha sem insistir.');\nelse if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  (' a ' + $('Loja').first().json.dona + ' mandou para ela: «') + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');\nreturn [{ json: { texto: linhas.join('\\n') + JA_FALOU + SEM_RESPOSTA } }];\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst ficha = $('Supabase: ficha da cliente').first().json;\nconst hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);\nconst dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');\nconst data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');\nconst NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';\n// Mensagens dela que ficaram sem resposta (ex.: a IA falhou e só mandou o pedido de desculpas): não estão na\n// memória do Redis, mas estão no banco. Sem isso a IA esquece o que ela pediu antes.\nlet agora_ids = [];\ntry { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]').map((m) => m.id).filter(Boolean); } catch (e) {}\nconst recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);\nconst pendentes = [];\nfor (const m of recentes) {\n  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada\n  // aceno (\"ok\", \"assim\") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente\n  if (/^\\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\\s.!]*$/iu.test(m.conteudo || '')) continue;\n  if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);\n}\nconst SEM_RESPOSTA = pendentes.length ? '\\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +\n  pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';\n// Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo\nconst ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));\nconst JA_FALOU = ultimaIA ? '\\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +\n  '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '';\nif (!ficha.id) return [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA } }];\n// A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então \"sem visita\" sozinho não diz se é nova:\n// nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).\nconst recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });\nif (recente && !ficha.total_visitas && !hist.length) return [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: (ultimaIA ? 'Ainda não veio ao salão e não tem nada marcado.' : NOVA) + (ficha.observacoes ? ('\\nObservações da ' + $('Loja').first().json.dona + ': ') + ficha.observacoes : '') + JA_FALOU + SEM_RESPOSTA } }];\n\nconst SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',\n  inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };\nconst linhas = [];\nif (ficha.nome) linhas.push('Nome: ' + ficha.nome);\nlinhas.push('Situação: ' + (SITUACAO[ficha.status] || ficha.status));\nif (ficha.total_visitas) linhas.push('Veio ' + ficha.total_visitas + 'x; última visita em ' + data(ficha.ultima_visita) + '.');\n\nconst agora = DateTime.now();\nconst futuros = hist.filter((a) => a.status === 'agendado' && dia(a.inicio) > agora).reverse();\nfor (const a of futuros) linhas.push('Horário marcado: ' + dia(a.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' — ' + (a.servicos?.nome || 'serviço não informado'));\n\n// um por serviço (o mais recente), com o retorno previsto de cada um\nconst vistos = new Set();\nfor (const a of hist.filter((x) => x.status === 'realizado')) {\n  const nome = a.servicos?.nome || 'serviço não informado';\n  if (vistos.has(nome)) continue;\n  vistos.add(nome);\n  linhas.push('Já fez: ' + nome + ' em ' + data(a.inicio) + (a.retorno_previsto ? ' → voltar por volta de ' + data(a.retorno_previsto) : ''));\n}\nconst faltas = hist.filter((a) => a.status === 'faltou').length;\nif (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');\nif (ficha.observacoes) linhas.push(('Observações da ' + $('Loja').first().json.dona + ': ') + ficha.observacoes.replace(/\\s*\\n\\s*/g, ' | '));\n// a a dona chamou pelo CRM e esta mensagem é a resposta dela\nconst alo = $('Supabase: último alô').first().json;\n// remarcação: a a dona teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)\n// falta: ela não veio e a IA a chamou sozinha para marcar outro horário (ver supabase/007)\nif (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'antes') +\n  ' e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');\n// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)\nelse if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : 'hoje') +\n  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));\n// lembrete: a IA lembrou do horário na véspera ou no dia (ver supabase/027)\n// (só enquanto aquele horário ainda vale: remarcou, cancelou ou já passou, o lembrete não conta mais)\nelse if (alo.mensagem && alo.tipo === 'lembrete') {\n  if (alo.agendamentos?.status === 'agendado' && alo.agendamentos?.inicio && alo.horario_original &&\n      +dia(alo.agendamentos.inicio) === +dia(alo.horario_original) && dia(alo.horario_original) > DateTime.now()) linhas.push('ALÔ DE LEMBRETE: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você lembrou do horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.' +\n  // conversa da Lizete (08/11): respondeu à noite e a IA disse \"hoje\" para o horário do dia seguinte\n  (alo.horario_original ? (() => { const n = Math.round(dia(alo.horario_original).startOf('day').diff(DateTime.now().setZone(TZ).startOf('day'), 'days').days); return ' Esse horário é ' + (n === 0 ? 'HOJE' : n === 1 ? 'AMANHÃ' : 'daqui a ' + n + ' dias') + ': fale assim com ela.'; })() : ''));\n}\n// vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)\nelse if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'agora') +\n  ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)\n  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))\n    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));\nelse if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  (' a ' + $('Loja').first().json.dona + ' pediu para remarcar o horário de ') + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'ela') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');\n// aviso: a a dona pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)\nelse if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  (' a ' + $('Loja').first().json.dona + ' mandou avisar: «') + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');\n// ciclo de manutenção: a IA chamou sozinha para acompanhar o cabelo depois do serviço (ver supabase/048)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia' && [].concat(alo.retornos_combinados || []).some((r) => r && r.origem === 'ciclo')) {\n  const etapa = ([].concat(alo.retornos_combinados || []).find((r) => r && r.origem === 'ciclo') || {}).etapa;\n  linhas.push('ALÔ DE ACOMPANHAMENTO (o salão chamou, ela não pediu): em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n    ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. ' +\n    (etapa === 'cuidado'\n      ? 'Era só cuidado dos primeiros dias: se está tudo bem, fique feliz com ela usando as palavras dela e encerre com leveza, sem oferecer horário nem falar de manutenção. Se ela contar dor, incômodo forte ou problema, acolha e siga a regra de complicação depois do serviço.'\n      : etapa === 'meio'\n        ? ('Se ela está confortável: diga que a ' + $('Loja').first().json.dona + ' recomenda a manutenção em até 60 dias e pergunte, uma vez e sem pressa, se ela quer que você já veja um horário para mais perto dessa data. Se ela contar incômodo, tela soltando ou aparecendo: acolha e ofereça a manutenção agora (consultar_horarios_livres para a manutenção).')\n        : 'Se ela topar ver horário: use consultar_horarios_livres para a manutenção e ofereça 2 horários, seguindo as regras da manutenção. Se disser que agora não pode, acolha e pergunte quando fica melhor para ela; se der um prazo, vale a regra do alô combinado.') +\n    ' Não repita o texto do alô e não pergunte o que ela já fez: está na ficha.');\n}\n// retorno combinado: ela tinha combinado de voltar a falar nesta data e a IA chamou (ver supabase/028)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia') linhas.push('ALÔ DE RETORNO (combinado com ela): ela tinha ficado de falar com o salão nesta data e em ' +\n  dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. Siga o assunto que ficou combinado; se ela ainda não decidiu, acolha sem insistir.');\nelse if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  (' a ' + $('Loja').first().json.dona + ' mandou para ela: «') + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');\nreturn [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: linhas.join('\\n') + JA_FALOU + SEM_RESPOSTA } }];\n"
       }
     },
     {
@@ -2493,12 +2504,12 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
-        2980
+        300,
+        3380
       ],
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status,inicio)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?select=tipo,canal,mensagem,criado_em,resultado,horario_original,retornos_combinados(origem,etapa),vagas(inicio,status,motivo,agendamentos(status)),agendamentos!contatos_agendamento_id_fkey(status,inicio)&resultado=in.(pendente,respondeu)&order=criado_em.desc&limit=1&cliente_id=eq.{{ $('Supabase: ficha da cliente').first().json.id || '00000000-0000-0000-0000-000000000000' }}&criado_em=gte.{{ $now.minus(14, 'days').toUTC().toISO() }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -2533,8 +2544,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
-        2980
+        600,
+        3380
       ],
       "parameters": {
         "method": "GET",
@@ -2573,8 +2584,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        600,
-        2980
+        900,
+        3380
       ],
       "parameters": {
         "method": "GET",
@@ -2613,8 +2624,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        4140,
-        3840
+        4440,
+        4240
       ],
       "parameters": {
         "method": "POST",
@@ -2652,8 +2663,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3300,
-        1000
+        3600,
+        1400
       ],
       "parameters": {
         "method": "POST",
@@ -2691,8 +2702,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2700,
-        400
+        3000,
+        800
       ],
       "parameters": {
         "method": "PATCH",
@@ -2730,8 +2741,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
-        800
+        2700,
+        1200
       ],
       "parameters": {
         "method": "GET",
@@ -2769,8 +2780,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2700,
-        800
+        3000,
+        1200
       ],
       "parameters": {
         "conditions": {
@@ -2803,8 +2814,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3000,
-        800
+        3300,
+        1200
       ],
       "parameters": {
         "method": "POST",
@@ -2842,8 +2853,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3900,
-        600
+        0,
+        1860
       ],
       "parameters": {
         "conditions": {
@@ -2876,8 +2887,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        0,
-        1460
+        300,
+        1860
       ],
       "parameters": {
         "jsCode": "\nconst msg = ($('Webhook Evolution').first().json.body || {}).data?.message || {};\nlet b64 = msg.base64 || '';\nlet mime = msg.imageMessage?.mimetype || '';\nif (!b64) {\n  try { const b = $('Baixar mídia (Evolution)').first().json; b64 = b.base64 || ''; mime = b.mimetype || mime; } catch (e) {}\n}\nmime = String(mime || 'image/jpeg').split(';')[0].trim().toLowerCase();\nconst ext = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }[mime] || 'jpg';\nif (ext === 'jpg') mime = 'image/jpeg';\nif (!b64 || !/^[A-Za-z0-9+/=\\s]+$/.test(b64.slice(0, 200))) return [{ json: { ext: '' } }];\nreturn [{ json: { ext, mime }, binary: { foto: { data: b64.replace(/\\s/g, ''), mimeType: mime, fileName: 'foto.' + ext } } }];\n"
@@ -2891,8 +2902,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
-        1460
+        600,
+        1860
       ],
       "parameters": {
         "method": "POST",
@@ -2934,8 +2945,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        600,
-        1460
+        900,
+        1860
       ],
       "parameters": {
         "method": "PATCH",
@@ -2973,8 +2984,8 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3600,
-        1000
+        3900,
+        1400
       ],
       "parameters": {
         "conditions": {
@@ -3007,8 +3018,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3900,
-        1000
+        0,
+        2260
       ],
       "parameters": {
         "jsCode": "\nconst msg = ($('Webhook Evolution').first().json.body || {}).data?.message || {};\nlet b64 = msg.base64 || '';\nlet mime = msg.imageMessage?.mimetype || '';\nif (!b64) {\n  try { const b = $('Baixar mídia (Evolution)').first().json; b64 = b.base64 || ''; mime = b.mimetype || mime; } catch (e) {}\n}\nmime = String(mime || 'image/jpeg').split(';')[0].trim().toLowerCase();\nconst ext = { 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' }[mime] || 'jpg';\nif (ext === 'jpg') mime = 'image/jpeg';\nif (!b64 || !/^[A-Za-z0-9+/=\\s]+$/.test(b64.slice(0, 200))) return [{ json: { ext: '' } }];\nreturn [{ json: { ext, mime }, binary: { foto: { data: b64.replace(/\\s/g, ''), mimeType: mime, fileName: 'foto.' + ext } } }];\n"
@@ -3022,8 +3033,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        0,
-        1860
+        300,
+        2260
       ],
       "parameters": {
         "method": "POST",
@@ -3065,8 +3076,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        300,
-        1860
+        600,
+        2260
       ],
       "parameters": {
         "method": "PATCH",
@@ -3099,13 +3110,414 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000135",
+      "id": "00000000-0000-4000-8000-000000000118",
+      "name": "É ligação?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        300,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "lg1",
+              "leftValue": "={{ String($json.body?.event || '').toLowerCase() === 'call' }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000119",
+      "name": "Ligação: dados",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// Evento \"call\" da Evolution (Baileys): { id, from, status: offer|ringing|timeout|reject|accept, isGroup, isVideo }.\n// Só a oferta conta (os outros sinais são da mesma ligação) e só de pessoa (grupo não).\nconst b = $input.first().json.body || {};\nconst d = b.data || {};\nconst jid = String(d.from || d.chatId || d.remoteJid || '');\nif (String(d.status || '') !== 'offer' || d.isGroup || !/@(s\\.whatsapp\\.net|lid)$/.test(jid)) return [];\nconst escondido = jid.endsWith('@lid');\nconst digitos = jid.split('@')[0].replace(/\\D/g, '');\nconst permitidos = String(('' + $('Loja').first().json.permitidos + '') || '').split(',').map((s) => s.trim()).filter(Boolean);\nif (permitidos.length && !permitidos.includes(digitos)) return [];\nreturn [{ json: { jid, digitos, telefone: escondido ? '' : digitos, numero: escondido ? jid : digitos } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000120",
+      "name": "Ligação: histórico",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/chat/findMessages/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ where: { key: { remoteJid: $json.jid } }, limit: 30 }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000121",
+      "name": "Ligação: telefone",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\n// número escondido: procura o telefone nas mensagens antigas dessa conversa (a Evolution guarda em key.remoteJidAlt)\nconst l = $('Ligação: dados').first().json;\nif (l.telefone) return [{ json: l }];\nconst r = $input.first().json || {};\nconst lista = (r.messages && r.messages.records) || r.records || (Array.isArray(r) ? r : []);\nconst alt = lista.map((x) => String((x.key && x.key.remoteJidAlt) || '')).find((j) => /^\\d{10,15}@s\\.whatsapp\\.net$/.test(j));\nif (!alt) return [{ json: l }];\nconst tel = alt.split('@')[0];\nreturn [{ json: { ...l, telefone: tel, digitos: tel } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000122",
+      "name": "Ligação: anotar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_ligacao_recebida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_telefone: (() => { const d = String($json.digitos || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })() }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000123",
+      "name": "Ligação: o que dizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1800,
+        0
+      ],
+      "parameters": {
+        "jsCode": "\nconst l = $('Ligação: telefone').first().json;\nlet r = $input.first().json || {};\nif (typeof r === 'string') { try { r = JSON.parse(r); } catch (e) { r = {}; } }\n// o banco não respondeu: ainda assim a cliente recebe a resposta simples (melhor que silêncio)\nif (r.responder === undefined) r = { responder: true, avisar: false };\nconst primeiro = (n) => { const p = String(n || '').trim().split(/\\s+/)[0] || ''; return /^[A-Za-zÀ-ÿ]{2,}$/.test(p) && !/^cliente$/i.test(p) ? p[0].toUpperCase() + p.slice(1).toLowerCase() : ''; };\nconst nome = primeiro(r.nome);\nconst oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\nconst dia = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst quando = (iso) => {\n  const d = new Date(iso);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  return (dia(d) === dia(new Date()) ? 'hoje' : 'amanhã') + ' às ' + h;\n};\nlet texto;\nif (r.hora_da_online) {\n  texto = oi + (' Vi sua ligação. Na avaliação online é a ' + $('Loja').first().json.dona + ' que liga para você, por aqui mesmo, no horário combinado (') + quando(r.inicio) + '). Se precisar de algo antes, é só me escrever.';\n} else if (r.inicio) {\n  texto = oi + ' Vi sua ligação. Por aqui o atendimento é por mensagem. É sobre o seu horário de ' + quando(r.inicio) + '? Me escreve ou manda um áudio que eu resolvo agora.';\n} else if (nome) {\n  texto = oi + ' Vi sua ligação. Por aqui o atendimento é por mensagem, e eu já estou aqui para te ajudar. Me conta por escrito ou por áudio o que você precisa?';\n} else {\n  texto = 'Oi! Vi que você ligou. Por aqui o atendimento é por mensagem, e eu já estou aqui para te ajudar. Me conta o que você está procurando? Pode ser por áudio, se preferir.';\n}\n// aviso para a dona: só quando importa (horário nas próximas 24 h, ou 3 ligações em meia hora)\nconst fone = (t) => { const m = String(t || '').match(/^55(\\d{2})(\\d{4,5})(\\d{4})$/); return m ? '(' + m[1] + ') ' + m[2] + '-' + m[3] : 'Um número novo'; };\nconst doisNomes = String(r.nome || '').trim().split(/\\s+/).filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2)\n  .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');\nconst quem = doisNomes && !/^cliente( teste)?$/i.test(doisNomes) ? '*' + doisNomes + '*' : fone(l.telefone);\nconst textoDona = '📞 ' + quem + (Number(r.chamadas) >= 3 ? ' ligou ' + r.chamadas + ' vezes em meia hora' : ' ligou agora') +\n  (r.inicio ? ' (horário ' + quando(r.inicio) + (r.servico ? ', ' + String(r.servico).toLowerCase() : '') + ')' : '') +\n  '. Respondi que o atendimento é por mensagem.';\nconst mem = (t) => JSON.stringify({ type: 'ai', data: { content: t, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } });\nreturn [{ json: { ...l, responder: !!r.responder, avisar: !!r.avisar, texto, textoDona, memoria: mem(texto), memoriaDona: mem(textoDona) } }];\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000124",
+      "name": "Ligação: responde?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "lg2",
+              "leftValue": "={{ $json.responder }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000125",
+      "name": "Ligação: responder",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Ligação: o que dizer').first().json.numero, text: $('Ligação: o que dizer').first().json.texto, delay: 1500 }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000126",
+      "name": "Ligação: chegou e tem telefone?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2700,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "lg3",
+              "leftValue": "={{ !!$json.key?.id && !!$('Ligação: o que dizer').first().json.telefone }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000127",
+      "name": "Ligação: memória da IA",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:memoria:{{ $('Ligação: o que dizer').first().json.telefone }}",
+        "messageData": "={{ $('Ligação: o que dizer').first().json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000128",
+      "name": "Ligação: registrar no app",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        3300,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_registrar_saida",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: ('' + $('Loja').first().json.empresa_id + ''), p_telefone: (() => { const d = String($('Ligação: o que dizer').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })(), p_conteudo: $('Ligação: o que dizer').first().json.texto, p_autor: 'ia', p_tipo: 'texto', p_wa_message_id: $('Ligação: responder').first().json.key.id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000129",
+      "name": "Ligação: avisa a dona?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2100,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "lg4",
+              "leftValue": "={{ $json.avisar }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000130",
+      "name": "Ligação: números da dona",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2400,
+        200
+      ],
+      "parameters": {
+        "jsCode": "const l = $input.first().json;\nreturn (('' + $('Loja').first().json.assist + '') || ('' + $('Loja').first().json.assist + '')).split(',').map(s => s.trim()).filter(Boolean).map((tel) => ({ json: { tel, texto: l.textoDona, memoria: l.memoriaDona } }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000131",
+      "name": "Ligação: avisar a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2700,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ ('' + $('Loja').first().json.instancia + '') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000132",
+      "name": "Ligação: memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3000,
+        200
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "={{ $('Loja').first().json.empresa_id }}:assistente:{{ $('Ligação: números da dona').item.json.tel }}",
+        "messageData": "={{ $('Ligação: números da dona').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000150",
       "name": "enviar_audio",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        180,
-        3940
+        480,
+        4340
       ],
       "parameters": {
         "description": "=Manda para a cliente um ÁUDIO pronto (voz de terceiro, não diga que é a {{ $('Loja').first().json.dona }}) explicando um assunto (temas em ÁUDIOS PRONTOS, no fim das instruções). Use quando a pergunta dela for exatamente sobre um desses temas. A resposta diz se o áudio foi enviado e o que ele fala.",
@@ -3182,13 +3594,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000136",
+      "id": "00000000-0000-4000-8000-000000000151",
       "name": "Supabase: áudios do salão",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1200,
-        2980
+        1500,
+        3380
       ],
       "parameters": {
         "method": "GET",
@@ -3218,13 +3630,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000137",
+      "id": "00000000-0000-4000-8000-000000000152",
       "name": "Supabase: áudios já enviados",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1500,
-        2980
+        1800,
+        3380
       ],
       "parameters": {
         "method": "GET",
@@ -3253,26 +3665,26 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000138",
+      "id": "00000000-0000-4000-8000-000000000153",
       "name": "Áudios disponíveis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1800,
-        2980
+        2100,
+        3380
       ],
       "parameters": {
         "jsCode": "\nconst catalogo = (($('Supabase: áudios do salão').first().json.config) || {}).audios_prontos || [];\nconst enviados = $('Supabase: áudios já enviados').all().map((i) => i.json.conteudo || '').join(' ');\nif (!catalogo.length) return [{ json: { texto: '(nenhum áudio pronto cadastrado: responda sempre em texto)' } }];\nreturn [{ json: { texto: catalogo.map((a) => '- ' + a.tema + ' — quando usar: ' + (a.quando_usar || a.tema) +\n  (enviados.includes('[áudio pronto: ' + a.tema + ']') ? ' (JÁ ENVIADO para esta cliente: não mande de novo)' : '')).join('\\n') } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000155",
+      "id": "00000000-0000-4000-8000-000000000170",
       "name": "É a a dona (assistente)?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1500,
-        200
+        1800,
+        400
       ],
       "parameters": {
         "conditions": {
@@ -3300,13 +3712,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000156",
+      "id": "00000000-0000-4000-8000-000000000171",
       "name": "Repassar para a assistente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1800,
-        200
+        2100,
+        600
       ],
       "parameters": {
         "method": "POST",
@@ -3327,13 +3739,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000325",
+      "id": "00000000-0000-4000-8000-000000000342",
       "name": "perguntar_para_gleide",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        360,
-        3940
+        660,
+        4340
       ],
       "parameters": {
         "description": "=Pergunta à {{ $('Loja').first().json.dona }} uma dúvida simples que depende de decisão dela (ex.: trazer cachorro ou outro animal, deixar criança sozinha no salão, atendimento fora do horário, tolerância de atraso) SEM pausar o atendimento. Nunca use para agendamento: dia, horário, passar sem marcar, plantão ou falta de tempo você resolve sozinha. Coisas de bom senso (levar o filho junto, acompanhante, chegar antes) você responde sozinha, sem esta ferramenta. Ela responde pelo WhatsApp e a resposta chega à cliente sozinha. Use quando não for preciso a {{ $('Loja').first().json.dona }} assumir a conversa. Para reclamação, dor ou pedido de falar com ela, use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.",
@@ -3432,13 +3844,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000326",
+      "id": "00000000-0000-4000-8000-000000000343",
       "name": "pedir_orcamento_cabelo",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        540,
-        3940
+        840,
+        4340
       ],
       "parameters": {
         "description": "=Pede à {{ $('Loja').first().json.dona }} o orçamento de uma compra avulsa de cabelo, SEM pausar o atendimento. Use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). Nunca use para cliente que só está pesquisando, para aplicação ou para mão de obra. A {{ $('Loja').first().json.dona }} responde pelo WhatsApp e o valor chega sozinho à cliente. Use uma vez por pedido.",
@@ -3537,13 +3949,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000330",
+      "id": "00000000-0000-4000-8000-000000000347",
       "name": "mudar_modalidade",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
       "position": [
-        0,
-        4100
+        300,
+        4500
       ],
       "parameters": {
         "description": "=Troca a avaliação da cliente entre presencial e online, no mesmo dia e hora. Use quando ela pedir ou aceitar a troca, sem perguntar à {{ $('Loja').first().json.dona }} e sem transferir. Só diga que mudou se a resposta começar com MUDADO. Para mudar o dia ou a hora, use remarcar_agendamento.",
@@ -3609,13 +4021,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000331",
+      "id": "00000000-0000-4000-8000-000000000348",
       "name": "Pedido: procurar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        600,
-        0
+        900,
+        200
       ],
       "parameters": {
         "operation": "get",
@@ -3633,13 +4045,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000332",
+      "id": "00000000-0000-4000-8000-000000000349",
       "name": "É resposta da a dona?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        900,
-        0
+        1200,
+        200
       ],
       "parameters": {
         "conditions": {
@@ -3667,26 +4079,26 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000333",
+      "id": "00000000-0000-4000-8000-000000000350",
       "name": "Pedido: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        0
+        1500,
+        200
       ],
       "parameters": {
-        "jsCode": "\nconst p = JSON.parse($('Pedido: procurar').first().json.pedido);\nconst resposta = $('Extrair dados').first().json.texto.trim();\nconst nome = String(p.nome || '').trim().split(/\\s+/)[0] || '';\nconst instrucao = p.tipo === 'orcamento_cabelo' ? ('Você é a assistente virtual da ' + $('Loja').first().json.dona + ', do salão ' + $('Loja').first().json.nome + ', conversando pelo WhatsApp com a cliente ') +\n  (nome || '') + '. A cliente pediu o orçamento deste cabelo: \"' + p.pergunta + ('\". A ' + $('Loja').first().json.dona + ' respondeu: \"') + resposta + '\". ' +\n  'Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, curta (1 ou 2 frases), natural e gentil. ' +\n  ('Copie exatamente todos os valores, quantidades e condições que a ' + $('Loja').first().json.dona + ' escreveu. Não calcule, não arredonde e não acrescente desconto, parcela, prazo, entrega ou estoque. ') +\n  'Não use negrito nem listas, no máximo um emoji. Se a resposta trouxer um valor, termine perguntando só \"Quer fechar?\". Responda só com a mensagem.' :\n  ('Você é a assistente virtual da ' + $('Loja').first().json.dona + ', do salão ' + $('Loja').first().json.nome + ', conversando pelo WhatsApp com a cliente ') +\n  (nome || '') + ('. Antes, a cliente perguntou algo que só a ' + $('Loja').first().json.dona + ' sabia: \"') + p.pergunta + ('\". Você disse que ia confirmar com a ' + $('Loja').first().json.dona + '. ') +\n  ('A ' + $('Loja').first().json.dona + ' respondeu: \"') + resposta + '\". Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, ' +\n  ('curta (1 ou 2 frases), natural e gentil, como uma atendente de verdade. Não invente nada além do que a ' + $('Loja').first().json.dona + ' disse, ') +\n  'não mude o sentido, não use negrito nem listas, no máximo um emoji. Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela. Responda só com a mensagem.';\nreturn [{ json: { ...p, nome, resposta, instrucao } }];\n"
+        "jsCode": "\nconst p = JSON.parse($('Pedido: procurar').first().json.pedido);\nconst resposta = $('Extrair dados').first().json.texto.trim();\nconst nome = String(p.nome || '').trim().split(/\\s+/)[0] || '';\nconst instrucao = p.tipo === 'orcamento_cabelo' ? ('Você é a assistente virtual da ' + $('Loja').first().json.dona + ', do salão ' + $('Loja').first().json.nome + ', conversando pelo WhatsApp com a cliente ') +\n  (nome || '') + '. A cliente pediu o orçamento deste cabelo: \"' + p.pergunta + ('\". A ' + $('Loja').first().json.dona + ' respondeu: \"') + resposta + '\". ' +\n  // 14/11 (Angela): a mensagem saía \"fica R$ 2.800. Quer fechar?\". Cabelo é venda de alto padrão: o valor chega com o\n  // pedido dela retomado e a conversa fica aberta, sem empurrar o fechamento (pedido do Victor: venda consultiva)\n  'Escreva a mensagem que vai para a cliente. Quem escreve é uma consultora de salão de alto padrão no WhatsApp: calma, próxima, sem pressa de vender e sem empurrar o fechamento. ' +\n  'FORMATO: dois parágrafos curtos, separados por uma linha em branco, sem negrito, sem lista. Comece por \"Oi, \" e o primeiro nome dela. No máximo um emoji, e pode não ter nenhum. ' +\n  ('PALAVRAS: português do Brasil falado, simples, como em conversa (\"você pediu\", \"a ' + $('Loja').first().json.dona + ' me passou\", \"fica\", \"tô por aqui\"). ') +\n  'Não use: \"solicitou\", \"solicitação\", \"informou\", \"configuração\", \"especificações\", \"à disposição\", \"sinta-se à vontade\", \"gostaria de saber\", \"em relação a\". ' +\n  ('PRIMEIRO PARÁGRAFO: retome em poucas palavras o cabelo que ela pediu e passe a resposta da ' + $('Loja').first().json.dona + '. Copie exatamente todos os valores, quantidades e condições que a ' + $('Loja').first().json.dona + ' escreveu; ') +\n  ('valor em dinheiro leva \"R$\" na frente (ex.: se a ' + $('Loja').first().json.dona + ' escreveu 2.800, escreva R$ 2.800). Não calcule, não arredonde e não acrescente desconto, parcela, prazo, entrega ou estoque. ') +\n  ('A ' + $('Loja').first().json.dona + ' escreve para você falando DA cliente; você fala COM a cliente: \"preciso ver o tom dela\" vira \"a ' + $('Loja').first().json.dona + ' precisa ver o seu tom\". ') +\n  'SEGUNDO PARÁGRAFO, se a resposta trouxe valor: UMA pergunta só, curta, escolhendo uma destas ideias: o que ela achou, OU se o valor fica dentro do que ela tinha planejado. Nunca as duas na mesma mensagem. ' +\n  'Depois, uma frase dizendo que você está ali se ela quiser tirar uma dúvida ou ver outra medida ou quantidade. ' +\n  ('SEGUNDO PARÁGRAFO, se a resposta NÃO trouxe valor: pergunte só se ela quer que você veja um horário para ela vir e a ' + $('Loja').first().json.dona + ' olhar de perto. ') +\n  ('Não escreva nenhum número que não esteja na resposta da ' + $('Loja').first().json.dona + ' ou no pedido. ') +\n  'PROIBIDO: \"Quer fechar?\", \"vamos fechar\", \"posso fechar\", \"garanta\", pressa, urgência, escassez e adjetivo de propaganda (lindo, maravilhoso, incrível, perfeito). ' +\n  ('Exemplo de tom (não copie): \"Oi, Ana! A ' + $('Loja').first().json.dona + ' me passou o valor das 100 g de 60 cm que você pediu: fica R$ 1.900.\" / \"Fica dentro do que você tinha planejado? Tô por aqui se quiser tirar alguma dúvida ou ver outra medida.\" ') +\n  'Responda só com a mensagem.' :\n  ('Você é a assistente virtual da ' + $('Loja').first().json.dona + ', do salão ' + $('Loja').first().json.nome + ', conversando pelo WhatsApp com a cliente ') +\n  (nome || '') + ('. Antes, a cliente perguntou algo que só a ' + $('Loja').first().json.dona + ' sabia: \"') + p.pergunta + ('\". Você disse que ia confirmar com a ' + $('Loja').first().json.dona + '. ') +\n  ('A ' + $('Loja').first().json.dona + ' respondeu: \"') + resposta + '\". Escreva a mensagem para a cliente passando essa resposta, em português do Brasil, ' +\n  ('curta (1 ou 2 frases), natural e gentil, como uma atendente de verdade. Não invente nada além do que a ' + $('Loja').first().json.dona + ' disse, ') +\n  'não mude o sentido, não use negrito nem listas, no máximo um emoji. Se ela escreveu um valor, passe esse valor exatamente como ela escreveu, sem calcular, arredondar nem acrescentar desconto ou parcela. Responda só com a mensagem.';\nreturn [{ json: { ...p, nome, resposta, instrucao } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000334",
+      "id": "00000000-0000-4000-8000-000000000351",
       "name": "Pedido: escrever (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1500,
-        0
+        1800,
+        200
       ],
       "parameters": {
         "method": "POST",
@@ -3710,26 +4122,26 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000335",
+      "id": "00000000-0000-4000-8000-000000000352",
       "name": "Pedido: texto",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1800,
-        0
+        2100,
+        400
       ],
       "parameters": {
         "jsCode": "\nconst p = $('Pedido: preparar').first().json;\nlet t = String($input.first().json.candidates?.[0]?.content?.parts?.map((x) => x.text || '').join('') || '').trim();\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/^[\"“]|[\"”]$/g, '').trim();\nif (p.tipo === 'orcamento_cabelo') {\n  // valor é da a dona: se o texto perdeu ou inventou algum número, manda as palavras dela\n  const numeros = (s) => String(s).match(/\\d+(?:[.,]\\d+)*/g) || [];\n  const dela = numeros(p.resposta), permitidos = dela.concat(numeros(p.pergunta));\n  if (!t || !dela.every((n) => numeros(t).includes(n)) || !numeros(t).every((n) => permitidos.includes(n))) t = ('A ' + $('Loja').first().json.dona + ' passou o orçamento: ') + p.resposta;\n}\nif (!t) t = ('Falei com a ' + $('Loja').first().json.dona + ' sobre isso: ') + p.resposta;\nreturn [{ json: { ...p, texto: t } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000336",
+      "id": "00000000-0000-4000-8000-000000000353",
       "name": "Pedido: enviar à cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2100,
-        0
+        2400,
+        400
       ],
       "parameters": {
         "method": "POST",
@@ -3757,13 +4169,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000337",
+      "id": "00000000-0000-4000-8000-000000000354",
       "name": "Pedido: registrar saída",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        2400,
-        0
+        2700,
+        400
       ],
       "parameters": {
         "method": "POST",
@@ -3789,13 +4201,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000338",
+      "id": "00000000-0000-4000-8000-000000000355",
       "name": "Pedido: memória (resposta da a dona)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2700,
-        0
+        3000,
+        400
       ],
       "parameters": {
         "operation": "push",
@@ -3812,13 +4224,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000339",
+      "id": "00000000-0000-4000-8000-000000000356",
       "name": "Pedido: memória (mensagem enviada)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3000,
-        0
+        3300,
+        400
       ],
       "parameters": {
         "operation": "push",
@@ -3835,13 +4247,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000340",
+      "id": "00000000-0000-4000-8000-000000000357",
       "name": "Pedido: apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3300,
-        0
+        3600,
+        400
       ],
       "parameters": {
         "operation": "delete",
@@ -3856,13 +4268,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000341",
+      "id": "00000000-0000-4000-8000-000000000358",
       "name": "Pedido: confirmar à a dona",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        3600,
-        0
+        3900,
+        400
       ],
       "parameters": {
         "method": "POST",
@@ -3890,26 +4302,26 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000342",
+      "id": "00000000-0000-4000-8000-000000000359",
       "name": "Pedido: seguir normal",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1200,
-        200
+        1500,
+        400
       ],
       "parameters": {
         "jsCode": "return [{ json: $('Extrair dados').first().json }];"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000346",
+      "id": "00000000-0000-4000-8000-000000000363",
       "name": "IA falhou? (alerta)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1440,
-        3640
+        1740,
+        4040
       ],
       "parameters": {
         "conditions": {
@@ -3937,13 +4349,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000347",
+      "id": "00000000-0000-4000-8000-000000000364",
       "name": "Avisar Victor (IA falhou)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1740,
-        3640
+        2040,
+        4040
       ],
       "parameters": {
         "method": "POST",
@@ -3971,13 +4383,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000348",
+      "id": "00000000-0000-4000-8000-000000000365",
       "name": "Memória: ler (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2100,
-        2980
+        2400,
+        3380
       ],
       "parameters": {
         "operation": "get",
@@ -3995,26 +4407,26 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000349",
+      "id": "00000000-0000-4000-8000-000000000366",
       "name": "Memória: conferir (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2400,
-        2980
+        2700,
+        3380
       ],
       "parameters": {
         "jsCode": "// lista do Redis: [0] = mais nova (a memória grava com LPUSH)\nconst lista = [].concat($input.first().json.memoria || []);\nconst quebra = (s) => { try { const m = JSON.parse(s); return m.type === 'tool' || (m.type === 'ai' && (m.data?.tool_calls || []).length > 0); } catch (e) { return false; } };\nlet fim = Math.min(lista.length, 40);\nif (!fim || !quebra(lista[fim - 1])) return [{ json: { cortar: false }, pairedItem: 0 }];\n// recua até uma mensagem dela: o histórico começa como uma conversa normal\nconst dela = (s) => { try { return JSON.parse(s).type === 'human'; } catch (e) { return false; } };\nwhile (fim > 0 && !dela(lista[fim - 1])) fim--;\n// toda interação começa com a mensagem dela, então sempre há um ponto bom; sem ele, não mexe\nif (!fim) return [{ json: { cortar: false }, pairedItem: 0 }];\nreturn [{ json: { cortar: true, de: lista.length, para: fim, manter: lista.slice(0, fim) }, pairedItem: 0 }];"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000350",
+      "id": "00000000-0000-4000-8000-000000000367",
       "name": "Memória: cortar? (Agente IA)",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2700,
-        2980
+        3000,
+        3380
       ],
       "parameters": {
         "conditions": {
@@ -4042,13 +4454,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000351",
+      "id": "00000000-0000-4000-8000-000000000368",
       "name": "Memória: apagar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3000,
-        2980
+        3300,
+        3380
       ],
       "parameters": {
         "operation": "delete",
@@ -4062,26 +4474,26 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000352",
+      "id": "00000000-0000-4000-8000-000000000369",
       "name": "Memória: regravar itens (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3300,
-        2980
+        3600,
+        3380
       ],
       "parameters": {
         "jsCode": "return [].concat($('Memória: conferir (Agente IA)').first().json.manter || []).reverse().map((m) => ({ json: { m }, pairedItem: 0 }));"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000353",
+      "id": "00000000-0000-4000-8000-000000000370",
       "name": "Memória: regravar (Agente IA)",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3600,
-        2980
+        3900,
+        3380
       ],
       "parameters": {
         "operation": "push",
@@ -4097,13 +4509,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000354",
+      "id": "00000000-0000-4000-8000-000000000371",
       "name": "Memória: pronta (Agente IA)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        3900,
-        2980
+        0,
+        3840
       ],
       "parameters": {
         "jsCode": "return [{ json: {}, pairedItem: 0 }];"
@@ -4111,13 +4523,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000362",
+      "id": "00000000-0000-4000-8000-000000000379",
       "name": "Rajada: ler fila",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2400,
-        1460
+        2700,
+        1860
       ],
       "parameters": {
         "operation": "get",
@@ -4135,13 +4547,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000363",
+      "id": "00000000-0000-4000-8000-000000000380",
       "name": "Resposta velha: ler fila",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2940,
-        3640
+        3240,
+        4040
       ],
       "parameters": {
         "operation": "get",
@@ -4160,13 +4572,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000364",
+      "id": "00000000-0000-4000-8000-000000000381",
       "name": "Resposta velha: descartes",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3240,
-        3640
+        3540,
+        4040
       ],
       "parameters": {
         "operation": "get",
@@ -4185,13 +4597,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000365",
+      "id": "00000000-0000-4000-8000-000000000382",
       "name": "Resposta velha?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        3540,
-        3640
+        3840,
+        4040
       ],
       "parameters": {
         "conditions": {
@@ -4219,13 +4631,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000366",
+      "id": "00000000-0000-4000-8000-000000000383",
       "name": "Descarte: contar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        3840,
-        3640
+        4140,
+        4040
       ],
       "parameters": {
         "operation": "set",
@@ -4244,13 +4656,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000367",
+      "id": "00000000-0000-4000-8000-000000000384",
       "name": "Descarte: memória ler",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        4140,
-        3640
+        4440,
+        4040
       ],
       "parameters": {
         "operation": "get",
@@ -4268,26 +4680,26 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000368",
+      "id": "00000000-0000-4000-8000-000000000385",
       "name": "Descarte: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        4440,
-        3640
+        0,
+        5200
       ],
       "parameters": {
         "jsCode": "// memória: [0] = mais nova (LPUSH). Uma interação = mensagem dela (human) + resposta (ai, e ferramentas)\nconst lista = [].concat($('Descarte: memória ler').first().json.memoria || []);\nconst baloes = $('Quebrar mensagens').all().map((i) => i.json.texto);\nconst atual = $('Um balão por vez').first().json.texto;\nconst saiu = Math.max(0, baloes.indexOf(atual));\nconst tipo = (s) => { try { return JSON.parse(s).type; } catch (e) { return ''; } };\nlet manter = lista;\nlet devolver = [];\nif (saiu === 0) {\n  // nada chegou nela: esta interação sai da memória e as mensagens dela voltam para a fila\n  const i = lista.findIndex((s) => tipo(s) === 'human');\n  if (i >= 0) manter = lista.slice(i + 1);\n  try { devolver = JSON.parse($('Montar entrada').first().json.mensagens || '[]'); } catch (e) { devolver = []; }\n} else if (tipo(lista[0]) === 'ai') {\n  // parte chegou: a memória fica só com os balões que ela recebeu\n  const m = JSON.parse(lista[0]);\n  m.data = Object.assign({}, m.data, { content: baloes.slice(0, saiu).join('\\n\\n') });\n  manter = [JSON.stringify(m)].concat(lista.slice(1));\n}\nconst precoVolta = baloes.slice(saiu).some((b) => /R\\$\\s?\\d|\\b\\d{2,}(?:\\.\\d{3})*(?:,\\d{2})?\\s*reais\\b/i.test(String(b || '')));\nreturn [{ json: { precoVolta, saiu, mexer: lista.length > 0 && manter !== lista, manter, devolver }, pairedItem: 0 }];"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000369",
+      "id": "00000000-0000-4000-8000-000000000386",
       "name": "Descarte: mexer na memória?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        0,
-        4800
+        300,
+        5200
       ],
       "parameters": {
         "conditions": {
@@ -4315,13 +4727,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000370",
+      "id": "00000000-0000-4000-8000-000000000387",
       "name": "Descarte: memória apagar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        300,
-        4800
+        600,
+        5200
       ],
       "parameters": {
         "operation": "delete",
@@ -4335,13 +4747,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000371",
+      "id": "00000000-0000-4000-8000-000000000388",
       "name": "Descarte: sobrou memória?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        600,
-        4800
+        900,
+        5200
       ],
       "parameters": {
         "conditions": {
@@ -4369,26 +4781,26 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000372",
+      "id": "00000000-0000-4000-8000-000000000389",
       "name": "Descarte: memória itens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        900,
-        4800
+        1200,
+        5200
       ],
       "parameters": {
         "jsCode": "return [].concat($('Descarte: preparar').first().json.manter || []).reverse().map((m) => ({ json: { m }, pairedItem: 0 }));"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000373",
+      "id": "00000000-0000-4000-8000-000000000390",
       "name": "Descarte: memória regravar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1200,
-        4800
+        1500,
+        5200
       ],
       "parameters": {
         "operation": "push",
@@ -4404,13 +4816,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000374",
+      "id": "00000000-0000-4000-8000-000000000391",
       "name": "Descarte: memória pronta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1500,
-        4800
+        1800,
+        5200
       ],
       "parameters": {
         "jsCode": "return [{ json: {}, pairedItem: 0 }];"
@@ -4418,13 +4830,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000375",
+      "id": "00000000-0000-4000-8000-000000000392",
       "name": "Descarte: devolver mensagens?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        1800,
-        4800
+        2100,
+        5200
       ],
       "parameters": {
         "conditions": {
@@ -4452,26 +4864,26 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000376",
+      "id": "00000000-0000-4000-8000-000000000393",
       "name": "Descarte: fila itens",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2100,
-        4800
+        2400,
+        5200
       ],
       "parameters": {
         "jsCode": "return [].concat($('Descarte: preparar').first().json.devolver || []).reverse().map((m) => ({ json: { m: JSON.stringify({ id: m.id || '', texto: m.texto || '' }) }, pairedItem: 0 }));"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000377",
+      "id": "00000000-0000-4000-8000-000000000394",
       "name": "Descarte: fila devolver",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2400,
-        4800
+        2700,
+        5200
       ],
       "parameters": {
         "operation": "push",
@@ -4487,13 +4899,13 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000378",
+      "id": "00000000-0000-4000-8000-000000000395",
       "name": "Descarte: fila pronta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2700,
-        4800
+        3000,
+        5200
       ],
       "parameters": {
         "jsCode": "return [{ json: {}, pairedItem: 0 }];"
@@ -4501,13 +4913,13 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000379",
+      "id": "00000000-0000-4000-8000-000000000396",
       "name": "Descarte: zerar",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        2040,
-        3440
+        2340,
+        3840
       ],
       "parameters": {
         "operation": "delete",
@@ -4522,13 +4934,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000380",
+      "id": "00000000-0000-4000-8000-000000000397",
       "name": "Preço: ler pendência",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        840,
-        3440
+        1140,
+        3840
       ],
       "parameters": {
         "operation": "get",
@@ -4547,13 +4959,13 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000381",
+      "id": "00000000-0000-4000-8000-000000000398",
       "name": "Preço: gravar pendência",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        1440,
-        3840
+        1740,
+        4240
       ],
       "parameters": {
         "operation": "set",
@@ -4573,13 +4985,13 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000382",
+      "id": "00000000-0000-4000-8000-000000000399",
       "name": "Descarte: preço pendente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
       "position": [
-        0,
-        5000
+        300,
+        5400
       ],
       "parameters": {
         "operation": "set",
@@ -4604,8 +5016,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        600,
-        3180
+        900,
+        3580
       ],
       "parameters": {
         "method": "GET",
@@ -4639,7 +5051,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000392",
+      "id": "00000000-0000-4000-8000-000000000410",
       "name": "enviar_catalogo",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
@@ -4700,7 +5112,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000393",
+      "id": "00000000-0000-4000-8000-000000000411",
       "name": "Supabase: respostas aprendidas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4745,7 +5157,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000394",
+      "id": "00000000-0000-4000-8000-000000000412",
       "name": "Aprender: é pergunta?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4779,7 +5191,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000395",
+      "id": "00000000-0000-4000-8000-000000000413",
       "name": "Aprender: avaliar (Gemini)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4812,7 +5224,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000396",
+      "id": "00000000-0000-4000-8000-000000000414",
       "name": "Aprender: preparar",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -4825,7 +5237,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000397",
+      "id": "00000000-0000-4000-8000-000000000415",
       "name": "Aprender: guardar?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4859,7 +5271,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000398",
+      "id": "00000000-0000-4000-8000-000000000416",
       "name": "Aprender: guardar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4900,7 +5312,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000399",
+      "id": "00000000-0000-4000-8000-000000000417",
       "name": "Aprender: guardou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4934,7 +5346,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000400",
+      "id": "00000000-0000-4000-8000-000000000418",
       "name": "Aprender: avisar a a dona",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -4965,7 +5377,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000401",
+      "id": "00000000-0000-4000-8000-000000000419",
       "name": "Aprender: era preço?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -4999,7 +5411,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000402",
+      "id": "00000000-0000-4000-8000-000000000420",
       "name": "Aprender: dica do preço",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -6050,6 +6462,161 @@
         ]
       ]
     },
+    "É ligação?": {
+      "main": [
+        [
+          {
+            "node": "Ligação: dados",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extrair dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: dados": {
+      "main": [
+        [
+          {
+            "node": "Ligação: histórico",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: histórico": {
+      "main": [
+        [
+          {
+            "node": "Ligação: telefone",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: telefone": {
+      "main": [
+        [
+          {
+            "node": "Ligação: anotar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: anotar": {
+      "main": [
+        [
+          {
+            "node": "Ligação: o que dizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: o que dizer": {
+      "main": [
+        [
+          {
+            "node": "Ligação: responde?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Ligação: avisa a dona?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: responde?": {
+      "main": [
+        [
+          {
+            "node": "Ligação: responder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: responder": {
+      "main": [
+        [
+          {
+            "node": "Ligação: chegou e tem telefone?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: chegou e tem telefone?": {
+      "main": [
+        [
+          {
+            "node": "Ligação: memória da IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: memória da IA": {
+      "main": [
+        [
+          {
+            "node": "Ligação: registrar no app",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: avisa a dona?": {
+      "main": [
+        [
+          {
+            "node": "Ligação: números da dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: números da dona": {
+      "main": [
+        [
+          {
+            "node": "Ligação: avisar a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ligação: avisar a dona": {
+      "main": [
+        [
+          {
+            "node": "Ligação: memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "enviar_audio": {
       "ai_tool": [
         [
@@ -6767,7 +7334,7 @@
       "main": [
         [
           {
-            "node": "Extrair dados",
+            "node": "É ligação?",
             "type": "main",
             "index": 0
           }

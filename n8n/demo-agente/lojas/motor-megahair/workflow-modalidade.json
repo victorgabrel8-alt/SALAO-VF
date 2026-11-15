@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000327",
+      "id": "00000000-0000-4000-8000-000000000344",
       "name": "Recebe pedido da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -46,7 +46,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000328",
+      "id": "00000000-0000-4000-8000-000000000345",
       "name": "Mudar no banco",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -78,7 +78,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000329",
+      "id": "00000000-0000-4000-8000-000000000346",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,

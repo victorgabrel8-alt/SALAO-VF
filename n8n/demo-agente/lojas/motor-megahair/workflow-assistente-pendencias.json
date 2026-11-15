@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000236",
+      "id": "00000000-0000-4000-8000-000000000251",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -52,7 +52,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000238",
+      "id": "00000000-0000-4000-8000-000000000253",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -84,7 +84,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000239",
+      "id": "00000000-0000-4000-8000-000000000254",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000240",
+      "id": "00000000-0000-4000-8000-000000000255",
       "name": "Mandar para a a dona",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -129,7 +129,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000241",
+      "id": "00000000-0000-4000-8000-000000000256",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -151,7 +151,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000242",
+      "id": "00000000-0000-4000-8000-000000000257",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,

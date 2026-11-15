@@ -1486,7 +1486,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ \"salao-demo\" }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ \"loja-teste-motor\" }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
