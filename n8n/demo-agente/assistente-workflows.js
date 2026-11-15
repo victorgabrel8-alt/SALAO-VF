@@ -5,8 +5,8 @@
 //                                    que ela faz no app: agenda, fichas e avisos para a cliente (supabase/013)
 //   - "Assistente - Ferramentas"     subworkflow das tools (SQL nas funções n8n_assistente_*; avisar_cliente
 //                                    também envia a mensagem pela Evolution)
-//   - "Assistente - Pendências"      de 1 em 1 h (8h–20h) pergunta à Gleide o que falta no CRM
-//                                    (a mesma pendência por no máximo 2 h, ver supabase/011)
+//   - "Assistente - Pendências"      pergunta à Gleide o que falta no CRM: cada pendência UMA vez, juntas ao meio-dia
+//                                    e às 18h (pendencias-loja.js, supabase/049); atraso de cliente sai na hora
 //                                    (GET /webhook/assistente-pendencias dispara na hora, para testar, com o header x-webhook-token)
 //
 // Banco: o Supabase de verdade (o mesmo do app e do CRM), pela API com a chave de serviço, chamando as funções
@@ -302,8 +302,10 @@ ${REGRA_HORA}
 - Ela pode falar meio torto, sem pontuação e sem "é": "Angelita e avaliação on-line ?" é "A avaliação da Angelita é online?". Leia pelo
   sentido mais provável olhando a agenda de hoje e a conversa; só pergunte se houver dois sentidos bem diferentes.
 - Erro de digitação é comum ("Ia" pode ser "Já", "vidio" é vídeo, "comgiando" é confirmando): entenda pelo sentido; na dúvida, pergunte.
-- Assunto de outro dia só volta se ELA puxar. Um "Oi" dela pede só "Oi! Em que posso ajudar?" (ou a pendência mais urgente de hoje),
-  nunca a cobrança de um assunto de ontem.
+- Assunto de outro dia só volta se ELA puxar. Um "Oi" dela pede só "Oi! Em que posso ajudar?", nunca a cobrança de outro assunto.
+- NÃO COBRE A GLEIDE. Anotou o que ela contou? Pare aí. Não emende pergunta sobre OUTRA cliente da lista do fim ("E a Fulana, veio
+  também?"): a lista serve para você achar os ids. O que falta ela contar é perguntado uma vez só, pela rotina do meio-dia e das 18h.
+- Sem despedida nem enfeite no fim ("Bom atendimento!", "Qualquer coisa é só chamar", "Tudo anotado por aqui").
 - Telefone: o salão é de Sinop (DDD 66). Se ela mandar número com outro DDD ou sem DDD, confirme antes de cadastrar
   ("É (16) 99243-8819 mesmo, ou (66)?"). Antes de cadastrar, procure pelo nome com buscar_cliente para não duplicar.
 
