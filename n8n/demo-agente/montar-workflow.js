@@ -811,6 +811,8 @@ const aplicarRespostas = () => {
     dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
 };
 if (!LOJA) aplicarRespostas();
+// a cliente mandou vídeo: a IA assiste e responde, nunca fica em silêncio (video.js); pedido do Victor em 16/11
+if (!LOJA) require('./video.js')({ workflow, D });
 // a assistente cobra menos a dona: cada pendência uma vez, juntas, ao meio-dia e às 18h (pendencias-loja.js); pedido do Victor em 14/11
 if (!LOJA) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: [12, 18] });
 // o lembrete não repete o combinado que a cliente ouviu hoje na conversa (lembrete-sem-repetir.js); pedido do Victor em 14/11
@@ -897,6 +899,8 @@ if (LOJA) {
   if (LOJA.lembrete_duplo) require('./lembrete-loja.js')({ faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // a assistente cobra menos a dona: cada pendência uma vez, juntas, nas horas da lista (pendencias-loja.js)
   if (LOJA.pendencias_horas) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: LOJA.pendencias_horas });
+  // a cliente mandou vídeo: a IA assiste e responde (video.js)
+  require('./video.js')({ workflow, D });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
