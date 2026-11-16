@@ -813,6 +813,8 @@ const aplicarRespostas = () => {
 if (!LOJA) aplicarRespostas();
 // a cliente mandou vídeo: a IA assiste e responde, nunca fica em silêncio (video.js); pedido do Victor em 16/11
 if (!LOJA) require('./video.js')({ workflow, D });
+// a cliente volta depois de dias: a IA recebe a conversa antiga do banco e não pergunta tudo de novo (conversa-antiga.js); pedido do Victor em 16/11
+if (!LOJA) require('./conversa-antiga.js')({ workflow, main });
 // a assistente cobra menos a dona: cada pendência uma vez, juntas, ao meio-dia e às 18h (pendencias-loja.js); pedido do Victor em 14/11
 if (!LOJA) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: [12, 18] });
 // o lembrete não repete o combinado que a cliente ouviu hoje na conversa (lembrete-sem-repetir.js); pedido do Victor em 14/11
@@ -901,6 +903,8 @@ if (LOJA) {
   if (LOJA.pendencias_horas) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: LOJA.pendencias_horas });
   // a cliente mandou vídeo: a IA assiste e responde (video.js)
   require('./video.js')({ workflow, D });
+  // a IA lembra da conversa antiga de quem volta depois do prazo da memória (loja.json: conversa_antiga)
+  if (LOJA.conversa_antiga) require('./conversa-antiga.js')({ workflow, main });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
