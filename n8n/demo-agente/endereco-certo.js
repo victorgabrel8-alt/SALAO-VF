@@ -69,7 +69,7 @@ module.exports = ({ node, main, ifNode, cond, assistenteWorkflow, ferramentasWor
   F.nodes.push(
     consulta('Endereço: cadastro', modeloSupa),
     node('Endereço: conferir', 'n8n-nodes-base.code', 2, [330, 260], { jsCode: CONFERIR.trim() }),
-    ifNode('Endereço confere?', [440, 260], [cond('ec1', '={{ !$json.bloqueio }}')]),
+    ifNode('Endereço confere?', [440, 260], [cond('ec1', '={{ !$json.bloqueio }}', { type: 'boolean', operation: 'true', singleValue: true })]),
   );
   F.connections['Montar chamada'] = main('Endereço: cadastro');
   F.connections['Endereço: cadastro'] = main('Endereço: conferir');
