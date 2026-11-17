@@ -901,6 +901,8 @@ if (LOJA) {
   if (LOJA.lembrete_duplo) require('./lembrete-loja.js')({ faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // a assistente cobra menos a dona: cada pendência uma vez, juntas, nas horas da lista (pendencias-loja.js)
   if (LOJA.pendencias_horas) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: LOJA.pendencias_horas });
+  // a assistente da dona nunca manda à cliente endereço ou link de mapa que não seja o do cadastro (endereco-certo.js); Caroline, 17/11
+  require('./endereco-certo.js')({ node, main, ifNode, cond, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   // a cliente mandou vídeo: a IA assiste e responde (video.js)
   require('./video.js')({ workflow, D });
   // a IA lembra da conversa antiga de quem volta depois do prazo da memória (loja.json: conversa_antiga)
