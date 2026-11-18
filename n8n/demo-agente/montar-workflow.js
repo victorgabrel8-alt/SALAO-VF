@@ -853,6 +853,8 @@ if (LOJA) {
   if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
   // horário que a dona mandou oferecer: marca sem sinal e sem perguntar de novo (oferta-da-dona.js)
   if (LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./oferta-da-dona.js')({ workflow, agendaWorkflow });
+  // serviço feito aqui deu problema: a IA acolhe, avisa a dona e agenda o reparo sem sinal (reparo-do-studio.js)
+  if (LOJA.reparo_do_studio && LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./reparo-do-studio.js')({ workflow, agendaWorkflow, dona: LOJA.dona });
   // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
   if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
   if (LOJA.google_agenda) {
