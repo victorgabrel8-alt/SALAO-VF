@@ -159,6 +159,7 @@
     ]
   ],
   "memoria_horas": 12,
+  "conversa_antiga": true,
   "sinal_pix": true,
   "google_agenda": true,
   "almoco_flexivel": true,
