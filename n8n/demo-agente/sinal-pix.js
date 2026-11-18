@@ -117,6 +117,7 @@ module.exports = ({ node, workflow, agendaWorkflow, loja, semBloco, dona }) => {
     "'- Antes do AGENDADO o horário NÃO está reservado: nunca diga reservei, guardei, separei ou marquei. Diga que o horário fica garantido quando o comprovante chegar.', " +
     "'- Já paguei sem a foto não vale: peça o print do comprovante. Nunca chame criar_agendamento antes de o comprovante chegar.', " +
     "'- Se voltar NÃO AGENDADO, siga o que a resposta disser, sem acusar a cliente. Se voltar AGENDADO, confirme serviço, dia e hora e diga que o sinal já fica descontado no dia.', " +
-    "'- Remarcar não pede sinal novo: o sinal vai junto para o novo horário.'" +
+    "'- Remarcar não pede sinal novo: o sinal vai junto para o novo horário.', " +
+    "'- HORÁRIO QUE JÁ ESTÁ NA AGENDA NÃO PEDE SINAL (18/11/2026: a dona marcou o horário de uma cliente, ela respondeu Confirmado e você cobrou o Pix). Se a ficha ou ver_agendamentos mostra o horário marcado, ou a conversa tem um aviso do salão dizendo que a dona reservou ou marcou o horário, ele JÁ está reservado: não peça sinal, não mande a chave e não diga que falta o comprovante. Se a cliente responder confirmado, ok ou pode ser a esse aviso, só agradeça e repita o dia e a hora. Um pedido de sinal que você fez ANTES de a dona marcar deixou de valer: não cobre de novo. Na dúvida se o horário está marcado, use ver_agendamentos antes de falar em sinal.'" +
     "].concat(s.regra ? ['- ' + String(s.regra).trim()] : []).join('\\n'); })() }}";
 };

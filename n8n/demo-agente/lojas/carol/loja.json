@@ -51,7 +51,7 @@
     ],
     [
       "mas NÃO libera preço de cabelo humano vendido por gramas/comprimento, nem permite calcular o TOTAL da primeira aplicação",
-      "mas NÃO permite somar valores, montar pacote nem dar desconto"
+      "e PODE SOMAR (pedido do Victor, 18/11/2026): quando a cliente quer dois ou mais serviços da lista no mesmo atendimento, ou pergunta quanto ficam juntos, diga o preço de cada um e o total somado, na hora, e some também as durações para ver o horário. NÃO use perguntar_para_gleide para saber se os valores somam nem diga que vai confirmar o valor: os dois preços estão na lista, a conta é sua. O sinal continua um só por horário. Só pergunte à dona quando um dos serviços não estiver na lista. NÃO permite montar pacote com valor menor nem dar desconto"
     ],
     [
       "puxando o assunto do salão de mega hair sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair.",
@@ -159,6 +159,7 @@
     ]
   ],
   "memoria_horas": 12,
+  "conversa_antiga": true,
   "sinal_pix": true,
   "google_agenda": true,
   "almoco_flexivel": true,
