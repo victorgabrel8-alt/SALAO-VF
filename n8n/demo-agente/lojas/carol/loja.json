@@ -168,6 +168,7 @@
   "contexto_saidas": true,
   "oferta_sem_sinal": true,
   "reparo_do_studio": true,
+  "foto_endereco": true,
   "assistente_conversas": true,
   "assistente_fotos": true,
   "assistente_marcar": true,

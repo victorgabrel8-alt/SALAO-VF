@@ -905,6 +905,8 @@ if (LOJA) {
   if (LOJA.pendencias_horas) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: LOJA.pendencias_horas });
   // a assistente da dona nunca manda à cliente endereço ou link de mapa que não seja o do cadastro (endereco-certo.js); Caroline, 17/11
   require('./endereco-certo.js')({ node, main, ifNode, cond, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
+  // endereço com link do mapa sai como foto do salão com o texto na legenda (foto-endereco.js); Caroline, 18/11
+  if (LOJA.foto_endereco) require('./foto-endereco.js')({ workflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   // a cliente mandou vídeo: a IA assiste e responde (video.js)
   require('./video.js')({ workflow, D });
   // a IA lembra da conversa antiga de quem volta depois do prazo da memória (loja.json: conversa_antiga)
