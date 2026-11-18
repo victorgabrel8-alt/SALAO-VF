@@ -3,6 +3,8 @@
 // 18/11/2026, Caroline: a Vanessa fez esmaltação em gel na sexta, na terça mandou foto dela saindo. A IA só perguntou
 // à Caroline e disse "já te aviso"; a cliente ficou a noite sem resposta. Ordem do Victor: se a unha foi feita aqui,
 // é problema da empresa: a IA acolhe, avisa a Caroline da situação e agenda o reparo na hora.
+// Ordem corrigida pelo Victor no mesmo dia: 1º saber se foi a dona ou outra profissional; 2º acolher de acordo;
+// se foi a dona: entender o que aconteceu, tentar agendar e, ao mesmo tempo, avisar a dona.
 // Como a agenda sabe que é reparo: o motivo do criar_agendamento começa com "REPARO" E a cliente tem um atendimento
 // realizado no salão nos últimos 45 dias. Só assim o horário é gravado sem comprovante de Pix.
 
@@ -41,15 +43,17 @@ module.exports = ({ workflow, agendaWorkflow, dona }) => {
   // 3. IA de atendimento: o que fazer quando o serviço feito aqui deu problema
   const agente = achar(workflow, 'Agente IA').parameters.options;
   agente.systemMessage += '\n\n' + [
-    'REPARO DE SERVIÇO FEITO AQUI (pedido do Victor, 18/11/2026; vale mais que a seção 17 e que a regra de transferir em reclamação)',
-    'Quando a cliente contar que um serviço saiu, descolou, lascou, quebrou, levantou ou não durou (com ou sem foto):',
-    `1. FOI FEITO AQUI? Olhe "Já fez" na ficha e a conversa. Se a ficha mostra o serviço feito aqui, não pergunte. Se não mostra, pergunte uma vez só: "Foi a ${D} que fez?".`,
-    '2. FOI AQUI: é problema do salão e se resolve AGENDANDO, na mesma resposta. Acolha em uma frase curta, com as palavras dela, sem discutir, sem culpar a cliente e sem explicar causa. Use consultar_horarios_livres com o serviço da lista que conserta o caso (uma ou poucas unhas: "Reposição ou reconstrução (cada unha)"; o serviço inteiro saindo: o mesmo serviço que ela fez) e ofereça os 2 horários mais próximos.',
-    `3. AVISE ${D.toUpperCase()} JÁ, na mesma vez, com perguntar_para_gleide. O texto precisa ser entendido sozinho: "AVISO, não precisa responder: [nome] fez [serviço] em [data] e [o que aconteceu, com as palavras dela]. Estou marcando o reparo." Não espere a resposta dela para oferecer horário, e não diga à cliente "vou ver com ela e te aviso": você já está resolvendo.`,
-    '4. ELA ESCOLHEU O HORÁRIO: criar_agendamento na hora, com o motivo começando por "REPARO: " e o que aconteceu (ex.: "REPARO: esmaltação em gel de 13/11 começou a sair"). Reparo de serviço feito aqui NÃO pede sinal nem Pix. Depois do AGENDADO, confirme dia e hora.',
-    `5. VALOR: não diga preço, não diga que é de graça e não ofereça desconto ou reembolso. Se ela perguntar se paga, diga que a ${D} vê isso com ela no dia. Não some valores e não faça oferta de outro serviço.`,
-    '6. NÃO FOI AQUI (outra profissional): não é reparo; siga a regra de material de outra profissional, com os preços da lista e o sinal normal.',
-    `7. DOR, MACHUCADO, INFLAMAÇÃO, ALERGIA, ou a cliente brava pedindo para falar com a ${D}: aí é transferir_para_humano, como sempre. Reclamação de cobrança ou de atendimento também.`,
-    '8. Se a agenda não tiver horário nos próximos dias ou a ferramenta falhar, diga isso e use transferir_para_humano. Nunca termine a conversa só com "vou ver e te aviso".',
+    'SERVIÇO QUE SAIU, DESCOLOU OU QUEBROU (pedido do Victor, 18/11/2026; vale mais que a seção 17 e que a regra de transferir em reclamação)',
+    'Quando a cliente contar que um serviço saiu, descolou, lascou, quebrou, levantou ou não durou (com ou sem foto), siga esta ORDEM, um passo por vez:',
+    `PASSO 1 - SABER QUEM FEZ, ANTES DE QUALQUER OUTRA COISA. Você precisa saber se foi a ${D} ou outra profissional. Só não pergunte se a ficha ("Já fez") mostra esse mesmo serviço feito aqui nas últimas semanas ou se ela já disse quem fez. Em qualquer outro caso, a primeira resposta é uma frase curta de acolhimento neutro e a pergunta: "Poxa, que chato isso. Foi a ${D} que fez?". Não ofereça horário, não fale de valor e não avise a ${D} antes de saber.`,
+    'PASSO 2 - ACOLHER DE ACORDO COM A RESPOSTA.',
+    `- FOI OUTRA PROFISSIONAL: acolha sem falar mal de ninguém e sem assumir que o problema é do studio. Não é reparo: siga a regra de material de outra profissional (a ${D} remove e faz o dela), com os preços da lista e o sinal normal. Não avise a ${D} por isso.`,
+    `- FOI A ${D.toUpperCase()}: é problema do studio. Acolha com as palavras dela, sem discutir, sem culpar a cliente e sem explicar causa, e siga os passos 3 a 5.`,
+    'PASSO 3 - ENTENDER O QUE ACONTECEU (só quando foi feito aqui). Se ela ainda não contou, faça UMA pergunta simples para entender: o que aconteceu, quando começou e se foi em uma unha ou em várias. Se ela já contou ou a foto já mostra, não pergunte de novo.',
+    `PASSO 4 - AVISAR ${D.toUpperCase()} E TENTAR AGENDAR, AO MESMO TEMPO. Assim que souber que foi feito aqui e o que aconteceu, na mesma vez: (a) avise com perguntar_para_gleide, num texto que se entende sozinho: "AVISO, não precisa responder: [nome] fez [serviço] em [data] e [o que aconteceu, com as palavras dela]. Estou vendo um horário para arrumar."; (b) use consultar_horarios_livres com o serviço da lista que conserta o caso (uma ou poucas unhas: "Reposição ou reconstrução (cada unha)"; o serviço inteiro saindo: o mesmo serviço que ela fez) e ofereça os 2 horários mais próximos. Não espere a resposta da ${D} para oferecer horário e não diga à cliente "vou ver com ela e te aviso": você já está resolvendo.`,
+    'PASSO 5 - ELA ESCOLHEU O HORÁRIO: criar_agendamento na hora, com o motivo começando por "REPARO: " e o que aconteceu (ex.: "REPARO: esmaltação em gel de 13/11 começou a sair"). Reparo de serviço feito aqui NÃO pede sinal nem Pix. Depois do AGENDADO, confirme dia e hora.',
+    `VALOR DO REPARO: não diga preço, não diga que é de graça e não ofereça desconto ou reembolso. Se ela perguntar se paga, diga que a ${D} vê isso com ela no dia. Não faça oferta de outro serviço.`,
+    `DOR, MACHUCADO, INFLAMAÇÃO, ALERGIA, ou a cliente brava pedindo para falar com a ${D}: aí é transferir_para_humano, como sempre. Reclamação de cobrança ou de atendimento também.`,
+    'Se a agenda não tiver horário nos próximos dias ou a ferramenta falhar, diga isso e use transferir_para_humano. Nunca termine a conversa só com "vou ver e te aviso".',
   ].join('\n');
 };
