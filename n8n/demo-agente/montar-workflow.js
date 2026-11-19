@@ -911,6 +911,18 @@ if (LOJA) {
   require('./video.js')({ workflow, D });
   // a IA lembra da conversa antiga de quem volta depois do prazo da memória (loja.json: conversa_antiga)
   if (LOJA.conversa_antiga) require('./conversa-antiga.js')({ workflow, main });
+  // erros da Caroline de 13 a 19/11/2026 (análise das 1.640 mensagens):
+  // horário que já é da cliente não aparece para ela como "acabou de ser ocupado" (vaga-da-propria-cliente.js)
+  if (LOJA.vaga_da_propria_cliente) require('./vaga-da-propria-cliente.js')({ agendaWorkflow });
+  // chave Pix sozinha no balão, sem "reservei" antes do sinal, sem palavra solta (saida-limpa.js)
+  if (LOJA.saida_limpa) require('./saida-limpa.js')({ workflow });
+  // mensagem que chega sem número (@lid sem remoteJidAlt) é cópia: a IA não responde (lid-sem-numero.js)
+  if (LOJA.ignorar_lid_sem_numero) require('./lid-sem-numero.js')({ workflow });
+  // assistente: recado para a IA quando a cliente está conversando, sem confirmação repetida, sem "confirmado" sem
+  // horário, e aviso à cliente depois de remarcar (envio-cuidadoso.js); depois do foto-endereco, contexto-saidas e conversa-antiga
+  if (LOJA.envio_cuidadoso && LOJA.contexto_saidas && LOJA.conversa_antiga) require('./envio-cuidadoso.js')({ node, main, ifNode, cond, REDIS, workflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
+  // assistente sabe preços e chave Pix e não promete lembrar depois (assistente-cuidados.js)
+  if (LOJA.assistente_cuidados) require('./assistente-cuidados.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
