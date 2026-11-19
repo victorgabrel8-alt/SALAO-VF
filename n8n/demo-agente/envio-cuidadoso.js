@@ -167,9 +167,10 @@ return [{ json: { bloqueio, recado, telefone: tel, chave: tel.replace(/^(55\d\d)
   workflow.nodes.push(
     node('Recado da dona: ler', 'n8n-nodes-base.redis', 1, [0, 0], {
       operation: 'get', key: CHAVE_IA, propertyName: 'recado', keyType: 'string', options: {},
-    }, { credentials: REDIS, onError: 'continueRegularOutput', alwaysOutputData: true }),
+    // executeOnce: a "conversa antiga" devolve até 80 mensagens (itens); sem isso o Redis rodaria uma vez por mensagem
+    }, { credentials: REDIS, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true }),
     node('Recado da dona: apagar', 'n8n-nodes-base.redis', 1, [0, 0], { operation: 'delete', key: CHAVE_IA },
-      { credentials: REDIS, onError: 'continueRegularOutput', alwaysOutputData: true }),
+      { credentials: REDIS, onError: 'continueRegularOutput', alwaysOutputData: true, executeOnce: true }),
   );
   workflow.connections[antes] = main('Recado da dona: ler');
   workflow.connections['Recado da dona: ler'] = main('Recado da dona: apagar');
