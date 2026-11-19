@@ -78,12 +78,13 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
       ['contexto', 'O motivo, se ajudar a Gleide a decidir, até 8 palavras, sem o nome da cliente e sem dado de saúde que não importe (ex.: trabalha em hospital, sem horário fixo). Pode ficar vazio.', 'string']]));
   workflow.connections.perguntar_para_gleide = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
   workflow.nodes.push(toolSub('pedir_orcamento_cabelo', [3580, 200],
-    'Pede à Gleide o orçamento de uma compra avulsa de cabelo, SEM pausar o atendimento. Use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
-    'Nunca use para cliente que só está pesquisando, para aplicação ou para mão de obra. A Gleide responde pelo WhatsApp e o valor chega sozinho à cliente. Use uma vez por pedido.',
+    'Pede à Gleide o orçamento de uma compra avulsa de cabelo ou de peça (topo, rabo de cavalo, aplique), SEM pausar o atendimento. Cabelo: use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
+    'Peça (topo, rabo de cavalo, aplique): use assim que souber a peça e a cor, mesmo que ela esteja só pesquisando (seção 04). ' +
+    'Nunca use para aplicação ou para mão de obra. A Gleide responde pelo WhatsApp e o valor chega sozinho à cliente. Use uma vez por pedido.',
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
       nome: "={{ $('Montar entrada').first().json.nome }}", tipo: 'orcamento_cabelo' },
-    [['pergunta', 'O pedido em poucas palavras, só com o que ela informou (ex.: 250 g, 70 cm, vietnamita, castanho escuro, liso). Sem nome e sem frase.', 'string'],
+    [['pergunta', 'O pedido em poucas palavras, só com o que ela informou (ex.: 250 g, 70 cm, vietnamita, castanho escuro, liso; ou: topo, castanho escuro, para volume no alto da cabeça). Sem nome e sem frase.', 'string'],
       ['contexto', 'Só se ela disse: fora da cidade e onde mora (ex.: mora em Peixoto de Azevedo). Pode ficar vazio.', 'string']]));
   workflow.connections.pedir_orcamento_cabelo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 

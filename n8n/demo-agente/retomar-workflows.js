@@ -67,6 +67,8 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
     '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop ("pra", "tá"), sem formalidade; sem cobrança, culpa, urgência ou promoção inventada;',
     '- não invente situação nem contexto ("o dia tá corrido", "lembrei de você", promoção, novidade); não comece com "Oi" se você já cumprimentou nesta conversa;',
     '- não ofereça fotos de resultados ou de clientes da Gleide (não existem; só há fotos de cabelo do catálogo do fornecedor);',
+    // conversa da Nailda (18/11): o alô ofereceu "fotos do catálogo pra ver os modelos" de topo e rabo
+    '- se o assunto é topo, rabo de cavalo ou aplique, não ofereça fotos nem catálogo (não há fotos dessas peças);',
     '- não fale preço nem valor (nem repita um que esteja na conversa); não invente horário livre, estoque nem resultado; não diga que ela respondeu nem que você "viu" algo novo;',
     '- sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez, se souber;',
     '- não fale de tempo sem resposta.',
