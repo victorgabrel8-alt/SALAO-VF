@@ -37,7 +37,7 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
       }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
       enviar('Enviar pergunta à Gleide', [440, 0], '$json.alerta',
         `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + (${P}.nome || 'sem nome') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
-        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')`),
+        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor (ou o que precisa saber dela). Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')`),
       node('Guardar pedido', 'n8n-nodes-base.redis', 1, [660, 0], {
         operation: 'set', key: "=pedido:{{ $json.key?.id || 'falhou' }}", expire: true, ttl: 259200,
         value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta', empresa: $env.EMPRESA_ID }) }}`,
@@ -78,12 +78,13 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
       ['contexto', 'O motivo, se ajudar a Gleide a decidir, até 8 palavras, sem o nome da cliente e sem dado de saúde que não importe (ex.: trabalha em hospital, sem horário fixo). Pode ficar vazio.', 'string']]));
   workflow.connections.perguntar_para_gleide = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
   workflow.nodes.push(toolSub('pedir_orcamento_cabelo', [3580, 200],
-    'Pede à Gleide o orçamento de uma compra avulsa de cabelo, SEM pausar o atendimento. Use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
-    'Nunca use para cliente que só está pesquisando, para aplicação ou para mão de obra. A Gleide responde pelo WhatsApp e o valor chega sozinho à cliente. Use uma vez por pedido.',
+    'Pede à Gleide o orçamento de uma compra avulsa de cabelo ou de peça (topo, rabo de cavalo, aplique), SEM pausar o atendimento. Cabelo: use só com cliente DECIDIDA a comprar e com o pedido montado (seção 01). ' +
+    'Peça (topo, rabo de cavalo, aplique): use assim que souber a peça e a cor, mesmo que ela esteja só pesquisando (seção 04). ' +
+    'Nunca use para aplicação ou para mão de obra. A Gleide responde pelo WhatsApp e o valor chega sozinho à cliente. Use uma vez por pedido; de novo só para correção ou para levar o que a Gleide perguntou (seção 04).',
     lerPerguntaId, ['telefone', 'jid', 'nome', 'pergunta', 'contexto', 'tipo'],
     { telefone: "={{ $('Montar entrada').first().json.telefone }}", jid: "={{ $('Montar entrada').first().json.jid }}",
       nome: "={{ $('Montar entrada').first().json.nome }}", tipo: 'orcamento_cabelo' },
-    [['pergunta', 'O pedido em poucas palavras, só com o que ela informou (ex.: 250 g, 70 cm, vietnamita, castanho escuro, liso). Sem nome e sem frase.', 'string'],
+    [['pergunta', 'O pedido em poucas palavras, só com o que ela informou (ex.: 250 g, 70 cm, vietnamita, castanho escuro, liso; ou: topo, castanho escuro, para volume no alto da cabeça). Sem nome e sem frase.', 'string'],
       ['contexto', 'Só se ela disse: fora da cidade e onde mora (ex.: mora em Peixoto de Azevedo). Pode ficar vazio.', 'string']]));
   workflow.connections.pedir_orcamento_cabelo = { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] };
 
@@ -138,22 +139,29 @@ const p = JSON.parse($('Pedido: procurar').first().json.pedido);
 const resposta = $('Extrair dados').first().json.texto.trim();
 const nome = String(p.nome || '').trim().split(/\s+/)[0] || '';
 const instrucao = p.tipo === 'orcamento_cabelo' ? 'Você é a assistente virtual da Gleide, do salão Toda Bonita Mega Hair, conversando pelo WhatsApp com a cliente ' +
-  (nome || '') + '. A cliente pediu o orçamento deste cabelo: "' + p.pergunta + '". A Gleide respondeu: "' + resposta + '". ' +
+  (nome || '') + '. A cliente pediu o orçamento deste cabelo ou peça (topo, rabo de cavalo, aplique): "' + p.pergunta + '". A Gleide respondeu: "' + resposta + '". ' +
   // 14/11 (Angela): a mensagem saía "fica R$ 2.800. Quer fechar?". Cabelo é venda de alto padrão: o valor chega com o
   // pedido dela retomado e a conversa fica aberta, sem empurrar o fechamento (pedido do Victor: venda consultiva)
   'Escreva a mensagem que vai para a cliente. Quem escreve é uma consultora de salão de alto padrão no WhatsApp: calma, próxima, sem pressa de vender e sem empurrar o fechamento. ' +
-  'FORMATO: dois parágrafos curtos, separados por uma linha em branco, sem negrito, sem lista. Comece por "Oi, " e o primeiro nome dela. No máximo um emoji, e pode não ter nenhum. ' +
+  'FORMATO: dois parágrafos curtos, separados por uma linha em branco (um só, quando for a pergunta da Gleide), sem negrito, sem lista. Comece por "Oi, " e o primeiro nome dela. No máximo um emoji, e pode não ter nenhum. ' +
   'PALAVRAS: português do Brasil falado, simples, como em conversa ("você pediu", "a Gleide me passou", "fica", "tô por aqui"). ' +
   'Não use: "solicitou", "solicitação", "informou", "configuração", "especificações", "à disposição", "sinta-se à vontade", "gostaria de saber", "em relação a". ' +
-  'PRIMEIRO PARÁGRAFO: retome em poucas palavras o cabelo que ela pediu e passe a resposta da Gleide. Copie exatamente todos os valores, quantidades e condições que a Gleide escreveu; ' +
+  'PRIMEIRO PARÁGRAFO: retome em poucas palavras o que ela pediu (o cabelo ou a peça, com as palavras do pedido) e passe a resposta da Gleide. Copie exatamente todos os valores, quantidades e condições que a Gleide escreveu; ' +
   'valor em dinheiro leva "R$" na frente (ex.: se a Gleide escreveu 2.800, escreva R$ 2.800). Não calcule, não arredonde e não acrescente desconto, parcela, prazo, entrega ou estoque. ' +
   'A Gleide escreve para você falando DA cliente; você fala COM a cliente: "preciso ver o tom dela" vira "a Gleide precisa ver o seu tom". ' +
   'SEGUNDO PARÁGRAFO, se a resposta trouxe valor: UMA pergunta só, curta, escolhendo uma destas ideias: o que ela achou, OU se o valor fica dentro do que ela tinha planejado. Nunca as duas na mesma mensagem. ' +
-  'Depois, uma frase dizendo que você está ali se ela quiser tirar uma dúvida ou ver outra medida ou quantidade. ' +
-  'SEGUNDO PARÁGRAFO, se a resposta NÃO trouxe valor: pergunte só se ela quer que você veja um horário para ela vir e a Gleide olhar de perto. ' +
+  'Depois, uma frase dizendo que você está ali se ela quiser tirar uma dúvida ou ver outra medida, quantidade ou modelo. ' +
+  // 19/11: a Gleide às vezes responde o pedido com uma pergunta ("qual comprimento?", "manda foto do cabelo dela") e a
+  // mensagem saía com convite de horário no lugar da pergunta dela
+  'SE A GLEIDE FEZ UMA PERGUNTA OU PEDIU ALGO DA CLIENTE (comprimento, cor, foto do cabelo, quantidade, para quando precisa): a mensagem é essa pergunta. ' +
+  'Um parágrafo só: diga que a Gleide quer saber isso para passar o valor certinho e faça a pergunta dela com as suas palavras, falando COM a cliente. ' +
+  'Mantenha todo número que a Gleide escreveu, em algarismo, do jeito que ela escreveu (60 ou 70 cm, dia 20, 2 fotos). ' +
+  'Não acrescente outra pergunta, não convide para horário e não fale de valor. Se a Gleide mandou um valor E uma pergunta, vale a regra do valor e a pergunta dela entra no segundo parágrafo no lugar da sua. Exemplo de tom (não copie): "Oi, Ana! Pra passar o valor certinho do topo, a Gleide quer saber qual comprimento você prefere." ' +
+  'SEGUNDO PARÁGRAFO, se a resposta NÃO trouxe valor nem pergunta: se a Gleide disse que precisa ver o cabelo de perto ou pediu para ela vir, pergunte só se ela quer que você veja um horário. ' +
+  'Se não disse isso, só passe a resposta e diga que você está ali se ela quiser tirar uma dúvida, sem convite. ' +
   'Não escreva nenhum número que não esteja na resposta da Gleide ou no pedido. ' +
   'PROIBIDO: "Quer fechar?", "vamos fechar", "posso fechar", "garanta", pressa, urgência, escassez e adjetivo de propaganda (lindo, maravilhoso, incrível, perfeito). ' +
-  'Exemplo de tom (não copie): "Oi, Ana! A Gleide me passou o valor das 100 g de 60 cm que você pediu: fica R$ 1.900." / "Fica dentro do que você tinha planejado? Tô por aqui se quiser tirar alguma dúvida ou ver outra medida." ' +
+  'Exemplo de tom com valor (não copie): "Oi, Ana! A Gleide me passou o valor das 100 g de 60 cm que você pediu: fica R$ 1.900." / "Fica dentro do que você tinha planejado? Tô por aqui se quiser tirar alguma dúvida ou ver outra medida." ' +
   'Responda só com a mensagem.' :
   'Você é a assistente virtual da Gleide, do salão Toda Bonita Mega Hair, conversando pelo WhatsApp com a cliente ' +
   (nome || '') + '. Antes, a cliente perguntou algo que só a Gleide sabia: "' + p.pergunta + '". Você disse que ia confirmar com a Gleide. ' +
@@ -177,7 +185,9 @@ if (p.tipo === 'orcamento_cabelo') {
   // valor é da Gleide: se o texto perdeu ou inventou algum número, manda as palavras dela
   const numeros = (s) => String(s).match(/\d+(?:[.,]\d+)*/g) || [];
   const dela = numeros(p.resposta), permitidos = dela.concat(numeros(p.pergunta));
-  if (!t || !dela.every((n) => numeros(t).includes(n)) || !numeros(t).every((n) => permitidos.includes(n))) t = 'A Gleide passou o orçamento: ' + p.resposta;
+  // sem valor em dinheiro, a resposta da Gleide é pergunta ou recado: a reserva não pode chamar isso de orçamento
+  const temValor = /R\$|\d\.\d{3}|\b\d{3,}\b/.test(p.resposta);
+  if (!t || !dela.every((n) => numeros(t).includes(n)) || !numeros(t).every((n) => permitidos.includes(n))) t = (temValor ? 'A Gleide passou o orçamento: ' : 'Sobre o seu pedido, a Gleide mandou: ') + p.resposta;
 }
 if (!t) t = 'Falei com a Gleide sobre isso: ' + p.resposta;
 return [{ json: { ...p, texto: t } }];
