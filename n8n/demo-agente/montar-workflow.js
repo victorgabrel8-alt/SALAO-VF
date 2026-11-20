@@ -916,6 +916,8 @@ if (LOJA) {
   if (LOJA.vaga_da_propria_cliente) require('./vaga-da-propria-cliente.js')({ agendaWorkflow });
   // chave Pix sozinha no balão, sem "reservei" antes do sinal, sem palavra solta (saida-limpa.js)
   if (LOJA.saida_limpa) require('./saida-limpa.js')({ workflow });
+  // Pix do sinal pelo sistema: a IA escreve [[PIX: serviço; dia e hora]] e o sistema manda 3 mensagens fixas, sem repetir a chave (pix-sistema.js)
+  if (LOJA.pix_sistema && LOJA.sinal_pix && !LOJA.sinal_sem_bloco) require('./pix-sistema.js')({ workflow, loja: LOJA });
   // mensagem que chega sem número (@lid sem remoteJidAlt) é cópia: a IA não responde (lid-sem-numero.js)
   if (LOJA.ignorar_lid_sem_numero) require('./lid-sem-numero.js')({ workflow });
   // assistente: recado para a IA quando a cliente está conversando, sem confirmação repetida, sem "confirmado" sem
@@ -935,6 +937,12 @@ if (LOJA) {
   if (LOJA.segunda_profissional) require('./duas-profissionais.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // 20/11: voucher de R$ 20 da esmaltação em gel; manda o código sozinho e mostra na ficha (voucher-gel.js, supabase/057)
   if (LOJA.voucher_gel) require('./voucher-gel.js')({ faltasWorkflow: faltas.faltasWorkflow, workflow, loja: LOJA });
+  // 20/11: pergunta à dona com número (#27): ela responde '27 sim' sem citar; pedido aberto vai nas pendências, no resumo da noite e na ficha da cliente (pedido-numerado.js)
+  // Tem que ser o último antes do paraLoja: encaixa nós ao lado de outros que os módulos acima já puseram.
+  if (LOJA.pedido_numerado) require('./pedido-numerado.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pendenciasWorkflow: assistente.pendenciasWorkflow, faltasWorkflow: faltas.faltasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA });
+  // 20/11: WhatsApp da segunda profissional (Duda) na assistente: ela usa a assistente e recebe só o que é dela (segunda-profissional-whatsapp.js).
+  // Depois do pedido-numerado (troca nós dele) e antes do paraLoja.
+  if (LOJA.segunda_profissional && LOJA.segunda_profissional.telefone) require('./segunda-profissional-whatsapp.js')({ node, ifNode, cond, workflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, perguntaWorkflow: pedidos.perguntaWorkflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
@@ -1119,7 +1127,9 @@ if (process.argv.includes('--enviar')) {
       // o banco só deixa a assistente mexer na agenda com o número da dona em config.assistente_numeros
       // (assistente_autorizado): os números do loja.json entram lá, sem tirar os que já estão
       const tem = Array.isArray(emp.config?.assistente_numeros) ? emp.config.assistente_numeros : [];
-      const faltam = (LOJA.assistente_numeros || []).filter((n) => !tem.includes(n));
+      // a segunda profissional (Duda) também usa a assistente, mas fica fora da lista de avisos do loja.json
+      const autorizados = [...(LOJA.assistente_numeros || []), ...(LOJA.segunda_profissional?.telefone ? [String(LOJA.segunda_profissional.telefone)] : [])];
+      const faltam = autorizados.filter((n) => !tem.includes(n));
       if (faltam.length) {
         const r = await fetch(rota, { method: 'PATCH', headers: supa, body: JSON.stringify({ config: { ...emp.config, assistente_numeros: [...tem, ...faltam] } }) });
         console.log(r.ok ? `Assistente: ${faltam.join(', ')} liberado(s) no banco` : `erro ao liberar a assistente no banco: ${r.status}`);
