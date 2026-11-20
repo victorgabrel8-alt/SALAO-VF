@@ -111,3 +111,45 @@ test('palavras comuns não viram falha (indisponível, perguntado)', () => {
 test('resposta vazia passa', () => {
   assert.deepStrictEqual(conferir(base({ texto: '' })), { ok: true, falhas: [] });
 });
+
+// ---- casos do testador (20/11) ----
+test('preço redondo inventado agora é barrado (antes passava por ser "soma menos sinal")', () => {
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'A manicure fica R$45' }))), ['preco']);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Pé e mão R$ 90' }))), ['preco']);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Pé e mão fica R$ 110, e no dia você paga R$ 90 porque o sinal é R$ 20' }))), []);
+});
+
+test('mais jeitos de dizer que marcou sem a ferramenta', () => {
+  for (const t of ['Prontinho, agendado! Sábado 9h', 'Agendadíssimo', 'Tá marcado então', 'Remarcado pra quinta!', 'Troquei seu horário pra quinta', 'Desmarquei seu horário', 'Seu horário foi cancelado']) {
+    assert.ok(tipos(conferir(base({ texto: t, ficha: 'sábado 9h quinta 9h' }))).includes('promessa'), t);
+  }
+});
+
+test('confirmar horário que ela já tem e negar não é promessa falsa', () => {
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Confirmado, te espero amanhã às 9h 🙏', ficha: 'ALÔ DE LEMBRETE: em 19/11 às 18:00 ... amanhã às 9h' }))), []);
+  const passos = [{ ferramenta: 'ver_agendamentos', resultado: 'Agendamentos futuros desta cliente:\n- Manicure: sábado, 21/11 às 09:00' }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Tá marcado sim, sábado às 9h', passos }))), []);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Ainda não marquei, preciso do comprovante' }))), []);
+});
+
+test('"toda bonita" minúsculo é elogio, não nome de loja', () => {
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Vai ficar toda bonita pro casamento' }))), []);
+});
+
+test('rua sem número e "tô na rua" não são endereço; link cortado é barrado', () => {
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Tô na rua agora, já te respondo' }))), []);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'É bem perto da Avenida das Embaúbas' }))), []);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Fica na Rua dos Angicos, no Jardim Imperial' }))), []);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'https://maps.app.goo.gl/c6ebcio' }))), ['endereco']);
+});
+
+test('"às 16" é lido; duração de 6h ou mais não vira horário', () => {
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Tenho às 16' }))), ['horario']);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Fica pronto em 6h' }))), []);
+});
+
+test('"Chave Pix:" antes da chave é aceito; {{ }} é sobra de sistema; entrada nula não quebra', () => {
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Chave Pix: ' + CHAVE }))), []);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Oi {{ $json.nome }}' }))), ['sistema']);
+  assert.doesNotThrow(() => conferir(base({ texto: 'oi', passos: [null], anteriores: [null] })));
+});

@@ -25,8 +25,8 @@ module.exports = ({ node, ifNode, cond, workflow: wf, loja }) => {
   const codigo = [
     `const conferir = ${conferir.toString()};`,
     "const pega = (no, f) => { try { return f($(no)); } catch (e) { return undefined; } };",
-    "const ag = $('Agente IA').first().json || {};",
-    "const passos = (ag.intermediateSteps || []).map((p) => ({ ferramenta: p.action && p.action.tool, entrada: p.action && p.action.toolInput, resultado: p.observation }));",
+    "const ag = pega('Agente IA', (n) => n.first().json) || {};",
+    "const passos = (Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : []).filter(Boolean).map((p) => ({ ferramenta: p.action && p.action.tool, entrada: p.action && p.action.toolInput, resultado: p.observation }));",
     "const ctx = {",
     "  texto: ag.output || '',",
     "  passos,",
@@ -36,7 +36,7 @@ module.exports = ({ node, ifNode, cond, workflow: wf, loja }) => {
     "  ficha: pega('Sobre esta cliente', (n) => n.first().json.texto) || '',",
     "  agora: Date.now(),",
     "};",
-    'const r = conferir(ctx);',
+    "let r; try { r = conferir(ctx); } catch (e) { r = { ok: false, falhas: [{ tipo: 'erro_conferente', detalhe: String(e && e.message || e).slice(0, 200) }] }; }",
     `return [{ json: { modo: '${modo}', ok: r.ok, falhas: r.falhas, texto: ctx.texto,`,
     "  ferramentas: passos.map((p) => ({ ferramenta: p.ferramenta, resultado: String(typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado || '')).slice(0, 300) })) } }];",
   ].join('\n');
