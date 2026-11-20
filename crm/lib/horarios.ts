@@ -46,12 +46,31 @@ export function proximoDiaAberto(config: Record<string, unknown>, dia: string): 
 
 type Ocupado = { ini: number; fim: number; nome: string };
 
+// Profissionais ativas pela ordem do cadastro: a primeira é a dona (horário sem profissional, marcado
+// antes de existir a segunda, conta como dela).
+async function profissionaisAtivas(empresaId: string): Promise<string[]> {
+  const { data } = await supabase()
+    .from("profissionais")
+    .select("id")
+    .eq("empresa_id", empresaId)
+    .eq("ativo", true)
+    .order("criado_em");
+  return ((data ?? []) as { id: string }[]).map((p) => p.id);
+}
+
 // O que já ocupa o dia: horários a atender e concluídos (falta e cancelado liberam a vaga).
 // Sem fim gravado, conta 1 h; atendimento que passa da meia-noite ocupa até o fim do dia.
-async function ocupadosDoDia(empresaId: string, dia: string, ignorarId?: string): Promise<Ocupado[] | { erro: string }> {
+// profissionalId: na loja com mais de uma profissional (Caroline e Duda), só os horários DESSA
+// profissional ocupam (null = a dona). Sem esse campo (undefined), todos ocupam, como sempre.
+async function ocupadosDoDia(
+  empresaId: string,
+  dia: string,
+  ignorarId?: string,
+  profissionalId?: string | null,
+): Promise<Ocupado[] | { erro: string }> {
   let consulta = supabase()
     .from("agendamentos")
-    .select("inicio, fim, clientes (nome, telefone)")
+    .select("inicio, fim, profissional_id, clientes (nome, telefone)")
     .eq("empresa_id", empresaId)
     .in("status", ["agendado", "realizado"])
     .gte("inicio", inicioDoDia(dia))
@@ -59,7 +78,19 @@ async function ocupadosDoDia(empresaId: string, dia: string, ignorarId?: string)
   if (ignorarId) consulta = consulta.neq("id", ignorarId);
   const { data, error } = await consulta;
   if (error) return { erro: error.message };
-  return ((data ?? []) as unknown as { inicio: string; fim: string | null; clientes: { nome: string | null; telefone: string } | null }[]).map((a) => {
+  type Linha = { inicio: string; fim: string | null; profissional_id: string | null; clientes: { nome: string | null; telefone: string } | null };
+  let linhas = (data ?? []) as unknown as Linha[];
+  // Só separa as agendas quando a loja tem MAIS DE UMA profissional ativa; com uma só (ou nenhuma),
+  // todos os horários ocupam, como sempre.
+  if (profissionalId !== undefined) {
+    const ativas = await profissionaisAtivas(empresaId);
+    if (ativas.length > 1) {
+      const principal = ativas[0];
+      const alvo = profissionalId ?? principal;
+      linhas = linhas.filter((a) => (a.profissional_id ?? principal) === alvo);
+    }
+  }
+  return linhas.map((a) => {
     const ini = emMinutos(formatarHora(a.inicio));
     const fim = !a.fim ? ini + 60 : dataNoSalao(a.fim) === dia ? emMinutos(formatarHora(a.fim)) : 24 * 60;
     return { ini, fim, nome: a.clientes?.nome ?? "outra cliente" };
@@ -69,6 +100,7 @@ async function ocupadosDoDia(empresaId: string, dia: string, ignorarId?: string)
 // Antes de gravar um horário a atender (marcar, remarcar, mudar): o salão abre nesse dia, está
 // dentro do expediente, fora do almoço e sem encavalar com outra cliente? Devolve o motivo
 // para a dona, ou null se pode marcar. ignorarId: o próprio horário que está mudando.
+// profissionalId: só encavala com horário da mesma profissional (ver ocupadosDoDia).
 export async function conferirHorario(
   empresaId: string,
   config: Record<string, unknown>,
@@ -76,6 +108,7 @@ export async function conferirHorario(
   horaInicio: string,
   duracaoMin: number,
   ignorarId?: string,
+  profissionalId?: string | null,
 ): Promise<string | null> {
   const bloqueio = bloqueioDoDia(config, dia);
   if (bloqueio) return `Esse dia está marcado como sem atender${bloqueio.motivo ? ` (${bloqueio.motivo})` : ""}. Escolha outro dia.`;
@@ -90,7 +123,7 @@ export async function conferirHorario(
   if (almoco && conflitaComAlmoco(almoco, horaInicio.slice(0, 5), duracaoMin)) return avisoAlmoco(almoco);
   const horas = bloqueiosHorarioDoDia(config, dia).find((b) => ini < emMinutos(b.fim) && fim > emMinutos(b.inicio));
   if (horas) return `Esse horário está bloqueado (${horas.inicio} às ${horas.fim}${horas.motivo ? `, ${horas.motivo}` : ""}). Escolha outro horário.`;
-  const ocupados = await ocupadosDoDia(empresaId, dia, ignorarId);
+  const ocupados = await ocupadosDoDia(empresaId, dia, ignorarId, profissionalId);
   if ("erro" in ocupados) return `Não foi possível conferir a agenda: ${ocupados.erro}`;
   const choque = ocupados.find((o) => ini < o.fim && fim > o.ini);
   if (choque) {
@@ -107,10 +140,11 @@ export async function horariosLivres(
   dia: string,
   duracaoMin: number,
   ignorarId?: string,
+  profissionalId?: string | null,
 ): Promise<string[]> {
   const faixa = expediente(config, dia);
   if (!faixa) return [];
-  const resultado = await ocupadosDoDia(empresaId, dia, ignorarId);
+  const resultado = await ocupadosDoDia(empresaId, dia, ignorarId, profissionalId);
   const ocupados = [
     ...("erro" in resultado ? [] : resultado.map((o) => [o.ini, o.fim] as const)),
     ...bloqueiosHorarioDoDia(config, dia).map((b) => [emMinutos(b.inicio), emMinutos(b.fim)] as const),

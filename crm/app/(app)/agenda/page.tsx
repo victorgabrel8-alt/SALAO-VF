@@ -64,7 +64,8 @@ async function buscarDia(empresaId: string, dia: string): Promise<Dia> {
   const segunda = inicioDaSemana(dia);
   const [atendimentos, profissionais, comHorario] = await Promise.all([
     buscarAtendimentosDoDia(empresaId, dia),
-    supabase().from("profissionais").select("id, nome").eq("empresa_id", empresaId).order("nome"),
+    // pela ordem do cadastro: a primeira é a dona (horário sem profissional é dela)
+    supabase().from("profissionais").select("id, nome").eq("empresa_id", empresaId).eq("ativo", true).order("criado_em"),
     buscarDiasComHorario(empresaId, segunda, somarDias(segunda, 6)),
   ]);
   if (atendimentos.erro) return { erro: atendimentos.erro };
@@ -399,6 +400,17 @@ function AgendaPageConteudo() {
             {b.motivo && ` · ${b.motivo}`}
           </p>
         ))}
+        {/* Loja com mais de uma profissional: a cor de cada uma */}
+        {ok && variasProfissionais && (
+          <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px] text-texto-2">
+            {ok.profissionais.map((p) => (
+              <span key={p.id} className="inline-flex items-center gap-1.5">
+                <span aria-hidden className={"inline-block h-2.5 w-2.5 rounded-full " + corDaProfissional(p.id, ordem).ponto} />
+                {p.nome}
+              </span>
+            ))}
+          </p>
+        )}
         {!dados && <p className="carregando-calmo text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
 
@@ -421,7 +433,7 @@ function AgendaPageConteudo() {
                     <LinhaHorario
                       key={l.atendimento.id}
                       atendimento={l.atendimento}
-                      cor={variasProfissionais ? corDaProfissional(l.atendimento.profissional_id, ordem).ponto : null}
+                      cor={variasProfissionais ? corDaProfissional(l.atendimento.profissional_id ?? ordem[0] ?? null, ordem).ponto : null}
                       vezesNoDia={repetidaNoDia(l.atendimento)}
                       agora={agora}
                       aoTocar={() => setAberto(l.atendimento.id)}

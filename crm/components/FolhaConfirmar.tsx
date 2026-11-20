@@ -344,13 +344,13 @@ function EscolherNovoHorario({
 
   useEffect(() => {
     let ativo = true;
-    horariosLivres(empresa.id, empresa.config, dia, duracao, a.id).then((horas) => {
+    horariosLivres(empresa.id, empresa.config, dia, duracao, a.id, a.profissional_id ?? null).then((horas) => {
       if (ativo) setLivres({ dia, horas });
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, empresa.config, dia, duracao, a.id]);
+  }, [empresa.id, empresa.config, dia, duracao, a.id, a.profissional_id]);
   const horas = livres?.dia === dia ? livres.horas : null;
   const dias = Array.from({ length: 21 }, (_, i) => somarDias(amanha, i));
 

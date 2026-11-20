@@ -109,9 +109,30 @@ export function FormAtendimento({
   // Vai entrar na agenda como horário a atender (e não como atendimento já feito)
   const vaiAgendar = modo === "agendar" || noFuturo;
 
+  // Loja com mais de uma profissional (ex.: Caroline e Duda): a dona escolhe com quem é o horário.
+  // A primeira cadastrada (a dona) vem marcada. Com uma só, nada muda: grava sem profissional, como sempre.
+  const [profissionais, setProfissionais] = useState<{ id: string; nome: string }[]>([]);
+  const [comQuem, setComQuem] = useState<string | null>(null);
+  // a dona tocou em "Com quem" (para "mudar esse horário" saber se troca a profissional)
+  const [escolheuComQuem, setEscolheuComQuem] = useState(false);
+  const variasProfissionais = profissionais.length > 1;
+  // undefined = loja de uma profissional só (a conferência de horário olha a agenda inteira, como sempre)
+  const profissionalDoHorario = variasProfissionais ? comQuem : undefined;
+
   useEffect(() => {
     buscarServicosAtivos(empresa.id).then(setServicos);
     buscarMaisUsados(empresa.id).then(setMaisUsados);
+    supabase()
+      .from("profissionais")
+      .select("id, nome")
+      .eq("empresa_id", empresa.id)
+      .eq("ativo", true)
+      .order("criado_em")
+      .then(({ data }) => {
+        const lista = (data ?? []) as { id: string; nome: string }[];
+        setProfissionais(lista);
+        setComQuem((atual) => atual ?? lista[0]?.id ?? null);
+      });
   }, [empresa.id]);
 
   // Busca por nome ou telefone enquanto a dona digita
@@ -203,7 +224,7 @@ export function FormAtendimento({
     // Horário a atender: confere a agenda (salão aberto, expediente, almoço e sem encavalar com
     // outra cliente). Registrar um atendimento que já aconteceu continua liberado.
     if (vaiAgendar) {
-      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, minutosTotal);
+      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, minutosTotal, undefined, profissionalDoHorario);
       if (problema) {
         setSalvando(false);
         setErro(problema);
@@ -246,8 +267,8 @@ export function FormAtendimento({
         cliente_id: clienteId,
         servico_id: principal.id,
         quantidade: principal.quantidade,
-        // Sem escolha de profissional no app da dona
-        profissional_id: null,
+        // Com quem é o horário (só na loja com mais de uma profissional; senão fica sem, como sempre)
+        profissional_id: variasProfissionais ? comQuem : null,
         origem: "manual",
         inicio,
         // Vários serviços: o fim é a soma de todos. Um só: o banco calcula, como sempre
@@ -290,9 +311,16 @@ export function FormAtendimento({
   async function mudarHorario(h: HorarioMarcado) {
     setSalvando(true);
     setErro("");
+    // Com quem fica: a que a dona escolheu agora; se ela não mexeu em "Com quem", a do próprio horário
+    // (um horário da Duda não passa para a Caroline sem a dona pedir)
+    let profissionalDaMudanca = profissionalDoHorario;
+    if (variasProfissionais && !escolheuComQuem) {
+      const { data: atual } = await supabase().from("agendamentos").select("profissional_id").eq("id", h.id).single();
+      profissionalDaMudanca = (atual as { profissional_id: string | null } | null)?.profissional_id ?? null;
+    }
     // O horário que muda não conta como ocupado (ele mesmo sai de onde estava)
     if (vaiAgendar) {
-      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, minutosTotal, h.id);
+      const problema = await conferirHorario(empresa.id, empresa.config, data, hora, minutosTotal, h.id, profissionalDaMudanca);
       if (problema) {
         setSalvando(false);
         setAviso(null);
@@ -321,6 +349,7 @@ export function FormAtendimento({
         fim: null,
         servico_id: principal.id,
         quantidade: principal.quantidade,
+        ...(variasProfissionais && escolheuComQuem ? { profissional_id: comQuem } : {}),
         status: modo === "registrar" && !noFuturo ? "realizado" : "agendado",
         ...(mudou ? { observacoes: [h.observacoes, anotacao].filter(Boolean).join("\n") } : {}),
       })
@@ -412,6 +441,31 @@ export function FormAtendimento({
 
       {/* Serviços */}
       <EscolherServicos servicos={servicos} maisUsados={maisUsados} escolhidos={escolhidos} aoMudar={setEscolhidos} />
+
+      {/* Com quem (só na loja com mais de uma profissional) */}
+      {variasProfissionais && (
+        <section className="space-y-2">
+          <span className="block text-lg font-semibold">Com quem</span>
+          <div className="flex flex-wrap gap-2">
+            {profissionais.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  setComQuem(p.id);
+                  setEscolheuComQuem(true);
+                }}
+                aria-pressed={comQuem === p.id}
+                className={`h-12 rounded-xl border px-5 text-lg font-semibold ${
+                  comQuem === p.id ? "border-[var(--cor-principal)] bg-grafite text-perola" : "border-claro bg-white"
+                }`}
+              >
+                {p.nome}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* Quando */}
       <section className="grid grid-cols-2 gap-3">
