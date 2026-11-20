@@ -19,6 +19,7 @@ import {
   type Atendimento,
 } from "@/lib/atendimentos";
 import { confirmarAvaliacao, useIntencoes, type Avaliacao } from "@/lib/avaliacoes";
+import { contarParaChamar } from "@/lib/chamarDeVolta";
 import { useEmpresa } from "@/lib/empresa";
 import { estaExcluida } from "@/lib/excluidas";
 import { guardar, lembrar } from "@/lib/memoriaTela";
@@ -217,6 +218,19 @@ function InicioPageConteudo() {
     };
   }, [empresa.id, versao, diaAtual, chave]);
 
+  // Quantas passaram do tempo de voltar (lista "Chamar de volta"). Fora do resumo de propósito:
+  // a conta passa por todas as clientes, então só refaz ao abrir a tela e quando vira o dia
+  const [paraChamar, setParaChamar] = useState(0);
+  useEffect(() => {
+    let ativo = true;
+    contarParaChamar(empresa.id).then((n) => {
+      if (ativo) setParaChamar(n);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [empresa.id, diaAtual]);
+
   // A IA grava sozinha: quando chega mensagem ou horário novo, a tela se atualiza
   useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, recarregar);
 
@@ -328,6 +342,13 @@ function InicioPageConteudo() {
               />
             )}
             {ok.aniversariantes.length > 0 && <Aniversarios lista={ok.aniversariantes} />}
+            {paraChamar > 0 && (
+              <LinhaRodape
+                href="/chamar-de-volta"
+                ponto="bg-orange-500"
+                texto={paraChamar === 1 ? "1 cliente para chamar de volta" : `${paraChamar} clientes para chamar de volta`}
+              />
+            )}
             {depois.length > 0 && (
               <LinhaRodape
                 href="/agenda"

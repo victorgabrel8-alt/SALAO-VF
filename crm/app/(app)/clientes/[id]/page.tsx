@@ -7,6 +7,7 @@ import { useDialogo } from "@/components/Dialogo";
 import { estaExcluida, excluirCliente, restaurarCliente, textoExclusao } from "@/lib/excluidas";
 import { etiquetasDoSistema, etiquetasVisiveis, lerOrigem, trocarOrigem } from "@/lib/origem";
 import { Etiquetas } from "@/components/Etiquetas";
+import { AvisoCadastroRepetido } from "@/components/AvisoCadastroRepetido";
 import { STATUS, PontoStatus } from "@/lib/status";
 import { RESULTADOS, buscarUltimaAvaliacao, type Avaliacao } from "@/lib/avaliacoes";
 import { supabase } from "@/lib/supabase/client";
@@ -113,6 +114,7 @@ function FichaCliente() {
       <Contato cliente={ficha.cliente} />
 
       <div className="flex flex-col gap-4 px-5 pt-5">
+        <AvisoCadastroRepetido empresaId={ficha.cliente.empresa_id} telefone={ficha.cliente.telefone} />
         {/* A edição abre e fecha deslizando; salvou, ela se recolhe sozinha */}
         <Recolhivel aberto={editando}>
           {/* key: se uma etiqueta for tirada, o formulário recomeça com as etiquetas certas */}
