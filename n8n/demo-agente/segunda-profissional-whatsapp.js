@@ -7,7 +7,8 @@
 //     salão (pendências, resumo da noite, faltas, ligação) continuam só para a Caroline: a lista geral
 //     (assistente_numeros do loja.json) NÃO muda;
 //   - a assistente sabe que quem escreve é a Duda e a chama de Duda;
-//   - horário que a Duda marca pela assistente fica na agenda dela (profissional_id da Duda);
+//   - a assistente marca, remarca e muda a duração na agenda da profissional certa, conferindo conflito só com a mesma
+//     profissional (supabase/061 e 064); a dona pode dizer "com a Duda"; a agenda do dia diz com quem é cada horário;
 //   - pergunta de cliente da Duda (o próximo horário dela é com a Duda) vai para o WhatsApp da Duda; as outras
 //     continuam com a Caroline. As duas podem responder um pedido numerado ("27 sim").
 // Vem depois do pedido-numerado.js (troca nós que ele põe) e antes do paraLoja (os nomes ainda são os da Gleide).
@@ -48,9 +49,39 @@ module.exports = ({ node, workflow: W, assistenteWorkflow: A, ferramentasWorkflo
   const DE_A = /p_bloco_min: (\d+) \};/;
   if (montar.parameters.jsCode.split(DE_F).length !== 2 || (montar.parameters.jsCode.match(new RegExp(DE_A.source, 'g')) || []).length !== 1)
     throw new Error('segunda-profissional-whatsapp: o marcar_horario do "Montar chamada" mudou');
+  // com quem: o que a dona disse no campo "profissional" ("com a Duda", "Caroline"); sem dizer, marcar fica com quem
+  // pediu (a Duda, se foi ela; senão a dona) e remarcar fica com a profissional de antes
+  const PROF_JS = "const profDita = (() => { const q = v('profissional').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase(); " +
+    "return /dud|eduard/.test(q) ? '" + sp.id + "' : /carol/.test(q) ? '" + sp.principal_id + "' : null; })();\n";
+  const DE_INI = "let funcao, args, enviar = false;";
+  if (montar.parameters.jsCode.split(DE_INI).length !== 2) throw new Error('segunda-profissional-whatsapp: o começo do "Montar chamada" mudou');
   montar.parameters.jsCode = montar.parameters.jsCode
+    .replace(DE_INI, () => DE_INI + '\n' + PROF_JS)
     .replace(DE_F, () => "funcao = 'n8n_assistente_marcar_horario_prof';")
-    .replace(DE_A, (_, n) => 'p_bloco_min: ' + n + ", p_profissional_id: v('pedido_por') === '" + D + "' ? '" + sp.id + "' : null };");
+    .replace(DE_A, (_, n) => 'p_bloco_min: ' + n + ", p_profissional_id: profDita || (v('pedido_por') === '" + D + "' ? '" + sp.id + "' : null) };");
+  // remarcar e mudar a duração: conflito só com a mesma profissional (supabase/064); remarcar pode trocar de profissional
+  const trocarUma = (de, para) => {
+    if (montar.parameters.jsCode.split(de).length !== 2) throw new Error('segunda-profissional-whatsapp: "Montar chamada" mudou (' + de.slice(0, 50) + ')');
+    montar.parameters.jsCode = montar.parameters.jsCode.replace(de, () => para);
+  };
+  trocarUma("funcao = 'n8n_assistente_reagendar_confirma';", "funcao = 'n8n_assistente_reagendar_prof';");
+  trocarUma("p_servico: ou(v('servico')), p_forcar: forcar() };", "p_servico: ou(v('servico')), p_forcar: forcar(), p_profissional_id: profDita };");
+  trocarUma("funcao = 'n8n_assistente_ajustar_duracao';", "funcao = 'n8n_assistente_ajustar_duracao_prof';");
+  // agenda do dia: cada horário diz com quem é (campo "com")
+  trocarUma("funcao = 'n8n_assistente_agenda_do_dia';", "funcao = 'n8n_assistente_agenda_do_dia_prof';");
+  // campo "profissional" chega às ferramentas: gatilho das ferramentas + ferramentas marcar_horario e reagendar
+  const gat = F.nodes.find((x) => x.type.includes('executeWorkflowTrigger'));
+  if (!gat || !gat.parameters.workflowInputs?.values) throw new Error('segunda-profissional-whatsapp: sem o gatilho das ferramentas');
+  if (!gat.parameters.workflowInputs.values.some((x) => x.name === 'profissional')) gat.parameters.workflowInputs.values.push({ name: 'profissional' });
+  const DESC = {
+    marcar_horario: 'Com quem: "' + loja.dona + '" ou "' + sp.nome + '", se quem pediu disse (ex.: "marca a Ana com a ' + sp.nome + '"). Vazio: fica com quem está pedindo',
+    reagendar: 'Só se pediram para trocar de profissional: "' + loja.dona + '" ou "' + sp.nome + '". Vazio: continua com a mesma',
+  };
+  for (const [nome, desc] of Object.entries(DESC)) {
+    const w = achar(A, nome).parameters.workflowInputs;
+    w.value.profissional = "={{ $fromAI('profissional', `" + desc + "`, 'string') }}";
+    if (!w.schema.some((s) => s.id === 'profissional')) w.schema.push({ id: 'profissional', displayName: 'profissional', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string', removed: false });
+  }
 
   // 4. pergunta de cliente da Duda vai para a Duda
   const alerta = achar(P, 'Supabase: número de alerta');
