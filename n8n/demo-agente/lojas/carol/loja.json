@@ -179,5 +179,6 @@
   "assistente_marcar": true,
   "lembrete_duplo": true,
   "pendencias_horas": [12, 18],
-  "resumo_noite": "19:00"
+  "resumo_noite": "19:00",
+  "conferente": "observar"
 }

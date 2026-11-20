@@ -923,6 +923,8 @@ if (LOJA) {
   if (LOJA.envio_cuidadoso && LOJA.contexto_saidas && LOJA.conversa_antiga) require('./envio-cuidadoso.js')({ node, main, ifNode, cond, REDIS, workflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   // assistente sabe preços e chave Pix e não promete lembrar depois (assistente-cuidados.js)
   if (LOJA.assistente_cuidados) require('./assistente-cuidados.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // orquestrador, fase A: o Conferente confere cada resposta da IA (conferente.js). "observar" = só registra, a resposta sai igual
+  if (LOJA.conferente) require('./conferente.js')({ node, ifNode, cond, workflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

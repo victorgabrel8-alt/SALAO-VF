@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000157",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "Recebe pedido da assistente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -142,7 +142,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000158",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "Montar chamada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -155,7 +155,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000159",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "Conferir cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -195,7 +195,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000160",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "Cliente confere?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -229,7 +229,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000161",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "Executar no banco",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -269,7 +269,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000162",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "Mandar para a cliente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -303,7 +303,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000163",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -313,7 +313,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/send{{ (() => { try { const c = $('Endereço: cadastro').first().json.config || {}; const l = c.loja || {}; const t = String(JSON.parse($('Executar no banco').first().json.data).mensagem || ''); return (typeof l.foto_endereco === 'string' && l.foto_endereco && typeof l.mapa === 'string' && l.mapa && t.includes(l.mapa.trim())) ? l.foto_endereco : ''; } catch (e) { return ''; } })() ? 'Media' : 'Text' }}/{{ 'karol-manicure' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -325,7 +325,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: JSON.parse($json.data).telefone, text: JSON.parse($json.data).mensagem }) }}",
+        "jsonBody": "={{ JSON.stringify((() => { const b = { number: JSON.parse($('Executar no banco').first().json.data).telefone, text: JSON.parse($('Executar no banco').first().json.data).mensagem }; const f = (() => { try { const c = $('Endereço: cadastro').first().json.config || {}; const l = c.loja || {}; const t = String(JSON.parse($('Executar no banco').first().json.data).mensagem || ''); return (typeof l.foto_endereco === 'string' && l.foto_endereco && typeof l.mapa === 'string' && l.mapa && t.includes(l.mapa.trim())) ? l.foto_endereco : ''; } catch (e) { return ''; } })(); if (!f) return b; const r = Object.assign({}, b); delete r.text; return Object.assign(r, { mediatype: 'image', mimetype: 'image/jpeg', fileName: 'endereco.jpg', media: f, caption: (() => { const t = String(JSON.parse($('Executar no banco').first().json.data).mensagem || ''); let e = ''; try { e = String(($('Endereço: cadastro').first().json.config || {}).endereco || '').trim(); } catch (x) {} const rua = e.split(',')[0].trim().toLowerCase(); return (!e || !rua || t.toLowerCase().includes(rua)) ? t : e + '\\n' + t; })() }); })()) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -334,7 +334,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000164",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -368,7 +368,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000165",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "Registrar na conversa",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -400,7 +400,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000166",
+      "id": "00000000-0000-4000-8000-000000000181",
       "name": "Apagar contato não enviado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -429,7 +429,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000167",
+      "id": "00000000-0000-4000-8000-000000000182",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -443,7 +443,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ (() => { let base = ((() => {\n  const m = $('Montar chamada').first().json;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }\n  const b = $('Executar no banco').first().json;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Caroline ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';\n  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;\n})()); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } base = 'OK: ' + JSON.stringify(o); } catch (e) {} } let gt = g.texto || ''; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } return base + gt; })() }}",
+              "value": "={{ (() => { try { if ($('Envio: conferir').isExecuted) { const ev = $('Envio: conferir').first().json; if (ev && ev.bloqueio) return ev.bloqueio; } } catch (e) {} let r = ((() => { let base = ((() => {\n  const m = $('Montar chamada').first().json;\n  try { const bq = $('Endereço: conferir').first().json.bloqueio; if (bq) return bq; } catch (e) {}\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }\n  const b = $('Executar no banco').first().json;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Caroline ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';\n  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;\n})()); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } base = 'OK: ' + JSON.stringify(o); } catch (e) {} } let gt = g.texto || ''; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } return base + gt; })()); try { if ($('Montar chamada').first().json.funcao === 'n8n_assistente_reagendar_confirma' && /^\\s*OK/i.test(String(r))) r = r + String.fromCharCode(10, 10) + \"A CLIENTE AINDA NÃO SABE DESTA MUDANÇA (nada foi mandado a ela). Regra da Caroline: horário mudado a pedido dela = avise a cliente UMA vez, agora, com avisar_cliente (tipo aviso, sem texto: a mensagem sai pronta com o horário antigo e o novo). Só não avise se a Caroline disse que ela mesma avisa ou que já combinou direto com a cliente. Na resposta à Caroline diga se avisou (\\\"Avisei a *Nome* ✅\\\").\"; } catch (e) {} return r; })() }}",
               "type": "string"
             }
           ]
@@ -452,7 +452,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000388",
+      "id": "00000000-0000-4000-8000-000000000403",
       "name": "Precisa da Google?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -486,7 +486,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000389",
+      "id": "00000000-0000-4000-8000-000000000404",
       "name": "Google: config",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -518,7 +518,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000390",
+      "id": "00000000-0000-4000-8000-000000000405",
       "name": "Google: links",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -531,7 +531,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000391",
+      "id": "00000000-0000-4000-8000-000000000406",
       "name": "Google: ler agenda",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -559,7 +559,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000392",
+      "id": "00000000-0000-4000-8000-000000000407",
       "name": "Google: eventos do dia",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -570,6 +570,351 @@
       "parameters": {
         "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro) { const m = b.diff(a, 'minutes').minutes; if (m === 60) b = a.plus({ minutes: 150 }); else if (m < 90) b = a.plus({ minutes: 90 }); }\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst m = $('Montar chamada').first().json;\nconst NL = String.fromCharCode(10);\nconst a = m.args || {};\nconst links = [].concat($('Google: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nif (!links.length) return [{ json: { texto: '' } }];\nconst respostas = $input.all().map((i) => i.json);\nconst dataTxt = String(a.p_data || a.p_inicio || '').slice(0, 10);\nconst dia = dataTxt ? DateTime.fromISO(dataTxt, { zone: 'America/Cuiaba' }) : DateTime.now().setZone('America/Cuiaba');\nif (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR')))\n  return [{ json: { texto: NL + NL + 'ATENÇÃO: não consegui ler a Google Agenda da dona agora. O resultado acima é só da agenda do app: avise que pode ter cliente marcada na Google que você não está vendo.' } }];\nconst ini = dia.startOf('day'), fim = ini.plus({ days: 1 });\nconst eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y]) => x < fim && y > ini).sort((p, q) => p[0] - q[0]);\nconst hh = (d) => d.toFormat('HH:mm');\nconst lista = eventos.map(([x, y, t, todo]) => '- ' + (todo ? 'dia inteiro' : hh(x) + ' às ' + hh(y)) + ': ' + t).join(NL);\n// minutos do dia ocupados na Google (a Resposta tira de horarios_livres o que encavala)\nconst ocupados = eventos.map(([x, y]) => [Math.max(0, x.diff(ini, 'minutes').minutes), Math.min(1440, y.diff(ini, 'minutes').minutes)]);\nreturn [{ json: { ocupados, texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (clientes que ainda não estão no app; conta como ocupado, junto com o app):' + NL +\n  (lista || '- nada marcado na Google neste dia') + NL +\n  'Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona confirmar.' } }];\n"
       }
+    },
+    {
+      "name": "Endereço: cadastro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        460
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000428",
+      "name": "Endereço: conferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        330,
+        260
+      ],
+      "parameters": {
+        "jsCode": "const m = $('Montar chamada').first().json;\nlet cfg = {}; try { cfg = $('Endereço: cadastro').first().json.config || {}; } catch (e) {}\nconst t = (v) => (typeof v === 'string' ? v.trim() : '');\nconst end = t(cfg.endereco), mapa = t((cfg.loja || {}).mapa);\nconst norm = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\\s+/g, ' ');\nconst txt = String((m.args && m.args.p_texto) || '');\nlet bloqueio = '';\nif (m.enviar && txt) {\n  const n = norm(txt);\n  const rua = norm(end.split(',')[0] || '');            // \"rua dos angicos\"\n  const numero = (end.match(/\\d+/) || [''])[0];        // \"690\"\n  const falaDeRua = /(^|[^a-z])(rua|r\\.|avenida|av\\.?|travessa|alameda|rodovia|estrada|pra[cç]a)\\s+[a-z0-9]/.test(n);\n  const ruaErrada = falaDeRua && (!rua || !n.includes(rua) || (numero && !n.includes(numero)));\n  const links = txt.match(/(https?:\\/\\/|www\\.)\\S+|\\S*(goo\\.gl|maps\\.|waze\\.)\\S*/gi) || [];\n  const deMapa = (l) => /goo\\.gl|maps|waze|localiza/i.test(l);\n  const linkErrado = links.some((l) => deMapa(l) && (!mapa || !norm(mapa).includes(norm(l.replace(/[).,;!]+$/, '')).replace(/^https?:\\/\\//, ''))));\n  const enfeite = /\\[\\s*(link|mapa|localiza)[^\\]]*\\]/i.test(txt);\n  if (ruaErrada || linkErrado || enfeite) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto tem ' + (ruaErrada ? 'um endereço que não é o do cadastro do salão' : 'um link de mapa que não existe no cadastro do salão') + '. ' +\n      (end ? 'O ÚNICO endereço que vale é: ' + end + (mapa ? ' | mapa: ' + mapa : ' (não há link de mapa cadastrado: não mande link nenhum)') + '. Reescreva o texto com esse endereço, exatamente assim, e mande de novo agora.'\n           : 'Não há endereço cadastrado no app: não mande endereço. Diga à dona que falta preencher o endereço em Dados do salão.');\n  }\n}\nreturn [{ json: { ...m, bloqueio } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000429",
+      "name": "Endereço confere?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ec1",
+              "leftValue": "={{ !$json.bloqueio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000430",
+      "name": "Envio: conversa da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?empresa_id=eq.26a5d3eb-e8e4-4ed8-b206-095095292fdd&select=direcao,autor,conteudo,criado_em,clientes!inner(telefone)&empresa_id=eq.{{ '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }}&clientes.telefone=eq.{{ (() => { try { return String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, '') || '0'; } catch (e) { return '0'; } })() }}&criado_em=gte.{{ $now.minus({ hours: 30 }).toUTC().toISO() }}&order=criado_em.desc&limit=40",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000431",
+      "name": "Envio: horários da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id,inicio,status,servicos(nome),clientes!inner(telefone)&empresa_id=eq.{{ '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }}&clientes.telefone=eq.{{ (() => { try { return String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, '') || '0'; } catch (e) { return '0'; } })() }}&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}&order=inicio",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000432",
+      "name": "Envio: conferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const TZ = 'America/Cuiaba';\nconst agora = DateTime.now().setZone(TZ);\nlet b = {}; try { b = JSON.parse($('Executar no banco').first().json.data || '{}'); } catch (e) {}\nconst txt = String(b.mensagem || '');\nconst tel = String(b.telefone || '').replace(/\\D/g, '');\nconst falhou = (x) => !x || x.error || (x.code && x.message);\nconst lerTudo = (nome) => { try { return $(nome).all().map((i) => i.json); } catch (e) { return [{ error: 'não rodou' }]; } };\nconst rMsgs = lerTudo('Envio: conversa da cliente'), rAgs = lerTudo('Envio: horários da cliente');\nconst leuMsgs = !rMsgs.some((x) => x && (x.error || (x.code && x.message)));\nconst leuAgs = !rAgs.some((x) => x && (x.error || (x.code && x.message)));\nconst msgs = rMsgs.filter((x) => x && x.criado_em && !falhou(x));\nconst ags = rAgs.filter((x) => x && x.inicio && !falhou(x));\nconst hm = (s) => DateTime.fromISO(s).setZone(TZ).toFormat('HH:mm');\nconst norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();\nconst n = norm(txt);\nlet bloqueio = '', recado = false;\n\n// 4. vazio\nif (!/[a-z0-9]/.test(n)) bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto estava vazio. Escreva a mensagem e mande de novo.';\n\n// 1. ela está conversando com a IA de atendimento agora\nconst ultimaDela = msgs.find((x) => x.direcao === 'entrada');\nconst minDela = ultimaDela ? agora.diff(DateTime.fromISO(ultimaDela.criado_em), 'minutes').minutes : 1e9;\nconst falaDeHorario = /\\b\\d{1,2} ?(h\\b|h\\d{2}|:\\d{2}|horas?\\b)|amanha|\\bhoje\\b|segunda|terca|quarta|quinta|sexta|sabado|domingo|\\bdia \\d|\\b\\d{1,2}\\/\\d{1,2}\\b|horario|agenda|\\bvaga|marcar|remarc|reagend|reserv|encaix/.test(n);\nif (!bloqueio && leuMsgs && minDela <= 4 && falaDeHorario) {\n  recado = true;\n  bloqueio = 'GUARDEI COMO RECADO (nada foi mandado à cliente agora): ela está conversando com a IA de atendimento neste momento (última mensagem dela às ' + hm(ultimaDela.criado_em) + '). ' +\n    'Se eu mandasse, ela receberia duas conversas ao mesmo tempo com ofertas diferentes. O seu texto foi passado para a IA de atendimento, que vai usar na próxima resposta a ela. ' +\n    'Diga à Caroline em UMA linha: \"*Nome* está conversando com a IA agora; passei seu recado pra IA usar na resposta ✅\". NÃO chame chamar_cliente nem avisar_cliente de novo para ela agora e não diga que mandou.';\n}\n\n// 2. confirmação repetida\nconst ehConfirmacao = (s) => /confirm(ar|ando|ad[oa]|amos|o\\b|ei)|lembrando (do|que|seu)|lembrete/.test(s) && /horario|amanha|\\bhoje\\b|atendimento/.test(s);\nconst ehMudanca = /\\bmud|remarc|reagend|\\btroc|passou para|passamos para|em vez de|novo horario|cancel|desmarc/.test(n);\nif (!bloqueio && leuMsgs && ehConfirmacao(n) && !ehMudanca) {\n  const ant = msgs.find((x) => x.direcao === 'saida' && ehConfirmacao(norm(x.conteudo)) && agora.diff(DateTime.fromISO(x.criado_em), 'hours').hours < 20);\n  if (ant) {\n    const resp = msgs.filter((x) => x.direcao === 'entrada' && x.criado_em > ant.criado_em).pop();\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela já recebeu confirmação deste horário às ' + hm(ant.criado_em) + ' («' + String(ant.conteudo).replace(/\\s+/g, ' ').slice(0, 140) + '»)' +\n      (resp ? ' e respondeu às ' + hm(resp.criado_em) + ': «' + String(resp.conteudo).replace(/\\s+/g, ' ').slice(0, 100) + '»' : ' e ainda não respondeu') +\n      '. A Caroline quer UMA confirmação por cliente: não mande outra. Conte a ela em uma linha se a cliente já confirmou ou não.';\n  }\n}\n\n// 3. diz que está marcado/confirmado sem horário no app (ou com a data errada)\nconst afirma = /\\b(confirmad[oa]s?|confirmadissim[oa]|marcad[oa]s?|reservad[oa]s?|agendad[oa]s?|garantid[oa]s?|marquei|reservei|agendei)\\b/.test(n) && !/cancel|desmarc/.test(n);\nif (!bloqueio && leuAgs && afirma) {\n  const lista = ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + (a.servicos && a.servicos.nome ? ' (' + a.servicos.nome + ')' : '')).join('; ');\n  if (!ags.length) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que o horário está marcado/confirmado/reservado, mas ela NÃO tem nenhum horário futuro no app. ' +\n      'Primeiro grave com marcar_horario (dia, hora e serviço) e veja que voltou OK; só depois avise. Se a Caroline só quer oferecer, escreva como oferta, sem dizer que está marcado.';\n  } else {\n    const dias = new Set(ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat('dd/LL')));\n    const citadas = [...n.matchAll(/\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((x) => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0'));\n    if (citadas.length && citadas.every((d) => !dias.has(d))) {\n      bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto fala de ' + [...new Set(citadas)].join(', ') + ', mas os horários dela no app são: ' + lista +\n        '. Confira o dia e o MÊS (em 13/11 uma cliente foi avisada de 17/12 quando o horário era 17/11) e mande de novo com a data certa.';\n    }\n  }\n}\nreturn [{ json: { bloqueio, recado, telefone: tel, chave: tel.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2'), texto: txt } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000433",
+      "name": "Envio liberado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ev1",
+              "leftValue": "={{ !$json.bloqueio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000434",
+      "name": "Envio: é recado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ev2",
+              "leftValue": "={{ !!$json.recado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000435",
+      "name": "Recado: ler",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=carol:recado_dona:{{ $('Envio: conferir').first().json.chave }}",
+        "propertyName": "anterior",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000436",
+      "name": "Recado: juntar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const ant = String($input.first().json.anterior || '').trim();\nconst novo = '[' + DateTime.now().setZone('America/Cuiaba').toFormat('HH:mm') + '] ' + String($('Envio: conferir').first().json.texto || '').trim();\nreturn [{ json: { valor: ((ant ? ant + '\\n' : '') + novo).slice(-1500) } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000437",
+      "name": "Recado: guardar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=carol:recado_dona:{{ $('Envio: conferir').first().json.chave }}",
+        "value": "={{ $json.valor }}",
+        "expire": true,
+        "ttl": 10800
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Apagar contato bloqueado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        400
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?id=eq.{{ JSON.parse($('Executar no banco').first().json.data).contato_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Recado: contato não entregue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        600
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?id=eq.{{ JSON.parse($('Executar no banco').first().json.data).contato_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ resultado: 'sem_resposta', mensagem: '[recado passado à IA, não enviado] ' + $('Envio: conferir').first().json.texto }) }}"
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -588,7 +933,7 @@
       "main": [
         [
           {
-            "node": "Conferir cliente",
+            "node": "Endereço: cadastro",
             "type": "main",
             "index": 0
           }
@@ -639,7 +984,7 @@
       "main": [
         [
           {
-            "node": "Mandar para a cliente",
+            "node": "Envio: conversa da cliente",
             "type": "main",
             "index": 0
           }
@@ -760,6 +1105,170 @@
         [
           {
             "node": "Executar no banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endereço: cadastro": {
+      "main": [
+        [
+          {
+            "node": "Endereço: conferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endereço: conferir": {
+      "main": [
+        [
+          {
+            "node": "Endereço confere?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endereço confere?": {
+      "main": [
+        [
+          {
+            "node": "Conferir cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: conversa da cliente": {
+      "main": [
+        [
+          {
+            "node": "Envio: horários da cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: horários da cliente": {
+      "main": [
+        [
+          {
+            "node": "Envio: conferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: conferir": {
+      "main": [
+        [
+          {
+            "node": "Envio liberado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio liberado?": {
+      "main": [
+        [
+          {
+            "node": "Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envio: é recado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: é recado?": {
+      "main": [
+        [
+          {
+            "node": "Recado: ler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apagar contato bloqueado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: ler": {
+      "main": [
+        [
+          {
+            "node": "Recado: juntar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: juntar": {
+      "main": [
+        [
+          {
+            "node": "Recado: guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: guardar": {
+      "main": [
+        [
+          {
+            "node": "Recado: contato não entregue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: contato não entregue": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apagar contato bloqueado": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
             "type": "main",
             "index": 0
           }
