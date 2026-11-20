@@ -155,7 +155,12 @@ function AgendaPageConteudo() {
   const semana = Array.from({ length: 7 }, (_, i) => somarDias(segunda, i));
   const [ano, mes] = dia.split("-").map(Number);
 
-  const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado") ?? [];
+  // Loja com mais de uma profissional: Todas (com a etiqueta de quem é) ou só a agenda de uma delas.
+  // Horário sem profissional é da dona (a primeira cadastrada).
+  const [filtro, setFiltro] = useState<string>("todas");
+  const deQuem = (a: Atendimento) => a.profissional_id ?? ordem[0] ?? null;
+  const filtrando = variasProfissionais && filtro !== "todas" && ordem.includes(filtro);
+  const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado" && (!filtrando || deQuem(a) === filtro)) ?? [];
   const selecionado = visiveis.find((a) => a.id === aberto) ?? null;
   // O que a IA anotou de cada cliente do dia (pré-avaliação)
   const intencoes = useIntencoes(
@@ -400,16 +405,22 @@ function AgendaPageConteudo() {
             {b.motivo && ` · ${b.motivo}`}
           </p>
         ))}
-        {/* Loja com mais de uma profissional: a cor de cada uma */}
+        {/* Loja com mais de uma profissional: ver todas (com etiqueta) ou só a agenda de uma */}
         {ok && variasProfissionais && (
-          <p className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-[15px] text-texto-2">
-            {ok.profissionais.map((p) => (
-              <span key={p.id} className="inline-flex items-center gap-1.5">
-                <span aria-hidden className={"inline-block h-2.5 w-2.5 rounded-full " + corDaProfissional(p.id, ordem).ponto} />
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[{ id: "todas", nome: "Todas" }, ...ok.profissionais].map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setFiltro(p.id)}
+                aria-pressed={filtro === p.id}
+                className={"inline-flex h-10 items-center gap-1.5 rounded-full border px-4 text-[15px] font-semibold " +
+                  (filtro === p.id ? "border-grafite bg-grafite text-perola" : "border-claro bg-card text-texto-2")}
+              >
+                {p.id !== "todas" && <span aria-hidden className={"inline-block h-2.5 w-2.5 rounded-full " + corDaProfissional(p.id, ordem).ponto} />}
                 {p.nome}
-              </span>
+              </button>
             ))}
-          </p>
+          </div>
         )}
         {!dados && <p className="carregando-calmo text-texto-2">Carregando…</p>}
         {dados && "erro" in dados && <p className="rounded-2xl bg-rose p-4 text-rose-texto">Erro: {dados.erro}</p>}
@@ -433,7 +444,8 @@ function AgendaPageConteudo() {
                     <LinhaHorario
                       key={l.atendimento.id}
                       atendimento={l.atendimento}
-                      cor={variasProfissionais ? corDaProfissional(l.atendimento.profissional_id ?? ordem[0] ?? null, ordem).ponto : null}
+                      cor={variasProfissionais ? corDaProfissional(deQuem(l.atendimento), ordem).ponto : null}
+                      etiqueta={variasProfissionais && !filtrando ? (() => { const id = deQuem(l.atendimento); const p = ok.profissionais.find((x) => x.id === id); return p ? { nome: p.nome, classe: corDaProfissional(id, ordem).capsula } : null; })() : null}
                       vezesNoDia={repetidaNoDia(l.atendimento)}
                       agora={agora}
                       aoTocar={() => setAberto(l.atendimento.id)}
@@ -556,12 +568,15 @@ function Situacao({ atendimento: a, agora }: { atendimento: Atendimento; agora: 
 function LinhaHorario({
   atendimento: a,
   cor,
+  etiqueta,
   vezesNoDia,
   agora,
   aoTocar,
 }: {
   atendimento: Atendimento;
   cor: string | null;
+  // loja com mais de uma profissional, vendo Todas: de quem é o horário
+  etiqueta?: { nome: string; classe: string } | null;
   vezesNoDia: number;
   agora: number;
   aoTocar: () => void;
@@ -577,6 +592,7 @@ function LinhaHorario({
           <span className={`flex items-center gap-2 text-[16px] font-bold ${resolvido ? "text-texto-2" : ""}`}>
             {a.origem === "ia" && <span role="img" aria-label="Marcado pela IA" className="h-2 w-2 shrink-0 rounded-full bg-ouro-antigo" />}
             <span className="truncate">{primeiroESegundo(nome)}</span>
+            {etiqueta && <span className={"shrink-0 rounded-full px-2 py-0.5 text-[12px] font-bold " + etiqueta.classe}>{etiqueta.nome}</span>}
           </span>
           <span className="line-clamp-2 text-[14px] text-texto-2">
             {resumoDosServicos(a)} · {duracao(minutos(a))}
