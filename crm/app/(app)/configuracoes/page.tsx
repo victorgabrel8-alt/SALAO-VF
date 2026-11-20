@@ -2,9 +2,10 @@
 
 import { Voltar } from "@/components/Voltar";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Cabecalho } from "@/components/Cabecalho";
 import { lerAlmoco } from "@/lib/almoco";
+import { buscarRepetidos } from "@/lib/cadastrosRepetidos";
 import { BotaoSair, useEmpresa, useTrocarConfig } from "@/lib/empresa";
 import { mostrarFrase } from "@/lib/frases";
 import { formatarTelefone, normalizarTelefone, telefoneValido } from "@/lib/formato";
@@ -49,11 +50,57 @@ export default function ConfiguracoesPage() {
             <path d="m9 18 6-6-6-6" />
           </svg>
         </Link>
+        <LinkCadastrosRepetidos />
         <div className="px-4">
           <BotaoSair />
         </div>
       </div>
     </>
+  );
+}
+
+// Cadastros repetidos (mesma cliente com o número com e sem o 9): mostra quantos pares há para a dona juntar
+function LinkCadastrosRepetidos() {
+  const empresa = useEmpresa();
+  const [quantos, setQuantos] = useState<number | null>(null);
+
+  useEffect(() => {
+    let ativo = true;
+    buscarRepetidos(empresa.id).then((r) => {
+      if (ativo) setQuantos(r.erro ? null : r.pares.length);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [empresa.id]);
+
+  // Só aparece quando há par para juntar: loja sem repetidos (ex.: a Gleide) vê Configurações como sempre
+  if (!quantos) return null;
+
+  return (
+    <Link
+      href="/configuracoes/cadastros-repetidos"
+      className="mx-4 flex items-center justify-between gap-3 rounded-2xl border border-borda bg-white p-4 active:bg-campo"
+    >
+      <span>
+        <span className="flex items-center gap-2 text-lg font-semibold">
+          Cadastros repetidos
+          {!!quantos && (
+            <span className="rounded-full bg-[#B4432F] px-2 py-0.5 text-xs font-bold text-white" aria-label={`${quantos} para conferir`}>
+              {quantos}
+            </span>
+          )}
+        </span>
+        <span className="block text-texto-2">
+          {quantos
+            ? "A mesma cliente com o número com e sem o 9. Confira e junte."
+            : "A mesma cliente com o número com e sem o 9."}
+        </span>
+      </span>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-rotulo" aria-hidden>
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </Link>
   );
 }
 
