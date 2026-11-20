@@ -930,6 +930,9 @@ if (LOJA) {
   if (LOJA.assistente_consertos && LOJA.envio_cuidadoso) require('./assistente-consertos.js')({ node, ifNode, cond, ferramentasWorkflow: assistente.ferramentasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, empresaId: LOJA.empresa_id });
   // Lote 2 de 20/11: "confirmo" ao lembrete grava confirmado_em e o app mostra "Confirmou" (confirmou-presenca.js, supabase/055)
   if (LOJA.confirmou_presenca) require('./confirmou-presenca.js')({ node, workflow, empresaId: LOJA.empresa_id });
+  // 20/11: segunda profissional (Duda) na mesma agenda, separada; a IA oferece o horário livre de quem for (duas-profissionais.js).
+  // Fica no fim: troca textos que os módulos da agenda e do lembrete já puseram.
+  if (LOJA.segunda_profissional) require('./duas-profissionais.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

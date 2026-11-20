@@ -182,5 +182,6 @@
   "resumo_noite": "19:00",
   "conferente": "observar",
   "assistente_consertos": true,
-  "confirmou_presenca": true
+  "confirmou_presenca": true,
+  "segunda_profissional": { "id": "195862b8-efdc-4087-a653-083fdf7e0c35", "nome": "Duda", "principal_id": "bcc300c7-a83f-4c8c-81a7-0f50c65bf5dc" }
 }
