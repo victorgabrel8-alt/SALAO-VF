@@ -15,7 +15,11 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 // vai ANTES do texto da foto (a troca da loja continua trocando cabelo por unhas no resto)
 const FOTO_COMPROVANTE = 'SE A IMAGEM FOR COMPROVANTE de Pix ou de transferência (tela ou print de banco), responda SÓ uma linha exatamente neste formato, copiando o que está escrito na imagem: ' +
   'COMPROVANTE PIX | valor: 0,00 | data: DD/MM/AAAA HH:MM | situacao: concluido, agendado, pendente ou nao aparece | recebedor: nome de quem recebeu | chave: chave Pix de quem recebeu | id: ID ou código da transação, sem espaços | pagador: nome de quem pagou | suspeito: sim ou nao. ' +
-  'Campo que não aparece na imagem fica vazio. Print de tela de app de banco é normal (recortado, com a barra do celular): isso NÃO é suspeito. Marque suspeito: sim só com sinal claro de edição: números desalinhados, fontes diferentes na mesma linha, valor escrito por cima de outro ou partes coladas de imagens diferentes. SE NÃO FOR COMPROVANTE: ';
+  'Campo que não aparece na imagem fica vazio. ';
+// Como decide "suspeito". A Gleide continua com o texto de antes (não mexer nela); as outras lojas usam o novo
+// (Carol, 20/11: todo print de banco saía "suspeito").
+const SUSPEITO_GLEIDE = 'Marque suspeito: sim só se a imagem parecer montagem, recortada ou com números editados. SE NÃO FOR COMPROVANTE: ';
+const SUSPEITO_NOVO = 'Print de tela de app de banco é normal (recortado, com a barra do celular): isso NÃO é suspeito. Marque suspeito: sim só com sinal claro de edição: números desalinhados, fontes diferentes na mesma linha, valor escrito por cima de outro ou partes coladas de imagens diferentes. SE NÃO FOR COMPROVANTE: ';
 
 // o que a IA faz em cada motivo de recusa (n8n_sinal_conferir.motivo)
 const MOTIVOS = {
@@ -38,8 +42,9 @@ module.exports = ({ node, workflow, agendaWorkflow, loja, semBloco, dona }) => {
 
   // 1. foto: comprovante em linha fixa antes da descrição de sempre
   const midia = achar(workflow, 'Entender mídia (Gemini)');
-  if (FOTO_COMPROVANTE.includes("'")) throw new Error('sinal_pix: aspas no texto da foto');
-  midia.parameters.jsonBody = trocar(midia.parameters.jsonBody, "? 'Uma cliente de um salão de mega hair mandou esta foto", `? '${FOTO_COMPROVANTE}Uma cliente de um salão de mega hair mandou esta foto`, 'Entender mídia');
+  const fotoComprovante = FOTO_COMPROVANTE + (loja && loja.slug === 'gleide' ? SUSPEITO_GLEIDE : SUSPEITO_NOVO);
+  if (fotoComprovante.includes("'")) throw new Error('sinal_pix: aspas no texto da foto');
+  midia.parameters.jsonBody = trocar(midia.parameters.jsonBody, "? 'Uma cliente de um salão de mega hair mandou esta foto", `? '${fotoComprovante}Uma cliente de um salão de mega hair mandou esta foto`, 'Entender mídia');
   midia.parameters.jsonBody = trocar(midia.parameters.jsonBody, 'Se for print de conversa, comprovante ou outra coisa, diga só o que é.', 'Se for print de conversa ou outra coisa, diga só o que é.', 'Entender mídia');
 
   // 1b. comprovante em PDF (13/11/2026): o banco manda o comprovante como arquivo e o "Filtro" jogava fora
