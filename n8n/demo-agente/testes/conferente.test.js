@@ -51,6 +51,40 @@ test('"Agendado" com NÃO AGENDADO é barrado', () => {
   assert.deepStrictEqual(tipos(conferir(base({ texto: 'Agendado 🙏 te espero sábado às 8h', passos, ficha: 'sábado 8h' }))), ['promessa']);
 });
 
+// caso real de 20/11 (Caroline): o criar_agendamento devolve JSON, o Conferente não via o AGENDADO, cortou a confirmação
+// e mandou "Posso reservar esse horário pra você?" para quem já tinha pago o sinal e já estava marcada
+const AGENDADO_JSON = '[{"resposta":"AGENDADO com sucesso na agenda do salão: sábado, 21/11 às 08:00 com a Duda. Agora confirme para a cliente o serviço, o dia e a hora. SINAL: o comprovante de R$ 20,00 foi conferido e ficou registrado no agendamento."}]';
+test('AGENDADO dentro de JSON (resultado real do criar_agendamento) passa', () => {
+  const passos = [{ ferramenta: 'criar_agendamento', resultado: AGENDADO_JSON }];
+  const texto = 'Agendado 🙏\n\nSua manicure e pedicure ficou marcada pra amanhã, sábado, às 8h com a Duda. O sinal de R$ 20 já está registrado e fica descontado no valor total no dia.';
+  assert.deepStrictEqual(tipos(conferir(base({ texto, passos }))), []);
+});
+
+test('NÃO AGENDADO dentro de JSON continua barrado e a versão segura diz que não ficou reservado', () => {
+  const passos = [{ ferramenta: 'criar_agendamento', resultado: '[{"resposta":"NÃO AGENDADO: ainda não chegou a foto do comprovante do Pix do sinal."}]' }];
+  const ctx = base({ texto: 'Reservei pra você sábado às 8h 🙏', passos, ficha: 'sábado 8h' });
+  assert.deepStrictEqual(tipos(conferir(ctx)), ['promessa']);
+  assert.match(versaoSegura(ctx).texto, /ainda não ficou reservado/);
+});
+
+test('repetir a confirmação de um horário que já está marcado na ficha passa', () => {
+  const ficha = 'Nome: [cliente]\nHorário marcado: sábado, 21/11 às 08:00 — Manicure e pedicure';
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Reservei seu pé e mão pra amanhã, sábado, às 8h com a Duda 🙏', ficha }))), []);
+});
+
+test('mesma hora em outro dia, ou com NÃO AGENDADO agora, continua barrado mesmo com horário na ficha', () => {
+  const ficha = 'Horário marcado: sábado, 21/11 às 08:00 — Manicure e pedicure';
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Reservei segunda às 8h pra você!', ficha }))), ['promessa']);
+  const passos = [{ ferramenta: 'criar_agendamento', resultado: '[{"resposta":"NÃO AGENDADO: falta comprovante"}]' }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Reservei sábado às 8h pra você!', ficha, passos }))), ['promessa']);
+});
+
+test('"Reservei" num horário diferente do que está marcado continua barrado', () => {
+  const ficha = 'Horário marcado: sábado, 21/11 às 08:00 — Manicure e pedicure';
+  const anteriores = [{ direcao: 'saida', autor: 'ia', conteudo: 'Tenho sábado às 10h', criado_em: min(5) }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Reservei pra você sábado às 10h 🙏', ficha, anteriores }))), ['promessa']);
+});
+
 test('remarquei sem REMARCADO é barrado', () => {
   assert.ok(tipos(conferir(base({ texto: 'Remarquei pra quinta' }))).includes('promessa'));
 });
