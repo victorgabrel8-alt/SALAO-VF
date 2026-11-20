@@ -853,6 +853,8 @@ if (LOJA) {
   if (LOJA.contexto_saidas) require('./contexto-saidas.js')({ workflow });
   // horário que a dona mandou oferecer: marca sem sinal e sem perguntar de novo (oferta-da-dona.js)
   if (LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./oferta-da-dona.js')({ workflow, agendaWorkflow });
+  // serviço feito aqui deu problema: a IA acolhe, avisa a dona e agenda o reparo sem sinal (reparo-do-studio.js)
+  if (LOJA.reparo_do_studio && LOJA.oferta_sem_sinal && LOJA.sinal_pix && LOJA.contexto_saidas) require('./reparo-do-studio.js')({ workflow, agendaWorkflow, dona: LOJA.dona });
   // almoço que a IA não oferece, mas marca se a cliente pedir (almoco-flexivel.js)
   if (LOJA.almoco_flexivel) require('./almoco-flexivel.js')({ agendaWorkflow });
   if (LOJA.google_agenda) {
@@ -903,10 +905,36 @@ if (LOJA) {
   if (LOJA.pendencias_horas) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: LOJA.pendencias_horas });
   // a assistente da dona nunca manda à cliente endereço ou link de mapa que não seja o do cadastro (endereco-certo.js); Caroline, 17/11
   require('./endereco-certo.js')({ node, main, ifNode, cond, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
+  // endereço com link do mapa sai como foto do salão com o texto na legenda (foto-endereco.js); Caroline, 18/11
+  if (LOJA.foto_endereco) require('./foto-endereco.js')({ workflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   // a cliente mandou vídeo: a IA assiste e responde (video.js)
   require('./video.js')({ workflow, D });
   // a IA lembra da conversa antiga de quem volta depois do prazo da memória (loja.json: conversa_antiga)
   if (LOJA.conversa_antiga) require('./conversa-antiga.js')({ workflow, main });
+  // erros da Caroline de 13 a 19/11/2026 (análise das 1.640 mensagens):
+  // horário que já é da cliente não aparece para ela como "acabou de ser ocupado" (vaga-da-propria-cliente.js)
+  if (LOJA.vaga_da_propria_cliente) require('./vaga-da-propria-cliente.js')({ agendaWorkflow });
+  // chave Pix sozinha no balão, sem "reservei" antes do sinal, sem palavra solta (saida-limpa.js)
+  if (LOJA.saida_limpa) require('./saida-limpa.js')({ workflow });
+  // mensagem que chega sem número (@lid sem remoteJidAlt) é cópia: a IA não responde (lid-sem-numero.js)
+  if (LOJA.ignorar_lid_sem_numero) require('./lid-sem-numero.js')({ workflow });
+  // assistente: recado para a IA quando a cliente está conversando, sem confirmação repetida, sem "confirmado" sem
+  // horário, e aviso à cliente depois de remarcar (envio-cuidadoso.js); depois do foto-endereco, contexto-saidas e conversa-antiga
+  if (LOJA.envio_cuidadoso && LOJA.contexto_saidas && LOJA.conversa_antiga) require('./envio-cuidadoso.js')({ node, main, ifNode, cond, REDIS, workflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
+  // assistente sabe preços e chave Pix e não promete lembrar depois (assistente-cuidados.js)
+  if (LOJA.assistente_cuidados) require('./assistente-cuidados.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // orquestrador, fase A: o Conferente confere cada resposta da IA (conferente.js). "observar" = só registra, a resposta sai igual
+  if (LOJA.conferente) require('./conferente.js')({ node, ifNode, cond, workflow, loja: LOJA });
+  // Lote 1 de 20/11: sinal pago entra no horário marcado pela dona, mês conferido, sem mensagem repetida (assistente-consertos.js).
+  // Fica depois do Conferente para não mudar os ids dos nós dele.
+  if (LOJA.assistente_consertos && LOJA.envio_cuidadoso) require('./assistente-consertos.js')({ node, ifNode, cond, ferramentasWorkflow: assistente.ferramentasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, empresaId: LOJA.empresa_id });
+  // Lote 2 de 20/11: "confirmo" ao lembrete grava confirmado_em e o app mostra "Confirmou" (confirmou-presenca.js, supabase/055)
+  if (LOJA.confirmou_presenca) require('./confirmou-presenca.js')({ node, workflow, empresaId: LOJA.empresa_id });
+  // 20/11: segunda profissional (Duda) na mesma agenda, separada; a IA oferece o horário livre de quem for (duas-profissionais.js).
+  // Fica no fim: troca textos que os módulos da agenda e do lembrete já puseram.
+  if (LOJA.segunda_profissional) require('./duas-profissionais.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
+  // 20/11: voucher de R$ 20 da esmaltação em gel; manda o código sozinho e mostra na ficha (voucher-gel.js, supabase/057)
+  if (LOJA.voucher_gel) require('./voucher-gel.js')({ faltasWorkflow: faltas.faltasWorkflow, workflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

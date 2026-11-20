@@ -167,10 +167,22 @@
   "bloco_minutos": 150,
   "contexto_saidas": true,
   "oferta_sem_sinal": true,
+  "reparo_do_studio": true,
+  "foto_endereco": true,
+  "vaga_da_propria_cliente": true,
+  "saida_limpa": true,
+  "ignorar_lid_sem_numero": true,
+  "envio_cuidadoso": true,
+  "assistente_cuidados": true,
   "assistente_conversas": true,
   "assistente_fotos": true,
   "assistente_marcar": true,
   "lembrete_duplo": true,
   "pendencias_horas": [12, 18],
-  "resumo_noite": "19:00"
+  "resumo_noite": "19:00",
+  "conferente": "observar",
+  "assistente_consertos": true,
+  "confirmou_presenca": true,
+  "segunda_profissional": { "id": "195862b8-efdc-4087-a653-083fdf7e0c35", "nome": "Duda", "principal_id": "bcc300c7-a83f-4c8c-81a7-0f50c65bf5dc" },
+  "voucher_gel": true
 }

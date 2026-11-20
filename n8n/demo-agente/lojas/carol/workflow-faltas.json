@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000243",
+      "id": "00000000-0000-4000-8000-000000000258",
       "name": "A cada 5 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -38,7 +38,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000244",
+      "id": "00000000-0000-4000-8000-000000000259",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -72,7 +72,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000245",
+      "id": "00000000-0000-4000-8000-000000000260",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -96,7 +96,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000246",
+      "id": "00000000-0000-4000-8000-000000000261",
       "name": "Faltas para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -128,7 +128,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000247",
+      "id": "00000000-0000-4000-8000-000000000262",
       "name": "Mensagem da falta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -141,7 +141,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000248",
+      "id": "00000000-0000-4000-8000-000000000263",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -172,7 +172,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000249",
+      "id": "00000000-0000-4000-8000-000000000264",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -206,7 +206,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000250",
+      "id": "00000000-0000-4000-8000-000000000265",
       "name": "Registrar chamada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -238,7 +238,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000251",
+      "id": "00000000-0000-4000-8000-000000000266",
       "name": "Atrasos para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -270,7 +270,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000252",
+      "id": "00000000-0000-4000-8000-000000000267",
       "name": "Mensagem do atraso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -283,7 +283,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000253",
+      "id": "00000000-0000-4000-8000-000000000268",
       "name": "Chamar a atrasada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -314,7 +314,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000254",
+      "id": "00000000-0000-4000-8000-000000000269",
       "name": "Chamou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -348,7 +348,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000255",
+      "id": "00000000-0000-4000-8000-000000000270",
       "name": "Registrar chamada do atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -380,7 +380,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000256",
+      "id": "00000000-0000-4000-8000-000000000271",
       "name": "Lembretes para mandar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -412,7 +412,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000257",
+      "id": "00000000-0000-4000-8000-000000000272",
       "name": "Mensagem do lembrete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -421,11 +421,11 @@
         400
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n\nconst LOJA = \"Studio Caroline Ferreira\", DONA = \"Caroline\";\nreturn $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\n  const texto = l.momento === 'horas_antes'\n    ? oi + ' Lembrando do seu horário com a ' + DONA + ' ' + quando(l.inicio) + '. A agenda dela está cheia e ela não consegue esperar atraso, tá bom? Te esperamos!'\n    : oi + ' Aqui é do ' + LOJA + '. Passando para confirmar o seu horário com a ' + DONA + ' ' + quando(l.inicio) + '. Posso confirmar a sua presença?';\n  return { json: { ...l, texto } };\n});\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n\nconst LOJA = \"Studio Caroline Ferreira\", DONA = \"Caroline\";\nconst DA2 = new Set($('Lembretes: horários da Duda').all().map((i) => i.json && i.json.id).filter(Boolean));\nreturn $('Lembretes para mandar').all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const comQuem = DA2.has(l.agendamento_id) ? \"Duda\" : DONA;\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\n  const texto = l.momento === 'horas_antes'\n    ? oi + ' Lembrando do seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. A agenda dela está cheia e ela não consegue esperar atraso, tá bom? Te esperamos!'\n    : oi + ' Aqui é do ' + LOJA + '. Passando para confirmar o seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. Posso confirmar a sua presença?';\n  return { json: { ...l, texto } };\n});\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000258",
+      "id": "00000000-0000-4000-8000-000000000273",
       "name": "Lembrar a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -463,7 +463,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000259",
+      "id": "00000000-0000-4000-8000-000000000274",
       "name": "Lembrou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -497,7 +497,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000260",
+      "id": "00000000-0000-4000-8000-000000000275",
       "name": "Registrar lembrete",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -529,7 +529,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000261",
+      "id": "00000000-0000-4000-8000-000000000276",
       "name": "Atrasos para confirmar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -561,7 +561,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000262",
+      "id": "00000000-0000-4000-8000-000000000277",
       "name": "Mensagem veio ou libera",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -574,7 +574,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000263",
+      "id": "00000000-0000-4000-8000-000000000278",
       "name": "Perguntar à Caroline (atraso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -604,7 +604,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000264",
+      "id": "00000000-0000-4000-8000-000000000279",
       "name": "Guardar pergunta do atraso",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -626,7 +626,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000265",
+      "id": "00000000-0000-4000-8000-000000000280",
       "name": "Marcar atraso perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -658,7 +658,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000266",
+      "id": "00000000-0000-4000-8000-000000000281",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -690,7 +690,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000267",
+      "id": "00000000-0000-4000-8000-000000000282",
       "name": "Mensagem do conflito",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -703,7 +703,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000268",
+      "id": "00000000-0000-4000-8000-000000000283",
       "name": "Avisar a Caroline (conflito)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -733,7 +733,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000269",
+      "id": "00000000-0000-4000-8000-000000000284",
       "name": "Guardar aviso do conflito",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -755,7 +755,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000270",
+      "id": "00000000-0000-4000-8000-000000000285",
       "name": "Marcar conflito avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -788,7 +788,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000271",
+      "id": "00000000-0000-4000-8000-000000000286",
       "name": "Vagas para oferecer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -820,7 +820,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000272",
+      "id": "00000000-0000-4000-8000-000000000287",
       "name": "Mensagem da vaga",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -833,7 +833,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000273",
+      "id": "00000000-0000-4000-8000-000000000288",
       "name": "Oferecer para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -864,7 +864,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000274",
+      "id": "00000000-0000-4000-8000-000000000289",
       "name": "Ofereceu?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -898,7 +898,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000275",
+      "id": "00000000-0000-4000-8000-000000000290",
       "name": "Registrar oferta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -930,7 +930,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000276",
+      "id": "00000000-0000-4000-8000-000000000291",
       "name": "Mudanças da IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -962,7 +962,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000277",
+      "id": "00000000-0000-4000-8000-000000000292",
       "name": "Mensagem da mudança",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -975,7 +975,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000278",
+      "id": "00000000-0000-4000-8000-000000000293",
       "name": "Avisar a mudança",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1006,7 +1006,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000279",
+      "id": "00000000-0000-4000-8000-000000000294",
       "name": "Avisou a mudança?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1040,7 +1040,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000280",
+      "id": "00000000-0000-4000-8000-000000000295",
       "name": "Guardar a mudança na memória",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1063,7 +1063,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000281",
+      "id": "00000000-0000-4000-8000-000000000296",
       "name": "Marcar mudança avisada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1096,7 +1096,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000282",
+      "id": "00000000-0000-4000-8000-000000000297",
       "name": "Avisos para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1128,7 +1128,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000283",
+      "id": "00000000-0000-4000-8000-000000000298",
       "name": "Mensagem do aviso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1141,7 +1141,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000284",
+      "id": "00000000-0000-4000-8000-000000000299",
       "name": "Mandar para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1171,7 +1171,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000285",
+      "id": "00000000-0000-4000-8000-000000000300",
       "name": "Guardar na memória da assistente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1193,7 +1193,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000286",
+      "id": "00000000-0000-4000-8000-000000000301",
       "name": "Marcar avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1226,7 +1226,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000287",
+      "id": "00000000-0000-4000-8000-000000000302",
       "name": "Faltas sem resposta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1239,7 +1239,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000288",
+      "id": "00000000-0000-4000-8000-000000000303",
       "name": "Anotar falta sem resposta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1462,6 +1462,192 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000446",
+      "name": "Lembretes: horários da Duda",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id&empresa_id=eq.26a5d3eb-e8e4-4ed8-b206-095095292fdd&profissional_id=eq.195862b8-efdc-4087-a653-083fdf7e0c35&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "334d144f-7551-4db7-8b52-87078c92222d",
+      "name": "Vouchers para mandar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_vouchers_para_mandar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c59c75e8-e3f7-41a1-8740-6ae5bfa8a7b6",
+      "name": "Mensagem do voucher",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        180
+      ],
+      "parameters": {
+        "jsCode": "\nconst primeiro = (n) => { const p = String(n || '').trim().split(/\\s+/)[0] || ''; return /^\\p{L}[\\p{L}'-]*$/u.test(p) ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : ''; };\nconst ddmm = (d) => { const m = String(d || '').match(/^(\\d{4})-(\\d{2})-(\\d{2})/); return m ? m[3] + '/' + m[2] : ''; };\nconst reais = (v) => 'R$ ' + Number(v || 20).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nreturn $input.all().map((i) => i.json).filter((v) => v.voucher_id && v.codigo && v.telefone).map((v) => {\n  const nome = primeiro(v.nome);\n  const ate = ddmm(v.valido_ate);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + ', obrigada pela visita 🙏 Você ganhou um voucher de ' + reais(v.valor) +\n    ' pro seu próximo serviço aqui, é só mostrar o código ' + v.codigo + '.' + (ate ? ' Vale até ' + ate + '.' : '');\n  return { json: { ...v, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "d1b45fa1-f7d5-4800-84d2-7301d2acad7e",
+      "name": "Mandar o voucher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "0b3f6671-e7ad-4dae-855a-c7f16c67ccf4",
+      "name": "Mandou o voucher?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1260,
+        180
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vg1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e22486ae-ba2f-40b6-8fa5-7f642922b494",
+      "name": "Registrar voucher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_voucher_enviado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_voucher_id: $('Mensagem do voucher').item.json.voucher_id, p_mensagem: $('Mensagem do voucher').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1518,6 +1704,11 @@
             "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Vouchers para mandar",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1564,6 +1755,11 @@
             "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Vouchers para mandar",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1572,7 +1768,7 @@
       "main": [
         [
           {
-            "node": "Mensagem do lembrete",
+            "node": "Lembretes: horários da Duda",
             "type": "main",
             "index": 0
           }
@@ -2018,6 +2214,61 @@
         [
           {
             "node": "Resumo: guardar na memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembretes: horários da Duda": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vouchers para mandar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do voucher": {
+      "main": [
+        [
+          {
+            "node": "Mandar o voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar o voucher": {
+      "main": [
+        [
+          {
+            "node": "Mandou o voucher?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandou o voucher?": {
+      "main": [
+        [
+          {
+            "node": "Registrar voucher",
             "type": "main",
             "index": 0
           }
