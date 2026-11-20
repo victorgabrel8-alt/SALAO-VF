@@ -159,6 +159,7 @@ function selo(a: Atendimento): { rotulo: string; classe: string } {
   if (a.chegou_em) return { rotulo: "Chegou", classe: "bg-salvia text-salvia-texto" };
   if (naoAtendida(a)) return { rotulo: "Não atendida", classe: "bg-rose text-rose-texto" };
   if (emAndamento(a)) return { rotulo: "Agora", classe: "bg-grafite text-perola" };
+  if (a.status === "agendado" && a.confirmado_em) return { rotulo: "Confirmou", classe: "bg-salvia text-salvia-texto" };
   return { rotulo: "A atender", classe: "bg-taupe text-taupe-texto" };
 }
 

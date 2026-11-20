@@ -5331,6 +5331,40 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000445",
+      "name": "Presença: confirmou?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -300,
+        1560
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_confirmar_presenca",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_cliente_id: $('Supabase: registrar entrada').first().json.cliente_id || null, p_texto: String($('Texto da mensagem').first().json.texto || '') }) }}",
+        "options": {
+          "timeout": 3000
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -6028,6 +6062,11 @@
         [
           {
             "node": "Foto: é foto?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Presença: confirmou?",
             "type": "main",
             "index": 0
           }

@@ -181,5 +181,6 @@
   "pendencias_horas": [12, 18],
   "resumo_noite": "19:00",
   "conferente": "observar",
-  "assistente_consertos": true
+  "assistente_consertos": true,
+  "confirmou_presenca": true
 }

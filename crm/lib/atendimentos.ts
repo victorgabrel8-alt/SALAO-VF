@@ -21,6 +21,8 @@ export type Atendimento = {
   // Sinal por Pix que a IA conferiu no comprovante antes de marcar (supabase/037): abater no acerto
   sinal_valor?: number | null;
   sinal_pago_em?: string | null;
+  // A cliente respondeu "confirmo" ao lembrete (supabase/055; só nas lojas com confirmou_presenca no n8n)
+  confirmado_em?: string | null;
   clientes: { id: string; nome: string | null; telefone: string; etiquetas: string[]; observacoes: string | null } | null;
   servicos: { nome: string } | null;
   // Serviços a mais feitos no mesmo horário (ver comExtras)
@@ -139,7 +141,7 @@ async function comExtras(lista: Atendimento[]): Promise<Atendimento[]> {
 // Sem valores: o painel do salão controla atendimentos, não dinheiro (a tabela de preços
 // fica com a profissional e a IA)
 const CAMPOS =
-  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, quantidade, observacoes, sinal_valor, sinal_pago_em, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
+  "id, inicio, fim, status, chegou_em, origem, google_event_id, profissional_id, servico_id, quantidade, observacoes, sinal_valor, sinal_pago_em, confirmado_em, clientes (id, nome, telefone, etiquetas, observacoes), servicos (nome)";
 
 // Atendimentos de um dia (no fuso do salão), em ordem de horário
 export async function buscarAtendimentosDoDia(empresaId: string, dia: string) {

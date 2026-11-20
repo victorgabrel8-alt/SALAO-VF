@@ -11,6 +11,8 @@
 //    passa por cima de horário ocupado no banco.
 // 3. Mensagem repetida (20/11, Vanessa: duas desculpas em 1 minuto): mandar para a mesma cliente um texto parecido
 //    com o que o salão mandou nos últimos 10 minutos não sai; a assistente manda só o que for novo.
+// 4. Tom (PDF erro 12): mensagem para a cliente com "fase de teste", "sistema", "assistente", "confirmadíssimo" ou emoji
+//    de enfeite (✨ 💅 😊 ❤️ ✅) não sai; volta para a assistente reescrever do jeito da Caroline.
 
 const VINCULAR = 'Sinal: vincular ao horário';
 
@@ -100,6 +102,14 @@ module.exports = ({ node, ifNode, cond, ferramentasWorkflow: F, assistenteWorkfl
     "    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): às ' + hm(recente.criado_em) + ' ela já recebeu uma mensagem parecida: «' + String(recente.conteudo).replace(/\\s+/g, ' ').slice(0, 160) + '». ' +",
     "      'Duas mensagens quase iguais em poucos minutos confundem a cliente. Se a Caroline quer acrescentar algo, mande SÓ o que é novo, curto; se não há nada novo, não mande e conte isso à Caroline em uma linha.';",
     '  }',
+    '}',
+    '// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente;',
+    '// volta para a assistente escrever do jeito da Caroline (prompt-assistente, seção G).',
+    "const robo = /fase de teste|em teste|estamos testando|\\bsistema\\b|\\brobo\\b|intelig[eê]ncia artificial|\\bsou (a|uma) (ia|assistente)|assistente virtual|confirmad[ií]ssim/i.test(txt);",
+    "const enfeite = /[\\u2728\\u{1F485}\\u{1F60A}\\u2764\\u2705\\u{1F496}\\u{1F497}\\u{1F338}\\u{1F31F}]/u.test(txt);",
+    'if (!bloqueio && (robo || enfeite)) {',
+    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +",
+    "    ', e a cliente lê como se fosse a Caroline. Reescreva curto, do jeito dela (seção G: \"Oi Ana, ficou sexta às 14h 🙏\"), e mande de novo.';",
     '}',
     'return [{ json: { bloqueio, recado, telefone: tel,',
   ].join('\n'));

@@ -535,6 +535,7 @@ function Situacao({ atendimento: a, agora }: { atendimento: Atendimento; agora: 
   const inicio = Date.parse(a.inicio);
   if (agora >= inicio && agora < inicio + minutos(a) * 60_000)
     return <span className="shrink-0 rounded-full bg-grafite px-2.5 py-1 text-[13px] font-bold text-perola">Agora</span>;
+  if (a.status === "agendado" && a.confirmado_em) return <span className="shrink-0 text-[14px] font-bold text-salvia-texto">✓ Confirmou</span>;
   return null;
 }
 
