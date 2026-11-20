@@ -925,6 +925,9 @@ if (LOJA) {
   if (LOJA.assistente_cuidados) require('./assistente-cuidados.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   // orquestrador, fase A: o Conferente confere cada resposta da IA (conferente.js). "observar" = só registra, a resposta sai igual
   if (LOJA.conferente) require('./conferente.js')({ node, ifNode, cond, workflow, loja: LOJA });
+  // Lote 1 de 20/11: sinal pago entra no horário marcado pela dona, mês conferido, sem mensagem repetida (assistente-consertos.js).
+  // Fica depois do Conferente para não mudar os ids dos nós dele.
+  if (LOJA.assistente_consertos && LOJA.envio_cuidadoso) require('./assistente-consertos.js')({ node, ifNode, cond, ferramentasWorkflow: assistente.ferramentasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, empresaId: LOJA.empresa_id });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

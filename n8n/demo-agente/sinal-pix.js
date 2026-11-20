@@ -15,7 +15,7 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 // vai ANTES do texto da foto (a troca da loja continua trocando cabelo por unhas no resto)
 const FOTO_COMPROVANTE = 'SE A IMAGEM FOR COMPROVANTE de Pix ou de transferência (tela ou print de banco), responda SÓ uma linha exatamente neste formato, copiando o que está escrito na imagem: ' +
   'COMPROVANTE PIX | valor: 0,00 | data: DD/MM/AAAA HH:MM | situacao: concluido, agendado, pendente ou nao aparece | recebedor: nome de quem recebeu | chave: chave Pix de quem recebeu | id: ID ou código da transação, sem espaços | pagador: nome de quem pagou | suspeito: sim ou nao. ' +
-  'Campo que não aparece na imagem fica vazio. Marque suspeito: sim só se a imagem parecer montagem, recortada ou com números editados. SE NÃO FOR COMPROVANTE: ';
+  'Campo que não aparece na imagem fica vazio. Print de tela de app de banco é normal (recortado, com a barra do celular): isso NÃO é suspeito. Marque suspeito: sim só com sinal claro de edição: números desalinhados, fontes diferentes na mesma linha, valor escrito por cima de outro ou partes coladas de imagens diferentes. SE NÃO FOR COMPROVANTE: ';
 
 // o que a IA faz em cada motivo de recusa (n8n_sinal_conferir.motivo)
 const MOTIVOS = {
