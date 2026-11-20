@@ -1495,6 +1495,159 @@
       "executeOnce": true,
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "334d144f-7551-4db7-8b52-87078c92222d",
+      "name": "Vouchers para mandar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_vouchers_para_mandar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c59c75e8-e3f7-41a1-8740-6ae5bfa8a7b6",
+      "name": "Mensagem do voucher",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        180
+      ],
+      "parameters": {
+        "jsCode": "\nconst primeiro = (n) => { const p = String(n || '').trim().split(/\\s+/)[0] || ''; return /^\\p{L}[\\p{L}'-]*$/u.test(p) ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : ''; };\nconst ddmm = (d) => { const m = String(d || '').match(/^(\\d{4})-(\\d{2})-(\\d{2})/); return m ? m[3] + '/' + m[2] : ''; };\nconst reais = (v) => 'R$ ' + Number(v || 20).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nreturn $input.all().map((i) => i.json).filter((v) => v.voucher_id && v.codigo && v.telefone).map((v) => {\n  const nome = primeiro(v.nome);\n  const ate = ddmm(v.valido_ate);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + ', obrigada pela visita 🙏 Você ganhou um voucher de ' + reais(v.valor) +\n    ' pro seu próximo serviço aqui, é só mostrar o código ' + v.codigo + '.' + (ate ? ' Vale até ' + ate + '.' : '');\n  return { json: { ...v, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "d1b45fa1-f7d5-4800-84d2-7301d2acad7e",
+      "name": "Mandar o voucher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "0b3f6671-e7ad-4dae-855a-c7f16c67ccf4",
+      "name": "Mandou o voucher?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1260,
+        180
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vg1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e22486ae-ba2f-40b6-8fa5-7f642922b494",
+      "name": "Registrar voucher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_voucher_enviado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_voucher_id: $('Mensagem do voucher').item.json.voucher_id, p_mensagem: $('Mensagem do voucher').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -1551,6 +1704,11 @@
             "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Vouchers para mandar",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1595,6 +1753,11 @@
           },
           {
             "node": "Avisos para a Caroline",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Vouchers para mandar",
             "type": "main",
             "index": 0
           }
@@ -2062,6 +2225,50 @@
         [
           {
             "node": "Mensagem do lembrete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vouchers para mandar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do voucher": {
+      "main": [
+        [
+          {
+            "node": "Mandar o voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar o voucher": {
+      "main": [
+        [
+          {
+            "node": "Mandou o voucher?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandou o voucher?": {
+      "main": [
+        [
+          {
+            "node": "Registrar voucher",
             "type": "main",
             "index": 0
           }

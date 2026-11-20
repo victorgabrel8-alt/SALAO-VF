@@ -933,6 +933,8 @@ if (LOJA) {
   // 20/11: segunda profissional (Duda) na mesma agenda, separada; a IA oferece o horário livre de quem for (duas-profissionais.js).
   // Fica no fim: troca textos que os módulos da agenda e do lembrete já puseram.
   if (LOJA.segunda_profissional) require('./duas-profissionais.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
+  // 20/11: voucher de R$ 20 da esmaltação em gel; manda o código sozinho e mostra na ficha (voucher-gel.js, supabase/057)
+  if (LOJA.voucher_gel) require('./voucher-gel.js')({ faltasWorkflow: faltas.faltasWorkflow, workflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
