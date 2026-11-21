@@ -41,7 +41,13 @@ module.exports = ({ node, ifNode, cond, workflow: wf, loja }) => {
   const modo = loja.conferente;
   if (modo !== 'observar' && modo !== 'ligado') throw new Error(`conferente: modo "${modo}" não existe (só "observar" ou "ligado")`);
   const achar = (nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error('conferente: sem o nó ' + nome); return n; };
-  for (const nome of ['Agente IA', 'Supabase: tabela de serviços', 'Supabase: dados do salão', 'Supabase: últimas mensagens', 'Sobre esta cliente', 'Extrair dados']) achar(nome);
+  // Gleide (21/11/2026): o principal dela não tem "Supabase: dados do salão" (só as lojas têm, lojas.dadosDoSalao, que também
+  // mexe no prompt). No modo observar o Conferente lê o cadastro no próprio ramo ("Conferente: dados do salão"), sem tocar no
+  // caminho da resposta. No ligado o nó continua obrigatório.
+  const temDados = wf.nodes.some((x) => x.name === 'Supabase: dados do salão');
+  if (!temDados && modo === 'ligado') achar('Supabase: dados do salão');
+  const NO_DADOS = temDados ? 'Supabase: dados do salão' : 'Conferente: dados do salão';
+  for (const nome of ['Agente IA', 'Supabase: tabela de serviços', 'Supabase: últimas mensagens', 'Sobre esta cliente', 'Extrair dados']) achar(nome);
 
   // as últimas mensagens passam a trazer quem escreveu (dona x IA): valor que a dona deu ("faz por 80") vale
   const ult = achar('Supabase: últimas mensagens');
@@ -58,10 +64,12 @@ module.exports = ({ node, ifNode, cond, workflow: wf, loja }) => {
     "  texto: ag.output || '',",
     "  passos,",
     "  servicos: pega('Supabase: tabela de serviços', (n) => n.all().map((i) => i.json).filter((s) => s && s.nome)) || [],",
-    "  config: pega('Supabase: dados do salão', (n) => n.first().json.config) || {},",
+    `  config: pega('${NO_DADOS}', (n) => n.first().json.config) || {},`,
     "  anteriores: pega('Supabase: últimas mensagens', (n) => n.all().map((i) => i.json).filter((m) => m && m.criado_em)) || [],",
     "  ficha: pega('Sobre esta cliente', (n) => n.first().json.texto) || '',",
     "  agora: Date.now(),",
+    // a regra "nome de outra loja" foi feita para a Caroline (aponta Gleide, mega hair, Toda Bonita): na Gleide fica de fora
+    `  semOutraLoja: ${loja.outra_loja === false},`,
     "};",
   ];
   const ferramentas = "passos.map((p) => ({ ferramenta: p.ferramenta, resultado: String(typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado || '')).slice(0, 300) }))";
@@ -87,16 +95,27 @@ module.exports = ({ node, ifNode, cond, workflow: wf, loja }) => {
       `  ferramentas: ${ferramentas} } }];`,
     ].join('\n');
 
+    // sem o nó do cadastro (Gleide): ramo lá embaixo na tela (y = 9300, como o portão): com executionOrder v1 o n8n roda
+    // primeiro o ramo mais alto, então a resposta sai antes e a leitura do cadastro não atrasa a cliente
+    const y = temDados ? 0 : 9300;
     wf.nodes.push(
-      node('Conferente: conferir', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: codigo }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
-      ifNode('Conferente: barrou?', [0, 0], [cond('c1', '={{ $json.ok === false }}', { type: 'boolean', operation: 'true', singleValue: true })]),
-      registrarNo([0, 0], 'modo: $json.modo, texto: $json.texto, falhas: $json.falhas, ferramentas: $json.ferramentas'),
+      node('Conferente: conferir', 'n8n-nodes-base.code', 2, [temDados ? 0 : 220, y], { jsCode: codigo }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
+      ifNode('Conferente: barrou?', [temDados ? 0 : 440, y], [cond('c1', '={{ $json.ok === false }}', { type: 'boolean', operation: 'true', singleValue: true })]),
+      registrarNo([temDados ? 0 : 660, y], 'modo: $json.modo, texto: $json.texto, falhas: $json.falhas, ferramentas: $json.ferramentas'),
     );
+    if (!temDados) {
+      const dados = JSON.parse(JSON.stringify(achar('Supabase: tabela de serviços')));
+      Object.assign(dados, { name: 'Conferente: dados do salão', id: crypto.createHash('md5').update('conferente-dados-' + loja.slug).digest('hex').replace(/^(.{8})(.{4})(.{4})(.{4})(.{12})$/, '$1-$2-$3-$4-$5'),
+        position: [0, y], onError: 'continueRegularOutput', alwaysOutputData: true });
+      dados.parameters.url = `={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.${loja.empresa_id}`;
+      wf.nodes.push(dados);
+    }
 
     // ramo à parte: o agente segue para o caminho de sempre E para o Conferente (que não volta para o caminho da resposta)
     const saida = wf.connections['Agente IA']?.main?.[0];
     if (!saida || !saida.length) throw new Error('conferente: o "Agente IA" não tem saída');
-    saida.push({ node: 'Conferente: conferir', type: 'main', index: 0 });
+    saida.push({ node: temDados ? 'Conferente: conferir' : 'Conferente: dados do salão', type: 'main', index: 0 });
+    if (!temDados) wf.connections['Conferente: dados do salão'] = { main: [[{ node: 'Conferente: conferir', type: 'main', index: 0 }]] };
     wf.connections['Conferente: conferir'] = { main: [[{ node: 'Conferente: barrou?', type: 'main', index: 0 }]] };
     wf.connections['Conferente: barrou?'] = { main: [[{ node: 'Conferente: registrar', type: 'main', index: 0 }], []] };
     return;

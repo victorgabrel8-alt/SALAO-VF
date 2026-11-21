@@ -226,3 +226,34 @@ test('pedido ao Gemini leva as falhas, os dados certos e não manda perguntar pa
   for (const t of ['disse que marcou', 'Manicure: R$ 50', 'Francesinha (adicional): R$ 30', '9h com a Duda', 'Rua dos Angicos', 'VOUCHER', 'Curto e direto.',
     'Não acrescente pergunta para Caroline', 'MENSAGEM DA CLIENTE AGORA:\npode ser às 9h', 'RESPOSTA ORIGINAL:\nReservei']) assert.ok(p.includes(t), t);
 });
+
+// Gleide (21/11/2026, fase 3 do portão): na própria loja de mega hair a regra "nome de outra loja" não vale
+test('Gleide: semOutraLoja não aponta "mega hair", "Gleide" nem "Toda Bonita"', () => {
+  const t = 'Aqui no Toda Bonita a Gle' + 'ide faz mega hair com fita e queratina';
+  assert.deepStrictEqual(tipos(conferir(base({ texto: t }))), ['outra_loja']);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: t, semOutraLoja: true }))), []);
+});
+
+test('Gleide: o Conferente monta em modo observar sem o nó "Supabase: dados do salão", num ramo à parte', () => {
+  let n = 0;
+  const node = (name, type, typeVersion, position, parameters, extra = {}) => ({ id: 'id-' + (++n), name, type, typeVersion, position, parameters, ...extra });
+  const ifNode = (name, position, conditions) => node(name, 'n8n-nodes-base.if', 2.2, position, { conditions: { conditions } });
+  const cond = (id, left, operator) => ({ id, leftValue: left, operator });
+  const wf = { nodes: ['Agente IA', 'Supabase: tabela de serviços', 'Supabase: últimas mensagens', 'Sobre esta cliente', 'Extrair dados', 'Quebrar mensagens']
+    .map((x) => node(x, 'x', 1, [0, 0], { url: x === 'Supabase: últimas mensagens' ? '/rest/v1/mensagens?select=direcao,conteudo,wa_message_id,criado_em&x=1' : '/rest/v1/servicos?select=nome' })),
+  connections: { 'Agente IA': { main: [[{ node: 'Quebrar mensagens', type: 'main', index: 0 }]] } } };
+  const loja = { slug: 'gleide', empresa_id: '00000000-0000-0000-0000-000000000001', nome: 'Salão Toda Bonita', dona: 'Gleide', conferente: 'observar', outra_loja: false };
+  require('../conferente.js')({ node, ifNode, cond, workflow: wf, loja });
+  assert.deepStrictEqual(wf.connections['Agente IA'].main[0].map((c) => c.node), ['Quebrar mensagens', 'Conferente: dados do salão']);
+  assert.strictEqual(wf.connections['Conferente: dados do salão'].main[0][0].node, 'Conferente: conferir');
+  const dados = wf.nodes.find((x) => x.name === 'Conferente: dados do salão');
+  assert.match(dados.parameters.url, /empresas\?select=config&id=eq\.00000000-0000-0000-0000-000000000001$/);
+  assert.ok(dados.position[1] >= 9000, 'ramo lá embaixo: a resposta sai antes');
+  const code = wf.nodes.find((x) => x.name === 'Conferente: conferir').parameters.jsCode;
+  assert.ok(code.includes('semOutraLoja: true'));
+  assert.ok(code.includes("pega('Conferente: dados do salão'"));
+  assert.match(wf.nodes.find((x) => x.name === 'Supabase: últimas mensagens').parameters.url, /criado_em,autor/);
+  // no ligado o nó do cadastro continua obrigatório
+  const wf2 = JSON.parse(JSON.stringify({ ...wf, nodes: wf.nodes.filter((x) => !/Conferente/.test(x.name)) }));
+  assert.throws(() => require('../conferente.js')({ node, ifNode, cond, workflow: wf2, loja: { ...loja, conferente: 'ligado' } }), /dados do salão/);
+});

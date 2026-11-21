@@ -832,6 +832,12 @@ if (!LOJA) require('./conversa-antiga.js')({ workflow, main });
 if (!LOJA) require('./pendencias-loja.js')({ pendenciasWorkflow: assistente.pendenciasWorkflow, horas: [12, 18] });
 // o lembrete não repete o combinado que a cliente ouviu hoje na conversa (lembrete-sem-repetir.js); pedido do Victor em 14/11
 if (!LOJA) require('./lembrete-sem-repetir.js')({ faltasWorkflow: faltas.faltasWorkflow });
+// Conferente de texto na Gleide (fase 3 do portão, 21/11/2026): o mesmo da Caroline (conferente.js), em modo observar.
+// Confere cada resposta da IA (preço da lista, "marquei" sem a agenda confirmar, horário, endereço, Pix, mensagem repetida)
+// e grava em conferente_registros (supabase/053) o que barraria; a resposta sai igual. A regra "nome de outra loja" fica de fora.
+// Depois do conversa-antiga: o Conferente acrescenta autor na consulta das últimas mensagens, que ele confere.
+if (!LOJA) require('./conferente.js')({ node, ifNode, cond, workflow,
+  loja: { slug: 'gleide', empresa_id: '00000000-0000-0000-0000-000000000001', nome: 'Salão Toda Bonita', dona: 'Gleide', conferente: 'observar', outra_loja: false } });
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 let rotinasWorkflow = null; // só no motor único (motor.js): chama cada rotina uma vez por loja

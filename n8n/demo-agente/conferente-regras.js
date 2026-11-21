@@ -166,7 +166,8 @@ function conferir(ctx) {
   }
 
   // ---------- 4. nome de outra loja ("toda bonita" minúsculo é elogio comum: só o nome com maiúsculas) ----------
-  if (/\bg[l]ei[dz]/i.test(texto) || /mega\s*-?\s*hair/i.test(texto) || /\bToda\s+Bonit[a]\b/.test(texto)) add('outra_loja', 'nome de outra loja ou de mega hair na resposta');
+  // na própria loja de mega hair a regra não vale: ctx.semOutraLoja (conferente.js, loja.outra_loja === false)
+  if (!ctx.semOutraLoja && (/\bg[l]ei[dz]/i.test(texto) || /mega\s*-?\s*hair/i.test(texto) || /\bToda\s+Bonit[a]\b/.test(texto))) add('outra_loja', 'nome de outra loja ou de mega hair na resposta');
 
   // ---------- 5. mesma mensagem nos últimos 30 min ----------
   const chaveTxt = String((loja.sinal_pix || {}).chave || '').trim();
