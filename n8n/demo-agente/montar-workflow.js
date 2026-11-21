@@ -823,6 +823,9 @@ const aplicarRespostas = () => {
     assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow,
     dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
 };
+// conferência semanal de vendas com a Gleide (conferencia-vendas.js, supabase/066): toda segunda às 10h, em linguagem natural;
+// os relatórios contam só venda confirmada por ela. Fase 2 do portão, 21/11/2026. Antes do pendencias-loja (que troca a função das pendências).
+if (!LOJA) require('./conferencia-vendas.js')({ assistenteWorkflow: assistente.assistenteWorkflow, pendenciasWorkflow: assistente.pendenciasWorkflow });
 if (!LOJA) aplicarRespostas();
 // a cliente mandou vídeo: a IA assiste e responde, nunca fica em silêncio (video.js); pedido do Victor em 16/11
 if (!LOJA) require('./video.js')({ workflow, D });

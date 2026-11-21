@@ -110,7 +110,18 @@ function conferirAcoes(ctx) {
     const nomeF = String(p.ferramenta);
     if (LEITURA.includes(nomeF)) continue;
     const e = entradaDe(p);
-    const res = curto(p.resultado, 300);
+    // a resposta da ferramenta pode vir como texto ("OK: …") ou embrulhada ({"resposta":"OK: …"} ou [{…}]), como no
+    // lerResposta do assistente-workflows.js: desembrulha antes de ler erro e o que o banco devolveu
+    const lerResp = (o) => {
+      let t = typeof o === 'string' ? o : JSON.stringify(o == null ? '' : o);
+      for (let i = 0; i < 3; i++) {
+        try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x === 'object' && typeof x.resposta === 'string') { t = x.resposta; continue; } } catch (er) { /* texto */ }
+        break;
+      }
+      return t;
+    };
+    const resCheio = lerResp(p.resultado);
+    const res = curto(resCheio, 300);
     const deuErro = /^\W{0,4}(erro|n[aã]o gravado|n[aã]o marquei)|^\W{0,4}"?erro"?\s*:|^\{\s*"erro"/i.test(res);
     const falhas = [];
     const add = (tipo, detalhe) => falhas.push({ tipo, detalhe });
@@ -129,6 +140,54 @@ function conferirAcoes(ctx) {
       const recolocou = afirma(/recoloc|reaproveit|trouxe o cabelo|colocar o cabelo dela|coloquei o cabelo dela|passa(r|ei|mos) (pra|para) (a )?fita|troca(r|mos)? (a |de )?tecnica|trocou a tecnica/) && !/manuten|reposic|repus|apert/.test(fala);
       if ((nomeF === 'concluir' || (nomeF === 'status_atendimento' && /realiz/.test(status))) && !servico && recolocou) {
         add('concluir_com_cabelo_da_cliente', 'conferir se o horário não está como aplicação');
+      }
+      // conferência da semana (conferencia-vendas.js, supabase/066). Cada cliente é conferida pelo TRECHO da fala que fala
+      // dela ("a Renata foi o cabelo dela, o resto tá certo": o "dela" é só da Renata). "Tá certo" / "o resto tá certo"
+      // confirma o que a LISTA mostrou (o banco devolve o sugerido): gravar diferente da lista sem ela dizer é alarme.
+      // A ferramenta deu erro (não gravou): nada a apontar aqui.
+      if (nomeF === 'conferir_venda' && !deuErro) {
+        const tipo = norm(val(e, 'tipo'));
+        const nomeCli = norm(val(e, 'cliente_nome')).replace(/\(?\s*(do\s+)?final\s*\d+\s*\)?/g, ' ').split(/[^a-z]+/).filter((w) => w.length >= 3);
+        // trechos: pontuação, "e a / mas a …", e o começo de outra cliente mesmo sem pontuação (áudio transcrito:
+        // "a renata foi o cabelo dela a vitoria foi cabelo novo")
+        // (também sem artigo: "vitoria foi o cabelo dela renata foi cabelo novo", "adriana veio renata faltou")
+        const partes = fala.split(/[,.;!?\n]+|\s+(?:e|mas|ja|agora)\s+(?=a |o |as |os |\w+ (?:foi|fez|veio|nao))|\s+(?=(?:a|o) [a-z]+(?: [a-z]+)? (?:foi|fez|veio|faltou|comprou|nao|era|quis|ficou|o dela|a dela|cabelo|com cabelo)\b)|\s+(?=(?!(?:ela|ele|elas|eles|que|quem|nao|nem|nunca|so|tudo|isso|tambem|ainda|acho|ate|cliente|essa|esse|novo|nova|cabelo|mega|aqui|hoje|mesmo) )[a-z]{3,} (?:ela |ele )?(?:foi|fez|veio|faltou|comprou|ficou|nao veio|nao fez)\b)/)
+          .map((s) => s.trim()).filter(Boolean);
+        const comNome = (s, todos) => (todos ? nomeCli.every : nomeCli.some).call(nomeCli, (w) => new RegExp('\\b' + w).test(s));
+        const idx = (todos) => partes.map((s, i) => (comNome(s, todos) ? i : -1)).filter((i) => i >= 0);
+        let ids = idx(true); if (!ids.length) ids = idx(false);
+        // o trecho seguinte é dela também quando não começa outra cliente ("adriana só veio olhar, não fez nada") ou fala das
+        // duas ("a vitoria e a renata foram cabelo novo")
+        const OUTRA = /^(e |mas |ja |so |agora )?((a|o|as|os) [a-z]+|(?!(?:ela|ele|elas|eles|que|quem|nao|nem|nunca|so|tudo|isso|tambem|ainda|acho|ate|cliente|essa|esse|novo|nova|cabelo|mega|aqui|hoje|mesmo) )[a-z]{3,} (ela |ele )?(foi|fez|veio|faltou|comprou|ficou)\b)/;
+        const daCliente = ids.map((i) => {
+          const prox = partes[i + 1] || '';
+          return partes[i] + (prox && (!OUTRA.test(prox) || /\b(foram|as duas|os dois|ambas)\b/.test(prox)) ? ' ' + prox : '');
+        }).join(' ');
+        const temDela = (s) => CABELO_DELA_DONA.test(s) || /\b(dela|dela mesmo|proprio cabelo|cabelo que ela ja tinha)\b/.test(s);
+        const temNovo = (s) => PROVA_CABELO_NOVO.test(s) || /cabelo (que )?(ela )?compr(ou|amos) (com a gente|aqui|com a gleide|no salao|da gente|com nos)/.test(s);
+        // confirmação da lista em qualquer lugar da fala ("oi amiga tá certo sim"), "só a Renata que não" (as outras certas)
+        const LISTA_OK = /^(sim+|isso|isso ai|ok|certo|certinho|certissimo|correto|exato|exatamente|perfeito|pode ser|e isso|isso mesmo|beleza|blz|fechado|uhum|aham|show|massa)\b(?! (nao|n)\b)|(?<!\b(nao|n|nem) )(?<!\b(nao|n|nem) (ta|esta) )\b(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)\b(?! (nao|n)\b)|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b|\bso (a|o) [a-z]+ (que )?(nao|foi diferente|que foi diferente)\b|^[\s👍✅👌🙏❤️💛]+$/u;
+        // "só a Vitoria que não", "tá certo menos a Vitoria": a lista vale para as outras, não para ela. "Tá certo?" é pergunta.
+        const excluidas = [...fala.matchAll(/\b(?:so|menos|exceto|tirando|fora|so nao|mas nao)\s+(?:a |o |da |do )?([a-z]{3,})/g)].map((m) => m[1]);
+        const excluida = nomeCli.some((w) => excluidas.includes(w));
+        // "isso mesmo, né?" é jeito de falar, não pergunta
+        const listaOk = LISTA_OK.test(fala) && !excluida && !/\?\s*$/.test(fala.replace(/[\s,]*\b(ne|neh|ta|viu|sabe)\s*\?\s*$/, ''));
+        const sug = (resCheio.match(/\\?"sugerido\\?"\s*:\s*\\?"(\w+)/) || [])[1] || '';
+        if (/mega|novo/.test(tipo)) {
+          if (daCliente && temDela(daCliente) && !temNovo(daCliente)) add('venda_mega_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');
+          else if (!(daCliente && temNovo(daCliente)) && !(listaOk && sug === 'mega_novo' && !(daCliente && /manuten|recoloc|dela/.test(daCliente))))
+            add('venda_mega_sem_prova', sug && sug !== 'mega_novo' ? 'a lista dizia ' + sug + ' e ela não disse cabelo novo' : 'ninguém disse que foi cabelo novo');
+        }
+        // o contrário também tira venda do relatório: a lista dizia cabelo novo e a IA gravou manutenção/outro sem ela dizer
+        if (/manuten|outro/.test(tipo) && sug === 'mega_novo' && !(daCliente && (temDela(daCliente) || /manuten|recoloc|repor|reposi|tecnica|outro servico|so (fez|foi)/.test(daCliente))))
+          add('venda_mega_rebaixada_sem_prova', 'a lista dizia cabelo novo e ela não disse que foi o cabelo dela ou manutenção');
+        if (/nao.?(fez|veio)/.test(tipo)) {
+          const alvo = daCliente || fala;
+          // "não teve problema", "não chegou atrasada" não provam que não aconteceu: só "não teve atendimento", "não chegou a vir"
+          const disse = /\b(nao|n|nem)\s+(\S+\s+)?(veio|vindo|vem|fez|feito|apareceu|compareceu|rolou|aconteceu|teve atendimento|chegou a (vir|fazer)|fizemos|fiz)\b|desist|cancel|desmarc|remarc/.test(alvo) ||
+            (/\b(faltou|furou|deu bolo)\b/.test(alvo) && !/\b(nao|n|nem) (faltou|furou)\b/.test(alvo));
+          if (!disse) add('venda_nao_fez_sem_prova', 'a fala não diz que não aconteceu');
+        }
       }
       // 2. valor que ninguém disse
       const v = val(e, 'valor').replace(/[^\d,.]/g, '');
@@ -197,6 +256,10 @@ function montarResumo(registros, dia) {
     envio_sem_pedido: 'mandou mensagem para cliente sem a Gleide pedir',
     hora_sem_prova: 'marcou uma hora que ninguém disse',
     cancelar_sem_prova: 'cancelou o horário sem a cliente pedir',
+    venda_mega_com_cabelo_da_cliente: 'conferência: gravou mega hair novo, mas a Gleide falou do cabelo da cliente',
+    venda_nao_fez_sem_prova: 'conferência: gravou que o atendimento não aconteceu sem a Gleide dizer',
+    venda_mega_sem_prova: 'conferência: gravou mega hair novo sem a Gleide dizer cabelo novo',
+    venda_mega_rebaixada_sem_prova: 'conferência: a lista dizia cabelo novo e gravou manutenção sem a Gleide dizer',
   };
   const corta = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
   const total = lista.reduce((s, r) => s + Number(r.n_falhas), 0);
