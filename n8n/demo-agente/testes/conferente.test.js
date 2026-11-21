@@ -273,3 +273,47 @@ test('Gleide: "está marcado" com "Horário marcado:" na ficha não é promessa'
   assert.deepStrictEqual(tipos(conferir(base({ texto: 'Seu horário está marcado para sexta às 08:00.', ficha }))), []);
   assert.ok(tipos(conferir(base({ texto: 'Seu horário está marcado para sexta às 08:00.' }))).includes('promessa'));
 });
+
+// ---------- 21/11: casos reais de produção ----------
+// No n8n a resposta da ferramenta chega embrulhada. Dienne (Gleide, 09:06) e a cliente da Caroline (20/11 18:14).
+const EMBRULHADO = '[{"resposta":"AGENDADO com sucesso na agenda do salão: sábado, 21/11 às 10:30. Agora confirme para a cliente o serviço, o dia e a hora."}]';
+
+test('resposta da ferramenta embrulhada ([{"resposta":"AGENDADO…"}]) confirma o "está marcada" (Dienne, 21/11)', () => {
+  const texto = 'Tudo certo, Dienne! Sua coloração está marcada para hoje, às 10h30.';
+  const passos = [{ ferramenta: 'criar_agendamento', resultado: EMBRULHADO }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto, passos, semOutraLoja: true }))), []);
+  // os outros jeitos de chegar: objeto aberto, lista de objetos, texto puro
+  for (const resultado of [[{ resposta: 'AGENDADO com sucesso: sábado, 21/11 às 10:30.' }], { resposta: 'AGENDADO com sucesso: sábado, 21/11 às 10:30.' },
+    'AGENDADO com sucesso: sábado, 21/11 às 10:30.', JSON.stringify({ resposta: 'AGENDADO com sucesso: sábado, 21/11 às 10:30.' })])
+    assert.deepStrictEqual(tipos(conferir(base({ texto, passos: [{ ferramenta: 'criar_agendamento', resultado }], semOutraLoja: true }))), [], JSON.stringify(resultado));
+  // sem a agenda confirmar continua sendo promessa
+  assert.ok(tipos(conferir(base({ texto, semOutraLoja: true }))).includes('promessa'));
+});
+
+test('Caroline 20/11 18:14: "Agendado 🙏 … ficou marcada" com AGENDADO embrulhado não é barrado', () => {
+  const texto = 'Agendado 🙏\n\nSua manicure e pedicure ficou marcada pra amanhã, sábado, às 8h com a Duda.';
+  const passos = [{ ferramenta: 'criar_agendamento', resultado: '[{"resposta":"AGENDADO com sucesso na agenda do salão: sábado, 21/11 às 08:00 com a Duda. Agora confirme para a cliente o serviço, o dia e a hora."}]' }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto, passos }))), []);
+});
+
+test('"NÃO AGENDADO" embrulhado continua barrando e a versão segura enxerga a recusa', () => {
+  const passos = [{ ferramenta: 'criar_agendamento', resultado: '[{"resposta":"NÃO AGENDADO: esse horário acabou de ser ocupado."}]' }];
+  const ctx = base({ texto: 'Agendado 🙏 Te espero amanhã às 8h.', passos });
+  const r = conferir(ctx);
+  assert.ok(tipos(r).includes('promessa'));
+  assert.doesNotThrow(() => versaoSegura(ctx, r.falhas));
+});
+
+test('Caroline 20/11 18:15: repetir "Reservei … às 8h" com o horário já na ficha não é promessa; outro dia ou outra hora é', () => {
+  // 20/11/2026 é sexta; "amanhã" = sábado
+  const sexta = Date.parse('2026-11-20T22:15:00Z');
+  const ficha = 'Horário marcado: sábado, 21/11 às 08:00 — Manicure e pedicure';
+  const t = (texto, extra = {}) => tipos(conferir(base({ texto, ficha, agora: sexta, ...extra })));
+  assert.deepStrictEqual(t('Reservei seu pé e mão pra amanhã, sábado, às 8h com a Duda 🙏'), []);
+  assert.deepStrictEqual(t('Reservei pra você amanhã às 08:00 🙏'), []);
+  assert.ok(t('Reservei pra você amanhã às 9h 🙏').includes('promessa'), 'outra hora');
+  assert.ok(t('Reservei pra você segunda às 8h 🙏').includes('promessa'), 'outro dia');
+  assert.ok(t('Reservei pra você 🙏').includes('promessa'), 'sem dizer a hora não dá para conferir');
+  assert.ok(t('Reservei pra você amanhã às 8h 🙏', { ficha: '' }).includes('promessa'), 'sem horário na ficha');
+  assert.ok(t('Reservei pra você amanhã às 8h 🙏', { passos: [{ ferramenta: 'criar_agendamento', resultado: '[{"resposta":"NÃO AGENDADO: horário ocupado."}]' }] }).includes('promessa'), 'a agenda recusou agora');
+});

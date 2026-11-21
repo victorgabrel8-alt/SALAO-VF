@@ -74,7 +74,12 @@ return [{ json: { texto: '⚠️ Erro no n8n (' + hora + ')\nWorkflow: ' + wf + 
       options: {},
     }),
     enviar('Avisar Victor (IA falhou)', [3400, -260],
-      "'⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '». Veja em n8n → Executions.'",
+      // (21/11) o aviso diz o motivo: nesse dia o Gemini bateu o teto de gasto do mês e a IA ficou fora nas duas lojas;
+      // o aviso só dizia "veja em Executions" e parecia falha do portão
+      "'⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '».' + " +
+      "(() => { let e = ''; try { e = String($('Agente IA').first().json.error || ''); } catch (x) {} if (!e) return ''; " +
+      "return ' Motivo: ' + e.slice(0, 160) + (/too many requests|quota|spend|429|rate limit/i.test(e) ? ' → o Gemini recusou (limite ou teto de gasto do mês). A IA fica fora para TODAS as clientes até liberar em https://ai.studio/spend' : ''); })() + " +
+      "' Veja em n8n → Executions.'",
       { onError: 'continueRegularOutput', executeOnce: true }),
   );
   workflow.connections['Quebrar mensagens'].main[0].push({ node: 'IA falhou? (alerta)', type: 'main', index: 0 });
