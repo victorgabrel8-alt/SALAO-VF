@@ -799,6 +799,18 @@ organizar(retorno.retornoWorkflow, 'Retorno combinado', [
   'escreve um alô leve sobre o que ficou combinado, ou decide não mandar. Vai pelo número do salão, para o CRM (contato retorno) e para a memória da IA.',
 ].join('\n'), 1);
 
+// Portão de ações, fase 1 (portao.js, supabase/065): só observa e registra o que barraria. Na Gleide (sem loja.json)
+// sempre; numa loja, com "portao": "observar" no loja.json.
+if (!LOJA || LOJA.portao === 'observar') {
+  const empresaPortao = LOJA ? `'${LOJA.empresa_id}'` : "($env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001')";
+  const portao = require('./portao.js');
+  portao({ node, ifNode, cond, workflow, agente: 'atendimento', agenteNo: 'Agente IA', empresa: empresaPortao,
+    fala: "$('Montar entrada').first().json.texto_cliente", ficha: "$('Sobre esta cliente').first().json.texto",
+    telefone: "$('Montar entrada').first().json.telefone", pediuCancelar: "$('Sobre esta cliente').first().json.pediuCancelar" });
+  portao({ node, ifNode, cond, workflow: assistente.assistenteWorkflow, agente: 'assistente', agenteNo: 'Agente assistente', empresa: empresaPortao,
+    fala: "$('Juntar mensagens').first().json.texto", ficha: "''", telefone: "$('Extrair dados').first().json.numero" });
+}
+
 const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow, assistente.pendenciasWorkflow,
   audios.enviarWorkflow, audios.transcreverWorkflow, catalogo.enviarWorkflow, faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, pedidos.perguntaWorkflow, pedidos.modalidadeWorkflow,
   alerta.alertaWorkflow, workflow];
