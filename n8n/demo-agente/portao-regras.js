@@ -29,7 +29,8 @@ function conferirAcoes(ctx) {
     'ver_agendamentos', 'enviar_catalogo', 'enviar_audio'];
 
   // resposta curta a uma pergunta da IA ("sim", "pode", "isso", "ok envia"): confirma o que a IA propôs
-  const CONFIRMA = /^(sim+|s|ss|pode|isso|ok|okay|blz|beleza|manda|envia|confirmo|confirma|fechado|certo|uhum|aham|claro|perfeito|exato|bora|por favor|pode marcar|pode mandar|pode ser)\b/;
+  // "tá certinho", "tudo certo", "é isso": resposta à lista da conferência da semana (conferencia-vendas.js)
+  const CONFIRMA = /^(sim+|s|ss|pode|isso|ok|okay|blz|beleza|manda|envia|confirmo|confirma|fechado|certo|certinho|uhum|aham|claro|perfeito|exato|bora|por favor|pode marcar|pode mandar|pode ser|(ta|esta|tudo) (certo|certinho)|e isso|isso mesmo|correto)\b/;
   const confirmou = CONFIRMA.test(fala) && fala.length <= 60 && !/\b(nao|n|nem)\b/.test(fala);
   // resposta a "quanto foi?": número e poucas palavras ("350", "350 no pix", "foi 350", "ela pagou 350")
   const soNumero = /\d/.test(fala) && fala.length <= 30;
@@ -130,6 +131,13 @@ function conferirAcoes(ctx) {
       if ((nomeF === 'concluir' || (nomeF === 'status_atendimento' && /realiz/.test(status))) && !servico && recolocou) {
         add('concluir_com_cabelo_da_cliente', 'conferir se o horário não está como aplicação');
       }
+      // conferência da semana (conferencia-vendas.js, supabase/066): cabelo novo só se a fala não diz que é o cabelo dela;
+      // "não aconteceu" só com a Gleide dizendo. "Tá certinho" confirma a lista como estava (não aponta).
+      if (nomeF === 'conferir_venda' && !confirmou) {
+        const tipo = norm(val(e, 'tipo'));
+        if (/mega|aplica|novo/.test(tipo) && dela && !afirma(PROVA_CABELO_NOVO)) add('venda_mega_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');
+        if (/nao.?(fez|veio)/.test(tipo) && !/\b(nao|n) (veio|fez|apareceu|rolou|aconteceu|teve)\b|faltou|desist|cancel|desmarc/.test(fala)) add('venda_nao_fez_sem_prova', 'a fala não diz que não aconteceu');
+      }
       // 2. valor que ninguém disse
       const v = val(e, 'valor').replace(/[^\d,.]/g, '');
       const num = v ? Number(v.replace(/\.(?=\d{3}\b)/g, '').replace(',', '.')) : 0;
@@ -197,6 +205,8 @@ function montarResumo(registros, dia) {
     envio_sem_pedido: 'mandou mensagem para cliente sem a Gleide pedir',
     hora_sem_prova: 'marcou uma hora que ninguém disse',
     cancelar_sem_prova: 'cancelou o horário sem a cliente pedir',
+    venda_mega_com_cabelo_da_cliente: 'conferência: gravou mega hair novo, mas a Gleide falou do cabelo da cliente',
+    venda_nao_fez_sem_prova: 'conferência: gravou que o atendimento não aconteceu sem a Gleide dizer',
   };
   const corta = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
   const total = lista.reduce((s, r) => s + Number(r.n_falhas), 0);
