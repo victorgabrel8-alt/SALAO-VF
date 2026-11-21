@@ -141,36 +141,53 @@ function conferir(ctx) {
   const confirmou = (palavra) => resultados.some((r) => new RegExp('^\\s*' + palavra, 'i').test(r));
   // (21/11) "Reservei seu pé e mão pra amanhã, sábado, às 8h" um minuto DEPOIS de agendar: a ferramenta não rodou nesta
   // resposta, mas o horário já está na ficha ("Horário marcado: sábado, 21/11 às 08:00 — …"). Repetir o que já está
-  // marcado não é promessa: vale quando toda hora dita bate com um horário da ficha e, se ela disse o dia, o dia também.
+  // marcado não é promessa. Regra fechada (Conferente ligado: um "reservei" falso é pior que uma pergunta a mais): só vale
+  // quando o texto diz UMA hora e o dia, e os dois são os do mesmo horário da ficha.
   const reafirma = (() => {
-    // criar, remarcar ou cancelar rodou NESTA resposta: quem diz se marcou é a resposta da agenda, não a ficha (que é de antes)
-    if (passos.some((p) => /^(criar|remarcar|cancelar)_agendamento$/.test(String(p.ferramenta || '')))) return false;
-    // "sábado que vem", "próxima terça", "depois de amanhã", "daqui a 15 dias": outro dia, não é o que está na ficha
-    if (/\bque vem\b|\bproxim[oa]s?\b|\bdepois de amanha\b|\bseguinte\b|\bdaqui a\b|\boutr[oa] (dia|semana|sabado|segunda|terca|quarta|quinta|sexta|domingo)\b/.test(n)) return false;
+    // outra ferramenta rodou NESTA resposta (criar, remarcar, cancelar, consultar, transferir…): quem diz o que aconteceu é
+    // ela, não a ficha, que é de antes. Só olhar os horários dela ou anotar não muda nada.
+    if (passos.some((p) => !['ver_agendamentos', 'anotar_no_crm'].includes(String(p.ferramenta || '')))) return false;
+    // outro dia ("que vem", "próximo", "depois de amanhã", "daqui 15 dias"), outra pessoa ("da sua filha"), a mais ("também",
+    // "mais um", "outro") ou toda semana ("todo sábado"): não é repetir o que está na ficha
+    if (/\bque (vem|entra)\b|\bproxim[oa]s?\b|\bdepois de amanha\b|\bseguinte\b|\bdaqui\b|\bem \d+ dias\b|\boutr[oa]s?\b|\btambem\b|\bmais uma?\b|\btod[oa]s?\b|\b(filh[ao]s?|mae|irma|irmao|amig[ao]s?|prim[ao]|tia|sogra|nora|cunhada|marido|espos[ao]|namorad[ao]|acompanhante)\b/.test(n)) return false;
+    // hora por extenso ("às nove e meia", "ao meio-dia"): pode ser uma segunda hora que a conta de baixo não enxerga
+    if (/\bmeio.?dia\b|\b(uma|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)\s+(e meia|horas?|da manha|da tarde|da noite)\b/.test(n)) return false;
     const DIAS = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const MESES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    // hoje em Cuiabá (-04:00 o ano todo), como dia inteiro
+    const hojeD = new Date(agora - 4 * 3600e3);
+    const hoje0 = Date.UTC(hojeD.getUTCFullYear(), hojeD.getUTCMonth(), hojeD.getUTCDate());
+    const chave = (ms) => { const d = new Date(ms); return d.getUTCDate() + '/' + (d.getUTCMonth() + 1); };
     const marcados = [];
     for (const l of ficha.split('\n')) {
       // só a linha da ficha (no começo da linha) e só até o travessão: o nome do serviço não entra na conta
       const m = l.match(/^\s*Hor[aá]rios? marcados?:\s*([^—]*)/i);
       if (!m) continue;
-      const nl = norm(m[1]); const hs = horasDe(m[1]); const dt = m[1].match(/\b(\d{1,2})\/(\d{1,2})\b/);
-      if (hs.length) marcados.push({ dia: DIAS.find((d) => nl.includes(d)) || '', min: hs[0], data: dt ? Number(dt[1]) + '/' + Number(dt[2]) : '' });
+      const hs = horasDe(m[1]); const dt = m[1].match(/\b(\d{1,2})\/(\d{1,2})\b/);
+      if (!hs.length || !dt) continue;
+      // a data da ficha é a próxima com esse dia e mês (a ficha só lista horários futuros)
+      let ms = Date.UTC(hojeD.getUTCFullYear(), Number(dt[2]) - 1, Number(dt[1]));
+      if (ms < hoje0) ms = Date.UTC(hojeD.getUTCFullYear() + 1, Number(dt[2]) - 1, Number(dt[1]));
+      marcados.push({ min: hs[0], data: Number(dt[1]) + '/' + Number(dt[2]), dias: Math.round((ms - hoje0) / 86400e3), semana: DIAS[new Date(ms).getUTCDay()] });
     }
     const limpo = texto.replace(/R\$\s?[\d.,]+/g, ' ');
     const hsTexto = horasDe(limpo).filter((v) => v >= 6 * 60).filter((v, i, a) => a.indexOf(v) === i);
     // uma hora só: com duas não dá para saber qual é de qual dia
     if (!marcados.length || hsTexto.length !== 1) return false;
-    const hoje = new Date(agora - 4 * 3600e3).getUTCDay();   // Cuiabá, -04:00 o ano todo
-    const diasTexto = DIAS.filter((d) => new RegExp('\\b' + d).test(n));
-    if (/\bhoje\b/.test(n)) diasTexto.push(DIAS[hoje]);
-    if (/\bamanha\b/.test(n)) diasTexto.push(DIAS[(hoje + 1) % 7]);
-    const datasTexto = [...limpo.matchAll(/\b(\d{1,2})\/(\d{1,2})\b/g)].map((m) => Number(m[1]) + '/' + Number(m[2]));
-    const diasDoMes = [...n.matchAll(/\bdia (\d{1,2})\b(?!\/)/g)].map((m) => Number(m[1]));
-    // a hora, o dia da semana, a data e o "dia 28" que ela disser têm de ser os do MESMO horário da ficha
+    // o dia que o texto diz, de cada jeito: data (21/11, 21-11, 21 de novembro), "dia 21", hoje/amanhã e dia da semana
+    const datas = [...limpo.matchAll(/\b(\d{1,2})[\/-](\d{1,2})\b/g)].map((m) => Number(m[1]) + '/' + Number(m[2]));
+    for (const m of n.matchAll(/\b(\d{1,2})\s+de\s+([a-z]+)/g)) { const i = MESES.indexOf(m[2]); if (i >= 0) datas.push(Number(m[1]) + '/' + (i + 1)); }
+    if (/\bhoje\b/.test(n)) datas.push(chave(hoje0));
+    if (/\bamanha\b/.test(n)) datas.push(chave(hoje0 + 86400e3));
+    const diasDoMes = [...n.matchAll(/\bdia (\d{1,2})\b(?![\/-])/g)].map((m) => Number(m[1]));
+    const semanas = DIAS.filter((d) => new RegExp('\\b' + d).test(n));
+    // sem dizer o dia não dá para saber se é o da ficha: barra
+    if (!datas.length && !diasDoMes.length && !semanas.length) return false;
     return marcados.some((x) => x.min === hsTexto[0] &&
-      (!diasTexto.length || (!!x.dia && diasTexto.every((d) => d === x.dia))) &&
-      (!datasTexto.length || (!!x.data && datasTexto.every((d) => d === x.data))) &&
-      (!diasDoMes.length || (!!x.data && diasDoMes.every((d) => d === Number(x.data.split('/')[0])))));
+      datas.every((d) => d === x.data) &&
+      diasDoMes.every((d) => d === Number(x.data.split('/')[0])) &&
+      // dia da semana sozinho é o próximo: só vale para horário de hoje até daqui a 6 dias
+      semanas.every((d) => d === x.semana && x.dias >= 0 && x.dias <= 6));
   })();
   // horário que ela já tinha (lembrete na ficha ou ver_agendamentos com horário): "está marcado" é verdade
   // (21/11) a ficha também traz "Horário marcado: sexta-feira, 13/11 às 08:00 — …"

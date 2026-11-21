@@ -336,3 +336,30 @@ test('"Reservei" repetido: outra semana, outra data, "que vem", "depois de amanh
   assert.ok(t('Reservei pra você amanhã às 8h 🙏', { ficha: 'Observações: ela disse que o Horário marcado: sábado às 08:00 não dá' }).includes('promessa'));
   assert.deepStrictEqual(t('Reservei pra você amanhã às 8h 🙏', { ficha: 'Horário marcado: sábado, 21/11 às 08:00 — Pacote sexta e sábado' }), []);
 });
+
+
+// testador, rodada 2 (21/11): a regra ficou invertida. Só vale com o dia dito e igual ao da ficha.
+test('"Reservei" repetido, regra fechada: precisa dizer o dia, e o dia resolvido em data tem de ser o da ficha', () => {
+  const sexta = Date.parse('2026-11-20T22:15:00Z');   // sexta, 20/11/2026, 18:15 em Cuiabá
+  const t = (texto, ficha, extra = {}) => tipos(conferir(base({ texto, ficha, agora: sexta, ...extra })));
+  const amanha = 'Horário marcado: sábado, 21/11 às 08:00 — Manicure e pedicure';
+  const outraSemana = 'Horário marcado: sábado, 28/11 às 08:00 — Manicure e pedicure';
+  // continuam valendo
+  for (const f of ['Reservei seu pé e mão pra amanhã, sábado, às 8h com a Duda 🙏', 'Reservei pra você amanhã às 8h 🙏', 'Reservei pra sábado às 8h 🙏',
+    'Reservei pra você dia 21/11 às 8h 🙏', 'Reservei pra você dia 21 de novembro às 8h 🙏'])
+    assert.deepStrictEqual(t(f, amanha), [], f);
+  // "amanhã", "hoje" e o dia da semana sozinho não valem para o horário de outra semana
+  for (const f of ['Reservei pra amanhã às 8h 🙏', 'Reservei pra amanhã, sábado, às 8h 🙏', 'Reservei pra hoje às 8h 🙏', 'Reservei pra sábado às 8h 🙏'])
+    assert.ok(t(f, outraSemana).includes('promessa'), f + ' (ficha de 28/11)');
+  assert.deepStrictEqual(t('Reservei pra você dia 28/11 às 8h 🙏', outraSemana), []);
+  // sem dizer o dia, outra pessoa, a mais, toda semana, data em outro formato, hora por extenso, outro jeito de dizer outro dia
+  for (const f of ['Reservei pra você às 8h 🙏', 'Reservei o horário da sua filha também, sábado às 8h com a Caroline 🙏', 'Reservei pra sua mãe no sábado às 8h 🙏',
+    'Reservei também a esmaltação em gel pra sábado às 8h 🙏', 'Reservei todo sábado às 8h pra você 🙏', 'Reservei pra 28 de novembro às 8h 🙏',
+    'Reservei pra dia 21 de dezembro às 8h 🙏', 'Reservei pra 28-11 às 8h 🙏', 'Reservei sábado às 8h pra você e às nove e meia pra sua irmã 🙏',
+    'Reservei sábado às 8h e outro ao meio-dia 🙏', 'Reservei pra daqui 15 dias, sábado às 8h 🙏', 'Reservei pra semana que entra, sábado às 8h 🙏'])
+    assert.ok(t(f, amanha).includes('promessa'), f);
+  // outra ferramenta nesta resposta desliga a regra; só olhar os horários dela não
+  assert.ok(t('Reservei pra amanhã às 8h 🙏', amanha, { passos: [{ ferramenta: 'consultar_horarios_livres', resultado: '[{"resposta":"INDISPONÍVEL: sábado, 21/11 às 08:00 já está ocupado."}]' }] }).includes('promessa'));
+  assert.ok(t('Reservei pra amanhã às 8h 🙏', amanha, { passos: [{ ferramenta: 'transferir_para_humano', resultado: 'TRANSFERIDO' }] }).includes('promessa'));
+  assert.deepStrictEqual(t('Reservei pra amanhã às 8h 🙏', amanha, { passos: [{ ferramenta: 'ver_agendamentos', resultado: '[{"resposta":"Agendamentos futuros: sábado, 21/11 às 08:00"}]' }] }), []);
+});

@@ -79,7 +79,7 @@ return [{ json: { texto: '⚠️ Erro no n8n (' + hora + ')\nWorkflow: ' + wf + 
       "'⚠️ A IA falhou e mandou o pedido de desculpas para ' + $('Montar entrada').first().json.telefone + ': «' + String($('Montar entrada').first().json.texto_cliente || '').slice(0, 200) + '».' + " +
       "(() => { let e = ''; try { const x = $('Agente IA').first().json.error; e = !x ? '' : typeof x === 'string' ? x : String(x.message || JSON.stringify(x)); } catch (x) {} if (!e) return ''; " +
       // sem os endereços compridos do erro do Google, que comiam os 160 caracteres do motivo
-      "return ' Motivo: ' + e.replace(/https?:\\/\\/\\S+/g, '').replace(/\\s+/g, ' ').trim().slice(0, 160) + (/too many requests|quota|spend|429|rate limit/i.test(e) ? ' → o Gemini recusou (limite ou teto de gasto do mês). A IA fica fora para TODAS as clientes até liberar em https://ai.studio/spend' : ''); })() + " +
+      "return ' Motivo: ' + e.replace(/https?:\\/\\/\\S+/g, '').replace(/\\s+/g, ' ').trim().slice(0, 160) + (/too many requests|quota|spend|429|rate limit/i.test(e) ? ' → o Gemini recusou (limite ou teto de gasto do mês). A IA fica fora para TODAS as clientes até liberar em https://ai.studio/spend' : '') + '.'; })() + " +
       "' Veja em n8n → Executions.'",
       { onError: 'continueRegularOutput', executeOnce: true }),
   );
