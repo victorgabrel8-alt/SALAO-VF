@@ -317,3 +317,22 @@ test('Caroline 20/11 18:15: repetir "Reservei … às 8h" com o horário já na 
   assert.ok(t('Reservei pra você amanhã às 8h 🙏', { ficha: '' }).includes('promessa'), 'sem horário na ficha');
   assert.ok(t('Reservei pra você amanhã às 8h 🙏', { passos: [{ ferramenta: 'criar_agendamento', resultado: '[{"resposta":"NÃO AGENDADO: horário ocupado."}]' }] }).includes('promessa'), 'a agenda recusou agora');
 });
+
+
+// testador (21/11): a regra do "Reservei" repetido não pode deixar passar promessa de verdade
+test('"Reservei" repetido: outra semana, outra data, "que vem", "depois de amanhã" ou ferramenta rodando agora continuam promessa', () => {
+  const sexta = Date.parse('2026-11-20T22:15:00Z');
+  const ficha = 'Horário marcado: sábado, 21/11 às 08:00 — Manicure e pedicure';
+  const t = (texto, extra = {}) => tipos(conferir(base({ texto, ficha, agora: sexta, ...extra })));
+  assert.deepStrictEqual(t('Reservei seu pé e mão pra amanhã, sábado, às 8h com a Duda 🙏'), []);
+  assert.deepStrictEqual(t('Reservei pra você sábado, dia 21/11, às 8h 🙏'), []);
+  for (const f of ['Reservei sua manicure pra sábado, dia 28/11, às 8h 🙏', 'Reservei pra você dia 24/11 às 8h 🙏', 'Reservei pra sábado que vem, às 8h 🙏',
+    'Reservei pra depois de amanhã às 8h 🙏', 'Reservei pro próximo sábado às 8h 🙏', 'Reservei pra você dia 28 às 8h 🙏', 'Reservei sábado às 14h e terça às 8h 🙏'])
+    assert.ok(t(f).includes('promessa'), f);
+  // a agenda respondeu outra coisa nesta resposta (recusa sem "NÃO AGENDADO", erro, cancelamento): não vale a ficha
+  for (const resultado of ['[{"resposta":"Esse horário acabou de ser ocupado. Consulte os horários livres de novo."}]', 'ERRO: agenda fora do ar', '[{"resposta":"CANCELADO com sucesso."}]'])
+    assert.ok(t('Reservei pra você amanhã às 8h 🙏', { passos: [{ ferramenta: resultado.includes('CANCELADO') ? 'cancelar_agendamento' : 'criar_agendamento', resultado }] }).includes('promessa'), resultado);
+  // "Horário marcado:" dentro de outra linha (observação, conversa antiga) não conta; o nome do serviço com dia não confunde
+  assert.ok(t('Reservei pra você amanhã às 8h 🙏', { ficha: 'Observações: ela disse que o Horário marcado: sábado às 08:00 não dá' }).includes('promessa'));
+  assert.deepStrictEqual(t('Reservei pra você amanhã às 8h 🙏', { ficha: 'Horário marcado: sábado, 21/11 às 08:00 — Pacote sexta e sábado' }), []);
+});

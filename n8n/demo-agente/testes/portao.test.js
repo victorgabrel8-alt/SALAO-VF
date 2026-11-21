@@ -122,3 +122,23 @@ test('atendimento: resposta da agenda embrulhada em JSON não vira falha nem err
   const e = atd('Hoje', '', passo('criar_agendamento', { servico: 'Coloração' }, '[{"resposta":"NÃO AGENDADO: horário ocupado."}]'));
   assert.deepStrictEqual(e.acoes, [], 'não gravou e nada a apontar: não registra');
 });
+
+
+// testador (21/11): mais erros de digitação e a recusa da agenda que não começa com "NÃO"
+test('"fechou" com erro de digitação, nos dois sentidos', () => {
+  for (const f of ['a vida não feichado', 'não foi feichado com a vida', 'a vida não fexa', 'a vida não feixou', 'não feichamos com a vida'])
+    assert.deepStrictEqual(tipos(ass(f, passo('resultado_avaliacao', { resultado: 'nao_fechou' }))), [], f);
+  for (const f of ['a vida fexado', 'fexamos com a vida', 'a vida feixou, volta sexta'])
+    assert.deepStrictEqual(tipos(ass(f, passo('resultado_avaliacao', { resultado: 'fechou' }))), [], f);
+  assert.deepStrictEqual(tipos(ass('a vida não feichou', passo('resultado_avaliacao', { resultado: 'fechou' }))), ['fechou_sem_prova']);
+});
+
+test('atendimento: só gravou quando a agenda responde AGENDADO / REMARCADO / CANCELADO', () => {
+  const ocupado = atd('Hoje', '', passo('criar_agendamento', { servico: 'Coloração' }, '[{"resposta":"Esse horário acabou de ser ocupado. Consulte os horários livres de novo."}]'));
+  assert.deepStrictEqual(ocupado.acoes, []);
+  const cancelou = atd('oi', '', passo('cancelar_agendamento', {}, 'CANCELADO com sucesso: o agendamento foi removido.'));
+  assert.strictEqual(cancelou.acoes[0].gravou, true);
+  assert.deepStrictEqual(tipos(cancelou), ['cancelar_sem_prova']);
+  const naoCancelou = atd('oi', '', passo('cancelar_agendamento', {}, 'NÃO CANCELADO: a agenda falhou.'));
+  assert.strictEqual(naoCancelou.acoes[0].gravou, false);
+});
