@@ -18,9 +18,28 @@ test('falha comum, primeira vez: o pedido de desculpas de sempre, sem avisar a d
   assert.deepStrictEqual(d({ erro: 'Cannot read properties of undefined' }).tipo, 'desculpa');
 });
 
-test('o provedor recusou (teto de gasto, limite, fora do ar): recado de espera já na primeira vez, e a dona é avisada', () => {
-  for (const erro of [TETO, 'The service is receiving too many requests from you', 'Resource exhausted: quota', '503 Service Unavailable', 'The model is overloaded'])
+test('o provedor recusou por limite ou teto de gasto: recado de espera já na primeira vez, e a dona é avisada', () => {
+  for (const erro of [TETO, 'The service is receiving too many requests from you', 'Resource exhausted: quota', 'rate limit exceeded'])
     assert.deepStrictEqual(d({ erro }), { tipo: 'espera', texto: ESPERA, avisarDona: true }, erro);
+});
+
+test('sobrecarga passageira (503, overloaded) segue o caminho comum: desculpas na primeira, espera na segunda', () => {
+  for (const erro of ['503 Service Unavailable', 'The model is overloaded. Please try again later.']) {
+    assert.strictEqual(d({ erro }).tipo, 'desculpa', erro);
+    assert.strictEqual(d({ erro, anteriores: [ha(2, DESCULPA)] }).tipo, 'espera', erro);
+  }
+});
+
+test('só conta a ÚLTIMA mensagem que saiu: se a IA (ou a dona) respondeu depois, uma falha nova começa do zero', () => {
+  // recado de espera às 09:20, a IA voltou e respondeu às 10:00, falha de novo: não é silêncio
+  assert.strictEqual(d({ erro: '', anteriores: [ha(5, 'Oi, Dienne! Que bom que chegou 🌹'), ha(60, ESPERA)] }).tipo, 'desculpa');
+  assert.strictEqual(d({ erro: TETO, anteriores: [ha(5, 'Oi, Dienne! Que bom que chegou 🌹'), ha(60, ESPERA)] }).tipo, 'espera');
+  // pedido de desculpas, depois uma resposta boa, depois falha: desculpas de novo, não o recado
+  assert.strictEqual(d({ erro: '', anteriores: [ha(5, 'Tenho amanhã às 9h.'), ha(20, DESCULPA)] }).tipo, 'desculpa');
+  // a ordem da lista não importa (a consulta devolve a mais nova primeiro)
+  assert.strictEqual(d({ erro: TETO, anteriores: [ha(60, 'Oi!'), ha(2, ESPERA)] }).tipo, 'silencio');
+  // mensagem da cliente no meio não muda nada: o que conta é o que SAIU
+  assert.strictEqual(d({ erro: TETO, anteriores: [ha(1, 'Oi eu já cheguei', 'entrada'), ha(2, ESPERA)] }).tipo, 'silencio');
 });
 
 test('segunda falha em 1 hora com a mesma cliente: recado de espera em vez de repetir o pedido', () => {
@@ -94,11 +113,11 @@ const montar = () => {
   return workflow;
 };
 // roda o código de um nó Code com $('nó') simulado
-const rodar = (code, nos, env = {}) => new Function('$', '$input', '$env', code)((nome) => {
+const rodar = (code, nos, env = {}, guardado = {}) => new Function('$', '$input', '$env', '$getWorkflowStaticData', code)((nome) => {
   if (!(nome in nos)) throw new Error('nó não executado: ' + nome);
   const v = nos[nome];
   return { first: () => ({ json: Array.isArray(v) ? v[0] : v }), all: () => (Array.isArray(v) ? v : [v]).map((json) => ({ json })) };
-}, {}, env);
+}, {}, env, () => guardado);
 
 test('montagem: o "Quebrar mensagens" decide entre desculpas, espera e silêncio', () => {
   const wf = montar();
@@ -119,15 +138,20 @@ test('montagem: o "Quebrar mensagens" decide entre desculpas, espera e silêncio
   assert.strictEqual(rodar(code, { ...base, 'Agente IA': { output: '' } })[0].json.texto, DESCULPA);
 });
 
-test('montagem: ramo da dona sai do "IA falhou? (alerta)", só quando saiu o recado de espera', () => {
+test('montagem: ramo da dona sai do "Quebrar mensagens", lá embaixo na tela, só quando saiu o recado de espera', () => {
   const wf = montar();
-  assert.deepStrictEqual(wf.connections['IA falhou? (alerta)'].main[0].map((c) => c.node), ['Avisar Victor (IA falhou)', 'IA fora: avisa a dona?']);
+  assert.deepStrictEqual(wf.connections['Quebrar mensagens'].main[0].map((c) => c.node), ['IA falhou? (alerta)', 'IA fora: avisa a dona?']);
+  assert.deepStrictEqual(wf.connections['IA falhou? (alerta)'].main[0].map((c) => c.node), ['Avisar Victor (IA falhou)']);
+  // y = 9600: com executionOrder v1 roda depois do caminho da resposta (a cliente recebe o recado antes)
+  for (const x of wf.nodes.filter((n) => /^IA fora:/.test(n.name))) assert.strictEqual(x.position[1], 9600, x.name);
   const ordem = []; let at = 'IA fora: avisa a dona?';
   while (at) { ordem.push(at); at = wf.connections[at]?.main?.[0]?.[0]?.node; }
   assert.deepStrictEqual(ordem, ['IA fora: avisa a dona?', 'IA fora: aviso da dona', 'IA fora: avisar a dona', 'IA fora: memória da assistente']);
   const no = (x) => wf.nodes.find((y) => y.name === x);
-  assert.match(no('IA fora: avisa a dona?').parameters.conditions.conditions[0].leftValue, /startsWith\('Recebi sua mensagem 💛'\)/);
-  for (const x of ['IA fora: aviso da dona', 'IA fora: avisar a dona', 'IA fora: memória da assistente']) assert.strictEqual(no(x).onError, 'continueRegularOutput', x);
+  assert.match(no('IA fora: avisa a dona?').parameters.conditions.conditions[0].leftValue, /falhou === true && .*startsWith\('Recebi sua mensagem 💛'\)/);
+  for (const x of ['IA fora: avisar a dona', 'IA fora: memória da assistente']) assert.strictEqual(no(x).onError, 'continueRegularOutput', x);
+  // o nó que monta o aviso nunca derruba a execução: sem os nós de onde lê, ou com erro, só não avisa
+  assert.deepStrictEqual(new Function('$', '$input', '$env', '$getWorkflowStaticData', no('IA fora: aviso da dona').parameters.jsCode)(() => { throw new Error('x'); }, {}, undefined, () => { throw new Error('y'); }), []);
   // o nó que monta o aviso: uma mensagem por número da dona, com a memória da assistente
   const out = rodar(no('IA fora: aviso da dona').parameters.jsCode, { 'Supabase: ficha da cliente': { nome: 'Dienne' }, 'Extrair dados': { nome: 'Di' },
     'Montar entrada': { telefone: '556696736156', texto_cliente: 'Oi cheguei' } }, { ASSISTENTE_NUMEROS: '5500000000001' });
@@ -141,12 +165,28 @@ test('montagem: ramo da dona sai do "IA falhou? (alerta)", só quando saiu o rec
   assert.throws(() => iaFora({ node: () => ({}), main: () => ({}), ifNode: () => ({}), cond: () => ({}), workflow: wf, EVO: '', apikeyHeader: {}, REDIS: {} }), /já montado/);
 });
 
+test('montagem: numa queda longa a dona recebe 3 avisos por hora, o 4º junta e depois para', () => {
+  const wf = montar();
+  const code = wf.nodes.find((x) => x.name === 'IA fora: aviso da dona').parameters.jsCode;
+  const guardado = {};
+  const um = (nome) => rodar(code, { 'Supabase: ficha da cliente': { nome }, 'Extrair dados': {}, 'Montar entrada': { telefone: '5566999990000', texto_cliente: 'oi' } }, { ASSISTENTE_NUMEROS: '5500000000001' }, guardado);
+  for (const nome of ['Ana', 'Bia', 'Carla']) assert.match(um(nome)[0].json.texto, new RegExp('\\*' + nome + '\\*'));
+  const quarto = um('Duda');
+  assert.match(quarto[0].json.texto, /^Tem mais clientes escrevendo/);
+  assert.doesNotMatch(quarto[0].json.texto, /Duda/);
+  assert.deepStrictEqual(um('Eva'), []);
+  assert.deepStrictEqual(um('Fabi'), []);
+  // uma hora depois volta a avisar
+  guardado.iaForaAvisos = guardado.iaForaAvisos.map((t) => t - 3700e3);
+  assert.match(um('Gabi')[0].json.texto, /\*Gabi\*/);
+});
+
 test('montagem: o aviso do Victor diz o que a cliente recebeu', () => {
   const wf = montar();
   const body = wf.nodes.find((x) => x.name === 'Avisar Victor (IA falhou)').parameters.jsonBody;
   const f = new Function('$', '$json', 'return ' + body.replace(/^=\{\{\s*/, '').replace(/\s*\}\}\s*$/, ''));
   const texto = ($json) => JSON.parse(f(() => ({ first: () => ({ json: { telefone: '556696736156', texto_cliente: 'Oi cheguei' } }) }), $json)).text;
-  assert.match(texto({ falhou: true, texto: ESPERA }), /A IA falhou com 556696736156, que escreveu: «Oi cheguei»\. Ela recebeu o recado de espera e a dona foi avisada\./);
+  assert.match(texto({ falhou: true, texto: ESPERA }), /A IA falhou com 556696736156, que escreveu: «Oi cheguei»\. Ela recebeu o recado de espera e a dona está sendo avisada/);
   assert.match(texto({ falhou: true, texto: DESCULPA }), /Ela recebeu o pedido de desculpas/);
   assert.match(texto({ falhou: true, semTexto: true }), /Ela NÃO recebeu resposta agora/);
 });
