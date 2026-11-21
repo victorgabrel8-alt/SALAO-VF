@@ -247,3 +247,9 @@ test('portão: falsos alarmes da segunda rodada não aparecem mais', () => {
 test('portão: nome com "(final 1234)" acha o trecho da cliente', () => {
   assert.deepStrictEqual(tipos(ass('a renata souza foi o cabelo dela', cv('Renata Souza (final 6004)', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
 });
+
+test('portão: "não tá certo" não confirma a lista', () => {
+  for (const f of ['não tá certo', 'nao ta tudo certo', 'hmm, não está certo não', 'tá certo não'])
+    assert.deepStrictEqual(tipos(ass(f, cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova'], f);
+  assert.deepStrictEqual(tipos(ass('oi amiga tá certo sim', cv('Vitoria', 'mega_novo', 'mega_novo'))), []);
+});

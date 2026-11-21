@@ -165,7 +165,7 @@ function conferirAcoes(ctx) {
         const temDela = (s) => CABELO_DELA_DONA.test(s) || /\b(dela|dela mesmo|proprio cabelo|cabelo que ela ja tinha)\b/.test(s);
         const temNovo = (s) => PROVA_CABELO_NOVO.test(s) || /cabelo (que )?(ela )?compr(ou|amos) (com a gente|aqui|com a gleide|no salao|da gente|com nos)/.test(s);
         // confirmação da lista em qualquer lugar da fala ("oi amiga tá certo sim"), "só a Renata que não" (as outras certas)
-        const LISTA_OK = /^(sim+|isso|isso ai|ok|certo|certinho|certissimo|correto|exato|exatamente|perfeito|pode ser|e isso|isso mesmo)\b|\b(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)\b|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b|\bso (a|o) [a-z]+ (que )?(nao|foi diferente|que foi diferente)\b|^[\s👍✅👌🙏❤️💛]+$/u;
+        const LISTA_OK = /^(sim+|isso|isso ai|ok|certo|certinho|certissimo|correto|exato|exatamente|perfeito|pode ser|e isso|isso mesmo)\b|(?<!\b(nao|n|nem) )(?<!\b(nao|n|nem) (ta|esta) )\b(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)\b(?! (nao|n)\b)|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b|\bso (a|o) [a-z]+ (que )?(nao|foi diferente|que foi diferente)\b|^[\s👍✅👌🙏❤️💛]+$/u;
         const listaOk = LISTA_OK.test(fala);
         const sug = (resCheio.match(/\\?"sugerido\\?"\s*:\s*\\?"(\w+)/) || [])[1] || '';
         if (/mega|novo/.test(tipo)) {
