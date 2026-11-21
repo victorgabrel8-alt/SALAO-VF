@@ -121,7 +121,7 @@ begin
   if (cardinality(v_palavras) = 0 or length(v_palavras[1]) < 3) and v_final is null then raise exception 'qual o nome da cliente?'; end if;
   if p_valor is not null and p_valor <= 0 then p_valor := null; end if;
 
-  -- 1ª tentativa: todas as palavras do nome batem ("Ana Paula" não pega "Ana Clara"). 2ª: só o primeiro nome, para
+  -- 1ª tentativa: todas as palavras do nome batem ("Ana Paula" não pega "Ana Clara"). 2ª: só o primeiro nome, e só em cadastro de uma palavra, para
   -- sobrenome que não está no cadastro ("Joaquina Silva" com cadastro "Joaquina"; 84 de 145 clientes da Gleide têm um nome só).
   for v_tentativa in 1..2 loop
     select array_agg(a.id order by
@@ -135,6 +135,9 @@ begin
        and a.inicio >= now() - interval '60 days' and a.inicio < now() + interval '1 day'
        and (p_data is null or abs((a.inicio at time zone 'America/Cuiaba')::date - p_data) <= 1)
        and (v_final is null or right(c.telefone, 4) = v_final)
+       -- 2ª tentativa só para cadastro de UMA palavra ("Joaquina"): "Ana Paula" nunca cai na "Ana Clara" (testador, 21/11)
+       and (v_tentativa = 1 or (select count(*) from unnest(regexp_split_to_array(assistente_normalizar(coalesce(c.nome, '')), '[^a-z0-9]+')) w
+                                  where length(w) >= 2 and w not in ('da', 'de', 'do', 'das', 'dos')) = 1)
        and not exists (
          select 1 from unnest(case when v_tentativa = 1 then v_palavras else v_palavras[1:1] end) t where not exists (
            select 1 from unnest(regexp_split_to_array(assistente_normalizar(coalesce(c.nome, '')), '[^a-z0-9]+')) w

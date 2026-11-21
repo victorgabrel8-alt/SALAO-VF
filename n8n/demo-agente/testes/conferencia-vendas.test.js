@@ -253,3 +253,24 @@ test('portão: "não tá certo" não confirma a lista', () => {
     assert.deepStrictEqual(tipos(ass(f, cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova'], f);
   assert.deepStrictEqual(tipos(ass('oi amiga tá certo sim', cv('Vitoria', 'mega_novo', 'mega_novo'))), []);
 });
+
+// ---------- terceira rodada do testador (21/11) ----------
+test('portão: "só a X que não" e "tá certo menos a X" não confirmam a X', () => {
+  assert.deepStrictEqual(tipos(ass('só a Vitoria que não', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('tá certo menos a vitória', cv('Vitória', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('tá certo menos a vitória', cv('Renata', 'mega_novo', 'mega_novo'))), []);
+});
+
+test('portão: áudio sem artigo e com "faltou" separa as clientes', () => {
+  assert.deepStrictEqual(tipos(ass('vitoria foi o cabelo dela renata foi cabelo novo', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
+  assert.deepStrictEqual(tipos(ass('vitoria foi o cabelo dela renata foi cabelo novo', cv('Renata', 'mega_novo', 'manutencao'))), []);
+  assert.deepStrictEqual(tipos(ass('a vitória ela foi o dela a renata ela comprou cabelo', cv('Vitória', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
+  assert.deepStrictEqual(tipos(ass('a Adriana veio a Renata faltou', cv('Adriana', 'nao_fez', 'manutencao'))), ['venda_nao_fez_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('adriana veio renata faltou', cv('Adriana', 'nao_fez', 'manutencao'))), ['venda_nao_fez_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('adriana veio renata faltou', cv('Renata', 'nao_fez', 'manutencao'))), []);
+});
+
+test('portão: "beleza", "blz", "fechado" confirmam a lista; "tá certo?" (pergunta) não', () => {
+  for (const f of ['beleza', 'blz', 'fechado', 'uhum']) assert.deepStrictEqual(tipos(ass(f, cv('Vitoria', 'mega_novo', 'mega_novo'))), [], f);
+  assert.deepStrictEqual(tipos(ass('tá certo?', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
+});

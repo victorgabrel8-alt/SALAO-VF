@@ -12,7 +12,7 @@ do $$
 declare
   L uuid := 'ff4b7937-1abb-4803-83c8-e0896d94fc9f';
   tel text := '5500000000001';
-  sA uuid; sM uuid; sAv uuid; cV uuid; cR uuid; cJ uuid; cR2 uuid; cB uuid; cAP uuid; cAC uuid; cO uuid; aAP uuid; cSN uuid; aSN uuid;
+  sA uuid; sM uuid; sAv uuid; cV uuid; cR uuid; cJ uuid; cR2 uuid; cB uuid; cAP uuid; cAC uuid; cO uuid; aAP uuid; cSN uuid; aSN uuid; cJQ uuid;
   aV uuid; aR uuid; aJ uuid; aAv uuid; aR2 uuid; dia3 date := (now() at time zone 'America/Cuiaba')::date - 3;
   j jsonb; n int;
 begin
@@ -127,8 +127,20 @@ begin
   insert into r (caso, ok, veio) values ('nome com "(final 6004)"', (j->>'ok')::boolean is true and j->>'nome' = 'Renata Souza', j::text);
   j := pg_temp.conferir(L, tel, 'Renata (final 9999)', null, 'manutencao', null, null);
   insert into r (caso, ok, veio) values ('final errado não grava em outra', coalesce(j->>'erro', '') like 'não achei%', j::text);
+  -- sobrenome que contradiz o cadastro ("Joana Silva" x "Joana Teste") não grava; cadastro de um nome só ("Joaquina") acha
   j := pg_temp.conferir(L, tel, 'Joana Silva', null, 'manutencao', null, null);
-  insert into r (caso, ok, veio) values ('sobrenome fora do cadastro acha pelo primeiro nome', (j->>'ok')::boolean is true and j->>'nome' = 'Joana Teste', j::text);
+  insert into r (caso, ok, veio) values ('sobrenome diferente do cadastro não grava', coalesce(j->>'erro', '') like 'não achei%', j::text);
+  insert into clientes (empresa_id, nome, telefone) values (L, 'Joaquina', '5500000066010') returning id into cJQ;
+  insert into agendamentos (empresa_id, cliente_id, servico_id, inicio, fim, status, origem)
+  values (L, cJQ, sM, now() - interval '1 day', now() - interval '1 day' + interval '2 hours', 'realizado', 'manual');
+  j := pg_temp.conferir(L, tel, 'Joaquina Silva', null, 'manutencao', null, null);
+  insert into r (caso, ok, veio) values ('sobrenome fora de cadastro de um nome só acha', (j->>'ok')::boolean is true and j->>'nome' = 'Joaquina', j::text);
+  -- "Ana Paula" sem atendimento nunca cai na "Ana Clara", nem com o final dela
+  insert into clientes (empresa_id, nome, telefone) values (L, 'Ana Paula Xteste', '5500000066011');
+  j := pg_temp.conferir(L, tel, 'Ana Paula', null, 'mega_novo', null, null);
+  insert into r (caso, ok, veio) values ('Ana Paula não cai na Ana Clara', coalesce(j->>'nome', '') <> 'Ana Clara Teste', j::text);
+  j := pg_temp.conferir(L, tel, 'Ana Paula (final 6007)', null, 'mega_novo', null, null);
+  insert into r (caso, ok, veio) values ('Ana Paula com o final da Ana Clara não grava', coalesce(j->>'erro', '') like 'não achei%', j::text);
   insert into clientes (empresa_id, nome, telefone) values (L, null, '5500000066009') returning id into cSN;
   insert into mensagens (empresa_id, cliente_id, direcao, autor, tipo, conteudo) values (L, cSN, 'entrada', 'cliente', 'texto', 'oi');
   insert into agendamentos (empresa_id, cliente_id, servico_id, inicio, fim, status, origem)
