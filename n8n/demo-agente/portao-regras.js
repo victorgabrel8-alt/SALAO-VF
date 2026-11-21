@@ -12,6 +12,8 @@
 //   fala          o que a dona / a cliente escreveu nesta vez (mensagens juntas)
 //   ficha         (atendimento) o "Sobre esta cliente": o que ela já contou antes
 //   pediuCancelar (atendimento) o sinal do cancelar-so-se-pediu.js (últimas 2 h e a pergunta da IA)
+//   encaixe       (atendimento) o sinal do encaixe.js quando a cliente tem oferta de encaixe aberta:
+//                 { aberto, ag, de, ate, falas } (falas = o que ela escreveu desde a oferta)
 //
 // Este arquivo também roda dentro do n8n: portao.js cola o texto da função no nó "Portão: conferir".
 // Por isso: nada de require, nada de variável de fora da função.
@@ -71,9 +73,10 @@ function conferirAcoes(ctx) {
     return false;
   };
   const HORA_PALAVRA = ['', 'uma', 'duas', 'tres', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze'];
-  const horaDita = (h) => {
-    if (/mesmo horario|mesma hora|no mesmo hor/.test(fala)) return true;
-    if (h === 12 && /meio.?dia/.test(fala)) return true;
+  const horaDita = (h, onde) => {
+    const txt = onde == null ? fala : onde;
+    if (/mesmo horario|mesma hora|no mesmo hor/.test(txt)) return true;
+    if (h === 12 && /meio.?dia/.test(txt)) return true;
     const alvo = [h, h > 12 ? h - 12 : h].filter((x, i, a) => a.indexOf(x) === i);
     return alvo.some((x) => {
       const d = '0?' + x;
@@ -88,7 +91,7 @@ function conferirAcoes(ctx) {
         pads.push(new RegExp('\\b' + w + '\\s+(hora|horas|da manha|da tarde|da noite|e meia)\\b'));
         pads.push(new RegExp('\\b(as|pras|umas)\\s+' + w + '\\b'));
       }
-      return pads.some((re) => re.test(fala));
+      return pads.some((re) => re.test(txt));
     });
   };
 
@@ -217,6 +220,17 @@ function conferirAcoes(ctx) {
         if (ehExcluir && (!afirma(/cancel|desmarc|remarc|\btira\b|exclu|apaga|nao vem|nao vai|remove|desistiu|errado|engano/) || /tira (uma |minha )?duvida/.test(fala))) add('excluir_sem_prova', 'a fala não pede para tirar o horário');
         if (['chamar_cliente', 'avisar_cliente'].includes(nomeF) && !afirma(/\b(chama|chame|avisa|avise|manda|mande|envia|envie|fala (com|pra|para)|pergunta|lembra|confirma|diz (pra|que|a)|toque|escreve|responde|cobra|da um oi|agradece|ve com|ver com|pede (pra|para|a|o)|convida|oferece)\b/)) add('envio_sem_pedido', 'a fala não pede para mandar mensagem');
       }
+      // encaixe na falta (encaixe.js, supabase/067): a cliente só é chamada depois que a Gleide autorizou NESTA fala.
+      // "a Maria não veio" não autoriza; "pode", "chama", "vê se ela vem antes" autorizam; "não precisa", "deixa quieto" negam.
+      if (nomeF === 'chamar_para_encaixe' && !deuErro) {
+        const recusou = /^\s*(sim|s|true|1)\s*[.!]?\s*$/.test(norm(val(e, 'desfazer')));
+        const AUT = /\b(pode|chama|chame|manda|mande|tenta|tente|pergunta|pergunte|ve (com|se|sim|ai|la)|ver (com|se)|veja|olha se|fala com|fale com|quero|bora|claro|com certeza|isso|sim|ok|okay|beleza|blz|faz isso|faca isso|por favor|uhum|aham)\b/g;
+        let autorizou = false, ma;
+        while ((ma = AUT.exec(fala))) { if (!/\b(nao|n|nem|nunca)\s*$/.test(fala.slice(0, ma.index))) { autorizou = true; break; } }
+        const negou = /^(nao|n)\b|\b(nao|n) (precisa|quero|quer|vale|compensa|adianta|chama|manda|pode)\b|\b(pode|chama|manda|precisa|quero|ve|veja|isso|sim|ok) (nao|n)\b|\bmelhor (nao|n)\b|\bdeixa (quieto|assim|pra la|como esta|ela|isso)\b/.test(fala);
+        if (!recusou && (!autorizou || negou)) add('encaixe_sem_autorizacao', 'a fala não autoriza chamar a cliente para vir antes');
+        if (recusou && autorizou && !negou) add('encaixe_recusado_sem_prova', 'gravou que a Gleide não quis, mas a fala parece autorizar');
+      }
       // 5. hora marcada que ninguém disse
       if (['marcar_horario', 'reagendar'].includes(nomeF) && !confirmou) {
         const m = val(e, 'inicio').match(/T(\d{2}):(\d{2})/);
@@ -227,6 +241,24 @@ function conferirAcoes(ctx) {
       if (['criar_agendamento', 'remarcar_agendamento'].includes(nomeF) && servico && ehAplicacao(servico) &&
         (afirma(CABELO_DELA_CLIENTE) || FICHA_JA_USA.test(ficha)) && !afirma(PROVA_CABELO_NOVO)) {
         add('aplicacao_com_cabelo_da_cliente', 'a cliente já usa mega / falou do cabelo dela');
+      }
+      // encaixe na falta (encaixe.js): a cliente foi chamada para vir antes. A IA só adianta o horário depois que ELA disse a hora
+      // e respondeu sim à confirmação por extenso ("você vem hoje às 13h30 em vez das 15h, certo?"). Só vale para a remarcação
+      // dentro da vaga e antes do horário dela; outra remarcação segue as regras de sempre.
+      const enc = ctx.encaixe && typeof ctx.encaixe === 'object' && ctx.encaixe.aberto ? ctx.encaixe : null;
+      if (nomeF === 'remarcar_agendamento' && enc && !deuErro) {
+        const nova = val(e, 'data_hora_nova').replace(' ', 'T');
+        const mh = nova.match(/T(\d{2}):(\d{2})/);
+        const novaMs = Date.parse(/[+-]\d\d:?\d\d$|Z$/.test(nova) ? nova : nova + '-04:00');
+        const deMs = Date.parse(enc.de), ateMs = Date.parse(enc.ate);
+        if (mh && Number.isFinite(novaMs) && Number.isFinite(ateMs) && novaMs < ateMs && (!Number.isFinite(deMs) || novaMs >= deMs - 60000)) {
+          const falas = norm(enc.falas) + ' ' + fala;
+          const disseSim = confirmou || (/^(combinado|ta (bom|otimo|certo|ok)|tudo certo|certinho|show|otimo|maravilha|vou sim|consigo sim|isso mesmo|com certeza|[\s👍✅👌🙏❤️💛]+$)/u.test(fala) && fala.length <= 60 && !/\b(nao|n|nem)\b/.test(fala));
+          if (!disseSim) add('encaixe_sem_confirmacao', 'adiantou o horário sem o sim da cliente à confirmação');
+          // "daqui 40 min", "tô chegando": a hora foi dita em tempo, não em relógio
+          const relativo = /\b(daqui|minutos?|min|meia hora|uma hora|ja to|ja estou|to chegando|estou chegando|agora)\b/.test(falas);
+          if (!relativo && !horaDita(Number(mh[1]), falas)) add('encaixe_hora_sem_prova', 'a hora ' + mh[1] + ':' + mh[2] + ' não foi dita pela cliente');
+        }
       }
       if (nomeF === 'cancelar_agendamento' && ctx.pediuCancelar !== true && !confirmou) {
         const pediu = afirma(/cancel|desmarc|desist|remarc|outro dia|imprevisto|tirar meu horario|tira meu horario|fiquei doente|to doente|estou doente/) ||
@@ -266,6 +298,10 @@ function montarResumo(registros, dia) {
     venda_nao_fez_sem_prova: 'conferência: gravou que o atendimento não aconteceu sem a Gleide dizer',
     venda_mega_sem_prova: 'conferência: gravou mega hair novo sem a Gleide dizer cabelo novo',
     venda_mega_rebaixada_sem_prova: 'conferência: a lista dizia cabelo novo e gravou manutenção sem a Gleide dizer',
+    encaixe_sem_autorizacao: 'encaixe: chamou a cliente para vir antes sem a Gleide autorizar',
+    encaixe_recusado_sem_prova: 'encaixe: anotou que a Gleide não quis, mas a fala parece autorizar',
+    encaixe_sem_confirmacao: 'encaixe: adiantou o horário sem o sim da cliente',
+    encaixe_hora_sem_prova: 'encaixe: adiantou para uma hora que a cliente não disse',
   };
   const corta = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
   const total = lista.reduce((s, r) => s + Number(r.n_falhas), 0);

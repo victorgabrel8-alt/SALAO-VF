@@ -811,7 +811,8 @@ if (!LOJA || LOJA.portao === 'observar') {
   const portao = require('./portao.js');
   portao({ node, ifNode, cond, workflow, agente: 'atendimento', agenteNo: 'Agente IA', empresa: empresaPortao,
     fala: "$('Montar entrada').first().json.texto_cliente", ficha: "$('Sobre esta cliente').first().json.texto",
-    telefone: "$('Montar entrada').first().json.telefone", pediuCancelar: "$('Sobre esta cliente').first().json.pediuCancelar" });
+    telefone: "$('Montar entrada').first().json.telefone", pediuCancelar: "$('Sobre esta cliente').first().json.pediuCancelar",
+    encaixe: "$('Sobre esta cliente').first().json.encaixe" });
   portao({ node, ifNode, cond, workflow: assistente.assistenteWorkflow, agente: 'assistente', agenteNo: 'Agente assistente', empresa: empresaPortao,
     fala: "$('Juntar mensagens').first().json.texto", ficha: "''", telefone: "$('Extrair dados').first().json.numero" });
 }
@@ -846,6 +847,11 @@ if (!LOJA) require('./lembrete-sem-repetir.js')({ faltasWorkflow: faltas.faltasW
 // Depois do conversa-antiga: o Conferente acrescenta autor na consulta das últimas mensagens, que ele confere.
 if (!LOJA) require('./conferente.js')({ node, ifNode, cond, workflow,
   loja: { slug: 'gleide', empresa_id: '00000000-0000-0000-0000-000000000001', nome: 'Salão Toda Bonita', dona: 'Gleide', conferente: 'observar', outra_loja: false } });
+// Encaixe na falta (parte 4 do portão, 21/11/2026; encaixe.js, supabase/067): a Gleide confirma a falta, a assistente pergunta se pode ver
+// com a próxima cliente do dia se ela consegue vir antes, e só com o "pode" sai UMA mensagem. A cliente diz a hora, a IA confirma e só
+// então remarca. Fica por último: mexe no que os outros módulos já montaram (ficha, agenda, assistente, rotina de vagas).
+if (!LOJA) require('./encaixe.js')({ workflow, agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow,
+  ferramentasWorkflow: assistente.ferramentasWorkflow, faltasWorkflow: faltas.faltasWorkflow });
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 let rotinasWorkflow = null; // só no motor único (motor.js): chama cada rotina uma vez por loja

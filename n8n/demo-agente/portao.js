@@ -9,7 +9,7 @@
 
 const { conferirAcoes } = require('./portao-regras.js');
 
-module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, ficha, telefone, empresa, pediuCancelar = 'undefined' }) => {
+module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, ficha, telefone, empresa, pediuCancelar = 'undefined', encaixe = 'undefined' }) => {
   const achar = (nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error('portão: sem o nó ' + nome); return n; };
   achar(agenteNo);
   if (wf.nodes.some((n) => n.name === 'Portão: conferir')) throw new Error('portão: já montado neste workflow');
@@ -20,7 +20,7 @@ module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, fi
     `const ag = pega(() => $('${agenteNo}').first().json) || {};`,
     "const passos = (Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : []).filter(Boolean)",
     "  .map((p) => ({ ferramenta: p.action && p.action.tool, entrada: p.action && p.action.toolInput, resultado: p.observation }));",
-    `const ctx = { agente: '${agente}', passos, fala: String(pega(() => ${fala}) || ''), ficha: String(pega(() => ${ficha}) || ''), pediuCancelar: pega(() => ${pediuCancelar}) };`,
+    `const ctx = { agente: '${agente}', passos, fala: String(pega(() => ${fala}) || ''), ficha: String(pega(() => ${ficha}) || ''), pediuCancelar: pega(() => ${pediuCancelar}), encaixe: pega(() => ${encaixe}) };`,
     "let r; try { r = conferirAcoes(ctx); } catch (e) { r = { acoes: [{ ferramenta: 'erro_portao', entrada: '', resultado: String(e && e.message || e).slice(0, 200), falhas: [] }], n_falhas: 0 }; }",
     "return [{ json: { acoes: r.acoes, n_falhas: r.n_falhas, fala: ctx.fala.slice(0, 2000), telefone: String(pega(() => " + telefone + ") || '') } }];",
   ].join('\n');
