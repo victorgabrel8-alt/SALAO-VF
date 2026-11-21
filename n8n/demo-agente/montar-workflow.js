@@ -806,7 +806,7 @@ if (!LOJA || LOJA.portao === 'observar') {
   const portao = require('./portao.js');
   portao({ node, ifNode, cond, workflow, agente: 'atendimento', agenteNo: 'Agente IA', empresa: empresaPortao,
     fala: "$('Montar entrada').first().json.texto_cliente", ficha: "$('Sobre esta cliente').first().json.texto",
-    telefone: "$('Montar entrada').first().json.telefone" });
+    telefone: "$('Montar entrada').first().json.telefone", pediuCancelar: "$('Sobre esta cliente').first().json.pediuCancelar" });
   portao({ node, ifNode, cond, workflow: assistente.assistenteWorkflow, agente: 'assistente', agenteNo: 'Agente assistente', empresa: empresaPortao,
     fala: "$('Juntar mensagens').first().json.texto", ficha: "''", telefone: "$('Extrair dados').first().json.numero" });
 }

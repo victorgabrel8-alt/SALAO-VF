@@ -1,4 +1,4 @@
-// Testes do Portão de ações (portao-regras.js). Rodar: node --test n8n/demo-agente/testes/
+// Testes do Portão de ações (portao-regras.js). Rodar: node --test "n8n/demo-agente/testes/**/*.test.js"
 // Casos tirados dos erros reais da Gleide (11 a 18/11/2026) e de ações certas que NÃO podem ser apontadas.
 const test = require('node:test');
 const assert = require('node:assert');

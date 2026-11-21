@@ -4,11 +4,12 @@
 // neste ramo não segura nada (onError continue). Mesmo jeito do Conferente da Caroline (conferente.js, modo observar).
 //
 // Chamado pelo montar-workflow.js para a IA de atendimento (agente "Agente IA") e para a assistente da dona
-// (agente "Agente assistente").
+// (agente "Agente assistente"). Os nós ficam lá embaixo na tela (y = 9000): com executionOrder v1 o n8n roda primeiro o
+// ramo mais alto, então o caminho da resposta vem antes e o portão não atrasa a resposta.
 
 const { conferirAcoes } = require('./portao-regras.js');
 
-module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, ficha, telefone, empresa }) => {
+module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, ficha, telefone, empresa, pediuCancelar = 'undefined' }) => {
   const achar = (nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error('portão: sem o nó ' + nome); return n; };
   achar(agenteNo);
   if (wf.nodes.some((n) => n.name === 'Portão: conferir')) throw new Error('portão: já montado neste workflow');
@@ -19,15 +20,15 @@ module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, fi
     `const ag = pega(() => $('${agenteNo}').first().json) || {};`,
     "const passos = (Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : []).filter(Boolean)",
     "  .map((p) => ({ ferramenta: p.action && p.action.tool, entrada: p.action && p.action.toolInput, resultado: p.observation }));",
-    `const ctx = { agente: '${agente}', passos, fala: String(pega(() => ${fala}) || ''), ficha: String(pega(() => ${ficha}) || '') };`,
+    `const ctx = { agente: '${agente}', passos, fala: String(pega(() => ${fala}) || ''), ficha: String(pega(() => ${ficha}) || ''), pediuCancelar: pega(() => ${pediuCancelar}) };`,
     "let r; try { r = conferirAcoes(ctx); } catch (e) { r = { acoes: [{ ferramenta: 'erro_portao', entrada: '', resultado: String(e && e.message || e).slice(0, 200), falhas: [] }], n_falhas: 0 }; }",
     "return [{ json: { acoes: r.acoes, n_falhas: r.n_falhas, fala: ctx.fala.slice(0, 2000), telefone: String(pega(() => " + telefone + ") || '') } }];",
   ].join('\n');
 
   wf.nodes.push(
-    node('Portão: conferir', 'n8n-nodes-base.code', 2, [0, 600], { jsCode: codigo }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
-    ifNode('Portão: teve ação?', [220, 600], [cond('p1', '={{ Array.isArray($json.acoes) && $json.acoes.length > 0 }}', { type: 'boolean', operation: 'true', singleValue: true })]),
-    node('Portão: registrar', 'n8n-nodes-base.httpRequest', 4.2, [440, 600], {
+    node('Portão: conferir', 'n8n-nodes-base.code', 2, [0, 9000], { jsCode: codigo }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
+    ifNode('Portão: teve ação?', [220, 9000], [cond('p1', '={{ Array.isArray($json.acoes) && $json.acoes.length > 0 }}', { type: 'boolean', operation: 'true', singleValue: true })]),
+    node('Portão: registrar', 'n8n-nodes-base.httpRequest', 4.2, [440, 9000], {
       method: 'POST', url: '={{ $env.SUPABASE_URL }}/rest/v1/portao_registros',
       sendHeaders: true,
       headerParameters: { parameters: [
@@ -37,7 +38,7 @@ module.exports = ({ node, ifNode, cond, workflow: wf, agente, agenteNo, fala, fi
       ] },
       sendBody: true, specifyBody: 'json',
       jsonBody: `={{ JSON.stringify({ empresa_id: ${empresa}, agente: '${agente}', modo: 'observar', telefone: $json.telefone, fala: $json.fala, acoes: $json.acoes, n_falhas: $json.n_falhas }) }}`,
-      options: { timeout: 10000 },
+      options: { timeout: 5000 },
     }, { onError: 'continueRegularOutput' }),
   );
 
