@@ -58,11 +58,11 @@ const PORTAO_MEGA = String.raw`
 // a recolocação do cabelo da própria cliente foi gravada como aplicação e virou "venda" no relatório. Serviço com cara de
 // aplicação só passa com cabelo_novo = sim (a Gleide disse que é cabelo novo); senão volta para a assistente corrigir ou perguntar.
 // "botar" e "colocação" são apelidos da Aplicação no banco (supabase/037); manutenção, recolocação e avaliação passam.
-const ehSim = (k) => /^\s*(sim|s|true|1|yes)\b/i.test(v(k));
+const ehSim = (k) => /^\s*(sim|true|1|yes)\b(?!.*\b(dela|n[ãa]o|mas)\b)|^\s*s\s*[.!]?\s*$/i.test(v(k));
 const servicoDito = v('servico');
 const pedeAplicacao = ['marcar_horario', 'reagendar', 'concluir', 'registrar_atendimento'].includes(v('acao')) &&
   /aplica|coloca|instala|bota|mega novo|cabelo novo|alongamento/i.test(servicoDito) &&
-  !/manuten|recoloc|repor|reposi|avalia|retir|aperto|apertar|reapert|tirar e colocar/i.test(servicoDito);
+  !/manuten|recoloc|repor|reposi|avalia|retir|aperto|apertar|reapert|tirar e colocar|visita|escolher/i.test(servicoDito);
 if (pedeAplicacao && !ehSim('cabelo_novo')) {
   return [{ json: { erro: 'NÃO GRAVADO: aplicação é só com cabelo NOVO, que a cliente compra. Se é o cabelo que ela já tem ' +
     '(recolocar, repor mechas, trocar de técnica, apertar), use o serviço Manutenção. Se não dá para saber pelo que a Gleide disse, ' +
