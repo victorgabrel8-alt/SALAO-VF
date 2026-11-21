@@ -71,3 +71,17 @@ test('resultado que só fala "não consegui" no meio continua registrado como gr
   const r = ass('chama a ana', passo('chamar_cliente', { cliente_id: 'x', texto: 'Oi' }, 'OK: mensagem enviada; não consegui mandar a foto'));
   assert.strictEqual(r.acoes[0].gravou, true);
 });
+
+const { montarResumo } = require('../portao-regras.js');
+test('resumo do dia: vazio sem alarme; texto simples com alarme', () => {
+  assert.strictEqual(montarResumo([], '21/11'), '');
+  assert.strictEqual(montarResumo([{ n_falhas: 0, acoes: [] }], '21/11'), '');
+  const t = montarResumo([
+    { agente: 'assistente', telefone: '5566900000000', fala: 'a renata volta sexta 13h pra recolocar o cabelo dela', n_falhas: 1, criado_em: '2026-11-21T15:38:00Z',
+      acoes: [{ ferramenta: 'marcar_horario', falhas: [{ tipo: 'aplicacao_com_cabelo_da_cliente' }] }] },
+    { agente: 'atendimento', telefone: '5566911116156', fala: 'pra colocar meu cabelo', n_falhas: 1, criado_em: '2026-11-21T18:49:00Z',
+      acoes: [{ ferramenta: 'criar_agendamento', falhas: [{ tipo: 'aplicacao_com_cabelo_da_cliente' }] }] },
+  ], '21/11');
+  for (const x of ['🛡️ Portão 21/11: 2 alarmes em 2 conversas', '11:38 Assistente (Gleide)', 'cliente …6156', 'aplicação, mas é o cabelo da própria cliente', '«pra colocar meu cabelo»'])
+    assert.ok(t.includes(x), x);
+});
