@@ -151,14 +151,14 @@ function conferirAcoes(ctx) {
         // trechos: pontuação, "e a / mas a …", e o começo de outra cliente mesmo sem pontuação (áudio transcrito:
         // "a renata foi o cabelo dela a vitoria foi cabelo novo")
         // (também sem artigo: "vitoria foi o cabelo dela renata foi cabelo novo", "adriana veio renata faltou")
-        const partes = fala.split(/[,.;!?\n]+|\s+(?:e|mas|ja|agora)\s+(?=a |o |as |os |\w+ (?:foi|fez|veio|nao))|\s+(?=(?:a|o) [a-z]+(?: [a-z]+)? (?:foi|fez|veio|faltou|comprou|nao|era|quis|ficou|o dela|a dela|cabelo|com cabelo)\b)|\s+(?=(?!(?:ela|ele|elas|eles|que|quem|nao|nem|nunca|so|tudo|isso|tambem|ainda|acho|ate|cliente|essa|esse) )[a-z]{3,} (?:ela |ele )?(?:foi|fez|veio|faltou|comprou|ficou|nao veio|nao fez)\b)/)
+        const partes = fala.split(/[,.;!?\n]+|\s+(?:e|mas|ja|agora)\s+(?=a |o |as |os |\w+ (?:foi|fez|veio|nao))|\s+(?=(?:a|o) [a-z]+(?: [a-z]+)? (?:foi|fez|veio|faltou|comprou|nao|era|quis|ficou|o dela|a dela|cabelo|com cabelo)\b)|\s+(?=(?!(?:ela|ele|elas|eles|que|quem|nao|nem|nunca|so|tudo|isso|tambem|ainda|acho|ate|cliente|essa|esse|novo|nova|cabelo|mega|aqui|hoje|mesmo) )[a-z]{3,} (?:ela |ele )?(?:foi|fez|veio|faltou|comprou|ficou|nao veio|nao fez)\b)/)
           .map((s) => s.trim()).filter(Boolean);
         const comNome = (s, todos) => (todos ? nomeCli.every : nomeCli.some).call(nomeCli, (w) => new RegExp('\\b' + w).test(s));
         const idx = (todos) => partes.map((s, i) => (comNome(s, todos) ? i : -1)).filter((i) => i >= 0);
         let ids = idx(true); if (!ids.length) ids = idx(false);
         // o trecho seguinte é dela também quando não começa outra cliente ("adriana só veio olhar, não fez nada") ou fala das
         // duas ("a vitoria e a renata foram cabelo novo")
-        const OUTRA = /^(e |mas |ja |so |agora )?((a|o|as|os) [a-z]+|(?!(?:ela|ele|elas|eles|que|quem|nao|nem|nunca|so|tudo|isso|tambem|ainda|acho|ate|cliente|essa|esse) )[a-z]{3,} (ela |ele )?(foi|fez|veio|faltou|comprou|ficou)\b)/;
+        const OUTRA = /^(e |mas |ja |so |agora )?((a|o|as|os) [a-z]+|(?!(?:ela|ele|elas|eles|que|quem|nao|nem|nunca|so|tudo|isso|tambem|ainda|acho|ate|cliente|essa|esse|novo|nova|cabelo|mega|aqui|hoje|mesmo) )[a-z]{3,} (ela |ele )?(foi|fez|veio|faltou|comprou|ficou)\b)/;
         const daCliente = ids.map((i) => {
           const prox = partes[i + 1] || '';
           return partes[i] + (prox && (!OUTRA.test(prox) || /\b(foram|as duas|os dois|ambas)\b/.test(prox)) ? ' ' + prox : '');
@@ -170,7 +170,8 @@ function conferirAcoes(ctx) {
         // "só a Vitoria que não", "tá certo menos a Vitoria": a lista vale para as outras, não para ela. "Tá certo?" é pergunta.
         const excluidas = [...fala.matchAll(/\b(?:so|menos|exceto|tirando|fora|so nao|mas nao)\s+(?:a |o |da |do )?([a-z]{3,})/g)].map((m) => m[1]);
         const excluida = nomeCli.some((w) => excluidas.includes(w));
-        const listaOk = LISTA_OK.test(fala) && !excluida && !/\?\s*$/.test(fala);
+        // "isso mesmo, né?" é jeito de falar, não pergunta
+        const listaOk = LISTA_OK.test(fala) && !excluida && !/\?\s*$/.test(fala.replace(/[\s,]*\b(ne|neh|ta|viu|sabe)\s*\?\s*$/, ''));
         const sug = (resCheio.match(/\\?"sugerido\\?"\s*:\s*\\?"(\w+)/) || [])[1] || '';
         if (/mega|novo/.test(tipo)) {
           if (daCliente && temDela(daCliente) && !temNovo(daCliente)) add('venda_mega_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');

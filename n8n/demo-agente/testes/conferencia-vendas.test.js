@@ -297,3 +297,11 @@ test('Montar chamada: desfazer só com "sim" exato apaga o valor', () => {
   assert.strictEqual(chamar({ desfazer: 'sem alteração' }).args.p_limpar_valor, false);
   assert.strictEqual(chamar({ desfazer: 'Sim' }).args.p_limpar_valor, true);
 });
+
+// ---------- quarta rodada do testador (21/11) ----------
+test('portão: "cabelo novo comprou aqui" e "isso mesmo né?" não dão alarme falso', () => {
+  for (const f of ['vitoria colocou cabelo novo comprou aqui comigo', 'a vitoria colocou cabelo novo ela comprou aqui'])
+    assert.deepStrictEqual(tipos(ass(f, cv('Vitoria', 'mega_novo', 'manutencao'))), [], f);
+  assert.deepStrictEqual(tipos(ass('isso mesmo né?', cv('Vitoria', 'mega_novo', 'mega_novo'))), []);
+  assert.deepStrictEqual(tipos(ass('tá certo?', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
+});
