@@ -257,7 +257,10 @@ function conferirAcoes(ctx) {
           if (!disseSim) add('encaixe_sem_confirmacao', 'adiantou o horário sem o sim da cliente à confirmação');
           // "daqui 40 min", "tô chegando": a hora foi dita em tempo, não em relógio
           const relativo = /\b(daqui|minutos?|min|meia hora|uma hora|ja to|ja estou|to chegando|estou chegando|agora)\b/.test(falas);
-          if (!relativo && !horaDita(Number(mh[1]), falas)) add('encaixe_hora_sem_prova', 'a hora ' + mh[1] + ':' + mh[2] + ' não foi dita pela cliente');
+          // "13 e 30", "1 e 30" (hora e minutos em número)
+          const hN = Number(mh[1]);
+          const eMin = [hN, hN > 12 ? hN - 12 : hN].some((x) => new RegExp('(^|[^\\d/])0?' + x + ' e \\d{2}(\\D|$)').test(falas));
+          if (!relativo && !eMin && !horaDita(hN, falas)) add('encaixe_hora_sem_prova', 'a hora ' + mh[1] + ':' + mh[2] + ' não foi dita pela cliente');
         }
       }
       if (nomeF === 'cancelar_agendamento' && ctx.pediuCancelar !== true && !confirmou) {
