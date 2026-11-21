@@ -70,16 +70,16 @@ returns text language sql stable set search_path = public as $$
          case when extract(minute from p_ts at time zone 'America/Cuiaba') > 0 then to_char(p_ts at time zone 'America/Cuiaba', 'MI') else '' end
 $$;
 
--- Primeiro nome para a mensagem: "ana paula" vira "Ana"; nome sem letra (só emoji) fica sem nome
+-- Primeiro nome para a mensagem: "ana paula" e "MARIA" viram "Ana" e "Maria"; "💕 Mari" vira "Mari"; nome sem letra fica sem nome
 create or replace function encaixe_nome(p_nome text)
 returns text language sql immutable set search_path = public as $$
-  select case when x !~ '[[:alpha:]]' then null when x = lower(x) then initcap(x) else x end
-    from (select split_part(trim(coalesce(p_nome, '')), ' ', 1) as x) t
+  select case when x is null then null when x = lower(x) or (x = upper(x) and length(x) > 1) then initcap(x) else x end
+    from (select (regexp_match(coalesce(p_nome, ''), '[[:alpha:]]+'))[1] as x) t
 $$;
 
 create or replace function encaixe_folga(p_empresa_id uuid)
 returns interval language sql stable set search_path = public as $$
-  select make_interval(mins => greatest(coalesce((select nullif(config->'encaixe'->>'folga_min', '')::int from empresas where id = p_empresa_id), 30), 10))
+  select make_interval(mins => greatest(coalesce((select case when config->'encaixe'->>'folga_min' ~ '^[0-9]{1,4}$' then (config->'encaixe'->>'folga_min')::int end from empresas where id = p_empresa_id), 30), 10))
 $$;
 
 -- Quem pode ser chamada para a vaga desta falta: {"ok": true, agendamento_id, cliente_id, nome, telefone, inicio, ...}
@@ -92,7 +92,7 @@ declare
   v_hoje date := hoje_cuiaba(); v_folga interval := encaixe_folga(p_empresa_id); v_dur int; v_de timestamptz;
 begin
   select config into v_cfg from empresas where id = p_empresa_id;
-  if not coalesce((v_cfg->'encaixe'->>'ligado')::boolean, false) then
+  if coalesce(v_cfg->'encaixe'->>'ligado', '') <> 'true' then
     return jsonb_build_object('ok', false, 'motivo', 'encaixe desligado');
   end if;
   select * into f from agendamentos where id = p_falta_agendamento_id and empresa_id = p_empresa_id;
@@ -129,7 +129,7 @@ begin
   if c.ia_pausada_ate is not null and c.ia_pausada_ate > now() then
     return jsonb_build_object('ok', false, 'motivo', 'a IA está pausada para a próxima cliente');
   end if;
-  if jsonb_array_length(coalesce(v_cfg->'encaixe'->'so_para', '[]'::jsonb)) > 0 and not ((v_cfg->'encaixe'->'so_para') ? c.telefone) then
+  if jsonb_typeof(v_cfg->'encaixe'->'so_para') = 'array' and jsonb_array_length(v_cfg->'encaixe'->'so_para') > 0 and not ((v_cfg->'encaixe'->'so_para') ? c.telefone) then
     return jsonb_build_object('ok', false, 'motivo', 'encaixe em teste: a próxima cliente não está na lista');
   end if;
   -- no máximo 1 oferta por cliente por dia (a desta mesma falta não conta: é a que está sendo decidida)
@@ -137,6 +137,13 @@ begin
                and e.falta_agendamento_id <> f.id
                and e.status in ('autorizado', 'oferecido', 'aceito', 'recusado', 'sem_resposta')) then
     return jsonb_build_object('ok', false, 'motivo', 'a próxima cliente já recebeu uma oferta de encaixe hoje');
+  end if;
+
+  -- outra oferta de vaga ainda em aberto para ela (rotina de vagas): não mistura duas ofertas
+  if exists (select 1 from contatos ct where ct.cliente_id = c.id and ct.tipo = 'vaga' and ct.resultado in ('pendente', 'respondeu')
+               and ct.criado_em > now() - interval '24 hours'
+               and not exists (select 1 from encaixes e where e.contato_id = ct.id and e.falta_agendamento_id = f.id)) then
+    return jsonb_build_object('ok', false, 'motivo', 'a próxima cliente já tem uma oferta de horário em aberto');
   end if;
 
   -- a vaga ainda faz sentido? Algum início entre agora e 15 min antes do horário dela passa nas regras da agenda
@@ -158,7 +165,7 @@ end $$;
 create or replace function encaixe_fechar_vencidos(p_empresa_id uuid)
 returns void language plpgsql set search_path = public as $$
 declare v_hoje date := hoje_cuiaba(); v_folga interval := encaixe_folga(p_empresa_id);
-  v_espera interval := make_interval(mins => greatest(coalesce((select nullif(config->'encaixe'->>'espera_min', '')::int from empresas where id = p_empresa_id), 60), 5));
+  v_espera interval := make_interval(mins => greatest(coalesce((select case when config->'encaixe'->>'espera_min' ~ '^[0-9]{1,4}$' then (config->'encaixe'->>'espera_min')::int end from empresas where id = p_empresa_id), 60), 5));
 begin
   -- a dona não respondeu a tempo, o envio falhou e passou a hora, ou a cliente deixou de valer
   update encaixes e set status = 'expirado', fechado_em = now()
@@ -193,7 +200,7 @@ create or replace function n8n_encaixe_apos_falta(p_empresa_id uuid, p_pedido_po
 returns jsonb language plpgsql set search_path = public as $$
 declare e encaixes%rowtype; p encaixes%rowtype; v_c jsonb; v_nome text; v_quem text;
 begin
-  if not coalesce((select (config->'encaixe'->>'ligado')::boolean from empresas where id = p_empresa_id), false) then
+  if coalesce((select config->'encaixe'->>'ligado' from empresas where id = p_empresa_id), '') <> 'true' then
     return jsonb_build_object('perguntar', false, 'motivo', 'encaixe desligado');
   end if;
   perform encaixe_fechar_vencidos(p_empresa_id);
@@ -235,7 +242,7 @@ returns jsonb language plpgsql set search_path = public as $$
 declare r jsonb; v_enc jsonb;
 begin
   r := n8n_assistente_liberar_horario(p_empresa_id, p_pedido_por, p_agendamento_id);
-  if not coalesce((select (config->'encaixe'->>'ligado')::boolean from empresas where id = p_empresa_id), false) then return r; end if;
+  if coalesce((select config->'encaixe'->>'ligado' from empresas where id = p_empresa_id), '') <> 'true' then return r; end if;
   -- a vaga desta falta é só do encaixe (a dona autoriza): a rotina automática de vagas nunca oferece nem passa para a seguinte
   update vagas set status = 'expirada'
    where empresa_id = p_empresa_id and agendamento_id = p_agendamento_id and motivo = 'atraso' and status = 'aberta';
@@ -255,7 +262,7 @@ declare r jsonb; v_enc jsonb;
 begin
   r := n8n_assistente_status_agendamento(p_empresa_id, p_pedido_por, p_agendamento_id, p_status, p_valor);
   if p_status <> 'faltou'
-     or not coalesce((select (config->'encaixe'->>'ligado')::boolean from empresas where id = p_empresa_id), false) then return r; end if;
+     or coalesce((select config->'encaixe'->>'ligado' from empresas where id = p_empresa_id), '') <> 'true' then return r; end if;
   begin
     v_enc := n8n_encaixe_apos_falta(p_empresa_id, p_pedido_por, p_agendamento_id, p_turno);
   exception when others then
@@ -284,7 +291,7 @@ begin
     raise exception 'não tem pergunta de encaixe esperando a resposta dela agora (passou do tempo ou já foi respondida). Ninguém foi chamado.';
   end if;
   -- a autorização tem de vir numa mensagem da dona DEPOIS da pergunta: na mesma vez em que a falta foi gravada, ela ainda nem leu
-  if e.status = 'perguntado' and not p_recusou and nullif(p_turno, '') is not null and e.perguntado_turno = p_turno then
+  if e.status = 'perguntado' and not p_recusou and e.perguntado_turno is not null and coalesce(p_turno, '') in ('', e.perguntado_turno) then
     raise exception 'a pergunta do encaixe acabou de ser feita nesta mesma mensagem: a Gleide ainda não respondeu. Termine a resposta com a pergunta e só chame depois que ela disser que pode. Ninguém foi chamado.';
   end if;
   select * into c from clientes where id = e.cliente_id;

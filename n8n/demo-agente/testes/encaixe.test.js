@@ -170,11 +170,14 @@ test('Montar chamada: chamar_para_encaixe manda só quando autorizou; "não" só
   const nao = chamada({ acao: 'chamar_para_encaixe', agendamento_id: AG, cliente_nome: 'Ana', desfazer: 'Sim' });
   assert.strictEqual(nao.enviar, false, 'ela disse que não: nada é enviado');
   assert.strictEqual(nao.args.p_recusou, true);
-  for (const d of ['', 'vazio', 'sem alteração', 'senão vazio', 'não', 'ela autorizou', 'sim, pode chamar']) {
+  // qualquer outro texto em desfazer (a IA pode ter copiado o "não" da Gleide) NÃO envia nada: volta erro
+  for (const d of ['não', 'nao', 'n', 'não precisa', 'ela não quer', 'recusou', 'sim, ela não quer', 'yes', 'vazio', 'senão vazio', 'ela autorizou']) {
     const r = chamada({ acao: 'chamar_para_encaixe', agendamento_id: AG, cliente_nome: 'Ana', desfazer: d });
-    assert.strictEqual(r.args.p_recusou, false, 'desfazer = "' + d + '"');
-    assert.strictEqual(r.enviar, true);
+    assert.match(r.erro, /NADA FOI ENVIADO/, 'desfazer = "' + d + '"');
+    assert.strictEqual(r.funcao, undefined);
+    assert.ok(!r.enviar);
   }
+  for (const d of ['s', 'Sim.', 'true', ' sim ']) assert.strictEqual(chamada({ acao: 'chamar_para_encaixe', agendamento_id: AG, cliente_nome: 'Ana', desfazer: d }).enviar, false, d);
   // id que não é uuid (a IA inventou ou deixou vazio): vai sem id, e o banco usa a pergunta pendente e confere o nome
   assert.strictEqual(chamada({ acao: 'chamar_para_encaixe', agendamento_id: 'ana-15h', cliente_nome: 'Ana' }).args.p_agendamento_id, null);
   assert.strictEqual(chamada({ acao: 'chamar_para_encaixe', cliente_nome: 'Ana' }).args.p_agendamento_id, null);

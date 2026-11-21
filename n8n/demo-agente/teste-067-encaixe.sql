@@ -17,6 +17,7 @@ end $f$;
 create function pg_temp.limpa(p_e uuid) returns void language plpgsql as $f$
 begin
   delete from encaixes where empresa_id = p_e;
+  delete from contatos where empresa_id = p_e and cliente_id in (select id from clientes where empresa_id = p_e and telefone like '55000000670%');
   update agendamentos set status = 'cancelado', chegou_em = null
    where empresa_id = p_e and status <> 'cancelado' and inicio between now() - interval '1 day' and now() + interval '1 day';
   update clientes set ia_pausada_ate = null where empresa_id = p_e and telefone like '55000000670%';
@@ -315,6 +316,36 @@ begin
   update agendamentos set status = 'realizado' where id = f;
   insert into r (caso, ok, veio) values ('H11 a que faltou apareceu: a ficha diz que a vaga fechou', (n8n_encaixe_da_cliente(L, cA)->>'vaga_aberta')::boolean is false, n8n_encaixe_da_cliente(L, cA)::text);
   update clientes set nome = 'Ana Paula Teste' where id = cA;
+
+  -- ===== I. achados do testador =====
+  -- config mal escrita nunca impede de gravar a falta
+  perform pg_temp.limpa(L);
+  update empresas set config = jsonb_set(jsonb_set(config, '{encaixe,ligado}', '"sim"'), '{encaixe,folga_min}', '"30 min"') where id = L;
+  f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
+  j := pg_temp.liberar(L, tel, f);
+  insert into r (caso, ok, veio) values ('I1 config mal escrita (ligado = "sim"): a falta é gravada e o encaixe fica desligado',
+    j->>'status' = 'faltou' and (select status from agendamentos where id = f) = 'faltou' and not exists (select 1 from encaixes where empresa_id = L), j::text);
+  update empresas set config = jsonb_set(config || liga, '{encaixe,folga_min}', '"30 min"') where id = L;
+  perform pg_temp.limpa(L);
+  f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
+  j := pg_temp.status(L, tel, f, 'faltou');
+  insert into r (caso, ok, veio) values ('I2 folga mal escrita vale o padrão de 30 min', (j->'encaixe'->>'perguntar')::boolean and n8n_encaixe_pendente_texto(L) like '%Ana%', j::text);
+  update empresas set config = config || liga where id = L;
+  -- a pergunta nasceu com turno: sem turno (ou com o mesmo) não chama
+  perform pg_temp.limpa(L);
+  f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
+  j := n8n_assistente_liberar_horario_encaixe(L, tel, f, 'MSG-9');
+  insert into r (caso, ok, veio) values ('I3 turno vazio ou nulo não passa pela trava',
+    pg_temp.chamar(L, tel, aA, 'Ana', false, '') ? 'erro' and pg_temp.chamar(L, tel, aA, 'Ana', false, null) ? 'erro' and not exists (select 1 from contatos where agendamento_id = aA), '');
+  -- quem tem outra oferta de vaga em aberto não recebe o encaixe por cima
+  perform pg_temp.limpa(L);
+  f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
+  insert into contatos (empresa_id, cliente_id, tipo, canal, mensagem, agendamento_id, horario_original) values (L, cA, 'vaga', 'ia', 'Abriu um horário', aA, now() + interval '60 minutes');
+  j := pg_temp.liberar(L, tel, f);
+  insert into r (caso, ok, veio) values ('I4 cliente com oferta de vaga em aberto: ninguém', not (j->'encaixe'->>'perguntar')::boolean and j->'encaixe'->>'motivo' like '%oferta de horário em aberto%', j::text);
+  -- nomes
+  insert into r (caso, ok, veio) values ('I5 nomes: emoji na frente, maiúsculas, minúsculas',
+    encaixe_nome('💕 Mari') = 'Mari' and encaixe_nome('MARIA SILVA') = 'Maria' and encaixe_nome('ana') = 'Ana' and encaixe_nome('~Jú~') = 'Jú' and encaixe_nome(null) is null, encaixe_nome('💕 Mari'));
 
   -- ===== G. o resto não muda =====
   perform pg_temp.limpa(L);

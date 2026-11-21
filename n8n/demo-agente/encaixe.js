@@ -118,10 +118,11 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
   trocar(montar, 'jsCode', "p_status: v('status'), p_valor: valor() };", "p_status: v('status'), p_valor: valor(), p_turno: ou(v('busca')) };", 'os argumentos de status_atendimento');
   trocar(montar, 'jsCode', "funcao = 'n8n_assistente_status_agendamento';", "funcao = 'n8n_assistente_status_agendamento_encaixe';", 'status_atendimento no "Montar chamada"');
   trocar(montar, 'jsCode', "  default:\n    return [{ json: { erro: 'ferramenta desconhecida: '", [
-    "  // encaixe na falta (encaixe.js, supabase/067): a Gleide respondeu à pergunta do encaixe. Só \"sim\" exato em desfazer conta",
-    "  // como \"ela disse que não\" (ninguém é chamado); qualquer outra coisa é a autorização, e o banco confere a cliente.",
+    "  // encaixe na falta (encaixe.js, supabase/067): a Gleide respondeu à pergunta do encaixe. desfazer vazio = ela autorizou;",
+    "  // \"sim\" = ela disse que não (ninguém é chamado); qualquer outro texto não envia nada (a IA pode ter copiado o \"não\" dela).",
     "  case 'chamar_para_encaixe': {",
     "    const recusou = /^\\s*(sim|s|true|1)\\s*[.!]?\\s*$/i.test(v('desfazer'));",
+    "    if (!recusou && v('desfazer') !== '') return [{ json: { erro: 'NADA FOI ENVIADO: o campo desfazer só aceita vazio (a Gleide autorizou) ou sim (ela disse que não quer). Chame de novo do jeito certo.' } }];",
     "    funcao = 'n8n_assistente_chamar_para_encaixe'; enviar = !recusou;",
     `    args = { ...base, p_agendamento_id: ${UUID_RE}.test(v('agendamento_id')) ? v('agendamento_id') : null, p_nome: v('cliente_nome'), p_recusou: recusou, p_turno: ou(v('busca')) };`,
     '    break;',
@@ -179,7 +180,7 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
     "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';",
     "const pergEncaixe = passos.filter((s) => ['liberar_horario', 'status_atendimento'].includes(s.action?.tool)).map((s) => lerResposta(s.observation))",
     "  .map((r) => (/\"perguntar\"\\s*:\\s*true/.test(r) ? (r.match(/\"pergunta\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"/) || [])[1] : '')).filter(Boolean).pop();",
-    "if (pergEncaixe && !corrigida && !/vir antes/i.test(texto)) texto = texto + '\\n' + pergEncaixe.replace(/\\\\\"/g, '\"');",
+    "if (pergEncaixe && !/vir antes/i.test(texto)) texto = texto + '\\n' + pergEncaixe.replace(/\\\\\"/g, '\"');",
   ].join('\n'), 'o fim do "Conferir resposta"');
 
   // a pergunta que espera a resposta dela, lida do banco a cada mensagem (a memória da conversa não guarda o resultado das ferramentas)
