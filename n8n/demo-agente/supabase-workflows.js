@@ -83,7 +83,8 @@ try { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]')
 const recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);
 const pendentes = [];
 for (const m of recentes) {
-  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada
+  // o pedido de desculpas e o recado de espera (ia-fora-do-ar.js) não respondem nada: a pergunta dela continua sem resposta
+  if (m.direcao !== 'entrada') { if (/^(Desculpa, tive um probleminha|Recebi sua mensagem 💛)/.test(m.conteudo || '')) continue; break; }
   // aceno ("ok", "assim") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente
   if (/^\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\s.!]*$/iu.test(m.conteudo || '')) continue;
   if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);
@@ -91,7 +92,7 @@ for (const m of recentes) {
 const SEM_RESPOSTA = pendentes.length ? '\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +
   pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';
 // Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo
-const ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));
+const ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^(Desculpa, tive um probleminha|Recebi sua mensagem 💛)/.test(m.conteudo || ''));
 const JA_FALOU = ultimaIA ? '\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +
   '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '';
 if (!ficha.id) return [{ json: { texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA } }];

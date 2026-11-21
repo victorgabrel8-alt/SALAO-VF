@@ -3,13 +3,15 @@
 // recebeu duas vezes "Desculpa, tive um probleminha… Pode mandar de novo?".
 const test = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
 const iaFora = require('../ia-fora-do-ar.js');
 const { decidirFalha, avisoDaDona } = iaFora;
 
 const AGORA = Date.parse('2026-11-21T14:25:00Z');
 const ha = (min, conteudo, direcao = 'saida') => ({ direcao, conteudo, criado_em: new Date(AGORA - min * 60000).toISOString() });
 const DESCULPA = 'Desculpa, tive um probleminha aqui e não consegui ler sua mensagem. Pode mandar de novo? 😊';
-const ESPERA = 'Recebi sua mensagem 💛 Só um instantinho que a Gleide já te responde por aqui, tá?';
+const ESPERA = 'Recebi sua mensagem 💛 A Gleide te responde por aqui assim que puder, tá?';
 const TETO = '[GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/…: [429 ] Your project has exceeded its monthly spending cap.';
 const d = (o) => decidirFalha({ agora: AGORA, dona: 'Gleide', anteriores: [], ...o });
 
@@ -71,13 +73,13 @@ test('entrada estranha não quebra', () => {
   assert.doesNotThrow(() => decidirFalha());
   assert.strictEqual(decidirFalha({}).tipo, 'desculpa');
   assert.strictEqual(decidirFalha({ anteriores: [null, {}, { direcao: 'saida' }, { direcao: 'saida', conteudo: ESPERA, criado_em: 'não é data' }], agora: AGORA }).tipo, 'desculpa');
-  assert.match(decidirFalha({ erro: TETO, dona: '' }).texto, /que a gente já te responde/);
+  assert.strictEqual(decidirFalha({ erro: TETO, dona: '' }).texto, 'Recebi sua mensagem 💛 A gente te responde por aqui assim que puder, tá?');
 });
 
 test('aviso para a dona: conversa normal, com quem é e o que ela escreveu', () => {
   const t = avisoDaDona({ nome: 'dienne souza de lima', telefone: '556696736156', mensagem: 'Oi cheguei' });
   assert.strictEqual(t, '⚠️ Estou com um problema aqui no sistema e não consegui responder a *Dienne Souza* (final 6156), que escreveu agora: «Oi cheguei». ' +
-    'Você consegue responder ela pelo WhatsApp do salão? Eu só disse que você já responde. O Victor já foi avisado do problema.');
+    'Você consegue responder ela pelo WhatsApp do salão? Eu só disse que você responde assim que puder. O Victor já foi avisado do problema.');
   assert.doesNotMatch(t, /\b(responda|sim ou n[ãa]o|digite)\b|^\s*\d+\)/im);
   // sem nome: o número; numeração do buffer sai; mensagem comprida é cortada
   assert.match(avisoDaDona({ nome: '', telefone: '5566999990000', mensagem: '[1] oi\n[2] cheguei' }), /responder o número \(66\) 99999-0000, que escreveu agora: «oi cheguei»/);
@@ -169,7 +171,8 @@ test('montagem: numa queda longa a dona recebe 3 avisos por hora, o 4º junta e 
   const wf = montar();
   const code = wf.nodes.find((x) => x.name === 'IA fora: aviso da dona').parameters.jsCode;
   const guardado = {};
-  const um = (nome) => rodar(code, { 'Supabase: ficha da cliente': { nome }, 'Extrair dados': {}, 'Montar entrada': { telefone: '5566999990000', texto_cliente: 'oi' } }, { ASSISTENTE_NUMEROS: '5500000000001' }, guardado);
+  let n = 0;
+  const um = (nome, telefone) => rodar(code, { 'Supabase: ficha da cliente': { nome }, 'Extrair dados': {}, 'Montar entrada': { telefone: telefone || '55669999900' + String(10 + (++n)), texto_cliente: 'oi' } }, { ASSISTENTE_NUMEROS: '5500000000001' }, guardado);
   for (const nome of ['Ana', 'Bia', 'Carla']) assert.match(um(nome)[0].json.texto, new RegExp('\\*' + nome + '\\*'));
   const quarto = um('Duda');
   assert.match(quarto[0].json.texto, /^Tem mais clientes escrevendo/);
@@ -189,4 +192,42 @@ test('montagem: o aviso do Victor diz o que a cliente recebeu', () => {
   assert.match(texto({ falhou: true, texto: ESPERA }), /A IA falhou com 556696736156, que escreveu: «Oi cheguei»\. Ela recebeu o recado de espera e a dona está sendo avisada/);
   assert.match(texto({ falhou: true, texto: DESCULPA }), /Ela recebeu o pedido de desculpas/);
   assert.match(texto({ falhou: true, semTexto: true }), /Ela NÃO recebeu resposta agora/);
+});
+
+
+// ---------- testador (21/11) ----------
+test('testador: "suspended" não é teto de gasto e "R$ 429,00" não é o código 429', () => {
+  assert.strictEqual(d({ erro: 'Your account has been suspended' }).tipo, 'desculpa');
+  assert.strictEqual(d({ erro: 'Erro na ferramenta: valor R$ 429,00 inválido' }).tipo, 'desculpa');
+  assert.strictEqual(d({ erro: '[429 ] Your project has exceeded its monthly spending cap.' }).tipo, 'espera');
+  assert.strictEqual(d({ erro: 'Request failed with status code 429' }).tipo, 'espera');
+});
+
+test('testador: nome com emoji, nome que não é nome e contato sem número de verdade', () => {
+  assert.match(avisoDaDona({ nome: '💕mari💕', telefone: '5566999990000', mensagem: 'oi' }), /a \*Mari\* \(final 0000\)/);
+  assert.match(avisoDaDona({ nome: '.', telefone: '5566999990000', mensagem: 'oi' }), /responder o número \(66\) 99999-0000/);
+  // contato @lid: o "telefone" é um código, não ajuda a achar a conversa
+  const lid = avisoDaDona({ nome: 'Bia', telefone: '123456789012345', mensagem: 'oi' });
+  assert.match(lid, /a \*Bia\*, que escreveu/);
+  assert.doesNotMatch(lid, /final/);
+});
+
+test('testador: a mesma cliente não gera dois avisos à dona em 3 horas', () => {
+  const wf = montar();
+  const code = wf.nodes.find((x) => x.name === 'IA fora: aviso da dona').parameters.jsCode;
+  const guardado = {};
+  const um = (telefone) => rodar(code, { 'Supabase: ficha da cliente': { nome: 'Dienne' }, 'Extrair dados': {}, 'Montar entrada': { telefone, texto_cliente: 'Oi cheguei' } }, { ASSISTENTE_NUMEROS: '5500000000001' }, guardado);
+  assert.strictEqual(um('556696730000').length, 1);
+  assert.deepStrictEqual(um('556696730000'), [], 'o recado foi descartado e ela escreveu de novo: a dona não recebe outro aviso');
+  assert.strictEqual(guardado.iaForaAvisos.length, 1, 'o aviso repetido não gasta o limite da hora');
+  assert.strictEqual(um('556696731111').length, 1, 'outra cliente avisa normalmente');
+  // 3 horas depois, a mesma cliente pode gerar aviso de novo
+  guardado.iaForaClientes['556696730000'] -= 3.1 * 3600e3; guardado.iaForaAvisos = [];
+  assert.strictEqual(um('556696730000').length, 1);
+});
+
+test('testador: o "Sobre esta cliente" não trata o recado de espera como resposta', () => {
+  const fonte = fs.readFileSync(path.join(__dirname, '..', 'supabase-workflows.js'), 'utf8');
+  // os dois lugares: a pergunta dela continua "sem resposta" e a IA não acha que "já conversou" só por causa do recado
+  assert.strictEqual(fonte.split("/^(Desculpa, tive um probleminha|Recebi sua mensagem 💛)/.test(m.conteudo || '')").length, 3);
 });
