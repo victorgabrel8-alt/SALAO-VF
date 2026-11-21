@@ -76,8 +76,8 @@ Ainda esperando a Gleide confirmar (nome, dia e o que a lista mostrou):
   (em 13/11 e 18/11 era o cabelo da própria cliente). Não deu para saber pelo que ela disse? Pergunte uma vez, natural
   ("A da Vitoria foi cabelo novo ou o cabelo dela mesmo?"). Nunca escolha por ela.
 - A mesma cliente aparece em dois dias e ela não disse qual ("a Vitoria foi o cabelo dela")? Pergunte qual dia, natural
-  ("A da Vitoria do dia 13, né?"). Nunca escolha o dia por ela. Duas clientes com o mesmo primeiro nome: mande o nome como
-  está na lista (com o sobrenome).
+  ("Foi a da Vitoria do dia 4 ou a do dia 13?"). Nunca escolha o dia por ela. Duas clientes com o mesmo primeiro nome: mande o nome como
+  está na lista (com o sobrenome e o "(final 1234)", se tiver).
 - valor só se ela disse o valor daquela cliente; nunca o preço da tabela, nunca 0. Não pergunte valor. Ela disse que o valor
   que você anotou está errado e não sabe o certo: conferir_venda com desfazer = sim (apaga o valor).
 - Ela falou de alguém que não estava na lista: conferir_venda com o nome e o dia que ela disse. Se a ferramenta disser que não
@@ -104,7 +104,7 @@ module.exports = ({ assistenteWorkflow: ag, pendenciasWorkflow: pe, clientesDesd
     'cabelo novo, manutenção (cabelo que a cliente já tinha), outro serviço ou não aconteceu. Uma chamada por cliente; gravar de novo corrige.';
   tool.parameters.workflowInputs.value = {
     acao: 'conferir_venda', pedido_por: valores.pedido_por, pode_forcar: valores.pode_forcar,
-    cliente_nome: ia('cliente_nome', 'Nome da cliente como está na lista da conferência (com o sobrenome, se a lista tiver) ou como a Gleide disse'),
+    cliente_nome: ia('cliente_nome', 'Nome da cliente exatamente como está na lista da conferência (com o sobrenome e o "(final 1234)", se a lista tiver) ou como a Gleide disse'),
     data: ia('data', 'Dia do atendimento AAAA-MM-DD, o da lista da conferência (vazio se não souber)'),
     tipo: ia('tipo', 'mega_novo (cabelo NOVO que a cliente comprou), manutencao (cabelo que ela já tinha: manutenção, recolocar, repor, trocar de técnica), outro ou nao_fez. Só o que a Gleide disse ou confirmou; "aplicação" sozinha não diz se o cabelo é novo'),
     valor: ia('valor', 'Valor em reais, só o número, SÓ se a Gleide disse o valor desta cliente; senão vazio (nunca 0, nunca o preço da tabela)'),

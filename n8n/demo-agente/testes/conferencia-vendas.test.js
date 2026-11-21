@@ -215,3 +215,35 @@ test('portão: o resumo das 20h tem nome para os alarmes novos', () => {
     assert.match(t, re);
   }
 });
+
+// ---------- segunda rodada do testador (21/11) ----------
+const embrulhado = (cliente_nome, tipo, sugerido, extra = {}) => ({ ferramenta: 'conferir_venda', entrada: { cliente_nome, tipo, ...extra },
+  resultado: JSON.stringify([{ resposta: 'OK: ' + JSON.stringify({ ok: true, nome: cliente_nome, sugerido, tipo }) }]) });
+
+test('portão: resposta embrulhada ({"resposta": …}) também traz o sugerido e o erro', () => {
+  assert.deepStrictEqual(tipos(ass('tá certinho', embrulhado('Vitoria', 'mega_novo', 'mega_novo'))), []);
+  assert.deepStrictEqual(tipos(ass('tá certinho', embrulhado('Renata', 'mega_novo', 'manutencao'))), ['venda_mega_sem_prova']);
+  const erro = { ferramenta: 'conferir_venda', entrada: { cliente_nome: 'Renata', tipo: 'mega_novo' }, resultado: JSON.stringify({ resposta: 'ERRO: achei mais de um atendimento' }) };
+  assert.deepStrictEqual(conferirAcoes({ agente: 'assistente', fala: 'a renata foi o cabelo dela', passos: [erro] }).acoes, [], 'não gravou: nada a apontar');
+});
+
+test('portão: áudio sem pontuação separa as clientes', () => {
+  assert.deepStrictEqual(tipos(ass('a renata foi o cabelo dela a vitoria foi cabelo novo', cv('Renata', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
+  assert.deepStrictEqual(tipos(ass('a renata foi o cabelo dela a vitoria foi cabelo novo', cv('Vitoria', 'mega_novo', 'manutencao'))), []);
+  assert.deepStrictEqual(tipos(ass('a ana paula foi cabelo novo a ana clara o dela', cv('Ana Clara', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
+  assert.deepStrictEqual(tipos(ass('a ana paula foi cabelo novo a ana clara o dela', cv('Ana Paula', 'mega_novo', 'manutencao'))), []);
+});
+
+test('portão: falsos alarmes da segunda rodada não aparecem mais', () => {
+  for (const f of ['oi amiga tá certo sim', 'pode ser, tá certo', '👍', 'exatamente'])
+    assert.deepStrictEqual(tipos(ass(f, cv('Vitoria', 'mega_novo', 'mega_novo'))), [], f);
+  assert.deepStrictEqual(tipos(ass('Vitória foi cabelo que comprou com a gente', cv('Vitória', 'mega_novo', 'manutencao'))), []);
+  assert.deepStrictEqual(tipos(ass('a vitoria e a renata foram cabelo novo', cv('Vitoria', 'mega_novo', 'manutencao'), cv('Renata', 'mega_novo', 'manutencao'))), []);
+  assert.deepStrictEqual(tipos(ass('só a renata que não, foi o cabelo dela', cv('Vitoria', 'mega_novo', 'mega_novo'))), []);
+  assert.deepStrictEqual(tipos(ass('só a renata que não, foi o cabelo dela', cv('Renata', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
+  assert.deepStrictEqual(tipos(ass('adriana só veio olhar, não fez nada', cv('Adriana', 'nao_fez', 'manutencao'))), []);
+});
+
+test('portão: nome com "(final 1234)" acha o trecho da cliente', () => {
+  assert.deepStrictEqual(tipos(ass('a renata souza foi o cabelo dela', cv('Renata Souza (final 6004)', 'mega_novo', 'mega_novo'))), ['venda_mega_com_cabelo_da_cliente']);
+});

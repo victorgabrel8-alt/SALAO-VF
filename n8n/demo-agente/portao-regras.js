@@ -110,7 +110,18 @@ function conferirAcoes(ctx) {
     const nomeF = String(p.ferramenta);
     if (LEITURA.includes(nomeF)) continue;
     const e = entradaDe(p);
-    const res = curto(p.resultado, 300);
+    // a resposta da ferramenta pode vir como texto ("OK: …") ou embrulhada ({"resposta":"OK: …"} ou [{…}]), como no
+    // lerResposta do assistente-workflows.js: desembrulha antes de ler erro e o que o banco devolveu
+    const lerResp = (o) => {
+      let t = typeof o === 'string' ? o : JSON.stringify(o == null ? '' : o);
+      for (let i = 0; i < 3; i++) {
+        try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x === 'object' && typeof x.resposta === 'string') { t = x.resposta; continue; } } catch (er) { /* texto */ }
+        break;
+      }
+      return t;
+    };
+    const resCheio = lerResp(p.resultado);
+    const res = curto(resCheio, 300);
     const deuErro = /^\W{0,4}(erro|n[aã]o gravado|n[aã]o marquei)|^\W{0,4}"?erro"?\s*:|^\{\s*"erro"/i.test(res);
     const falhas = [];
     const add = (tipo, detalhe) => falhas.push({ tipo, detalhe });
@@ -133,17 +144,30 @@ function conferirAcoes(ctx) {
       // conferência da semana (conferencia-vendas.js, supabase/066). Cada cliente é conferida pelo TRECHO da fala que fala
       // dela ("a Renata foi o cabelo dela, o resto tá certo": o "dela" é só da Renata). "Tá certo" / "o resto tá certo"
       // confirma o que a LISTA mostrou (o banco devolve o sugerido): gravar diferente da lista sem ela dizer é alarme.
-      if (nomeF === 'conferir_venda') {
+      // A ferramenta deu erro (não gravou): nada a apontar aqui.
+      if (nomeF === 'conferir_venda' && !deuErro) {
         const tipo = norm(val(e, 'tipo'));
-        const nomeCli = norm(val(e, 'cliente_nome')).split(/[^a-z]+/).filter((w) => w.length >= 3);
-        const partes = fala.split(/[,.;!?\n]+|\s+(?:e|mas|ja|agora)\s+(?=a |o |as |os |\w+ (?:foi|fez|veio|nao))/).map((s) => s.trim()).filter(Boolean);
-        const daCliente = partes.filter((s) => nomeCli.some((w) => new RegExp('\\b' + w).test(s))).join(' ');
+        const nomeCli = norm(val(e, 'cliente_nome')).replace(/\(?\s*(do\s+)?final\s*\d+\s*\)?/g, ' ').split(/[^a-z]+/).filter((w) => w.length >= 3);
+        // trechos: pontuação, "e a / mas a …", e o começo de outra cliente mesmo sem pontuação (áudio transcrito:
+        // "a renata foi o cabelo dela a vitoria foi cabelo novo")
+        const partes = fala.split(/[,.;!?\n]+|\s+(?:e|mas|ja|agora)\s+(?=a |o |as |os |\w+ (?:foi|fez|veio|nao))|\s+(?=(?:a|o) [a-z]+(?: [a-z]+)? (?:foi|fez|veio|nao|era|quis|ficou|o dela|a dela|cabelo|com cabelo)\b)/)
+          .map((s) => s.trim()).filter(Boolean);
+        const comNome = (s, todos) => (todos ? nomeCli.every : nomeCli.some).call(nomeCli, (w) => new RegExp('\\b' + w).test(s));
+        const idx = (todos) => partes.map((s, i) => (comNome(s, todos) ? i : -1)).filter((i) => i >= 0);
+        let ids = idx(true); if (!ids.length) ids = idx(false);
+        // o trecho seguinte é dela também quando não começa outra cliente ("adriana só veio olhar, não fez nada") ou fala das
+        // duas ("a vitoria e a renata foram cabelo novo")
+        const OUTRA = /^(e |mas |ja |so |agora )?(a|o|as|os) [a-z]+/;
+        const daCliente = ids.map((i) => {
+          const prox = partes[i + 1] || '';
+          return partes[i] + (prox && (!OUTRA.test(prox) || /\b(foram|as duas|os dois|ambas)\b/.test(prox)) ? ' ' + prox : '');
+        }).join(' ');
         const temDela = (s) => CABELO_DELA_DONA.test(s) || /\b(dela|dela mesmo|proprio cabelo|cabelo que ela ja tinha)\b/.test(s);
-        const temNovo = (s) => PROVA_CABELO_NOVO.test(s);
-        const LISTA_OK = /^(sim+|isso|ok|certo|certinho|certissimo|correto|exato|perfeito|e isso|isso mesmo|(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)( sim)?)\b|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b/;
+        const temNovo = (s) => PROVA_CABELO_NOVO.test(s) || /cabelo (que )?(ela )?compr(ou|amos) (com a gente|aqui|com a gleide|no salao|da gente|com nos)/.test(s);
+        // confirmação da lista em qualquer lugar da fala ("oi amiga tá certo sim"), "só a Renata que não" (as outras certas)
+        const LISTA_OK = /^(sim+|isso|isso ai|ok|certo|certinho|certissimo|correto|exato|exatamente|perfeito|pode ser|e isso|isso mesmo)\b|\b(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)\b|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b|\bso (a|o) [a-z]+ (que )?(nao|foi diferente|que foi diferente)\b|^[\s👍✅👌🙏❤️💛]+$/u;
         const listaOk = LISTA_OK.test(fala);
-        const r = String(typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado || ''));
-        const sug = (r.match(/"sugerido"\s*:\s*"(\w+)"/) || [])[1] || '';
+        const sug = (resCheio.match(/\\?"sugerido\\?"\s*:\s*\\?"(\w+)/) || [])[1] || '';
         if (/mega|novo/.test(tipo)) {
           if (daCliente && temDela(daCliente) && !temNovo(daCliente)) add('venda_mega_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');
           else if (!(daCliente && temNovo(daCliente)) && !(listaOk && sug === 'mega_novo' && !(daCliente && /manuten|recoloc|dela/.test(daCliente))))

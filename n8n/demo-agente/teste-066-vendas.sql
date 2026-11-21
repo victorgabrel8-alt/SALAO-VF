@@ -12,7 +12,7 @@ do $$
 declare
   L uuid := 'ff4b7937-1abb-4803-83c8-e0896d94fc9f';
   tel text := '5500000000001';
-  sA uuid; sM uuid; sAv uuid; cV uuid; cR uuid; cJ uuid; cR2 uuid; cB uuid; cAP uuid; cAC uuid; cO uuid; aAP uuid;
+  sA uuid; sM uuid; sAv uuid; cV uuid; cR uuid; cJ uuid; cR2 uuid; cB uuid; cAP uuid; cAC uuid; cO uuid; aAP uuid; cSN uuid; aSN uuid;
   aV uuid; aR uuid; aJ uuid; aAv uuid; aR2 uuid; dia3 date := (now() at time zone 'America/Cuiaba')::date - 3;
   j jsonb; n int;
 begin
@@ -122,6 +122,23 @@ begin
   j := relatorio_vendas_confirmadas(L, (now() at time zone 'America/Cuiaba')::date - 30, (now() at time zone 'America/Cuiaba')::date, null);
   insert into r (caso, ok, veio) values ('cliente antiga fora do relatório da IA', not exists (select 1 from jsonb_array_elements(j->'itens') x where x->>'nome' = 'Odete Antiga'), j::text);
   insert into r (caso, ok, veio) values ('visão marca da_ia', (select not da_ia from vendas_confirmadas where cliente_id = cO), '');
+  -- 7. segunda rodada do testador: nome copiado do prompt com "(final 1234)", sobrenome que não está no cadastro, sem nome
+  j := pg_temp.conferir(L, tel, 'Renata Souza (final 6004)', null, 'manutencao', null, null);
+  insert into r (caso, ok, veio) values ('nome com "(final 6004)"', (j->>'ok')::boolean is true and j->>'nome' = 'Renata Souza', j::text);
+  j := pg_temp.conferir(L, tel, 'Renata (final 9999)', null, 'manutencao', null, null);
+  insert into r (caso, ok, veio) values ('final errado não grava em outra', coalesce(j->>'erro', '') like 'não achei%', j::text);
+  j := pg_temp.conferir(L, tel, 'Joana Silva', null, 'manutencao', null, null);
+  insert into r (caso, ok, veio) values ('sobrenome fora do cadastro acha pelo primeiro nome', (j->>'ok')::boolean is true and j->>'nome' = 'Joana Teste', j::text);
+  insert into clientes (empresa_id, nome, telefone) values (L, null, '5500000066009') returning id into cSN;
+  insert into mensagens (empresa_id, cliente_id, direcao, autor, tipo, conteudo) values (L, cSN, 'entrada', 'cliente', 'texto', 'oi');
+  insert into agendamentos (empresa_id, cliente_id, servico_id, inicio, fim, status, origem)
+  values (L, cSN, sM, now() - interval '1 day', now() - interval '1 day' + interval '2 hours', 'realizado', 'ia') returning id into aSN;
+  perform n8n_conferencia_vendas_marcar(L, array[aSN]);
+  insert into r (caso, ok, veio) values ('cliente sem nome aparece no prompt', position('cliente sem nome (final 6009)' in n8n_conferencia_vendas_pendente_texto(L)) > 0, n8n_conferencia_vendas_pendente_texto(L));
+  j := pg_temp.conferir(L, tel, 'cliente sem nome (final 6009)', null, 'manutencao', null, null);
+  insert into r (caso, ok, veio) values ('cliente sem nome pelo final', (j->>'ok')::boolean is true and (select tipo from vendas_conferidas where agendamento_id = aSN) = 'manutencao', j::text);
+  j := pg_temp.conferir(L, tel, 'Renata Souza', null, 'nao-fez', null, null);
+  insert into r (caso, ok, veio) values ('tipo com hífen', (j->>'tipo') = 'nao_fez', j::text);
   -- ninguém de fora (anon, authenticated) chega nas funções, na tabela e na visão
   insert into r (caso, ok, veio) values ('permissões', not has_function_privilege('anon', 'venda_sugerido(text)', 'execute')
     and not has_function_privilege('authenticated', 'n8n_assistente_conferir_venda(uuid,text,text,date,text,numeric,text,boolean)', 'execute')

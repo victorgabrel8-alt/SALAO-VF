@@ -78,10 +78,10 @@ end $$;
 -- mensagem, para ela entender um "tá certo" mesmo dias depois (a memória da conversa guarda só as últimas 20 mensagens).
 create or replace function n8n_conferencia_vendas_pendente_texto(p_empresa_id uuid)
 returns text language sql stable set search_path = public as $$
-  select coalesce(string_agg('- ' || c.nome || ' (final ' || right(c.telefone, 4) || '), ' ||
+  select coalesce(string_agg('- ' || coalesce(nullif(trim(c.nome), ''), 'cliente sem nome') || ' (final ' || right(c.telefone, 4) || '), ' ||
            to_char(a.inicio at time zone 'America/Cuiaba', 'DD/MM') || ' (data ' || to_char(a.inicio at time zone 'America/Cuiaba', 'YYYY-MM-DD') ||
            '): na lista como ' || case v.sugerido when 'mega_novo' then 'mega hair com cabelo novo' when 'manutencao' then 'manutenção'
-           else coalesce(lower(v.servico_agenda), 'atendimento') end ||
+           else coalesce(lower(regexp_replace(v.servico_agenda, '\s*[–-]\s*m[ãa]o de obra\s*$', '', 'i')), 'atendimento') end ||
            ' (perguntado em ' || to_char(v.perguntado_em at time zone 'America/Cuiaba', 'DD/MM') || ')', E'\n' order by a.inicio), '(nenhuma)')
     from vendas_conferidas v join agendamentos a on a.id = v.agendamento_id join clientes c on c.id = a.cliente_id
    where v.empresa_id = p_empresa_id and v.tipo is null and v.perguntado_em >= now() - interval '21 days'
@@ -96,9 +96,12 @@ create or replace function n8n_assistente_conferir_venda(p_empresa_id uuid, p_pe
   p_limpar_valor boolean default false)
 returns jsonb language plpgsql set search_path = public as $$
 declare
-  v_tipo text := regexp_replace(assistente_normalizar(coalesce(p_tipo, '')), '[^a-z_ ]', '', 'g');
+  v_tipo text := regexp_replace(replace(assistente_normalizar(coalesce(p_tipo, '')), '-', '_'), '[^a-z_ ]', '', 'g');
+  -- "Renata Souza (final 6004)", como está na lista do prompt: o final do telefone separa clientes de nome igual
+  v_final text := substring(coalesce(p_nome, '') from '(?i)final\s*(\d{4})');
+  v_nome text := regexp_replace(coalesce(p_nome, ''), '(?i)\(?\s*(do\s+)?final\s*\d+\s*\)?', ' ', 'g');
   v_palavras text[];
-  v_ids uuid[]; v_escolha uuid; v_ag record; v_lista text; v_valor numeric;
+  v_ids uuid[]; v_escolha uuid; v_ag record; v_lista text; v_valor numeric; v_tentativa int;
 begin
   if not assistente_autorizado(p_empresa_id, p_pedido_por) then raise exception 'número % não autorizado', p_pedido_por; end if;
   -- "aplicação" sozinha não diz se o cabelo é novo (13/11 e 18/11 eram o cabelo da cliente): não vira mega_novo
@@ -113,25 +116,31 @@ begin
   end if;
   -- palavras do nome, sem pontuação, artigo nem "dona"
   select coalesce(array_agg(t), '{}') into v_palavras
-    from unnest(regexp_split_to_array(assistente_normalizar(coalesce(p_nome, '')), '[^a-z0-9]+')) t
-   where length(t) >= 2 and t not in ('a', 'o', 'as', 'os', 'da', 'de', 'do', 'das', 'dos', 'e', 'dona', 'cliente', 'sra', 'senhora');
-  if cardinality(v_palavras) = 0 or length(v_palavras[1]) < 3 then raise exception 'qual o nome da cliente?'; end if;
+    from unnest(regexp_split_to_array(assistente_normalizar(v_nome), '[^a-z0-9]+')) t
+   where length(t) >= 2 and t !~ '^\d+$' and t not in ('a', 'o', 'as', 'os', 'da', 'de', 'do', 'das', 'dos', 'e', 'dona', 'cliente', 'sra', 'senhora', 'sem', 'nome');
+  if (cardinality(v_palavras) = 0 or length(v_palavras[1]) < 3) and v_final is null then raise exception 'qual o nome da cliente?'; end if;
   if p_valor is not null and p_valor <= 0 then p_valor := null; end if;
 
-  select array_agg(a.id order by
-           ((a.inicio at time zone 'America/Cuiaba')::date = p_data) desc nulls last,
-           (v.perguntado_em is not null and v.tipo is null) desc,
-           a.inicio desc)
-    into v_ids
-    from agendamentos a join clientes c on c.id = a.cliente_id left join servicos s on s.id = a.servico_id
-    left join vendas_conferidas v on v.agendamento_id = a.id
-   where a.empresa_id = p_empresa_id and a.status = 'realizado' and coalesce(s.nome, '') !~* '^\s*avalia'
-     and a.inicio >= now() - interval '60 days' and a.inicio < now() + interval '1 day'
-     and (p_data is null or abs((a.inicio at time zone 'America/Cuiaba')::date - p_data) <= 1)
-     and not exists (
-       select 1 from unnest(v_palavras) t where not exists (
-         select 1 from unnest(regexp_split_to_array(assistente_normalizar(c.nome), '[^a-z0-9]+')) w
-          where length(w) >= 2 and (starts_with(w, t) or starts_with(assistente_som(w), assistente_som(t)))));
+  -- 1ª tentativa: todas as palavras do nome batem ("Ana Paula" não pega "Ana Clara"). 2ª: só o primeiro nome, para
+  -- sobrenome que não está no cadastro ("Joaquina Silva" com cadastro "Joaquina"; 84 de 145 clientes da Gleide têm um nome só).
+  for v_tentativa in 1..2 loop
+    select array_agg(a.id order by
+             ((a.inicio at time zone 'America/Cuiaba')::date = p_data) desc nulls last,
+             (v.perguntado_em is not null and v.tipo is null) desc,
+             a.inicio desc)
+      into v_ids
+      from agendamentos a join clientes c on c.id = a.cliente_id left join servicos s on s.id = a.servico_id
+      left join vendas_conferidas v on v.agendamento_id = a.id
+     where a.empresa_id = p_empresa_id and a.status = 'realizado' and coalesce(s.nome, '') !~* '^\s*avalia'
+       and a.inicio >= now() - interval '60 days' and a.inicio < now() + interval '1 day'
+       and (p_data is null or abs((a.inicio at time zone 'America/Cuiaba')::date - p_data) <= 1)
+       and (v_final is null or right(c.telefone, 4) = v_final)
+       and not exists (
+         select 1 from unnest(case when v_tentativa = 1 then v_palavras else v_palavras[1:1] end) t where not exists (
+           select 1 from unnest(regexp_split_to_array(assistente_normalizar(coalesce(c.nome, '')), '[^a-z0-9]+')) w
+            where length(w) >= 2 and (starts_with(w, t) or starts_with(assistente_som(w), assistente_som(t)))));
+    exit when v_ids is not null or cardinality(v_palavras) <= 1;
+  end loop;
 
   if v_ids is null then
     raise exception 'não achei atendimento realizado de %. Se ela veio e o horário está sem baixa, use concluir; se não estava na agenda, registrar_atendimento; depois conferir_venda de novo',
@@ -150,7 +159,7 @@ begin
                                 where v.perguntado_em is not null and v.tipo is null) = 1) then
       v_escolha := v_ids[1];
     else
-      raise exception 'achei mais de um atendimento: %. Mande o nome completo e o dia (data AAAA-MM-DD) do que ela falou; se pelo que ela disse não dá para saber qual é, pergunte a ela, de um jeito natural', v_lista;
+      raise exception 'achei mais de um atendimento: %. Mande o nome como está na lista (com o final do telefone) e o dia (data AAAA-MM-DD) do que ela falou; se pelo que ela disse não dá para saber qual é, pergunte a ela, de um jeito natural', v_lista;
     end if;
   else
     v_escolha := v_ids[1];
