@@ -5,6 +5,8 @@
 // A mensagem sai pelo número do salão (Evolution). No máximo 1 alerta por workflow a cada 10 min.
 // Outro número: ALERTA_NUMERO no .env (só números, 55 + DDD + número).
 
+const { montarResumo } = require('./portao-regras.js');
+
 module.exports = ({ env, node, main, workflow }) => {
   const NUMERO = env.ALERTA_NUMERO || '556699270860';
   const enviar = (name, position, texto, extra = {}) => node(name, 'n8n-nodes-base.httpRequest', 4.2, position, {
@@ -31,8 +33,32 @@ return [{ json: { texto: '⚠️ Erro no n8n (' + hora + ')\nWorkflow: ' + wf + 
   (e.execution?.url ? '\n' + e.execution.url : '') } }];
 ` }),
       enviar('Avisar no WhatsApp', [440, 0], '$json.texto'),
+      // Resumo do portão de ações (portao.js, supabase/065): às 20h, só nos dias com alarme, para o Victor
+      node('Resumo do portão (20h)', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 300], { rule: { interval: [{ field: 'days', triggerAtHour: 20, triggerAtMinute: 0 }] } }),
+      node('Portão: alarmes do dia', 'n8n-nodes-base.httpRequest', 4.2, [220, 300], {
+        method: 'GET',
+        url: "={{ $env.SUPABASE_URL }}/rest/v1/portao_registros?select=agente,telefone,fala,acoes,n_falhas,criado_em&n_falhas=gt.0&order=criado_em.asc" +
+          "&empresa_id=eq.{{ $env.EMPRESA_ID || '00000000-0000-0000-0000-000000000001' }}" +
+          "&criado_em=gte.{{ new Date(new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10) + 'T04:00:00Z').toISOString() }}",
+        sendHeaders: true,
+        headerParameters: { parameters: [
+          { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
+          { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
+        ] },
+        options: { timeout: 15000 },
+      }, { onError: 'continueRegularOutput' }),
+      node('Portão: montar resumo', 'n8n-nodes-base.code', 2, [440, 300], { jsCode: [
+        `const montarResumo = ${montarResumo.toString()};`,
+        "const regs = $input.all().map((i) => i.json).filter((r) => r && r.n_falhas);",
+        "const dia = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10).split('-').reverse().join('/');",
+        "const texto = montarResumo(regs, dia);",
+        "return texto ? [{ json: { texto } }] : [];",
+      ].join('\n') }),
+      enviar('Portão: avisar o Victor', [660, 300], '$json.texto', { onError: 'continueRegularOutput' }),
     ],
-    connections: { 'Execução falhou': main('Montar alerta'), 'Montar alerta': main('Avisar no WhatsApp') },
+    connections: { 'Execução falhou': main('Montar alerta'), 'Montar alerta': main('Avisar no WhatsApp'),
+      'Resumo do portão (20h)': main('Portão: alarmes do dia'), 'Portão: alarmes do dia': main('Portão: montar resumo'),
+      'Portão: montar resumo': main('Portão: avisar o Victor') },
     settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all' },
   };
 

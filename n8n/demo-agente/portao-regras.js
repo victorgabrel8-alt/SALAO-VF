@@ -178,4 +178,45 @@ function conferirAcoes(ctx) {
   return { acoes, n_falhas: acoes.reduce((s, a) => s + a.falhas.length, 0) };
 }
 
-if (typeof module !== 'undefined') module.exports = { conferirAcoes };
+// Resumo do dia para o Victor (alerta-workflows.js, às 20h, só nos dias com alarme). registros = linhas de portao_registros
+// com n_falhas > 0. Devolve o texto da mensagem ou '' quando não tem nada a contar. Também é colado no n8n: sem require.
+function montarResumo(registros, dia) {
+  const lista = (Array.isArray(registros) ? registros : []).filter((r) => r && Number(r.n_falhas) > 0);
+  if (!lista.length) return '';
+  const NOMES = {
+    aplicacao_sem_cabelo_novo: 'marcou aplicação sem confirmar cabelo novo',
+    cabelo_novo_sem_prova: 'disse cabelo novo, mas ninguém falou isso',
+    aplicacao_com_cabelo_da_cliente: 'aplicação, mas é o cabelo da própria cliente',
+    concluir_com_cabelo_da_cliente: 'concluiu recolocação: conferir se o horário não está como aplicação',
+    valor_sem_prova: 'gravou um valor que ninguém disse',
+    fechou_sem_prova: 'gravou "fechou" sem a Gleide dizer',
+    nao_fechou_sem_prova: 'gravou "não fechou" sem a Gleide dizer',
+    concluir_sem_prova: 'deu baixa sem a Gleide dizer que atendeu',
+    falta_sem_prova: 'marcou falta sem a Gleide dizer',
+    excluir_sem_prova: 'tirou um horário sem pedido',
+    envio_sem_pedido: 'mandou mensagem para cliente sem a Gleide pedir',
+    hora_sem_prova: 'marcou uma hora que ninguém disse',
+    cancelar_sem_prova: 'cancelou o horário sem a cliente pedir',
+  };
+  const corta = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
+  const total = lista.reduce((s, r) => s + Number(r.n_falhas), 0);
+  const linhas = [];
+  let i = 0;
+  for (const r of lista) {
+    const acoes = Array.isArray(r.acoes) ? r.acoes : [];
+    for (const a of acoes) {
+      for (const f of (Array.isArray(a.falhas) ? a.falhas : [])) {
+        i++;
+        if (i > 10) continue;
+        const quem = r.agente === 'assistente' ? 'Assistente (Gleide)' : 'Atendimento, cliente …' + String(r.telefone || '').slice(-4);
+        const hora = r.criado_em ? new Date(new Date(r.criado_em).getTime() - 4 * 3600e3).toISOString().slice(11, 16) : '';
+        linhas.push(i + ') ' + hora + ' ' + quem + ': ' + (NOMES[f.tipo] || f.tipo) + ' (' + a.ferramenta + ')\n   Fala: «' + corta(r.fala, 120) + '»');
+      }
+    }
+  }
+  if (i > 10) linhas.push('… e mais ' + (i - 10) + '. O resto está na tabela portao_registros.');
+  return '🛡️ Portão ' + (dia || '') + ': ' + total + (total === 1 ? ' alarme' : ' alarmes') + ' em ' + lista.length +
+    (lista.length === 1 ? ' conversa' : ' conversas') + ' (só observando, nada foi barrado)\n\n' + linhas.join('\n');
+}
+
+if (typeof module !== 'undefined') module.exports = { conferirAcoes, montarResumo };
