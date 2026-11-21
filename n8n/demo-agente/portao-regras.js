@@ -21,16 +21,18 @@ function conferirAcoes(ctx) {
   const norm = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const agente = ctx.agente === 'atendimento' ? 'atendimento' : 'assistente';
   // "[1] ... [2] ..." é a numeração do buffer de mensagens, não número dito
-  const fala = norm(ctx.fala).replace(/(^|\n)\s*\[\d+\]\s*/g, '$1').replace(/\s+/g, ' ').trim();
-  const ficha = norm(ctx.ficha);
+  const fala = norm(ctx.fala).replace(/^[^\n]*mandou \d+ mensagens[^\n]*\n?/, '').replace(/(^|\n)\s*\[\d+\]\s*/g, '$1').replace(/\s+/g, ' ').trim();
+  // a ficha traz a conversa antiga com as falas da IA ("voce: ..."): só vale o que é da cliente
+  const ficha = norm(ctx.ficha).split('\n').filter((l) => !/^\s*(voce|ia|assistente)\s*:/.test(l)).join('\n');
   const passos = (Array.isArray(ctx.passos) ? ctx.passos : []).filter((p) => p && typeof p === 'object' && p.ferramenta);
   const LEITURA = ['buscar_cliente', 'agenda_do_dia', 'horarios_livres', 'ver_bloqueios_horario', 'consultar_horarios_livres',
     'ver_agendamentos', 'enviar_catalogo', 'enviar_audio'];
 
   // resposta curta a uma pergunta da IA ("sim", "pode", "isso", "ok envia"): confirma o que a IA propôs
-  const CONFIRMA = /^(sim|s|ss|pode|pode sim|pode ser|isso|isso mesmo|ok|okay|blz|beleza|manda|pode mandar|ok envia|envia|confirmo|confirma|fechado|certo|uhum|aham|claro|perfeito|exato|sim pode|sim por favor|por favor|bora|vai)[\s.!,👍🙏❤️]*$/;
-  const confirmou = CONFIRMA.test(fala);
-  const soNumero = /^[r$\s]*[\d.,]+\s*(reais|k)?[\s.!]*$/.test(fala);
+  const CONFIRMA = /^(sim+|s|ss|pode|isso|ok|okay|blz|beleza|manda|envia|confirmo|confirma|fechado|certo|uhum|aham|claro|perfeito|exato|bora|por favor|pode marcar|pode mandar|pode ser)\b/;
+  const confirmou = CONFIRMA.test(fala) && fala.length <= 60 && !/\b(nao|n|nem)\b/.test(fala);
+  // resposta a "quanto foi?": número e poucas palavras ("350", "350 no pix", "foi 350", "ela pagou 350")
+  const soNumero = /\d/.test(fala) && fala.length <= 30;
   // "não", "nem", "ainda não", "n" até 2 palavras antes anulam a prova
   const NEG = /(?:^|\s)(nao|n|nem|ainda nao|nunca)(\s+\S+){0,2}\s*$/;
   const afirma = (re) => {
@@ -49,21 +51,23 @@ function conferirAcoes(ctx) {
 
   // ---------- números ditos (hora e valor) ----------
   const numerosDaFala = () => {
-    const out = []; const re = /(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?\s*(k|mil)?/g; let m;
+    const out = []; const re = /(\d+[.,]\d)\s*k\b|(\d{1,3}(?:\.\d{3})+|\d+)(?:,(\d{1,2}))?\s*(k\b|mil\b)?/g; let m;
     while ((m = re.exec(fala))) {
-      let n = Number(m[1].replace(/\./g, '') + (m[2] ? '.' + m[2] : ''));
-      if (m[3]) n *= 1000;
+      if (m[1]) { out.push(Number(m[1].replace(',', '.')) * 1000); continue; }
+      let n = Number(m[2].replace(/\./g, '') + (m[3] ? '.' + m[3] : ''));
+      if (m[4]) n *= 1000;
       out.push(n);
     }
     return out;
   };
-  const PALAVRA_NUMERO = /\b(mil|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos|cinquenta|sessenta|setenta|oitenta|noventa|vinte|trinta|quarenta)\b/;
+  // valor por extenso (áudio transcrito): "mil e duzentos", "trezentos e cinquenta reais"
+  const PALAVRA_NUMERO = /\b(mil|cem|cento|duzentos|trezentos|quatrocentos|quinhentos|seiscentos|setecentos|oitocentos|novecentos)\b|\b(cinquenta|sessenta|setenta|oitenta|noventa|vinte|trinta|quarenta) reais\b/;
   const valorDito = (v) => {
     if (PALAVRA_NUMERO.test(fala)) return true; // por extenso (áudio transcrito): não dá para conferir, não aponta
     const ns = numerosDaFala();
     const igual = (a, b) => Math.abs(a - b) < 0.011;
     if (ns.some((n) => igual(n, v))) return true;
-    for (let i = 0; i < ns.length; i++) for (let j = i + 1; j < ns.length; j++) if (igual(ns[i] + ns[j], v)) return true;
+    for (let i = 0; i < ns.length; i++) for (let j = 0; j < ns.length; j++) if (i !== j && (igual(ns[i] + ns[j], v) || igual(ns[i] - ns[j], v))) return true;
     return false;
   };
   const HORA_PALAVRA = ['', 'uma', 'duas', 'tres', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez', 'onze', 'doze'];
@@ -75,9 +79,10 @@ function conferirAcoes(ctx) {
       const d = '0?' + x;
       const w = HORA_PALAVRA[x] || '';
       const pads = [
-        new RegExp('(^|\\D)' + d + '\\s?(h\\b|hs\\b|hrs\\b|hr\\b|horas?\\b|:\\d{2}|e meia|e quinze|e trinta|e quarenta)'),
-        new RegExp('\\b(as|a|pras|pra|para as|umas|la pelas|lá pelas|depois das|antes das|a partir das)\\s+' + d + '(\\D|$)'),
-        new RegExp('(^|\\D)' + d + '\\s+(da|de)\\s+(manha|tarde|noite)'),
+        new RegExp('(^|[^\\d/])' + d + '\\s?(h\\d{0,2}\\b|hs\\b|hrs\\b|hr\\b|horas?\\b|[:.]\\d{2}\\b|e meia|e quinze|e trinta|e quarenta)'),
+        new RegExp('\\b(as|a|pras|pra|para as|umas|la pelas|depois das|antes das|a partir das|das|no horario das|horario das)\\s+' + d + '(\\D|$)'),
+        new RegExp('(^|[^\\d/])(?<!dia\\s)' + d + '\\s+(da|de)\\s+(manha|tarde|noite)'),
+        new RegExp('\\b(segunda|terca|quarta|quinta|sexta|sabado|domingo|hoje|amanha)(-feira)?\\s+(as\\s+)?' + d + '(?!\\s*(de|/|\\d))(\\D|$)'),
       ];
       if (w) {
         pads.push(new RegExp('\\b' + w + '\\s+(hora|horas|da manha|da tarde|da noite|e meia)\\b'));
@@ -93,11 +98,12 @@ function conferirAcoes(ctx) {
     !/manuten|recoloc|repor|reposi|avalia|retir|aperto|apertar|reapert|tirar e colocar|visita|escolher/.test(norm(s)) &&
     !/unha|molde|\bf1\b|\bgel\b|esmalt|manicure|pedicure|cuticula/.test(norm(s));
   // a cliente já tem o cabelo (primeira pessoa, na conversa com a cliente)
-  const CABELO_DELA_CLIENTE = /ja uso (mega|o mega|alongamento)|uso mega|ja tenho (o |a |os |as )?(mega|cabelo|mechas?|fitas?|telas?)|tenho o cabelo|meu mega|minhas mechas|minhas telas|meu proprio cabelo|colocar meu cabelo|colocar o meu cabelo|recoloc|repor|reposicao|caiu (o |meu )?mega|cairam (as |os )?(mechas|fios|cabelos)|trocar (a |de )?tecnica|mudar (a |de )?tecnica|mudar o metodo|passar (pra|para) (a )?fita|levo (os|as) (cabelos?|mechas)|comprei o cabelo|cabelo que (eu )?ja tenho|aproveitar (o |meu )?cabelo/;
+  const CABELO_DELA_CLIENTE = /ja uso (mega|o mega|alongamento)|uso mega|ja tenho (o |a |os |as )?(mega|mechas?|fitas?|telas?)\b|(ja )?tenho o cabelo (ja\b|pra colocar|para colocar|comprado|aqui|em casa)|ja tenho o cabelo(?! (bem |muito |meio )?(curto|fino|longo|ralo|cacheado|liso|crespo|grosso|ondulado|comprido|medio|quimica|danificado|seco))|ja comprei o cabelo|meu mega|minhas mechas|minhas telas|meu proprio cabelo|colocar meu cabelo|colocar o meu cabelo|recoloc|repor (as |os |minhas |meus )?(mechas|fios|fitas|telas|mega)|reposicao (das|de) (mechas|fitas|telas)|caiu (o |meu )?mega|cairam (as |os )?(mechas|fios|cabelos)|trocar (a |de )?tecnica|mudar (a |de )?tecnica|mudar o metodo|passar (pra|para) (a )?fita|levo (os|as) (cabelos?|mechas)|comprei o cabelo|cabelo que (eu )?ja tenho|aproveitar (o |meu )?cabelo/;
   // terceira pessoa (a dona falando da cliente com a assistente)
-  const CABELO_DELA_DONA = /cabelos? dela|mechas dela|mega dela|telas dela|ela ja tem o cabelo|ja tem o cabelo|vai trazer o cabelo|traz o cabelo|trouxe o cabelo|reaproveit|comprou o cabelo fora|comprou fora|cabelo que ela ja tem|recoloc|repor|reposicao|caiu o mega|cairam as mechas|trocar (a |de )?tecnica|passar (pra|para) (a )?fita|ja usa mega/;
-  const FICHA_JA_USA = /ja usa mega|usa mega|ja uso mega|uso mega|mudar (a )?tecnica|mudar a metodologia|ja tem mega/;
-  const PROVA_CABELO_NOVO = /cabelo novo|novo cabelo|mega novo|compr(ar|ou|ei|a|ando) (o |um |de )?cabelo(?! (fora|na internet|pela internet|em outr|com outr|no site|na shopee|no mercado))|cabelo (que )?chegou|chegou o cabelo|encomend|\d+ ?(g|gr|gramas)\b|\bgramas\b|vietnam|europeu|cabelo do salao|cabelo da gleide|cabelo daqui|nunca usei|primeira vez|nunca coloquei/;
+  const CABELO_DELA_DONA = /cabelos? dela|mechas dela|mega dela|telas dela|ela ja tem o cabelo|ja tem o cabelo|vai trazer o cabelo|traz o cabelo|trouxe o cabelo|reaproveit|comprou o cabelo fora|comprou fora|cabelo que ela ja tem|recoloc|repor (as |os )?(mechas|fios|fitas|telas|mega)|caiu o mega|cairam as mechas|trocar (a |de )?tecnica|passar (pra|para) (a )?fita|ja usa mega/;
+  // ficha: frase sobre a própria cliente ("Já usa mega", "Usa mega há 2 anos"), sem "não usa" e sem "a irmã usa"
+  const FICHA_JA_USA = /(^|[.;\n:]\s*|cliente\s+)(ja\s+)?usa mega|(^|[.;\n:]\s*)ja uso mega|quer mudar (a )?(tecnica|metodologia)|ja tem mega/;
+  const PROVA_CABELO_NOVO = /cabelo novo|novo cabelo|mega novo|compr(ar|ou|ei|a|ando) (o |um |de )?cabelo(?! (fora|na internet|pela internet|em outr|com outr|no site|na shopee|no mercado))|cabelo (que )?chegou|chegou o cabelo|cabelo dela chegou|pag(ou|ar|ou o) (o )?cabelo|encomend|\d+ ?(g|gr|gramas)\b|\bgramas\b|vietnam|europeu|cabelo do salao|cabelo da gleide|cabelo daqui|nunca usei|primeira vez|nunca coloquei/;
 
   const acoes = [];
   for (const p of passos) {
@@ -105,7 +111,7 @@ function conferirAcoes(ctx) {
     if (LEITURA.includes(nomeF)) continue;
     const e = entradaDe(p);
     const res = curto(p.resultado, 300);
-    const deuErro = /^\W{0,4}erro|"erro"\s*:|n[aã]o gravado|n[aã]o marquei|n[aã]o consegui/i.test(res);
+    const deuErro = /^\W{0,4}(erro|n[aã]o gravado|n[aã]o marquei)|^\W{0,4}"?erro"?\s*:|^\{\s*"erro"/i.test(res);
     const falhas = [];
     const add = (tipo, detalhe) => falhas.push({ tipo, detalhe });
     const servico = val(e, 'servico');
@@ -120,7 +126,8 @@ function conferirAcoes(ctx) {
         if (dela && !afirma(PROVA_CABELO_NOVO)) add('aplicacao_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');
       }
       // concluir sem trocar o serviço (o horário pode já estar como aplicação): se a fala diz cabelo dela, conferir
-      if ((nomeF === 'concluir' || (nomeF === 'status_atendimento' && /realiz/.test(status))) && !servico && dela) {
+      const recolocou = afirma(/recoloc|reaproveit|trouxe o cabelo|colocar o cabelo dela|coloquei o cabelo dela|passa(r|ei|mos) (pra|para) (a )?fita|troca(r|mos)? (a |de )?tecnica|trocou a tecnica/) && !/manuten|reposic|repus|apert/.test(fala);
+      if ((nomeF === 'concluir' || (nomeF === 'status_atendimento' && /realiz/.test(status))) && !servico && recolocou) {
         add('concluir_com_cabelo_da_cliente', 'conferir se o horário não está como aplicação');
       }
       // 2. valor que ninguém disse
@@ -131,19 +138,19 @@ function conferirAcoes(ctx) {
       if (nomeF === 'resultado_avaliacao' && !confirmou) {
         const r = norm(val(e, 'resultado'));
         if (r === 'fechou' && !afirma(/fech|vai fazer|marc|volta|topou|aceit|confirm|quer fazer|agend|vai colocar|bateu o martelo|pagou o sinal|sinal pago|ela quer|ela vai/)) add('fechou_sem_prova', 'a fala não diz que fechou');
-        if (/nao.?fechou/.test(r) && !/nao (quis|quer|vai|fechou|fecha|rolou|tem dinheiro|tem condic|pode|deu)|desist|caro|sem condic|achou muito|sem grana|sem dinheiro|nao gostou/.test(fala)) add('nao_fechou_sem_prova', 'a fala não diz que ela desistiu');
+        if (/nao.?fechou/.test(r) && !/\b(nao|n) (quis|quer|vai|fechou|fecha|rolou|tem dinheiro|tem condic|pode|deu)|desist|caro|sem condic|achou muito|sem grana|sem dinheiro|nao gostou/.test(fala)) add('nao_fechou_sem_prova', 'a fala não diz que ela desistiu');
         if (r === 'fechou' && /aplica/.test(norm(val(e, 'proximo_passo'))) && dela && !afirma(PROVA_CABELO_NOVO)) add('aplicacao_com_cabelo_da_cliente', 'fechou como aplicação, mas a fala diz que é o cabelo dela');
       }
       // 4. concluir, falta, excluir, envio: cada um com a sua prova ("sim" confirma o que a IA perguntou)
       if (!confirmou) {
         const ehConcluir = nomeF === 'concluir' || (nomeF === 'status_atendimento' && /realiz/.test(status));
         if (ehConcluir && !soNumero && (!afirma(/fez|fiz|atendi|termin|veio|feito|pronto|pronta|conclu|ja foi|saiu|acabei|acabou|finaliz|vieram|fizeram|da baixa|dar baixa|fechei|recoloquei|coloquei|apliquei|realizad/) ||
-          /\?$|ainda nao|nao terminei|nao veio|nao fez/.test(fala))) add('concluir_sem_prova', 'a fala não diz que o atendimento aconteceu');
+          /^.{0,30}\?$|ainda nao (terminei|acabei|veio|chegou|fiz)|\b(nao|n) (terminei|acabei|veio|apareceu)\b|\b(nao|n) fez (a|o) (manutenc|aplicac|servico)/.test(fala))) add('concluir_sem_prova', 'a fala não diz que o atendimento aconteceu');
         const ehFalta = nomeF === 'liberar_horario' || (nomeF === 'status_atendimento' && /falt/.test(status));
-        if (ehFalta && !/(nao|n|nem) (veio|apareceu|compareceu|vem|chegou|vai vir|vai vim)|faltou|furou|deu bolo|libera(r)? o horario|desistiu/.test(fala)) add('falta_sem_prova', 'a fala não diz que a cliente faltou');
+        if (ehFalta && !/(nao|n|nem) (veio|apareceu|compareceu|vem|chegou|vai vir|vai vim)|faltou|furou|deu bolo|\blibera(r)?\b|desistiu/.test(fala)) add('falta_sem_prova', 'a fala não diz que a cliente faltou');
         const ehExcluir = nomeF === 'excluir_horario' || (nomeF === 'status_atendimento' && /cancel/.test(status));
-        if (ehExcluir && (!afirma(/cancel|desmarc|tira|exclu|apaga|nao vem|nao vai|remove|desistiu/) || /tira (uma |minha )?duvida/.test(fala))) add('excluir_sem_prova', 'a fala não pede para tirar o horário');
-        if (['chamar_cliente', 'avisar_cliente'].includes(nomeF) && !afirma(/chama|avisa|manda (mensagem|msg|pra|para|um|uma|ela)|fala com ela|fala pra ela|fala para ela|pergunta (pra|a|para) ela|pergunta se|lembra ela|lembra a|confirma com|diz pra|diz que|toque|avise|mande|chame|escreve (pra|para)|responde (ela|a)|envia/)) add('envio_sem_pedido', 'a fala não pede para mandar mensagem');
+        if (ehExcluir && (!afirma(/cancel|desmarc|remarc|\btira\b|exclu|apaga|nao vem|nao vai|remove|desistiu|errado|engano/) || /tira (uma |minha )?duvida/.test(fala))) add('excluir_sem_prova', 'a fala não pede para tirar o horário');
+        if (['chamar_cliente', 'avisar_cliente'].includes(nomeF) && !afirma(/\b(chama|chame|avisa|avise|manda|mande|envia|envie|fala (com|pra|para)|pergunta|lembra|confirma|diz (pra|que|a)|toque|escreve|responde|cobra|da um oi|agradece|ve com|ver com|pede (pra|para|a|o)|convida|oferece)\b/)) add('envio_sem_pedido', 'a fala não pede para mandar mensagem');
       }
       // 5. hora marcada que ninguém disse
       if (['marcar_horario', 'reagendar'].includes(nomeF) && !confirmou) {
