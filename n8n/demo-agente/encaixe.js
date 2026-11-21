@@ -28,6 +28,11 @@ function linhaEncaixe(enc) {
   const d = local(enc.horario_original);
   const isoLocal = d.getUTCFullYear() + '-' + p2(d.getUTCMonth() + 1) + '-' + p2(d.getUTCDate()) + 'T' + hm(enc.horario_original);
   const h = fala(enc.horario_original);
+  // a cliente que tinha faltado apareceu: a vaga não existe mais
+  if (enc.vaga_aberta === false) return 'ALÔ DE ENCAIXE (o salão chamou, ela não pediu)' + (enc.enviado_em ? ': hoje às ' + hm(enc.enviado_em) : ': hoje') +
+    ' você mandou: «' + String(enc.mensagem || '') + '». ATENÇÃO: esse horário mais cedo NÃO está mais livre (foi ocupado depois da mensagem). ' +
+    'Se ela responder que consegue vir antes, agradeça, peça desculpas com carinho, diga que o horário mais cedo acabou de ser ocupado e que o dela, hoje às ' + hm(enc.horario_original) +
+    ', continua garantido. NÃO confirme hora nova, NÃO use remarcar_agendamento para adiantar e não ofereça outros horários. Se a mensagem dela é sobre outro assunto, responda o assunto.';
   return 'ALÔ DE ENCAIXE (o salão chamou, ela não pediu)' + (enc.enviado_em ? ': hoje às ' + hm(enc.enviado_em) : ': hoje') +
     ' você mandou: «' + String(enc.mensagem || '') + '». A mensagem de agora pode ser a resposta. O horário dela continua sendo hoje às ' +
     hm(enc.horario_original) + ' (data_hora_inicio = ' + isoLocal + ') e só muda se ELA quiser vir antes.\n' +
@@ -108,6 +113,9 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
   // =============== 1. Assistente - Ferramentas ===============
   const montar = achar(fe, 'Montar chamada').parameters;
   trocar(montar, 'jsCode', "funcao = 'n8n_assistente_liberar_horario'; args", "funcao = 'n8n_assistente_liberar_horario_encaixe'; args", 'liberar_horario no "Montar chamada"');
+  trocar(montar, 'jsCode', "args = { ...base, p_agendamento_id: ou(v('agendamento_id')) };\n    break;\n  case 'horarios_livres':",
+    "args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_turno: ou(v('busca')) };\n    break;\n  case 'horarios_livres':", 'os argumentos de liberar_horario');
+  trocar(montar, 'jsCode', "p_status: v('status'), p_valor: valor() };", "p_status: v('status'), p_valor: valor(), p_turno: ou(v('busca')) };", 'os argumentos de status_atendimento');
   trocar(montar, 'jsCode', "funcao = 'n8n_assistente_status_agendamento';", "funcao = 'n8n_assistente_status_agendamento_encaixe';", 'status_atendimento no "Montar chamada"');
   trocar(montar, 'jsCode', "  default:\n    return [{ json: { erro: 'ferramenta desconhecida: '", [
     "  // encaixe na falta (encaixe.js, supabase/067): a Gleide respondeu à pergunta do encaixe. Só \"sim\" exato em desfazer conta",
@@ -115,7 +123,7 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
     "  case 'chamar_para_encaixe': {",
     "    const recusou = /^\\s*(sim|s|true|1)\\s*[.!]?\\s*$/i.test(v('desfazer'));",
     "    funcao = 'n8n_assistente_chamar_para_encaixe'; enviar = !recusou;",
-    `    args = { ...base, p_agendamento_id: ${UUID_RE}.test(v('agendamento_id')) ? v('agendamento_id') : null, p_nome: v('cliente_nome'), p_recusou: recusou };`,
+    `    args = { ...base, p_agendamento_id: ${UUID_RE}.test(v('agendamento_id')) ? v('agendamento_id') : null, p_nome: v('cliente_nome'), p_recusou: recusou, p_turno: ou(v('busca')) };`,
     '    break;',
     '  }',
     "  default:\n    return [{ json: { erro: 'ferramenta desconhecida: '",
@@ -131,6 +139,14 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
   const valores = modelo.parameters?.workflowInputs?.value || {};
   if (!valores.pedido_por || valores.acao !== 'liberar_horario' || !valores.cliente_nome) throw new Error('encaixe: a ferramenta liberar_horario mudou');
   const ia = (c, d) => `={{ $fromAI('${c}', \`${d}\`, 'string') }}`;
+  // o "turno" = a mensagem da Gleide que a assistente está respondendo. Vai nas ferramentas da falta e na do encaixe (no campo
+  // busca, que elas não usam): o banco recusa chamar a cliente na mesma mensagem em que a pergunta nasceu.
+  const TURNO = "={{ $('Extrair dados').first().json.msgId }}";
+  for (const nome of ['liberar_horario', 'status_atendimento']) {
+    const v = achar(ag, nome).parameters.workflowInputs?.value;
+    if (!v || 'busca' in v) throw new Error(`encaixe: a ferramenta ${nome} mudou`);
+    v.busca = TURNO;
+  }
   const tool = JSON.parse(JSON.stringify(modelo));
   tool.name = 'chamar_para_encaixe'; tool.id = ID(1); tool.position = [modelo.position[0], (modelo.position[1] || 0) + 440];
   tool.parameters.description = 'Encaixe na falta: manda UMA mensagem pronta para a cliente da pergunta de encaixe que está esperando, perguntando se ela consegue vir antes ' +
@@ -140,6 +156,7 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
     agendamento_id: ia('agendamento_id', 'agendamento_id da cliente que pode vir antes, o que está na pergunta de encaixe esperando resposta (uuid exato; vazio se não tiver)'),
     cliente_nome: ia('cliente_nome', 'Primeiro nome da cliente que a Gleide autorizou chamar (a da pergunta de encaixe). Preencha sempre: o sistema confere e recusa se for outra'),
     desfazer: ia('desfazer', '"sim" quando a Gleide respondeu que NÃO quer que chame (ninguém recebe mensagem e a pergunta se encerra); vazio quando ela autorizou'),
+    busca: TURNO,
   };
   ag.nodes.push(tool);
   ag.connections.chamar_para_encaixe = { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] };
@@ -153,6 +170,17 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
   const conferir = achar(ag, 'Conferir resposta').parameters;
   trocar(conferir, 'jsCode', 'const ENVIO = ["chamar_cliente","avisar_cliente"], ESCRITA = [',
     'const ENVIO = ["chamar_cliente","avisar_cliente","chamar_para_encaixe"], ESCRITA = ["chamar_para_encaixe",', 'a lista de envios do "Conferir resposta"');
+  // o "não" da Gleide volta OK com chamou = false: não é envio
+  trocar(conferir, 'jsCode', 'const enviou = novos.some((f) => ENVIO.includes(f.t) && ok(f.r));',
+    'const enviou = novos.some((f) => ENVIO.includes(f.t) && ok(f.r) && !/"chamou"\\s*:\\s*false/.test(f.r));', 'o "enviou" do "Conferir resposta"');
+  // a pergunta que a ferramenta da falta devolveu TEM de chegar à Gleide (o banco já conta como perguntado): se a resposta não
+  // trouxe, entra no fim. Só a última (uma pergunta pendente por vez).
+  trocar(conferir, 'jsCode', "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';", [
+    "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';",
+    "const pergEncaixe = passos.filter((s) => ['liberar_horario', 'status_atendimento'].includes(s.action?.tool)).map((s) => lerResposta(s.observation))",
+    "  .map((r) => (/\"perguntar\"\\s*:\\s*true/.test(r) ? (r.match(/\"pergunta\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"/) || [])[1] : '')).filter(Boolean).pop();",
+    "if (pergEncaixe && !corrigida && !/vir antes/i.test(texto)) texto = texto + '\\n' + pergEncaixe.replace(/\\\\\"/g, '\"');",
+  ].join('\n'), 'o fim do "Conferir resposta"');
 
   // a pergunta que espera a resposta dela, lida do banco a cada mensagem (a memória da conversa não guarda o resultado das ferramentas)
   const ler = achar(ag, 'Ler pendências');
@@ -247,7 +275,7 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
     '    // encaixe.js: hora dentro do encaixe oferecido a ela não se consulta como horário novo',
     "    { let je = null; try { je = JSON.parse(p.motivo || ''); } catch (e) {}",
     "      if (je && je.encaixe === true && +t >= Date.parse(je.de) - 60000 && +t < Date.parse(je.ate)) return [{ json: { acao: 'consultar', ok: true, resposta:",
-    "        'ENCAIXE: essa hora é do encaixe que o salão ofereceu a ela, não precisa consultar. Se ela já disse que consegue chegar nessa hora, confirme com ela por extenso e, só com o sim, use remarcar_agendamento (ele confere a agenda sozinho). Não ofereça outros horários.' } }]; }",
+    "        'ENCAIXE: essa hora é do encaixe que o salão ofereceu a ela, não precisa consultar. Se ela já disse que consegue chegar nessa hora, confirme com ela por extenso e, só com o sim, use remarcar_agendamento (ele confere a agenda sozinho). Não ofereça outros horários. Se esta consulta é de outro pedido (outro serviço ou outra pessoa), diga que vai confirmar com a Gleide e use perguntar_para_gleide.' } }]; }",
     CONSULTA,
   ].join('\n'), 'a consulta de um horário exato no Calcular');
 

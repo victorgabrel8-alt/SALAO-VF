@@ -94,7 +94,9 @@ test('encaixeNaAgenda: só é encaixe para o horário dela, no mesmo dia, antes 
 test('montagem: ferramenta nova, pergunta pendente antes do agente, ficha, rotina de vagas e funções do banco', () => {
   const t = no(assistente, 'chamar_para_encaixe');
   assert.strictEqual(t.parameters.workflowInputs.value.acao, 'chamar_para_encaixe');
-  assert.deepStrictEqual(Object.keys(t.parameters.workflowInputs.value).sort(), ['acao', 'agendamento_id', 'cliente_nome', 'desfazer', 'pedido_por', 'pode_forcar']);
+  assert.deepStrictEqual(Object.keys(t.parameters.workflowInputs.value).sort(), ['acao', 'agendamento_id', 'busca', 'cliente_nome', 'desfazer', 'pedido_por', 'pode_forcar']);
+  // o "turno" (a mensagem da Gleide) vai nas três ferramentas: o banco recusa chamar na mesma mensagem em que a pergunta nasceu
+  for (const f of ['chamar_para_encaixe', 'liberar_horario', 'status_atendimento']) assert.strictEqual(no(assistente, f).parameters.workflowInputs.value.busca, "={{ $('Extrair dados').first().json.msgId }}", f);
   assert.match(t.parameters.description, /Use SÓ depois que a Gleide responder que pode/);
   assert.strictEqual(assistente.connections.chamar_para_encaixe.ai_tool[0][0].node, 'Agente assistente');
   assert.notStrictEqual(t.id, no(assistente, 'liberar_horario').id);
@@ -147,11 +149,13 @@ const AG = '11111111-2222-4333-8444-555555555555';
 test('Montar chamada: a falta passa pelas funções do encaixe; o resto continua igual', () => {
   const l = chamada({ acao: 'liberar_horario', agendamento_id: AG, cliente_nome: 'Maria' });
   assert.strictEqual(l.funcao, 'n8n_assistente_liberar_horario_encaixe');
-  assert.deepStrictEqual({ ...l.args, p_empresa_id: 0 }, { p_empresa_id: 0, p_pedido_por: '5500000000001', p_agendamento_id: AG });
+  assert.deepStrictEqual({ ...l.args, p_empresa_id: 0 }, { p_empresa_id: 0, p_pedido_por: '5500000000001', p_agendamento_id: AG, p_turno: null });
+  assert.strictEqual(chamada({ acao: 'liberar_horario', agendamento_id: AG, cliente_nome: 'Maria', busca: 'MSG1' }).args.p_turno, 'MSG1');
+  assert.strictEqual(chamada({ acao: 'chamar_para_encaixe', agendamento_id: AG, cliente_nome: 'Ana', busca: 'MSG2' }).args.p_turno, 'MSG2');
   assert.strictEqual(l.enviar, false);
   const s = chamada({ acao: 'status_atendimento', agendamento_id: AG, cliente_nome: 'Maria', status: 'faltou' });
   assert.strictEqual(s.funcao, 'n8n_assistente_status_agendamento_encaixe');
-  assert.deepStrictEqual({ ...s.args, p_empresa_id: 0 }, { p_empresa_id: 0, p_pedido_por: '5500000000001', p_agendamento_id: AG, p_status: 'faltou', p_valor: null });
+  assert.deepStrictEqual({ ...s.args, p_empresa_id: 0 }, { p_empresa_id: 0, p_pedido_por: '5500000000001', p_agendamento_id: AG, p_status: 'faltou', p_valor: null, p_turno: null });
   assert.strictEqual(chamada({ acao: 'concluir', agendamento_id: AG, cliente_nome: 'Maria' }).funcao, 'n8n_assistente_concluir');
   assert.strictEqual(chamada({ acao: 'avisar_cliente', agendamento_id: AG, cliente_nome: 'Maria', tipo: 'aviso', texto: 'oi' }).enviar, true);
 });
@@ -160,7 +164,7 @@ test('Montar chamada: chamar_para_encaixe manda só quando autorizou; "não" só
   const ok = chamada({ acao: 'chamar_para_encaixe', agendamento_id: AG, cliente_nome: 'Ana' });
   assert.strictEqual(ok.funcao, 'n8n_assistente_chamar_para_encaixe');
   assert.strictEqual(ok.enviar, true);
-  assert.deepStrictEqual({ ...ok.args, p_empresa_id: 0 }, { p_empresa_id: 0, p_pedido_por: '5500000000001', p_agendamento_id: AG, p_nome: 'Ana', p_recusou: false });
+  assert.deepStrictEqual({ ...ok.args, p_empresa_id: 0 }, { p_empresa_id: 0, p_pedido_por: '5500000000001', p_agendamento_id: AG, p_nome: 'Ana', p_recusou: false, p_turno: null });
   assert.strictEqual(ok.conferir.p_nome, 'Ana', 'o nome é conferido com o dono do horário antes de executar');
   assert.strictEqual(ok.conferir.p_agendamento_id, AG);
   const nao = chamada({ acao: 'chamar_para_encaixe', agendamento_id: AG, cliente_nome: 'Ana', desfazer: 'Sim' });
@@ -209,6 +213,33 @@ test('Conferir resposta: "Mandei pra Ana" só passa se a mensagem do encaixe sai
   assert.match(semFerramenta.texto, /Ainda não mandei nada/);
   const erro = conferirResposta(fala, [['chamar_para_encaixe', { cliente_nome: 'Ana' }, 'ERRO: não tem pergunta de encaixe esperando a resposta dela agora']]);
   assert.strictEqual(erro.corrigida, true, 'a ferramenta deu erro: não pode dizer que mandou');
+});
+
+test('Conferir resposta: a pergunta que a ferramenta devolveu chega à Gleide mesmo se a IA esquecer', () => {
+  const obs = 'OK: ' + JSON.stringify({ status: 'faltou', encaixe: { perguntar: true, cliente: 'Ana', pergunta: 'Quer que eu veja com a Ana (das 15h) se ela consegue vir antes?' } });
+  const r = conferirResposta('Anotei a falta da Maria ✅ A IA chama ela pra remarcar.', [['status_atendimento', { agendamento_id: AG, status: 'faltou' }, obs]]);
+  assert.strictEqual(r.texto, 'Anotei a falta da Maria ✅ A IA chama ela pra remarcar.\nQuer que eu veja com a Ana (das 15h) se ela consegue vir antes?');
+  // resposta embrulhada ({"resposta": "OK: …"}) também
+  const emb = conferirResposta('Anotei ✅', [['liberar_horario', { agendamento_id: AG }, JSON.stringify([{ resposta: obs }])]]);
+  assert.match(emb.texto, /Quer que eu veja com a Ana \(das 15h\) se ela consegue vir antes\?$/);
+  // sem pergunta (perguntar = false): nada entra
+  const sem = conferirResposta('Anotei a falta ✅', [['liberar_horario', { agendamento_id: AG }, 'OK: {"status":"faltou","encaixe":{"perguntar":false,"motivo":"x"}}']]);
+  assert.strictEqual(sem.texto, 'Anotei a falta ✅');
+});
+
+test('Conferir resposta: o "não" da Gleide não conta como mensagem enviada', () => {
+  const r = conferirResposta('Mandei pra Ana ✅', [['chamar_para_encaixe', { cliente_nome: 'Ana', desfazer: 'sim' }, 'OK: {"nota": "a Gleide não quis", "chamou": false}']]);
+  assert.strictEqual(r.corrigida, true);
+});
+
+test('ficha: a cliente que faltou apareceu (vaga fechada): a IA não confirma hora nem remarca', () => {
+  const t = linhaEncaixe({ ...OFERTA, vaga_aberta: false });
+  assert.match(t, /^ALÔ DE ENCAIXE/);
+  assert.match(t, /NÃO está mais livre/);
+  assert.match(t, /hoje às 15:00, continua garantido/);
+  assert.match(t, /NÃO use remarcar_agendamento para adiantar/);
+  assert.doesNotMatch(t, /Só depois do sim dela/);
+  assert.match(linhaEncaixe({ ...OFERTA, vaga_aberta: true }), /Só depois do sim dela/);
 });
 
 // ================= Atendimento: a ficha (Luxon) =================
@@ -356,7 +387,7 @@ const chamar = (extra = {}, resultado = 'OK: mensagem enviada para a cliente (te
 const falta = { ferramenta: 'liberar_horario', entrada: { agendamento_id: AG, cliente_nome: 'Maria' }, resultado: 'OK: {"status":"faltou","encaixe":{"perguntar":true}}' };
 
 test('portão: chamar para encaixe com a Gleide autorizando na fala não dá alarme', () => {
-  for (const f of ['pode', 'Pode sim', 'sim', 'chama ela', 'vê sim', 'manda', 'isso', 'pode ver com ela', 'tenta aí', 'ok', 'claro, chama',
+  for (const f of ['👍', 'fechado', 'certo', 'perfeito', 'pode', 'Pode sim', 'sim', 'chama ela', 'vê sim', 'manda', 'isso', 'pode ver com ela', 'tenta aí', 'ok', 'claro, chama',
     '[áudio] pode chamar a Ana sim', 'a maria não veio, vê se a próxima consegue vir antes', 'a maria nao veio pode ver com a ana se ela vem antes',
     'ela não veio não, mas pode chamar a ana']) assert.deepStrictEqual(tipos(ass(f, chamar())), [], f);
 });

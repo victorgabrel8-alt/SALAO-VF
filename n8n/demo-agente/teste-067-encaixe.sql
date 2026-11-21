@@ -28,8 +28,8 @@ exception when others then return jsonb_build_object('erro', sqlerrm); end $f$;
 create function pg_temp.status(p_e uuid, p_tel text, p_ag uuid, p_status text) returns jsonb language plpgsql as $f$
 begin return n8n_assistente_status_agendamento_encaixe(p_e, p_tel, p_ag, p_status, null);
 exception when others then return jsonb_build_object('erro', sqlerrm); end $f$;
-create function pg_temp.chamar(p_e uuid, p_tel text, p_ag uuid, p_nome text, p_recusou boolean default false) returns jsonb language plpgsql as $f$
-begin return n8n_assistente_chamar_para_encaixe(p_e, p_tel, p_ag, p_nome, p_recusou);
+create function pg_temp.chamar(p_e uuid, p_tel text, p_ag uuid, p_nome text, p_recusou boolean default false, p_turno text default null) returns jsonb language plpgsql as $f$
+begin return n8n_assistente_chamar_para_encaixe(p_e, p_tel, p_ag, p_nome, p_recusou, p_turno);
 exception when others then return jsonb_build_object('erro', sqlerrm); end $f$;
 
 do $$
@@ -217,7 +217,8 @@ begin
   -- ===== E. uma pergunta pendente por vez =====
   perform pg_temp.limpa(L);
   f := pg_temp.ag(L, cM, P, -20, 60); aA := pg_temp.ag(L, cA, P, 60, 30);
-  f2 := pg_temp.ag(L, cO, P, 90, 30); aD := pg_temp.ag(L, cD, P, 150, 30);
+  -- outra profissional: outra falta (já gravada), outra candidata, sem encostar no horário da Ana
+  f2 := pg_temp.ag(L, cO, P2, -10, 60, 'faltou'); aD := pg_temp.ag(L, cD, P2, 150, 30);
   j := pg_temp.liberar(L, tel, f);
   insert into r (caso, ok, veio) values ('E1 primeira falta: pergunta sobre a Ana', (j->'encaixe'->>'agendamento_id')::uuid = aA, j::text);
   j := pg_temp.status(L, tel, f2, 'faltou');
@@ -271,6 +272,50 @@ begin
   insert into r (caso, ok, veio) values ('F8 envio falhou: tentar de novo funciona, sem duplicar o encaixe',
     j ? 'mensagem' and (select count(*) from encaixes where empresa_id = L) = 1 and (select count(*) from contatos where cliente_id = cB and tipo = 'vaga') = 1, j::text);
 
+  -- ===== H. travas da revisão de código =====
+  -- a autorização tem de vir em OUTRA mensagem da Gleide (turno), não na mesma em que a falta foi gravada
+  perform pg_temp.limpa(L);
+  f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
+  j := n8n_assistente_liberar_horario_encaixe(L, tel, f, 'MSG-1');
+  j := pg_temp.chamar(L, tel, aA, 'Ana', false, 'MSG-1');
+  insert into r (caso, ok, veio) values ('H1 chamar na mesma mensagem da falta: recusa, ninguém é chamado',
+    coalesce(j->>'erro', '') like '%mesma mensagem%' and not exists (select 1 from contatos where agendamento_id = aA), j::text);
+  j := pg_temp.chamar(L, tel, aA, 'Ana', false, 'MSG-2');
+  insert into r (caso, ok, veio) values ('H2 na mensagem seguinte (o "pode" dela): chama', j ? 'mensagem', j::text);
+  -- a pergunta vence depois de 60 min sem resposta
+  perform pg_temp.limpa(L);
+  f := pg_temp.ag(L, cM, P, -20, 240); aA := pg_temp.ag(L, cA, P, 170, 30);
+  j := n8n_assistente_liberar_horario_encaixe(L, tel, f, 'MSG-3');
+  update encaixes set perguntado_em = now() - interval '50 minutes' where falta_agendamento_id = f;
+  insert into r (caso, ok, veio) values ('H3 50 min depois a pergunta ainda vale', n8n_encaixe_pendente_texto(L) like '%Ana%', n8n_encaixe_pendente_texto(L));
+  j := pg_temp.status(L, tel, f, 'faltou');
+  insert into r (caso, ok, veio) values ('H4 a mesma falta gravada de novo refaz a pergunta agora',
+    (j->'encaixe'->>'perguntar')::boolean and (select perguntado_em = now() from encaixes where falta_agendamento_id = f), j::text);
+  update encaixes set perguntado_em = now() - interval '61 minutes' where falta_agendamento_id = f;
+  t := n8n_encaixe_pendente_texto(L);
+  insert into r (caso, ok, veio) values ('H5 61 min sem resposta: a pergunta vence e um "pode" não chama ninguém',
+    t = '(nenhuma)' and (select status from encaixes where falta_agendamento_id = f) = 'expirado' and pg_temp.chamar(L, tel, aA, 'Ana') ? 'erro', t);
+  -- falta gravada antes de o horário começar não abre vaga "mais cedo"
+  perform pg_temp.limpa(L);
+  f := pg_temp.ag(L, cM, P, 30, 60, 'faltou'); aA := pg_temp.ag(L, cA, P, 120, 60);
+  j := encaixe_candidata(L, f);
+  insert into r (caso, ok, veio) values ('H6 horário de quem faltou ainda não começou: ninguém', not (j->>'ok')::boolean and j->>'motivo' like '%ainda não começou%', j::text);
+  -- nome todo em minúsculas
+  perform pg_temp.limpa(L);
+  update clientes set nome = 'ana paula' where id = cA;
+  f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
+  j := pg_temp.liberar(L, tel, f);
+  insert into r (caso, ok, veio) values ('H7 nome em minúsculas sai com maiúscula na pergunta', j->'encaixe'->>'pergunta' like 'Quer que eu veja com a Ana (das %', j::text);
+  j := pg_temp.chamar(L, tel, aA, 'Ana');
+  insert into r (caso, ok, veio) values ('H8 e na mensagem para a cliente', j->>'mensagem' like 'Oi, Ana! Abriu um horário%', j::text);
+  insert into r (caso, ok, veio) values ('H9 nome só com emoji fica sem nome', encaixe_nome('🦋') is null and encaixe_nome('Júlia Souza') = 'Júlia' and encaixe_nome('  ') is null, coalesce(encaixe_nome('🦋'), 'null'));
+  -- a cliente que tinha faltado apareceu depois da oferta: a ficha da outra sabe que a vaga fechou
+  perform n8n_encaixe_registrar_saida(L, '5500000067002', j->>'mensagem', 'ia', 'texto', 'wa-teste-067-4');
+  insert into r (caso, ok, veio) values ('H10 vaga aberta enquanto a falta vale', (n8n_encaixe_da_cliente(L, cA)->>'vaga_aberta')::boolean, n8n_encaixe_da_cliente(L, cA)::text);
+  update agendamentos set status = 'realizado' where id = f;
+  insert into r (caso, ok, veio) values ('H11 a que faltou apareceu: a ficha diz que a vaga fechou', (n8n_encaixe_da_cliente(L, cA)->>'vaga_aberta')::boolean is false, n8n_encaixe_da_cliente(L, cA)::text);
+  update clientes set nome = 'Ana Paula Teste' where id = cA;
+
   -- ===== G. o resto não muda =====
   perform pg_temp.limpa(L);
   f := pg_temp.ag(L, cM, P, -20, 120); aA := pg_temp.ag(L, cA, P, 60, 60);
@@ -283,12 +328,12 @@ begin
   insert into r (caso, ok, veio) values ('G4 hora como se fala', encaixe_hora('2026-11-21 15:00-04') = '15h' and encaixe_hora('2026-11-21 09:30-04') = '9h30', encaixe_hora('2026-11-21 09:30-04'));
   -- ninguém de fora (anon, authenticated) chega nas funções nem na tabela
   insert into r (caso, ok, veio) values ('G5 permissões',
-    not has_function_privilege('anon', 'n8n_assistente_chamar_para_encaixe(uuid,text,uuid,text,boolean)', 'execute')
-    and not has_function_privilege('authenticated', 'n8n_assistente_liberar_horario_encaixe(uuid,text,uuid)', 'execute')
+    not has_function_privilege('anon', 'n8n_assistente_chamar_para_encaixe(uuid,text,uuid,text,boolean,text)', 'execute')
+    and not has_function_privilege('authenticated', 'n8n_assistente_liberar_horario_encaixe(uuid,text,uuid,text)', 'execute')
     and not has_function_privilege('anon', 'n8n_encaixe_da_cliente(uuid,uuid)', 'execute')
     and not has_function_privilege('authenticated', 'encaixe_candidata(uuid,uuid)', 'execute')
     and not has_function_privilege('anon', 'n8n_vagas_para_oferecer_v2(uuid)', 'execute')
-    and has_function_privilege('service_role', 'n8n_assistente_chamar_para_encaixe(uuid,text,uuid,text,boolean)', 'execute')
+    and has_function_privilege('service_role', 'n8n_assistente_chamar_para_encaixe(uuid,text,uuid,text,boolean,text)', 'execute')
     and not has_table_privilege('anon', 'encaixes', 'select') and not has_table_privilege('authenticated', 'encaixes', 'insert'), '');
 end $$;
 

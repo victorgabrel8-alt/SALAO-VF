@@ -225,8 +225,8 @@ function conferirAcoes(ctx) {
       if (nomeF === 'chamar_para_encaixe' && !deuErro) {
         const recusou = /^\s*(sim|s|true|1)\s*[.!]?\s*$/.test(norm(val(e, 'desfazer')));
         const AUT = /\b(pode|chama|chame|manda|mande|tenta|tente|pergunta|pergunte|ve (com|se|sim|ai|la)|ver (com|se)|veja|olha se|fala com|fale com|quero|bora|claro|com certeza|isso|sim|ok|okay|beleza|blz|faz isso|faca isso|por favor|uhum|aham)\b/g;
-        let autorizou = false, ma;
-        while ((ma = AUT.exec(fala))) { if (!/\b(nao|n|nem|nunca)\s*$/.test(fala.slice(0, ma.index))) { autorizou = true; break; } }
+        let autorizou = confirmou || /^[\s👍✅👌🙏❤️💛]+$/u.test(fala), ma;
+        while (!autorizou && (ma = AUT.exec(fala))) { if (!/\b(nao|n|nem|nunca)\s*$/.test(fala.slice(0, ma.index))) { autorizou = true; break; } }
         const negou = /^(nao|n)\b|\b(nao|n) (precisa|quero|quer|vale|compensa|adianta|chama|manda|pode)\b|\b(pode|chama|manda|precisa|quero|ve|veja|isso|sim|ok) (nao|n)\b|\bmelhor (nao|n)\b|\bdeixa (quieto|assim|pra la|como esta|ela|isso)\b/.test(fala);
         if (!recusou && (!autorizou || negou)) add('encaixe_sem_autorizacao', 'a fala não autoriza chamar a cliente para vir antes');
         if (recusou && autorizou && !negou) add('encaixe_recusado_sem_prova', 'gravou que a Gleide não quis, mas a fala parece autorizar');
