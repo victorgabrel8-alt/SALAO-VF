@@ -50,7 +50,7 @@ try {
   if (corte) {
     // tudo até a última resposta do salão a essa mensagem (o que saiu antes de ela voltar a escrever)
     const volta = dela[dela.indexOf(corte) - 1];
-    const antigas = todas.filter((m) => m.criado_em < volta.criado_em && !/^Desculpa, tive um probleminha/.test(m.conteudo) && !/^\[m[ií]dia\]$/.test(m.conteudo)).slice(0, 24).reverse();
+    const antigas = todas.filter((m) => m.criado_em < volta.criado_em && !/^(Desculpa, tive um probleminha|Recebi sua mensagem 💛)/.test(m.conteudo) && !/^\[m[ií]dia\]$/.test(m.conteudo)).slice(0, 24).reverse();
     const quem = (m) => m.direcao === 'entrada' ? 'Ela' : m.autor === 'ia' ? 'Você' : 'Salão';
     if (antigas.length) ANTIGA = '\nCONVERSA ANTERIOR COM ELA (de ' + dia(antigas[0].criado_em).toFormat('dd/LL') + ' a ' + dia(antigas[antigas.length - 1].criado_em).toFormat('dd/LL') +
       '; aconteceu de verdade, mas NÃO está no seu histórico de mensagens):\n' +
