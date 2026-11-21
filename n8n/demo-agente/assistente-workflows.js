@@ -232,6 +232,24 @@ switch (v('acao')) {
   case 'tirar_regra':
     funcao = 'n8n_assistente_tirar_regra'; args = { ...base, p_qual: v('texto') };
     break;
+  // conferência semanal de vendas (conferencia-vendas.js, supabase/066): o que a Gleide confirmou ou corrigiu.
+  // O banco acha o atendimento pelo primeiro nome e o dia; "13/11" sem ano é deste ano (ou do ano passado, se ainda não chegou)
+  case 'conferir_venda': {
+    // "2026-11-13", "13/11", "terça 18/11", "18/11/26"; dia que não existe (30/02) fica sem data (o banco procura pelo nome)
+    let m = v('data').match(/(\d{4})-(\d{2})-(\d{2})/), dia = '';
+    const hoje = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
+    if (m) dia = m[1] + '-' + m[2] + '-' + m[3];
+    else if ((m = v('data').match(/(?:^|\D)(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?(?!\d)/))) {
+      const ano = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : hoje.slice(0, 4);
+      dia = ano + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+      if (!m[3] && dia > hoje) dia = String(+dia.slice(0, 4) - 1) + dia.slice(4);
+    }
+    if (dia) { const x = new Date(dia + 'T12:00:00Z'); if (isNaN(x) || x.toISOString().slice(0, 10) !== dia) dia = ''; }
+    funcao = 'n8n_assistente_conferir_venda';
+    args = { ...base, p_nome: v('cliente_nome'), p_data: ou(dia), p_tipo: v('tipo'), p_valor: valor(), p_fala: ou(v('observacoes')),
+      p_limpar_valor: /^\s*(sim|s|true|1)\s*[.!]?\s*$/i.test(v('desfazer')) };
+    break;
+  }
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
 }
@@ -239,7 +257,7 @@ switch (v('acao')) {
 // Antes de gravar ou enviar: o id é mesmo da cliente de quem a Gleide falou? (12/11/2026: o resultado de uma cliente foi
 // para a ficha de outra.) Sem nome, ou em ferramenta que só lê ou que troca o nome, não confere.
 const uuid = (t) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null);
-const semConferir = ['buscar_cliente', 'agenda_do_dia', 'horarios_livres', 'editar_cliente', 'cadastrar_cliente', 'registrar_atendimento'];
+const semConferir = ['buscar_cliente', 'agenda_do_dia', 'horarios_livres', 'editar_cliente', 'cadastrar_cliente', 'registrar_atendimento', 'conferir_venda'];
 const nomeFalado = semConferir.includes(v('acao')) ? '' : (v('cliente_nome') || (v('acao') === 'marcar_horario' ? v('nome') : ''));
 const conferir = { p_empresa_id: empresa, p_cliente_id: uuid(v('cliente_id')), p_agendamento_id: uuid(v('agendamento_id')), p_nome: nomeFalado };
 return [{ json: { funcao, args, enviar, forcarIgnorado, conferir } }];
@@ -252,7 +270,7 @@ const ENVIO = ['chamar_cliente', 'avisar_cliente'];
 const ESCRITA = [...ENVIO, 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
   'marcar_horario', 'ajustar_duracao', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
   'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'pausar_ia', 'editar_cliente', 'cadastrar_cliente',
-  'combinar_retorno', 'guardar_regra', 'tirar_regra', 'ensinar_resposta', 'tirar_resposta'];
+  'combinar_retorno', 'guardar_regra', 'tirar_regra', 'ensinar_resposta', 'tirar_resposta', 'conferir_venda'];
 // "qui 12/11 15:38" no fuso do salão (Cuiabá, -04:00 o ano todo)
 const QUANDO_JS = "const quandoFoi = (ms) => { const d = new Date(ms - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); };";
 const CONTEXTO = [
