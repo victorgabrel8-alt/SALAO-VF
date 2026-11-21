@@ -38,8 +38,21 @@ function conferir(ctx) {
   const ficha = String(ctx.ficha || '');
   const agora = Number(ctx.agora) || Date.now();
   const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-  const resultados = passos.map((p) => String(p.resultado == null ? '' : (typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado))));
-  // (21/11, Gleide) o orçamento que a dona passou chega à cliente por um recado automático gravado como 'ia'
+  // (21/11) No n8n a resposta da ferramenta chega embrulhada: '[{"resposta":"AGENDADO com sucesso…"}]' (texto JSON) ou o
+  // objeto já aberto. Sem abrir, "AGENDADO" nunca estava no começo e toda confirmação certa virava "promessa": numa loja com o
+  // Conferente ligado a cliente já agendada recebeu "Posso reservar esse horário pra você?" (20/11 18:14); no observar, alarme falso.
+  const abrir = (o) => {
+    let t = o;
+    for (let i = 0; i < 4; i++) {
+      if (typeof t === 'string') { const s = t.trim(); if (!/^[[{"]/.test(s)) return t; try { t = JSON.parse(s); } catch (e) { return t; } continue; }
+      if (Array.isArray(t)) { if (!t.length) return ''; if (t.length > 1) return t.map((x) => abrir(x)).join('\n'); t = t[0]; continue; }
+      if (t && typeof t === 'object') { const k = ['resposta', 'response', 'output', 'text'].find((c) => typeof t[c] === 'string'); if (!k) return JSON.stringify(t); t = t[k]; continue; }
+      break;
+    }
+    return t == null ? '' : String(t);
+  };
+  const resultados = passos.map((p) => abrir(p.resultado));
+  // (21/11) o orçamento que a dona passou chega à cliente por um recado automático gravado como 'ia'
   // ("A ... passou o valor: R$ 2.800", pedidos-workflows.js): esse valor é da dona, vale como fonte
   const deFora = anteriores.filter((m) => m.direcao === 'entrada' || (m.autor && m.autor !== 'ia') || /^\W*(a \w+ passou o (valor|orcamento)|sobre o seu pedido, a \w+ mandou|falei com a \w+ sobre isso)\b/.test(norm(m.conteudo)))
     .map((m) => String(m.conteudo || ''));
@@ -111,25 +124,6 @@ function conferir(ctx) {
     for (const v of citados) if (!ok.has(Math.round(v * 100))) add('preco', `R$ ${v} não está na lista de serviços nem é soma ou sinal`, { valor: v });
   }
 
-  // ---------- 2. "reservei / agendado / remarquei / cancelei" só com a ferramenta confirmando agora ----------
-  const confirmou = (palavra) => resultados.some((r) => new RegExp('^\\s*' + palavra, 'i').test(r));
-  // horário que ela já tinha (lembrete na ficha ou ver_agendamentos com horário): "está marcado" é verdade
-  // (21/11, Gleide) a ficha também traz "Horário marcado: sexta-feira, 13/11 às 08:00 — …"
-  const jaTemHorario = /AL[OÔ] DE LEMBRETE/i.test(ficha) || /Hor[aá]rios? marcados?:\s*\S/i.test(ficha) || resultados.some((r) => /^\s*Agendamentos futuros/i.test(r)) ||
-    passos.some((p, i) => p.ferramenta === 'ver_agendamentos' && /\d{1,2}(:|h)\d{0,2}/.test(resultados[i]) && !/N[ãa]o encontrei/i.test(resultados[i]));
-  // tira negações ("ainda não marquei", "não cancelei nada") antes de procurar a promessa
-  const semNegacao = n.replace(/\b(reservei|agendei|marquei|remarquei|cancelei|desmarquei) nada\b[^.!?\n]*/g, ' ').replace(/\b(nao|ainda nao|nem)\s+(\w+\s+){0,2}?(reservei|agendei|marquei|remarquei|cancelei|desmarquei|troquei|confirmei|esta|ta|foi|ficou)\b[^.!?\n]*/g, ' ');
-  const acaoMarcar = /\b(reservei|agendei|marquei|ja (te )?(reservei|agendei|marquei)|deixei (tudo |ja )?(reservad|marcad|agendad)|agendad[oa] com sucesso|agendadissim|reservadissim)/.test(semNegacao) ||
-    /(^|[.!?\n,]\s*|prontinho,?\s*|pronto,?\s*|perfeito,?\s*)(agendado|reservado|marcado)\s*[!🙏✅.]/u.test(semNegacao) ||
-    // "Agendado pra você amanhã às 9h", "Reservado com a Duda" (começo da frase, sem pergunta)
-    /(^|[.!?\n]\s*|prontinho,?\s*|pronto,?\s*|perfeito,?\s*)(agendad[oa]|reservad[oa]|marcad[oa])\s+(pra|para|com|no|na|amanha|hoje|dia|as)\b[^?\n]*([.!🙏✅\n]|$)/u.test(semNegacao);
-  const estadoMarcado = /\b(esta|ta|ja esta|ja ta|ficou|foi) (tudo )?(marcad|agendad|reservad|confirmad)|\bconfirmei\b|\bconfirmado\b/.test(semNegacao);
-  if (acaoMarcar && !confirmou('AGENDADO') && !confirmou('REMARCADO')) add('promessa', 'disse que marcou, mas nenhuma ferramenta respondeu AGENDADO nesta resposta', { acao: 'marcar' });
-  else if (estadoMarcado && !confirmou('AGENDADO') && !confirmou('REMARCADO') && !jaTemHorario) add('promessa', 'disse que está marcado/confirmado, mas não há AGENDADO agora nem horário dela na ficha', { acao: 'marcar' });
-  if (/(^|[.!?\n,]\s*|\b(foi|ta|esta|ficou|prontinho,?|pronto,?)\s+)remarcad[oa]\b|\b(remarquei|ja (te )?remarquei|mudei (o |seu )?horario|troquei (o |seu )?horario)/u.test(semNegacao) && !confirmou('REMARCADO')) add('promessa', 'disse que remarcou, mas a ferramenta não respondeu REMARCADO', { acao: 'remarcar' });
-  if (/\b(cancelei|desmarquei|ja (te )?cancelei|(foi|esta|ta) cancelad|cancelad[oa]\s*[!✅.])/u.test(semNegacao) && !confirmou('CANCELADO')) add('promessa', 'disse que cancelou, mas a ferramenta não respondeu CANCELADO', { acao: 'cancelar' });
-
-  // ---------- 3. horário: todo horário citado veio da agenda, da ficha ou da conversa ----------
   const minutos = (h, m) => Number(h) * 60 + Number(m || 0);
   const horasDe = (s) => {
     const out = [];
@@ -142,6 +136,76 @@ function conferir(ctx) {
     }
     return out;
   };
+
+  // ---------- 2. "reservei / agendado / remarquei / cancelei" só com a ferramenta confirmando agora ----------
+  const confirmou = (palavra) => resultados.some((r) => new RegExp('^\\s*' + palavra, 'i').test(r));
+  // (21/11) "Reservei seu pé e mão pra amanhã, sábado, às 8h" um minuto DEPOIS de agendar: a ferramenta não rodou nesta
+  // resposta, mas o horário já está na ficha ("Horário marcado: sábado, 21/11 às 08:00 — …"). Repetir o que já está
+  // marcado não é promessa. Regra fechada (Conferente ligado: um "reservei" falso é pior que uma pergunta a mais): só vale
+  // quando o texto diz UMA hora e o dia, e os dois são os do mesmo horário da ficha.
+  const reafirma = (() => {
+    // outra ferramenta rodou NESTA resposta (criar, remarcar, cancelar, consultar, transferir…): quem diz o que aconteceu é
+    // ela, não a ficha, que é de antes. Só olhar os horários dela ou anotar não muda nada.
+    if (passos.some((p) => !['ver_agendamentos', 'anotar_no_crm'].includes(String(p.ferramenta || '')))) return false;
+    // outro dia ("que vem", "próximo", "depois de amanhã", "daqui 15 dias"), outra pessoa ("da sua filha"), a mais ("também",
+    // "mais um", "outro") ou toda semana ("todo sábado"): não é repetir o que está na ficha
+    if (/\bque (vem|entra)\b|\bproxim[oa]s?\b|\bdepois de amanha\b|\bseguinte\b|\bdaqui\b|\bem \d+ dias\b|\boutr[oa]s?\b|\btambem\b|\bmais uma?\b|\btod[oa]s?\b|\b(filh[ao]s?|mae|irma|irmao|amig[ao]s?|prim[ao]|tia|sogra|nora|cunhada|marido|espos[ao]|namorad[ao]|acompanhante)\b/.test(n)) return false;
+    // hora por extenso ("às nove e meia", "ao meio-dia"): pode ser uma segunda hora que a conta de baixo não enxerga
+    if (/\bmeio.?dia\b|\b(uma|duas|tres|quatro|cinco|seis|sete|oito|nove|dez|onze|doze)\s+(e meia|horas?|da manha|da tarde|da noite)\b/.test(n)) return false;
+    const DIAS = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado'];
+    const MESES = ['janeiro', 'fevereiro', 'marco', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+    // hoje em Cuiabá (-04:00 o ano todo), como dia inteiro
+    const hojeD = new Date(agora - 4 * 3600e3);
+    const hoje0 = Date.UTC(hojeD.getUTCFullYear(), hojeD.getUTCMonth(), hojeD.getUTCDate());
+    const chave = (ms) => { const d = new Date(ms); return d.getUTCDate() + '/' + (d.getUTCMonth() + 1); };
+    const marcados = [];
+    for (const l of ficha.split('\n')) {
+      // só a linha da ficha (no começo da linha) e só até o travessão: o nome do serviço não entra na conta
+      const m = l.match(/^\s*Hor[aá]rios? marcados?:\s*([^—]*)/i);
+      if (!m) continue;
+      const hs = horasDe(m[1]); const dt = m[1].match(/\b(\d{1,2})\/(\d{1,2})\b/);
+      if (!hs.length || !dt) continue;
+      // a data da ficha é a próxima com esse dia e mês (a ficha só lista horários futuros)
+      let ms = Date.UTC(hojeD.getUTCFullYear(), Number(dt[2]) - 1, Number(dt[1]));
+      if (ms < hoje0) ms = Date.UTC(hojeD.getUTCFullYear() + 1, Number(dt[2]) - 1, Number(dt[1]));
+      marcados.push({ min: hs[0], data: Number(dt[1]) + '/' + Number(dt[2]), dias: Math.round((ms - hoje0) / 86400e3), semana: DIAS[new Date(ms).getUTCDay()] });
+    }
+    const limpo = texto.replace(/R\$\s?[\d.,]+/g, ' ');
+    const hsTexto = horasDe(limpo).filter((v) => v >= 6 * 60).filter((v, i, a) => a.indexOf(v) === i);
+    // uma hora só: com duas não dá para saber qual é de qual dia
+    if (!marcados.length || hsTexto.length !== 1) return false;
+    // o dia que o texto diz, de cada jeito: data (21/11, 21-11, 21 de novembro), "dia 21", hoje/amanhã e dia da semana
+    const datas = [...limpo.matchAll(/\b(\d{1,2})[\/-](\d{1,2})\b/g)].map((m) => Number(m[1]) + '/' + Number(m[2]));
+    for (const m of n.matchAll(/\b(\d{1,2})\s+de\s+([a-z]+)/g)) { const i = MESES.indexOf(m[2]); if (i >= 0) datas.push(Number(m[1]) + '/' + (i + 1)); }
+    if (/\bhoje\b/.test(n)) datas.push(chave(hoje0));
+    if (/\bamanha\b/.test(n)) datas.push(chave(hoje0 + 86400e3));
+    const diasDoMes = [...n.matchAll(/\bdia (\d{1,2})\b(?![\/-])/g)].map((m) => Number(m[1]));
+    const semanas = DIAS.filter((d) => new RegExp('\\b' + d).test(n));
+    // sem dizer o dia não dá para saber se é o da ficha: barra
+    if (!datas.length && !diasDoMes.length && !semanas.length) return false;
+    return marcados.some((x) => x.min === hsTexto[0] &&
+      datas.every((d) => d === x.data) &&
+      diasDoMes.every((d) => d === Number(x.data.split('/')[0])) &&
+      // dia da semana sozinho é o próximo: só vale para horário de hoje até daqui a 6 dias
+      semanas.every((d) => d === x.semana && x.dias >= 0 && x.dias <= 6));
+  })();
+  // horário que ela já tinha (lembrete na ficha ou ver_agendamentos com horário): "está marcado" é verdade
+  // (21/11) a ficha também traz "Horário marcado: sexta-feira, 13/11 às 08:00 — …"
+  const jaTemHorario = /AL[OÔ] DE LEMBRETE/i.test(ficha) || /Hor[aá]rios? marcados?:\s*\S/i.test(ficha) || resultados.some((r) => /^\s*Agendamentos futuros/i.test(r)) ||
+    passos.some((p, i) => p.ferramenta === 'ver_agendamentos' && /\d{1,2}(:|h)\d{0,2}/.test(resultados[i]) && !/N[ãa]o encontrei/i.test(resultados[i]));
+  // tira negações ("ainda não marquei", "não cancelei nada") antes de procurar a promessa
+  const semNegacao = n.replace(/\b(reservei|agendei|marquei|remarquei|cancelei|desmarquei) nada\b[^.!?\n]*/g, ' ').replace(/\b(nao|ainda nao|nem)\s+(\w+\s+){0,2}?(reservei|agendei|marquei|remarquei|cancelei|desmarquei|troquei|confirmei|esta|ta|foi|ficou)\b[^.!?\n]*/g, ' ');
+  const acaoMarcar = /\b(reservei|agendei|marquei|ja (te )?(reservei|agendei|marquei)|deixei (tudo |ja )?(reservad|marcad|agendad)|agendad[oa] com sucesso|agendadissim|reservadissim)/.test(semNegacao) ||
+    /(^|[.!?\n,]\s*|prontinho,?\s*|pronto,?\s*|perfeito,?\s*)(agendado|reservado|marcado)\s*[!🙏✅.]/u.test(semNegacao) ||
+    // "Agendado pra você amanhã às 9h", "Reservado com a Duda" (começo da frase, sem pergunta)
+    /(^|[.!?\n]\s*|prontinho,?\s*|pronto,?\s*|perfeito,?\s*)(agendad[oa]|reservad[oa]|marcad[oa])\s+(pra|para|com|no|na|amanha|hoje|dia|as)\b[^?\n]*([.!🙏✅\n]|$)/u.test(semNegacao);
+  const estadoMarcado = /\b(esta|ta|ja esta|ja ta|ficou|foi) (tudo )?(marcad|agendad|reservad|confirmad)|\bconfirmei\b|\bconfirmado\b/.test(semNegacao);
+  if (acaoMarcar && !confirmou('AGENDADO') && !confirmou('REMARCADO') && !reafirma) add('promessa', 'disse que marcou, mas nenhuma ferramenta respondeu AGENDADO nesta resposta', { acao: 'marcar' });
+  else if (estadoMarcado && !confirmou('AGENDADO') && !confirmou('REMARCADO') && !jaTemHorario) add('promessa', 'disse que está marcado/confirmado, mas não há AGENDADO agora nem horário dela na ficha', { acao: 'marcar' });
+  if (/(^|[.!?\n,]\s*|\b(foi|ta|esta|ficou|prontinho,?|pronto,?)\s+)remarcad[oa]\b|\b(remarquei|ja (te )?remarquei|mudei (o |seu )?horario|troquei (o |seu )?horario)/u.test(semNegacao) && !confirmou('REMARCADO')) add('promessa', 'disse que remarcou, mas a ferramenta não respondeu REMARCADO', { acao: 'remarcar' });
+  if (/\b(cancelei|desmarquei|ja (te )?cancelei|(foi|esta|ta) cancelad|cancelad[oa]\s*[!✅.])/u.test(semNegacao) && !confirmou('CANCELADO')) add('promessa', 'disse que cancelou, mas a ferramenta não respondeu CANCELADO', { acao: 'cancelar' });
+
+  // ---------- 3. horário: todo horário citado veio da agenda, da ficha ou da conversa ----------
   // fora o que é duração ("leva 1h30", "fica pronto em 6h", "2 horas antes") e preço
   const semDuracao = texto.replace(/R\$\s?[\d.,]+/g, ' ')
     .replace(/\b(em|leva\w*|dura\w*|demora\w*|uns|umas|cerca de|por|at[eé]|de|mais de|menos de)\s+(\d{1,2}(?:h\d{0,2}|:\d{2})?\s?(?:h|hrs?|horas?)?(?:\s?e\s?(?:meia|\d+ ?min\w*))?)/gi, ' ')
@@ -170,7 +234,7 @@ function conferir(ctx) {
   }
 
   // ---------- 4. nome de outra loja ("toda bonita" minúsculo é elogio comum: só o nome com maiúsculas) ----------
-  // na própria loja de mega hair a regra não vale: ctx.semOutraLoja (conferente.js, loja.outra_loja === false)
+  // na loja que é a dona desses nomes a regra não vale: ctx.semOutraLoja (conferente.js, loja.outra_loja === false)
   if (!ctx.semOutraLoja && (/\bg[l]ei[dz]/i.test(texto) || /mega\s*-?\s*hair/i.test(texto) || /\bToda\s+Bonit[a]\b/.test(texto))) add('outra_loja', 'nome de outra loja ou de mega hair na resposta');
 
   // ---------- 5. mesma mensagem nos últimos 30 min ----------
@@ -243,8 +307,18 @@ function versaoSegura(ctx, falhas) {
   const chave = String((loja.sinal_pix || {}).chave || '').trim();
   const mapa = String(loja.mapa || '').trim();
   const servicos = (Array.isArray(ctx.servicos) ? ctx.servicos : []).filter((s) => s && s.nome && Number(s.preco) > 0);
-  const resultados = (Array.isArray(ctx.passos) ? ctx.passos : []).filter(Boolean)
-    .map((p) => String(p.resultado == null ? '' : (typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado))));
+  // a resposta da ferramenta chega embrulhada ('[{"resposta":"NÃO AGENDADO…"}]'): o mesmo "abrir" do conferir
+  const abrir = (o) => {
+    let t = o;
+    for (let i = 0; i < 4; i++) {
+      if (typeof t === 'string') { const s = t.trim(); if (!/^[[{"]/.test(s)) return t; try { t = JSON.parse(s); } catch (e) { return t; } continue; }
+      if (Array.isArray(t)) { if (!t.length) return ''; if (t.length > 1) return t.map((x) => abrir(x)).join('\n'); t = t[0]; continue; }
+      if (t && typeof t === 'object') { const k = ['resposta', 'response', 'output', 'text'].find((c) => typeof t[c] === 'string'); if (!k) return JSON.stringify(t); t = t[k]; continue; }
+      break;
+    }
+    return t == null ? '' : String(t);
+  };
+  const resultados = (Array.isArray(ctx.passos) ? ctx.passos : []).filter(Boolean).map((p) => abrir(p.resultado));
   const cortes = [];
   const fim = [];
   const reais = (v) => 'R$ ' + (Number.isInteger(v) ? String(v) : v.toFixed(2).replace('.', ','));

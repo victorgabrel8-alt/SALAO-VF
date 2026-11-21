@@ -122,7 +122,12 @@ function conferirAcoes(ctx) {
     };
     const resCheio = lerResp(p.resultado);
     const res = curto(resCheio, 300);
-    const deuErro = /^\W{0,4}(erro|n[aã]o gravado|n[aã]o marquei)|^\W{0,4}"?erro"?\s*:|^\{\s*"erro"/i.test(res);
+    // (21/11) a agenda do atendimento recusa com "NÃO AGENDADO / NÃO REMARCADO / NÃO CANCELADO": também não gravou
+    // As três ferramentas da agenda do atendimento só gravaram quando a resposta começa com AGENDADO / REMARCADO / CANCELADO
+    // ("Esse horário acabou de ser ocupado…" e "A agenda está fora do ar…" também são recusa).
+    const deAgenda = ['criar_agendamento', 'remarcar_agendamento', 'cancelar_agendamento'].includes(nomeF);
+    const deuErro = deAgenda ? !/^\W{0,4}(agendado|remarcado|cancelado)\b/i.test(res)
+      : /^\W{0,4}(erro|n[aã]o (gravado|marquei|agendado|remarcado|cancelado))|^\W{0,4}"?erro"?\s*:|^\{\s*"erro"/i.test(res);
     const falhas = [];
     const add = (tipo, detalhe) => falhas.push({ tipo, detalhe });
     const servico = val(e, 'servico');
@@ -196,8 +201,9 @@ function conferirAcoes(ctx) {
       // 3. resultado da avaliação
       if (nomeF === 'resultado_avaliacao' && !confirmou) {
         const r = norm(val(e, 'resultado'));
-        if (r === 'fechou' && !afirma(/fech|vai fazer|marc|volta|topou|aceit|confirm|quer fazer|agend|vai colocar|bateu o martelo|pagou o sinal|sinal pago|ela quer|ela vai/)) add('fechou_sem_prova', 'a fala não diz que fechou');
-        if (/nao.?fechou/.test(r) && !/\b(nao|n) (quis|quer|vai|fechou|fecha|rolou|tem dinheiro|tem condic|pode|deu)|desist|caro|sem condic|achou muito|sem grana|sem dinheiro|nao gostou/.test(fala)) add('nao_fechou_sem_prova', 'a fala não diz que ela desistiu');
+        // (21/11) "A Vida não feichou": erro de digitação da Gleide deu alarme falso; "feichou", "fexou" valem como "fechou"
+        if (r === 'fechou' && !afirma(/fei?(?:ch|x)|vai fazer|marc|volta|topou|aceit|confirm|quer fazer|agend|vai colocar|bateu o martelo|pagou o sinal|sinal pago|ela quer|ela vai/)) add('fechou_sem_prova', 'a fala não diz que fechou');
+        if (/nao.?fechou/.test(r) && !/\b(nao|n) (quis|quer|vai|(foi )?fei?(?:ch|x)\w*|rolou|tem dinheiro|tem condic|pode|deu)|desist|caro|sem condic|achou muito|sem grana|sem dinheiro|nao gostou/.test(fala)) add('nao_fechou_sem_prova', 'a fala não diz que ela desistiu');
         if (r === 'fechou' && /aplica/.test(norm(val(e, 'proximo_passo'))) && dela && !afirma(PROVA_CABELO_NOVO)) add('aplicacao_com_cabelo_da_cliente', 'fechou como aplicação, mas a fala diz que é o cabelo dela');
       }
       // 4. concluir, falta, excluir, envio: cada um com a sua prova ("sim" confirma o que a IA perguntou)
