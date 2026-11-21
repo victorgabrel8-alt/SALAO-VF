@@ -733,6 +733,9 @@ const pedidos = require('./pedidos-workflows.js')({ node, str, main, toolSub, wo
 
 // Alerta de erro no WhatsApp do Victor (ver alerta-workflows.js)
 const alerta = require('./alerta-workflows.js')({ env, node, main, workflow });
+// IA fora do ar (ia-fora-do-ar.js, 21/11/2026): em vez de repetir "pode mandar de novo?" a cada mensagem, um recado de
+// espera uma vez só e a dona é avisada. Só na Gleide por enquanto. Depois do alerta (usa o "IA falhou? (alerta)").
+if (!LOJA) require('./ia-fora-do-ar.js')({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS, dona: 'Gleide' });
 
 // memória sem começo quebrado no meio de uma ferramenta (ver memoria-janela.js)
 const memoriaJanela = require('./memoria-janela.js')({ node, main });
