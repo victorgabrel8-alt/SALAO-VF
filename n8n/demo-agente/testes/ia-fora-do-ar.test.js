@@ -212,7 +212,7 @@ test('testador: nome com emoji, nome que não é nome e contato sem número de v
   assert.doesNotMatch(lid, /final/);
 });
 
-test('testador: a mesma cliente não gera dois avisos à dona em 3 horas', () => {
+test('testador: a mesma cliente não gera dois avisos à dona em 10 minutos (recado descartado), mas depois disso avisa de novo', () => {
   const wf = montar();
   const code = wf.nodes.find((x) => x.name === 'IA fora: aviso da dona').parameters.jsCode;
   const guardado = {};
@@ -221,8 +221,10 @@ test('testador: a mesma cliente não gera dois avisos à dona em 3 horas', () =>
   assert.deepStrictEqual(um('556696730000'), [], 'o recado foi descartado e ela escreveu de novo: a dona não recebe outro aviso');
   assert.strictEqual(guardado.iaForaAvisos.length, 1, 'o aviso repetido não gasta o limite da hora');
   assert.strictEqual(um('556696731111').length, 1, 'outra cliente avisa normalmente');
-  // 3 horas depois, a mesma cliente pode gerar aviso de novo
-  guardado.iaForaClientes['556696730000'] -= 3.1 * 3600e3; guardado.iaForaAvisos = [];
+  // 9 min depois ainda não; 11 min depois (a IA voltou, respondeu e falhou de novo; ou a dona respondeu) avisa de novo
+  guardado.iaForaClientes['556696730000'] -= 9 * 60e3;
+  assert.deepStrictEqual(um('556696730000'), []);
+  guardado.iaForaClientes['556696730000'] -= 2 * 60e3;
   assert.strictEqual(um('556696730000').length, 1);
 });
 

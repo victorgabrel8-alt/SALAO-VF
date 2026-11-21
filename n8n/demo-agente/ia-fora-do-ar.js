@@ -103,9 +103,11 @@ module.exports = ({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS
       "const agora = Date.now();",
       "const guardado = pega(() => $getWorkflowStaticData('global')) || {};",
       "const telefone = pega(() => $('Montar entrada').first().json.telefone) || '';",
-      // a mesma cliente não gera dois avisos em 3 h (ex.: o recado foi descartado porque ela mandou outra mensagem em seguida)
+      // a mesma cliente não gera dois avisos seguidos (ex.: o recado foi descartado porque ela mandou outra mensagem em seguida)
       "const porCliente = guardado.iaForaClientes && typeof guardado.iaForaClientes === 'object' ? guardado.iaForaClientes : {};",
-      "for (const k of Object.keys(porCliente)) if (agora - porCliente[k] > 3 * 3600e3) delete porCliente[k];",
+      // 10 min bastam: o descarte acontece em segundos. Mais que isso calaria avisos que devem sair (a IA voltou, respondeu
+      // e falhou de novo; a dona respondeu e a IA falhou depois). O silêncio de 3 h do lado da cliente cobre o resto.
+      "for (const k of Object.keys(porCliente)) if (agora - porCliente[k] > 10 * 60e3) delete porCliente[k];",
       "if (telefone && porCliente[telefone]) return [];",
       "const avisos = (Array.isArray(guardado.iaForaAvisos) ? guardado.iaForaAvisos : []).filter((t) => agora - t < 3600e3);",
       "if (avisos.length >= 4) return [];",
