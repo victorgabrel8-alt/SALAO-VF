@@ -39,7 +39,10 @@ function conferir(ctx) {
   const agora = Number(ctx.agora) || Date.now();
   const norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
   const resultados = passos.map((p) => String(p.resultado == null ? '' : (typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado))));
-  const deFora = anteriores.filter((m) => m.direcao === 'entrada' || (m.autor && m.autor !== 'ia')).map((m) => String(m.conteudo || ''));
+  // (21/11, Gleide) o orçamento que a dona passou chega à cliente por um recado automático gravado como 'ia'
+  // ("A ... passou o valor: R$ 2.800", pedidos-workflows.js): esse valor é da dona, vale como fonte
+  const deFora = anteriores.filter((m) => m.direcao === 'entrada' || (m.autor && m.autor !== 'ia') || /^\W*(a \w+ passou o (valor|orcamento)|sobre o seu pedido, a \w+ mandou|falei com a \w+ sobre isso)\b/.test(norm(m.conteudo)))
+    .map((m) => String(m.conteudo || ''));
   const daIa = anteriores.filter((m) => m.direcao === 'saida' && (!m.autor || m.autor === 'ia'));
   const recentesIa = daIa.filter((m) => agora - Date.parse(m.criado_em) <= 30 * 60 * 1000).map((m) => String(m.conteudo || ''));
   const n = norm(texto);
@@ -111,7 +114,8 @@ function conferir(ctx) {
   // ---------- 2. "reservei / agendado / remarquei / cancelei" só com a ferramenta confirmando agora ----------
   const confirmou = (palavra) => resultados.some((r) => new RegExp('^\\s*' + palavra, 'i').test(r));
   // horário que ela já tinha (lembrete na ficha ou ver_agendamentos com horário): "está marcado" é verdade
-  const jaTemHorario = /AL[OÔ] DE LEMBRETE/i.test(ficha) || resultados.some((r) => /^\s*Agendamentos futuros/i.test(r)) ||
+  // (21/11, Gleide) a ficha também traz "Horário marcado: sexta-feira, 13/11 às 08:00 — …"
+  const jaTemHorario = /AL[OÔ] DE LEMBRETE/i.test(ficha) || /Hor[aá]rios? marcados?:\s*\S/i.test(ficha) || resultados.some((r) => /^\s*Agendamentos futuros/i.test(r)) ||
     passos.some((p, i) => p.ferramenta === 'ver_agendamentos' && /\d{1,2}(:|h)\d{0,2}/.test(resultados[i]) && !/N[ãa]o encontrei/i.test(resultados[i]));
   // tira negações ("ainda não marquei", "não cancelei nada") antes de procurar a promessa
   const semNegacao = n.replace(/\b(reservei|agendei|marquei|remarquei|cancelei|desmarquei) nada\b[^.!?\n]*/g, ' ').replace(/\b(nao|ainda nao|nem)\s+(\w+\s+){0,2}?(reservei|agendei|marquei|remarquei|cancelei|desmarquei|troquei|confirmei|esta|ta|foi|ficou)\b[^.!?\n]*/g, ' ');
@@ -166,7 +170,8 @@ function conferir(ctx) {
   }
 
   // ---------- 4. nome de outra loja ("toda bonita" minúsculo é elogio comum: só o nome com maiúsculas) ----------
-  if (/\bg[l]ei[dz]/i.test(texto) || /mega\s*-?\s*hair/i.test(texto) || /\bToda\s+Bonit[a]\b/.test(texto)) add('outra_loja', 'nome de outra loja ou de mega hair na resposta');
+  // na própria loja de mega hair a regra não vale: ctx.semOutraLoja (conferente.js, loja.outra_loja === false)
+  if (!ctx.semOutraLoja && (/\bg[l]ei[dz]/i.test(texto) || /mega\s*-?\s*hair/i.test(texto) || /\bToda\s+Bonit[a]\b/.test(texto))) add('outra_loja', 'nome de outra loja ou de mega hair na resposta');
 
   // ---------- 5. mesma mensagem nos últimos 30 min ----------
   const chaveTxt = String((loja.sinal_pix || {}).chave || '').trim();
