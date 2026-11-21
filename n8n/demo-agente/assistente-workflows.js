@@ -46,11 +46,30 @@ const CAMPOS = ['acao', 'pedido_por', 'busca', 'data', 'cliente_id', 'agendament
   // preenchido pelo fluxo, não pela IA: 'sim' quando a Gleide já viu a recusa do horário (ver PODE_FORCAR)
   'pode_forcar',
   // o nome que a Gleide falou: o fluxo confere se o cliente_id / agendamento_id é mesmo dessa cliente (supabase/044)
-  'cliente_nome'];
+  'cliente_nome',
+  // portão de 21/11/2026: aplicação só com cabelo NOVO dito pela Gleide (ver PORTÃO no Montar chamada)
+  'cabelo_novo'];
 
 // O que cada ferramenta chama no Supabase: uma função n8n_assistente_* (supabase/004, 006, 011 e 013), pela API
 // com a chave de serviço, como o agente de atendimento. Vazio vira null; o resto vem da IA (texto).
 // enviar: depois de gravar, o subworkflow manda a mensagem que a função devolveu para a cliente (avisar_cliente).
+const PORTAO_MEGA = String.raw`
+// PORTÃO (21/11/2026), só nas lojas de mega hair: aplicação é só colocação de cabelo NOVO. Em 11/11 (Renata) e 17/11 (Dienne)
+// a recolocação do cabelo da própria cliente foi gravada como aplicação e virou "venda" no relatório. Serviço com cara de
+// aplicação só passa com cabelo_novo = sim (a Gleide disse que é cabelo novo); senão volta para a assistente corrigir ou perguntar.
+// "botar" e "colocação" são apelidos da Aplicação no banco (supabase/037); manutenção, recolocação e avaliação passam.
+const ehSim = (k) => /^\s*(sim|s|true|1|yes)\b/i.test(v(k));
+const servicoDito = v('servico');
+const pedeAplicacao = ['marcar_horario', 'reagendar', 'concluir', 'registrar_atendimento'].includes(v('acao')) &&
+  /aplica|coloca|instala|bota|mega novo|cabelo novo|alongamento/i.test(servicoDito) &&
+  !/manuten|recoloc|repor|reposi|avalia|retir|aperto|apertar|reapert|tirar e colocar/i.test(servicoDito);
+if (pedeAplicacao && !ehSim('cabelo_novo')) {
+  return [{ json: { erro: 'NÃO GRAVADO: aplicação é só com cabelo NOVO, que a cliente compra. Se é o cabelo que ela já tem ' +
+    '(recolocar, repor mechas, trocar de técnica, apertar), use o serviço Manutenção. Se não dá para saber pelo que a Gleide disse, ' +
+    'pergunte a ela de um jeito natural, por exemplo: "É cabelo novo ou o cabelo dela mesmo?" Não diga a ela que algo foi recusado.' } }];
+}
+`;
+
 const MONTAR_CHAMADA = String.raw`
 const e = $input.first().json;
 const empresa = ${EMPRESA};
@@ -216,6 +235,7 @@ switch (v('acao')) {
   default:
     return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];
 }
+/*PORTAO_MEGA*/
 // Antes de gravar ou enviar: o id é mesmo da cliente de quem a Gleide falou? (12/11/2026: o resultado de uma cliente foi
 // para a ficha de outra.) Sem nome, ou em ferramenta que só lê ou que troca o nome, não confere.
 const uuid = (t) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null);
@@ -313,8 +333,8 @@ FAÇA DIRETO, SEM PEDIR "PODE?" (ela é ocupada; cada pergunta a mais é uma men
 - Quando ela conta um fato ou dá uma ordem e dá para saber de qual cliente e de qual horário ela fala, GRAVE NA HORA, na mesma
   resposta, e depois diga em 1 a 3 linhas o que ficou anotado. Vale para: veio, não veio, chegou, o que foi feito (concluir), como
   foi a avaliação (ficou de pensar, não fechou, fechou), anotação na ficha, mudar hora ou duração de um horário, e MARCAR horário
-  quando ela disse cliente, dia, hora e serviço ("agenda a Vitória sexta às 8, colocação do mega": marque e diga "Marquei ✅ …").
-- Ela contou várias coisas juntas ("Renata veio, fiz avaliação, ela volta sexta às 13 pra colocar o mega")? Faça TODAS as gravações
+  quando ela disse cliente, dia, hora e serviço ("agenda a Vitória sexta às 8, colocação do cabelo novo": marque e diga "Marquei ✅ …").
+- Ela contou várias coisas juntas ("Renata veio, fiz avaliação, ela volta sexta às 13 pra manutenção")? Faça TODAS as gravações
   de uma vez e responda uma vez só.
 - Falta UM dado sem o qual não dá para gravar (a hora, de qual das duas clientes)? Grave o que já dá, e pergunte só esse dado,
   uma vez, junto na mesma resposta ("Anotei que a Renata veio e fez avaliação ✅ Que horas na sexta?").
@@ -384,7 +404,7 @@ AGENDA (siga sempre)
   com agendamento_id). "A das 14:00" sem dia = hoje. Se tiver mais de uma cliente na mesma hora ou não achar, pergunte.
 - Datas e horas para as ferramentas: inicio = AAAA-MM-DDTHH:mm, data = AAAA-MM-DD (calcule "sexta", "amanhã", "dia 30"
   a partir da data atual). Se ela não disser a hora (ou o dia), pergunte; não chute.
-- Serviço: escreva como ela falou ("selagem", "manutenção queratina", "colocação do mega"): a ferramenta entende os
+- Serviço: escreva como ela falou ("selagem", "manutenção queratina", "colocação do cabelo novo"): a ferramenta entende os
   jeitos de falar. Se ela devolver "não achei" com a lista dos serviços, escolha VOCÊ o da lista que é o que a Gleide
   disse e chame de novo com esse nome, sem perguntar; guarde o nome certo para as próximas chamadas desta conversa.
   Só pergunte qual quando a ferramenta disser que pode ser mais de um, ou quando nenhum da lista servir.
@@ -486,16 +506,26 @@ REGRAS
   data_proximo_passo é só data, sempre no futuro: "fevereiro" vira o próximo 1º de fevereiro a partir de hoje (nunca um que já passou),
   "semana que vem" vira a segunda que vem. Campo que ela não disse (valor, cm, gramas, técnica, tipo de cabelo) vai vazio, nunca 0 nem "não informado".
 - Diga isso depois de gravar, ex.: "*Elisângela* ficou pra fevereiro. Dia 01/02 eu te lembro dela.".
-- "Ela volta sexta às 13 pra colocar o mega" (fechou e já tem dia e hora): grave fechou com proximo_passo "aplicação marcada DD/MM
-  às HH:mm" e data_proximo_passo nessa data, E marque a aplicação (marcar_horario), tudo na mesma resposta. Se ela disse o dia mas
-  não a hora, grave o fechou e pergunte só a hora. Não pergunte do cabelo quando a aplicação já tem dia.
+- APLICAÇÃO OU MANUTENÇÃO: "fechou" quer dizer que a cliente vai fazer o serviço combinado, NÃO que é aplicação. Aplicação é só
+  com cabelo NOVO, que a cliente compra. Com o cabelo que ela JÁ TEM (recolocar, repor mechas que caíram, tirar e colocar de
+  novo, trocar de técnica como passar para fita, apertar) é MANUTENÇÃO, mesmo que a Gleide diga "colocar o cabelo dela".
+  Se pelo que ela disse não dá para saber, pergunte uma vez, natural, antes de marcar: "É cabelo novo ou o cabelo dela mesmo?".
+  No proximo_passo escreva o serviço certo ("manutenção marcada DD/MM às HH:mm" ou "aplicação com cabelo novo marcada DD/MM às HH:mm").
+  Em marcar_horario, reagendar, concluir e registrar_atendimento de aplicação, cabelo_novo = sim só quando é cabelo novo: a Gleide
+  disse, a cliente vai comprar o cabelo, ou é o cabelo que a Gleide encomendou e chegou (pendência [fechou_sem_data]). Sem isso a
+  gravação não passa: aí só faça a pergunta, sem dizer a ela que algo foi recusado.
+- "Ela volta sexta às 13 pra colocar o cabelo novo" (fechou, já tem dia e hora): grave fechou com proximo_passo
+  "aplicação com cabelo novo marcada DD/MM às HH:mm" e data_proximo_passo nessa data, E marque o horário (marcar_horario com
+  cabelo_novo = sim), tudo na mesma resposta. "Volta sexta às 13 pra recolocar o cabelo dela": o mesmo com Manutenção
+  ("manutenção marcada DD/MM às HH:mm"). "Volta sexta às 13 pra colocar o mega", sem dizer de quem é o cabelo: pergunte antes. Se ela disse o dia mas
+  não a hora, grave o fechou e pergunte só a hora. Quando a aplicação já tem dia, não pergunte se o cabelo já chegou.
 - FECHOU sem dia para a aplicação: grave fechou NA HORA com o que ela disse (proximo_passo = o combinado; dias_chegada, dias_confeccao e data VAZIOS: não invente prazo e não diga dia de lembrete ainda) e,
   na mesma resposta, pergunte UMA vez: "O cabelo já tá aí? Se não, chega em quantos dias e precisa confeccionar?". Quando ela
   responder, grave fechou de novo com dias_chegada e dias_confeccao (os números que ela disse) e data_proximo_passo VAZIA: o sistema
   calcula o dia (chegada + confecção + 1) e devolve em data_proximo_passo; diga esse dia ("dia DD/MM eu te lembro de ver se o cabelo
   chegou"). Se ela não responder, não insista.
 - Pendência [fechou_sem_data]: chegou o dia de saber se o cabelo chegou. Se já tem dia, ofereça marcar a aplicação
-  (marcar_horario). Se ainda não chegou, pergunte a nova previsão e grave fechou de novo com dias_chegada/dias_confeccao
+  (marcar_horario com cabelo_novo = sim: é o cabelo que ela encomendou). Se ainda não chegou, pergunte a nova previsão e grave fechou de novo com dias_chegada/dias_confeccao
   novos (sem previsão: dias_chegada 5). Ela respondeu "depois eu vejo"? Tudo bem, não cobre de novo agora: o sistema
   pergunta de novo em 3 dias.
 - Fez um serviço A MAIS do que estava na agenda (ex.: marcou hidratação e fez selagem também): concluir no horário agendado
@@ -535,7 +565,10 @@ REGRAS
 - Avisos que você mandou ("✅ Remarquei…", "⚠️ … não respondeu") ficam na conversa: se ela responder a eles, entenda pelo contexto.
 - Mensagens que começam com [áudio] são a transcrição de um áudio dela.`;
 
-module.exports = ({ env, node, str, main, toolSub, workflow }) => {
+module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) => {
+  // portão do cabelo novo (21/11/2026): só nas lojas de mega hair; numa loja de unha "aplicação" é outra coisa
+  const CABELO_NOVO = megaHair ? [['cabelo_novo', '"sim" SÓ se a Gleide disse que é cabelo NOVO (a cliente compra o cabelo) e o serviço é aplicação. Cabelo da própria cliente (recolocar, repor, trocar de técnica) é Manutenção e aqui fica vazio', 'string']] : [];
+  const SO_CABELO_NOVO = megaHair ? '. Aplicação só com cabelo NOVO; o cabelo que a cliente já tem é Manutenção' : '';
   const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };
   // A mesma senha do webhook do WhatsApp (header x-webhook-token): fica na credencial do n8n, não no Git.
   const SENHA_WEBHOOK = { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } };
@@ -587,7 +620,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       node('Recebe pedido da assistente', 'n8n-nodes-base.executeWorkflowTrigger', 1.1, [0, 0], {
         workflowInputs: { values: CAMPOS.map((name) => ({ name })) },
       }),
-      node('Montar chamada', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: MONTAR_CHAMADA }),
+      node('Montar chamada', 'n8n-nodes-base.code', 2, [220, 0], { jsCode: MONTAR_CHAMADA.replace('/*PORTAO_MEGA*/', megaHair ? PORTAO_MEGA : '') }),
       rpc('Conferir cliente', [330, -160], 'n8n_assistente_conferir_nome',
         `($json.conferir || { p_empresa_id: ${EMPRESA}, p_cliente_id: null, p_agendamento_id: null, p_nome: '' })`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
@@ -844,7 +877,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         'registrar_atendimento', [
           ['telefone', 'Telefone da cliente (de buscar_cliente, ou o que a Gleide disser)', 'string'],
           ['nome', 'Nome da cliente', 'string'],
-          ['servico', 'Serviço feito (ex.: manutenção, aplicação, avaliação)', 'string'],
+          ['servico', 'Serviço feito (ex.: manutenção, aplicação, avaliação)' + SO_CABELO_NOVO, 'string'],
+          ...CABELO_NOVO,
           ['inicio', 'Quando foi, AAAA-MM-DDTHH:mm (vazio = agora)', 'string'],
           ['valor', 'Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)', 'string'],
           ['observacoes', 'Observações', 'string']]),
@@ -880,7 +914,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
           ['cliente_id', 'cliente_id de buscar_cliente (vazio se for cliente nova)', 'string'],
           ['nome', 'Nome da cliente nova', 'string'],
           ['telefone', 'Telefone com DDD da cliente nova', 'string'],
-          ['servico', 'Serviço como a Gleide falou', 'string'],
+          ['servico', 'Serviço como a Gleide falou' + SO_CABELO_NOVO, 'string'],
+          ...CABELO_NOVO,
           ['inicio', 'Dia e hora AAAA-MM-DDTHH:mm', 'string'],
           ['observacoes', 'Observação do horário (se ela disse)', 'string'],
           ['minutos', 'Quanto tempo vai levar, em minutos, SÓ se a Gleide disse (ex.: "uma hora e meia" = 90); senão vazio (vale o tempo do cadastro)', 'string'],
@@ -892,6 +927,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
         'reagendar', [ID('agendamento_id'), NOME,
           ['inicio', 'Novo dia e hora AAAA-MM-DDTHH:mm', 'string'],
           ['servico', 'Novo serviço, só se ela pediu para trocar; senão vazio', 'string'],
+          ...CABELO_NOVO,
           ['forcar', 'Vazio na primeira tentativa, sempre. "sim" só depois que a ferramenta recusou, você contou o motivo à Gleide e ela respondeu que quer assim mesmo', 'string']]),
       tool('atrasar_agenda', [2440, 440], 'Empurra (ou adianta, minutos negativos) todos os horários a atender do dia a partir de uma hora. Só use DEPOIS do sim da Gleide.',
         'atrasar_agenda', [['minutos', 'Quantos minutos (ex.: 30; negativo adianta)', 'string'],
@@ -900,6 +936,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow }) => {
       tool('concluir', [2600, 440], 'O ✓ do app: marca o horário como realizado, com o serviço feito e os serviços a mais. Use na hora quando a Gleide contar que atendeu.',
         'concluir', [ID('agendamento_id'), NOME,
           ['servico', 'O serviço que ela fez de verdade, se foi OUTRO no lugar do marcado (ex.: estava manutenção e ela fez avaliação); senão vazio', 'string'],
+          ...CABELO_NOVO,
           ['extras', 'Serviços feitos A MAIS, separados por vírgula (ex.: selagem, hidratação); senão vazio', 'string'],
           ['valor', 'Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)', 'string']]),
       tool('chegou', [2760, 440], 'A cliente chegou ao salão (botão "Chegou" do app): a IA não cobra atraso dela.',

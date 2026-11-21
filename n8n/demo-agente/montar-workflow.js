@@ -565,7 +565,7 @@ const nodes = [
     { acao: 'criar', telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [
       ['nome', 'Nome da cliente', 'string'],
-      ['servico', 'Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: "Manutenção – mão de obra", "Aplicação de mega hair – mão de obra", "Selagem")', 'string'],
+      ['servico', 'Nome COMPLETO do serviço, como na lista, dizendo se é aplicação ou manutenção (ex.: "Manutenção – mão de obra", "Aplicação de mega hair – mão de obra", "Selagem"). Aplicação só com cabelo NOVO; cliente que já usa mega e quer colocar o cabelo DELA de novo (recolocar, repor mechas, trocar de técnica, passar para fita) é Manutenção', 'string'],
       ['motivo', 'Resumo curto (até ~60 caracteres) do que a cliente quer e do que ela contou na conversa, para a Gleide ler na agenda. Ex.: "comprar cabelo vietnamita 60 cm", "selagem - cabelo ressecado", "manutenção tela adesiva colocada em agosto", "avaliar técnica, cabelo curto"', 'string'],
       ['data_hora_inicio', 'Início no formato AAAA-MM-DDTHH:mm, exatamente como veio em consultar_horarios_livres', 'string'],
       ['duracao_minutos', 'Duração do serviço em minutos', 'number'],
@@ -714,7 +714,8 @@ const audios = require('./audios-workflows.js')({ env, node, str, main, toolSub,
 const catalogo = require('./catalogo-workflows.js')({ node, str, main, toolSub, workflow, fotosIndividuais: false });
 
 // Assistente da Gleide: desvia o número dela no principal + 3 workflows novos (ver assistente-workflows.js)
-const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow });
+// portão do cabelo novo só nas lojas de mega hair (a Gleide roda sem loja.json)
+const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow, megaHair: !LOJA || /mega/i.test(String(LOJA.nicho || '')) });
 
 // Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
 const faltas = require('./faltas-workflows.js')({ env, node, main });
