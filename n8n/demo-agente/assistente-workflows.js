@@ -235,15 +235,19 @@ switch (v('acao')) {
   // conferência semanal de vendas (conferencia-vendas.js, supabase/066): o que a Gleide confirmou ou corrigiu.
   // O banco acha o atendimento pelo primeiro nome e o dia; "13/11" sem ano é deste ano (ou do ano passado, se ainda não chegou)
   case 'conferir_venda': {
-    let m = v('data').match(/^(\d{4})-(\d{2})-(\d{2})/), dia = '';
+    // "2026-11-13", "13/11", "terça 18/11", "18/11/26"; dia que não existe (30/02) fica sem data (o banco procura pelo nome)
+    let m = v('data').match(/(\d{4})-(\d{2})-(\d{2})/), dia = '';
+    const hoje = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
     if (m) dia = m[1] + '-' + m[2] + '-' + m[3];
-    else if ((m = v('data').match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?$/))) {
-      const hoje = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);
-      dia = (m[3] || hoje.slice(0, 4)) + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
+    else if ((m = v('data').match(/(?:^|\D)(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?(?!\d)/))) {
+      const ano = m[3] ? (m[3].length === 2 ? '20' + m[3] : m[3]) : hoje.slice(0, 4);
+      dia = ano + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');
       if (!m[3] && dia > hoje) dia = String(+dia.slice(0, 4) - 1) + dia.slice(4);
     }
+    if (dia) { const x = new Date(dia + 'T12:00:00Z'); if (isNaN(x) || x.toISOString().slice(0, 10) !== dia) dia = ''; }
     funcao = 'n8n_assistente_conferir_venda';
-    args = { ...base, p_nome: v('cliente_nome'), p_data: ou(dia), p_tipo: v('tipo'), p_valor: valor(), p_fala: ou(v('observacoes')) };
+    args = { ...base, p_nome: v('cliente_nome'), p_data: ou(dia), p_tipo: v('tipo'), p_valor: valor(), p_fala: ou(v('observacoes')),
+      p_limpar_valor: sim('desfazer') };
     break;
   }
   default:

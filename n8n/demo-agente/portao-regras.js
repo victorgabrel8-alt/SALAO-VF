@@ -29,8 +29,7 @@ function conferirAcoes(ctx) {
     'ver_agendamentos', 'enviar_catalogo', 'enviar_audio'];
 
   // resposta curta a uma pergunta da IA ("sim", "pode", "isso", "ok envia"): confirma o que a IA propôs
-  // "tá certinho", "tudo certo", "é isso": resposta à lista da conferência da semana (conferencia-vendas.js)
-  const CONFIRMA = /^(sim+|s|ss|pode|isso|ok|okay|blz|beleza|manda|envia|confirmo|confirma|fechado|certo|certinho|uhum|aham|claro|perfeito|exato|bora|por favor|pode marcar|pode mandar|pode ser|(ta|esta|tudo) (certo|certinho)|e isso|isso mesmo|correto)\b/;
+  const CONFIRMA = /^(sim+|s|ss|pode|isso|ok|okay|blz|beleza|manda|envia|confirmo|confirma|fechado|certo|uhum|aham|claro|perfeito|exato|bora|por favor|pode marcar|pode mandar|pode ser)\b/;
   const confirmou = CONFIRMA.test(fala) && fala.length <= 60 && !/\b(nao|n|nem)\b/.test(fala);
   // resposta a "quanto foi?": número e poucas palavras ("350", "350 no pix", "foi 350", "ela pagou 350")
   const soNumero = /\d/.test(fala) && fala.length <= 30;
@@ -131,12 +130,31 @@ function conferirAcoes(ctx) {
       if ((nomeF === 'concluir' || (nomeF === 'status_atendimento' && /realiz/.test(status))) && !servico && recolocou) {
         add('concluir_com_cabelo_da_cliente', 'conferir se o horário não está como aplicação');
       }
-      // conferência da semana (conferencia-vendas.js, supabase/066): cabelo novo só se a fala não diz que é o cabelo dela;
-      // "não aconteceu" só com a Gleide dizendo. "Tá certinho" confirma a lista como estava (não aponta).
-      if (nomeF === 'conferir_venda' && !confirmou) {
+      // conferência da semana (conferencia-vendas.js, supabase/066). Cada cliente é conferida pelo TRECHO da fala que fala
+      // dela ("a Renata foi o cabelo dela, o resto tá certo": o "dela" é só da Renata). "Tá certo" / "o resto tá certo"
+      // confirma o que a LISTA mostrou (o banco devolve o sugerido): gravar diferente da lista sem ela dizer é alarme.
+      if (nomeF === 'conferir_venda') {
         const tipo = norm(val(e, 'tipo'));
-        if (/mega|aplica|novo/.test(tipo) && dela && !afirma(PROVA_CABELO_NOVO)) add('venda_mega_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');
-        if (/nao.?(fez|veio)/.test(tipo) && !/\b(nao|n) (veio|fez|apareceu|rolou|aconteceu|teve)\b|faltou|desist|cancel|desmarc/.test(fala)) add('venda_nao_fez_sem_prova', 'a fala não diz que não aconteceu');
+        const nomeCli = norm(val(e, 'cliente_nome')).split(/[^a-z]+/).filter((w) => w.length >= 3);
+        const partes = fala.split(/[,.;!?\n]+|\s+(?:e|mas|ja|agora)\s+(?=a |o |as |os |\w+ (?:foi|fez|veio|nao))/).map((s) => s.trim()).filter(Boolean);
+        const daCliente = partes.filter((s) => nomeCli.some((w) => new RegExp('\\b' + w).test(s))).join(' ');
+        const temDela = (s) => CABELO_DELA_DONA.test(s) || /\b(dela|dela mesmo|proprio cabelo|cabelo que ela ja tinha)\b/.test(s);
+        const temNovo = (s) => PROVA_CABELO_NOVO.test(s);
+        const LISTA_OK = /^(sim+|isso|ok|certo|certinho|certissimo|correto|exato|perfeito|e isso|isso mesmo|(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)( sim)?)\b|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b/;
+        const listaOk = LISTA_OK.test(fala);
+        const r = String(typeof p.resultado === 'string' ? p.resultado : JSON.stringify(p.resultado || ''));
+        const sug = (r.match(/"sugerido"\s*:\s*"(\w+)"/) || [])[1] || '';
+        if (/mega|novo/.test(tipo)) {
+          if (daCliente && temDela(daCliente) && !temNovo(daCliente)) add('venda_mega_com_cabelo_da_cliente', 'a fala diz que é o cabelo dela');
+          else if (!(daCliente && temNovo(daCliente)) && !(listaOk && sug === 'mega_novo' && !(daCliente && /manuten|recoloc|dela/.test(daCliente))))
+            add('venda_mega_sem_prova', sug && sug !== 'mega_novo' ? 'a lista dizia ' + sug + ' e ela não disse cabelo novo' : 'ninguém disse que foi cabelo novo');
+        }
+        if (/nao.?(fez|veio)/.test(tipo)) {
+          const alvo = daCliente || fala;
+          const disse = /\b(nao|n|nem)\s+(\S+\s+)?(veio|vindo|vem|fez|feito|apareceu|compareceu|rolou|aconteceu|teve|chegou|fizemos|fiz)\b|desist|cancel|desmarc|remarc/.test(alvo) ||
+            (/\b(faltou|furou|deu bolo)\b/.test(alvo) && !/\b(nao|n|nem) (faltou|furou)\b/.test(alvo));
+          if (!disse) add('venda_nao_fez_sem_prova', 'a fala não diz que não aconteceu');
+        }
       }
       // 2. valor que ninguém disse
       const v = val(e, 'valor').replace(/[^\d,.]/g, '');
@@ -207,6 +225,7 @@ function montarResumo(registros, dia) {
     cancelar_sem_prova: 'cancelou o horário sem a cliente pedir',
     venda_mega_com_cabelo_da_cliente: 'conferência: gravou mega hair novo, mas a Gleide falou do cabelo da cliente',
     venda_nao_fez_sem_prova: 'conferência: gravou que o atendimento não aconteceu sem a Gleide dizer',
+    venda_mega_sem_prova: 'conferência: gravou mega hair novo sem a Gleide dizer cabelo novo',
   };
   const corta = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
   const total = lista.reduce((s, r) => s + Number(r.n_falhas), 0);
