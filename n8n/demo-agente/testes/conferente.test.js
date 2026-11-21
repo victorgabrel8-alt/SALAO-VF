@@ -257,3 +257,19 @@ test('Gleide: o Conferente monta em modo observar sem o nó "Supabase: dados do 
   const wf2 = JSON.parse(JSON.stringify({ ...wf, nodes: wf.nodes.filter((x) => !/Conferente/.test(x.name)) }));
   assert.throws(() => require('../conferente.js')({ node, ifNode, cond, workflow: wf2, loja: { ...loja, conferente: 'ligado' } }), /dados do salão/);
 });
+
+// Gleide (21/11): o testador rodou as conversas reais de 11 a 20/11 pelo Conferente
+test('Gleide: orçamento que a dona passou (recado automático gravado como ia) vale como fonte do preço', () => {
+  const anteriores = [{ direcao: 'saida', autor: 'ia', conteudo: 'A Gle' + 'ide passou o orçamento: o brasileiro 60 cm fica R$ 2.800', criado_em: new Date(agora - 600e3).toISOString() }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'O brasileiro fica R$ 2.800, tá?', anteriores }))), []);
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'O brasileiro fica R$ 2.800, tá?' }))), ['preco']);
+  // a mesma frase dita pela própria IA (sem ser o recado) não vira fonte
+  const daIa = [{ direcao: 'saida', autor: 'ia', conteudo: 'Fica uns R$ 2.800', criado_em: new Date(agora - 600e3).toISOString() }];
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'O brasileiro fica R$ 2.800, tá?', anteriores: daIa }))), ['preco']);
+});
+
+test('Gleide: "está marcado" com "Horário marcado:" na ficha não é promessa', () => {
+  const ficha = 'Horário marcado: sexta-feira, 13/11 às 08:00 — Aplicação';
+  assert.deepStrictEqual(tipos(conferir(base({ texto: 'Seu horário está marcado para sexta às 08:00.', ficha }))), []);
+  assert.ok(tipos(conferir(base({ texto: 'Seu horário está marcado para sexta às 08:00.' }))).includes('promessa'));
+});
