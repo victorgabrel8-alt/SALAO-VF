@@ -101,7 +101,7 @@ declare
   v_final text := substring(coalesce(p_nome, '') from '(?i)final\s*(\d{4})');
   v_nome text := regexp_replace(coalesce(p_nome, ''), '(?i)\(?\s*(do\s+)?final\s*\d+\s*\)?', ' ', 'g');
   v_palavras text[];
-  v_ids uuid[]; v_escolha uuid; v_ag record; v_lista text; v_valor numeric; v_tentativa int;
+  v_ids uuid[]; v_escolha uuid; v_ag record; v_lista text; v_valor numeric; v_sug text; v_tentativa int;
 begin
   if not assistente_autorizado(p_empresa_id, p_pedido_por) then raise exception 'número % não autorizado', p_pedido_por; end if;
   -- "aplicação" sozinha não diz se o cabelo é novo (13/11 e 18/11 eram o cabelo da cliente): não vira mega_novo
@@ -181,7 +181,7 @@ begin
          valor = case when excluded.tipo = 'nao_fez' or p_limpar_valor then null else coalesce(excluded.valor, vendas_conferidas.valor) end,
          fala = coalesce(excluded.fala, vendas_conferidas.fala), servico_agenda = excluded.servico_agenda,
          conferido_em = now(), pedido_por = excluded.pedido_por
-  returning valor into v_valor;
+  returning valor, sugerido into v_valor, v_sug;   -- sugerido: o que a lista mostrou (fica o do perguntado)
 
   insert into registros_ia (empresa_id, cliente_id, agente, acao, tabela, registro_id, dados, pedido_por)
   values (p_empresa_id, v_ag.cliente_id, 'assistente', 'n8n_assistente_conferir_venda', 'vendas_conferidas', v_ag.id,
@@ -189,7 +189,7 @@ begin
                              'nome_dito', p_nome, 'data_dita', p_data), p_pedido_por);
 
   return jsonb_build_object('ok', true, 'nome', v_ag.nome, 'dia', to_char(v_ag.inicio at time zone 'America/Cuiaba', 'DD/MM'),
-    'servico_na_agenda', v_ag.servico, 'sugerido', venda_sugerido(v_ag.servico), 'tipo', v_tipo, 'valor', v_valor);
+    'servico_na_agenda', v_ag.servico, 'sugerido', coalesce(v_sug, venda_sugerido(v_ag.servico)), 'tipo', v_tipo, 'valor', v_valor);
 end $$;
 
 -- Visão para os relatórios: só o que a Gleide confirmou como venda (nao_fez e sem resposta ficam de fora).

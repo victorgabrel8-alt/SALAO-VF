@@ -274,3 +274,26 @@ test('portão: "beleza", "blz", "fechado" confirmam a lista; "tá certo?" (pergu
   for (const f of ['beleza', 'blz', 'fechado', 'uhum']) assert.deepStrictEqual(tipos(ass(f, cv('Vitoria', 'mega_novo', 'mega_novo'))), [], f);
   assert.deepStrictEqual(tipos(ass('tá certo?', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
 });
+
+// ---------- /code-review da fase 2 (21/11) ----------
+test('portão: a lista dizia cabelo novo e a IA gravou manutenção sem a Gleide dizer → alarme', () => {
+  assert.deepStrictEqual(tipos(ass('tá certinho', cv('Vitoria', 'manutencao', 'mega_novo'))), ['venda_mega_rebaixada_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('a vitoria foi o cabelo dela', cv('Vitoria', 'manutencao', 'mega_novo'))), []);
+  assert.deepStrictEqual(tipos(ass('a vitoria foi manutenção', cv('Vitoria', 'manutencao', 'mega_novo'))), []);
+  assert.deepStrictEqual(tipos(ass('tá certinho', cv('Renata', 'manutencao', 'manutencao'))), []);
+});
+
+test('portão: "isso não" / "certo não" não confirmam; "não teve problema" não prova que não aconteceu', () => {
+  assert.deepStrictEqual(tipos(ass('isso não, tá errado', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('certo não', cv('Vitoria', 'mega_novo', 'mega_novo'))), ['venda_mega_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('a adriana não teve problema nenhum', cv('Adriana', 'nao_fez', 'manutencao'))), ['venda_nao_fez_sem_prova']);
+  assert.deepStrictEqual(tipos(ass('a adriana não teve atendimento', cv('Adriana', 'nao_fez', 'manutencao'))), []);
+});
+
+test('Montar chamada: desfazer só com "sim" exato apaga o valor', () => {
+  const a = montarAssistente();
+  const code = a.ferramentasWorkflow.nodes.find((x) => x.name === 'Montar chamada').parameters.jsCode;
+  const chamar = (e) => new Function('$input', '$env', code)({ first: () => ({ json: { acao: 'conferir_venda', cliente_nome: 'Renata', tipo: 'manutencao', ...e } }) }, {})[0].json;
+  assert.strictEqual(chamar({ desfazer: 'sem alteração' }).args.p_limpar_valor, false);
+  assert.strictEqual(chamar({ desfazer: 'Sim' }).args.p_limpar_valor, true);
+});

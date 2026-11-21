@@ -166,7 +166,7 @@ function conferirAcoes(ctx) {
         const temDela = (s) => CABELO_DELA_DONA.test(s) || /\b(dela|dela mesmo|proprio cabelo|cabelo que ela ja tinha)\b/.test(s);
         const temNovo = (s) => PROVA_CABELO_NOVO.test(s) || /cabelo (que )?(ela )?compr(ou|amos) (com a gente|aqui|com a gleide|no salao|da gente|com nos)/.test(s);
         // confirmação da lista em qualquer lugar da fala ("oi amiga tá certo sim"), "só a Renata que não" (as outras certas)
-        const LISTA_OK = /^(sim+|isso|isso ai|ok|certo|certinho|certissimo|correto|exato|exatamente|perfeito|pode ser|e isso|isso mesmo|beleza|blz|fechado|uhum|aham|show|massa)\b|(?<!\b(nao|n|nem) )(?<!\b(nao|n|nem) (ta|esta) )\b(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)\b(?! (nao|n)\b)|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b|\bso (a|o) [a-z]+ (que )?(nao|foi diferente|que foi diferente)\b|^[\s👍✅👌🙏❤️💛]+$/u;
+        const LISTA_OK = /^(sim+|isso|isso ai|ok|certo|certinho|certissimo|correto|exato|exatamente|perfeito|pode ser|e isso|isso mesmo|beleza|blz|fechado|uhum|aham|show|massa)\b(?! (nao|n)\b)|(?<!\b(nao|n|nem) )(?<!\b(nao|n|nem) (ta|esta) )\b(ta|esta|tudo|ta tudo|esta tudo) (certo|certinho|ok)\b(?! (nao|n)\b)|\b(resto|outras?|demais|as outras|o restante)\b[^,.;]{0,20}\b(certo|certinho|ok|isso|isso mesmo|correto)\b|\bso (a|o) [a-z]+ (que )?(nao|foi diferente|que foi diferente)\b|^[\s👍✅👌🙏❤️💛]+$/u;
         // "só a Vitoria que não", "tá certo menos a Vitoria": a lista vale para as outras, não para ela. "Tá certo?" é pergunta.
         const excluidas = [...fala.matchAll(/\b(?:so|menos|exceto|tirando|fora|so nao|mas nao)\s+(?:a |o |da |do )?([a-z]{3,})/g)].map((m) => m[1]);
         const excluida = nomeCli.some((w) => excluidas.includes(w));
@@ -177,9 +177,13 @@ function conferirAcoes(ctx) {
           else if (!(daCliente && temNovo(daCliente)) && !(listaOk && sug === 'mega_novo' && !(daCliente && /manuten|recoloc|dela/.test(daCliente))))
             add('venda_mega_sem_prova', sug && sug !== 'mega_novo' ? 'a lista dizia ' + sug + ' e ela não disse cabelo novo' : 'ninguém disse que foi cabelo novo');
         }
+        // o contrário também tira venda do relatório: a lista dizia cabelo novo e a IA gravou manutenção/outro sem ela dizer
+        if (/manuten|outro/.test(tipo) && sug === 'mega_novo' && !(daCliente && (temDela(daCliente) || /manuten|recoloc|repor|reposi|tecnica|outro servico|so (fez|foi)/.test(daCliente))))
+          add('venda_mega_rebaixada_sem_prova', 'a lista dizia cabelo novo e ela não disse que foi o cabelo dela ou manutenção');
         if (/nao.?(fez|veio)/.test(tipo)) {
           const alvo = daCliente || fala;
-          const disse = /\b(nao|n|nem)\s+(\S+\s+)?(veio|vindo|vem|fez|feito|apareceu|compareceu|rolou|aconteceu|teve|chegou|fizemos|fiz)\b|desist|cancel|desmarc|remarc/.test(alvo) ||
+          // "não teve problema", "não chegou atrasada" não provam que não aconteceu: só "não teve atendimento", "não chegou a vir"
+          const disse = /\b(nao|n|nem)\s+(\S+\s+)?(veio|vindo|vem|fez|feito|apareceu|compareceu|rolou|aconteceu|teve atendimento|chegou a (vir|fazer)|fizemos|fiz)\b|desist|cancel|desmarc|remarc/.test(alvo) ||
             (/\b(faltou|furou|deu bolo)\b/.test(alvo) && !/\b(nao|n|nem) (faltou|furou)\b/.test(alvo));
           if (!disse) add('venda_nao_fez_sem_prova', 'a fala não diz que não aconteceu');
         }
@@ -254,6 +258,7 @@ function montarResumo(registros, dia) {
     venda_mega_com_cabelo_da_cliente: 'conferência: gravou mega hair novo, mas a Gleide falou do cabelo da cliente',
     venda_nao_fez_sem_prova: 'conferência: gravou que o atendimento não aconteceu sem a Gleide dizer',
     venda_mega_sem_prova: 'conferência: gravou mega hair novo sem a Gleide dizer cabelo novo',
+    venda_mega_rebaixada_sem_prova: 'conferência: a lista dizia cabelo novo e gravou manutenção sem a Gleide dizer',
   };
   const corta = (s, n) => { s = String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); return s.length > n ? s.slice(0, n) + '…' : s; };
   const total = lista.reduce((s, r) => s + Number(r.n_falhas), 0);

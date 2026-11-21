@@ -78,7 +78,7 @@ Ainda esperando a Gleide confirmar (nome, dia e o que a lista mostrou):
 - A mesma cliente aparece em dois dias e ela não disse qual ("a Vitoria foi o cabelo dela")? Pergunte qual dia, natural
   ("Foi a da Vitoria do dia 4 ou a do dia 13?"). Nunca escolha o dia por ela. Duas clientes com o mesmo primeiro nome: mande o nome como
   está na lista (com o sobrenome e o "(final 1234)", se tiver).
-- valor só se ela disse o valor daquela cliente; nunca o preço da tabela, nunca 0. Não pergunte valor. Ela disse que o valor
+- valor só se ela disse AGORA o valor daquela cliente; se ela só confirmou a lista, deixe vazio (mesmo que a lista mostre um valor); nunca o preço da tabela, nunca 0. Não pergunte valor. Ela disse que o valor
   que você anotou está errado e não sabe o certo: conferir_venda com desfazer = sim (apaga o valor).
 - Ela falou de alguém que não estava na lista: conferir_venda com o nome e o dia que ela disse. Se a ferramenta disser que não
   achou o atendimento, ela veio sem estar na agenda: registrar_atendimento e depois conferir_venda.
@@ -107,7 +107,7 @@ module.exports = ({ assistenteWorkflow: ag, pendenciasWorkflow: pe, clientesDesd
     cliente_nome: ia('cliente_nome', 'Nome da cliente exatamente como está na lista da conferência (com o sobrenome e o "(final 1234)", se a lista tiver) ou como a Gleide disse'),
     data: ia('data', 'Dia do atendimento AAAA-MM-DD, o da lista da conferência (vazio se não souber)'),
     tipo: ia('tipo', 'mega_novo (cabelo NOVO que a cliente comprou), manutencao (cabelo que ela já tinha: manutenção, recolocar, repor, trocar de técnica), outro ou nao_fez. Só o que a Gleide disse ou confirmou; "aplicação" sozinha não diz se o cabelo é novo'),
-    valor: ia('valor', 'Valor em reais, só o número, SÓ se a Gleide disse o valor desta cliente; senão vazio (nunca 0, nunca o preço da tabela)'),
+    valor: ia('valor', 'Valor em reais, só o número, SÓ se a Gleide disse agora o valor desta cliente; se ela só confirmou a lista, vazio (nunca 0, nunca o preço da tabela)'),
     desfazer: ia('desfazer', '"sim" só se a Gleide disse que o valor anotado desta cliente está errado e não sabe o certo (apaga o valor); senão vazio'),
     observacoes: ia('observacoes', 'O que a Gleide disse sobre esta cliente, com as palavras dela'),
   };

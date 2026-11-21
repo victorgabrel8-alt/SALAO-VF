@@ -138,7 +138,7 @@ begin
   -- "Ana Paula" sem atendimento nunca cai na "Ana Clara", nem com o final dela
   insert into clientes (empresa_id, nome, telefone) values (L, 'Ana Paula Xteste', '5500000066011');
   j := pg_temp.conferir(L, tel, 'Ana Paula', null, 'mega_novo', null, null);
-  insert into r (caso, ok, veio) values ('Ana Paula não cai na Ana Clara', coalesce(j->>'nome', '') <> 'Ana Clara Teste', j::text);
+  insert into r (caso, ok, veio) values ('Ana Paula não cai na Ana Clara', j->>'nome' = 'Ana Paula Teste', j::text);
   j := pg_temp.conferir(L, tel, 'Ana Paula (final 6007)', null, 'mega_novo', null, null);
   insert into r (caso, ok, veio) values ('Ana Paula com o final da Ana Clara não grava', coalesce(j->>'erro', '') like 'não achei%', j::text);
   insert into clientes (empresa_id, nome, telefone) values (L, null, '5500000066009') returning id into cSN;

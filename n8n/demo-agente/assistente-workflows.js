@@ -247,7 +247,7 @@ switch (v('acao')) {
     if (dia) { const x = new Date(dia + 'T12:00:00Z'); if (isNaN(x) || x.toISOString().slice(0, 10) !== dia) dia = ''; }
     funcao = 'n8n_assistente_conferir_venda';
     args = { ...base, p_nome: v('cliente_nome'), p_data: ou(dia), p_tipo: v('tipo'), p_valor: valor(), p_fala: ou(v('observacoes')),
-      p_limpar_valor: sim('desfazer') };
+      p_limpar_valor: /^\s*(sim|s|true|1)\s*[.!]?\s*$/i.test(v('desfazer')) };
     break;
   }
   default:
