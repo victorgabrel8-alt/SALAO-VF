@@ -1,6 +1,7 @@
-// Promoção de Natal e fim de ano da Gleide (campanha do Facebook, pedido do Victor em 21/11/2026):
-// o CABELO do mega hair comprado no salão pode ser parcelado em até 10x sem juros no cartão.
-// Só a compra do cabelo. Colocação (mão de obra), manutenção, química e os outros serviços NÃO entram.
+// Promoção de Natal e fim de ano da Gleide (campanha do Facebook, pedido do Victor em 21/11/2026; regra corrigida
+// por ele em 22/11): quem vai COLOCAR o mega hair parcela TUDO (o cabelo e a colocação) em até 10x sem juros no cartão.
+// Só fica de fora a MANUTENÇÃO de quem já usa mega. Compra só do cabelo: entra (interpretação minha de "é tudo incluso").
+// Química e tratamento: o Victor não disse; a IA pergunta para a Gleide.
 //
 // Um lugar só para a regra: o prompt da IA (marcador %%PROMOCAO_ATIVA%% no prompt-agente.md, trocado no
 // montar-workflow.js) e a mensagem que leva o valor do cabelo para a cliente (pedidos-workflows.js).
@@ -11,8 +12,8 @@
 
 const ULTIMO_DIA = '2026-11-26'; // AAAA-MM-DD, horário de Cuiabá
 
-const REGRA = 'PROMOÇÃO ATIVA AGORA — Natal e fim de ano: o CABELO do mega hair comprado no salão pode ser parcelado em até 10x sem juros no cartão de crédito. ' +
-  'Vale SÓ para a compra do cabelo. NÃO entra: a colocação (mão de obra da aplicação), a manutenção, as químicas, os tratamentos e qualquer outro serviço; esses continuam no Pix ou no cartão com os juros da maquininha. ' +
+const REGRA = 'PROMOÇÃO ATIVA AGORA — Natal e fim de ano: quem vai COLOCAR o mega hair parcela TUDO em até 10x sem juros no cartão de crédito: o cabelo e a colocação (mão de obra da aplicação). A compra do cabelo sozinha também entra. ' +
+  'NÃO entra: a MANUTENÇÃO de quem já usa mega hair, que continua no Pix ou no cartão com os juros da maquininha. Química e tratamento não estão definidos na promoção: se perguntarem, use perguntar_para_gleide. ' +
   'Como e quando citar: seção 04, PROMOÇÃO DE 10X SEM JUROS.';
 const SEM = 'PROMOÇÃO ATIVA AGORA: nenhuma. Não cite promoção nem parcelamento sem juros; se a cliente perguntar de uma promoção que viu em anúncio, diga que vai confirmar e use perguntar_para_gleide.';
 

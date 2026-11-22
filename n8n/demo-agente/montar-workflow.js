@@ -386,7 +386,8 @@ const nodes = [
   }, { retryOnFail: true, maxTries: 2, waitBetweenTries: 3000, onError: 'continueRegularOutput' }),
 
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
-    modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.4 },
+    // 0.6 (era 0.4 até 22/11): o Victor achou a conversa fria e repetitiva; um pouco mais de variação na escrita
+    modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.6 },
   }, GEMINI ? { credentials: GEMINI } : {}),
 
   node('Memória (Redis)', '@n8n/n8n-nodes-langchain.memoryRedisChat', 1.5, [2720, 200], {
