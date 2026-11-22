@@ -73,7 +73,9 @@ return $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) =
   const texto = [oi, reserva,
     'A Gleide atende uma cliente por vez, e esse período da agenda fica dedicado só a você. Por isso pedimos que ' +
       (l.online ? 'esteja disponível' : 'chegue') + ' no horário: a partir de 15 minutos de atraso, o atendimento pode precisar ser remarcado.',
-    'Se surgir um imprevisto, basta nos avisar com 24 horas de antecedência e encontramos outro horário. Para este agendamento não há cobrança de sinal. Em caso de falta ou de cancelamento em cima da hora, as próximas reservas passam a ser feitas mediante sinal.',
+    // 21/11 (pedido do Victor): quem está marcando não ouve falar de sinal nem de falta; isso fez cliente cancelar.
+    // O sinal só aparece na conversa de quem já faltou sem avisar e quer novo horário (prompt, seção 06).
+    'Se surgir um imprevisto, é só nos avisar antes e encontramos outro horário, sem custo.',
     'Posso confirmar a sua presença?'].join('\n\n');
   return { json: { ...l, texto } };
 });

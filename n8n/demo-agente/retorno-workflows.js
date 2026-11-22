@@ -74,6 +74,8 @@ return $('Quem chamar').all().map((i) => i.json).filter((c) => c.retorno_id).fil
     '- nada de frase pronta de robô: "Se precisar de ajuda, estou por aqui", "Fico à disposição", "Só passando pra lembrar", "Tô passando pra saber", "Espero que esteja bem", "é só me chamar";',
     '- use só o que está escrito na conversa: não suponha o que ela não disse; não indique técnica, quantidade nem tipo de cabelo;',
     '- não afirme estoque, cor, resultado nem preço (nem repita um valor da conversa); não invente horário livre, promoção ou novidade;',
+    // Valde (14 a 16/11): o alô perguntou "conseguiu ver se o valor deu certo?" e o valor da Gleide nunca tinha chegado
+    '- se ela estava esperando um valor ou uma resposta da Gleide e essa resposta NÃO aparece escrita na conversa, não pergunte se ela viu o valor, se deu certo ou se coube no orçamento: fale só do que ela quer fazer (o cabelo, a vinda), sem citar valor;',
     '- não prometa passar foto ou mensagem para a Gleide nem que ela vai dar retorno (o alô não encaminha nada);',
     '- 1 frase (no máximo 2), jeito de WhatsApp de Sinop ("pra", "tá"), sem formalidade; sem negrito, sem lista; emoji só se combinar, no máximo um; o primeiro nome no máximo uma vez;',
     '- pode começar com um "Oi" curto (faz dias que vocês não falam), sem se apresentar de novo; não fale de tempo sem resposta nem diga "como combinamos" em tom de cobrança.',
