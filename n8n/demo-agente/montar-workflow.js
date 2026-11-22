@@ -732,6 +732,9 @@ const retorno = require('./retorno-workflows.js')({ env, node, main, GEMINI });
 const perguntaIdFile = path.join(dir, '.workflow-pergunta-id');
 const lerPerguntaId = () => (fs.existsSync(perguntaIdFile) ? fs.readFileSync(perguntaIdFile, 'utf8').trim() : 'ID_DO_WORKFLOW_PERGUNTA');
 const pedidos = require('./pedidos-workflows.js')({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPerguntaId });
+// a IA não manda de novo para a dona um pedido que já está esperando a resposta dela (pedido-repetido.js). Só na Gleide:
+// as lojas com pedido numerado mexem no começo do mesmo fluxo.
+if (!LOJA) require('./pedido-repetido.js')({ node, perguntaWorkflow: pedidos.perguntaWorkflow, REDIS });
 
 // Alerta de erro no WhatsApp do Victor (ver alerta-workflows.js)
 const alerta = require('./alerta-workflows.js')({ env, node, main, workflow });
