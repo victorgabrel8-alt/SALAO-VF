@@ -126,7 +126,7 @@ if (['listar', 'cancelar', 'remarcar'].includes(acao)) {
 }
 
 return [{ json: {
-  acao, dur, erro, periodo: (e.periodo || 'qualquer').toLowerCase(),
+  acao, dur, durInformada: Number(e.duracao_minutos) > 0, erro, periodo: (e.periodo || 'qualquer').toLowerCase(),
   nome: e.nome || '', telefone: e.telefone || '', servico: e.servico || '',
   motivo: String(e.motivo || '').trim(),
   dia: timeMin ? timeMin.toISO() : null,
@@ -187,7 +187,7 @@ try {
 } catch (e) {}
 const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 // regra dos dias: o serviço desta chamada (consultar e criar)
-const tipoPedido = tipoServico(p.servico, p.motivo, p.dur);
+const tipoPedido = tipoServico(p.servico, p.motivo, p.durInformada ? p.dur : 0);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
 // ---- horários futuros desta cliente ----
@@ -227,7 +227,9 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   // o horário atual dela libera o que era dela, nunca um período que a Gleide bloqueou
   semEle.push(...blocosHora);
   { const tipoAlvo = tipoServico(alvo.titulo === 'Horário' ? alvo.obs : alvo.titulo, '', dur);
-    if (!novo.hasSame(alvo.ini, 'day') && !podeNoDia(novo.startOf('day'), tipoAlvo)) return saida({ resposta: 'NÃO REMARCADO: ' + avisoRegra(novo.startOf('day'), tipoAlvo || 'outro') + ' O horário dela de ' + fmt(alvo.ini) + ' continua valendo.' }); }
+    if (!novo.hasSame(alvo.ini, 'day') && !podeNoDia(novo.startOf('day'), tipoAlvo)) return saida({ resposta: 'NÃO REMARCADO: ' +
+      (tipoAlvo ? avisoRegra(novo.startOf('day'), tipoAlvo) : 'o novo dia tem regra da Gleide sobre o que pode ser marcado e este horário está sem serviço cadastrado, então não dá para saber se ele pode ir para esse dia. Ofereça outro dia ou use perguntar_para_gleide.') +
+      ' O horário dela de ' + fmt(alvo.ini) + ' continua valendo.' }); }
   if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
@@ -309,7 +311,9 @@ if (p.acao === 'consultar') {
   // dia bloqueado no app (folga, viagem) também é "fechado": senão a IA dizia "não temos mais vaga"
   const fechado = !(EXPEDIENTE[pedido.weekday]) || bloqueado(pedido);
   // regra dos dias: o dia pedido não aceita este serviço (a resposta explica e já traz o próximo dia que aceita)
-  const barrado = !fechado && !podeNoDia(pedido, tipoPedido);
+  let noEncaixe = false;
+  try { const je = JSON.parse(p.motivo || ''); noEncaixe = !!(je && je.encaixe === true && p.inicio && Date.parse(p.inicio) >= Date.parse(je.de) - 60000 && Date.parse(p.inicio) < Date.parse(je.ate)); } catch (e) {}
+  const barrado = !fechado && !noEncaixe && !podeNoDia(pedido, tipoPedido);
 
   // Horário específico pedido pela cliente
   if (p.inicio && !fechado && !barrado) {
@@ -340,7 +344,8 @@ if (p.acao === 'consultar') {
   }
   const nomeDia = pedido.setLocale('pt-BR').toFormat('cccc, dd/LL');
   let resposta;
-  if (!opcoes.length) resposta = (barrado ? avisoRegra(pedido, tipoPedido) + ' ' : '') + 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';
+  if (!opcoes.length && barrado) resposta = avisoRegra(pedido, tipoPedido) + ' Também não há horário livre para esse serviço nos próximos ' + DIAS_BUSCA + ' dias: diga isso à cliente e pergunte se pode ser mais para frente.';
+  else if (!opcoes.length) resposta = 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';
   else if (diaAlternativo) resposta = (barrado ? avisoRegra(pedido, tipoPedido) : fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +
     ' Próximo dia com vaga: ' + quadro(diaAlternativo, opcoes);
   else resposta = quadro(pedido, opcoes);

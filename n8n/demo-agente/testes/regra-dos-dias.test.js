@@ -215,6 +215,31 @@ test('nomes de serviço que tentavam passar pela regra (achados do testador)', {
   assert.strictEqual(criar(hora(seg, 13), 'Queratina', 210, undefined, 'manutenção queratina').ok, true);
 });
 
+test('achados da revisão: duração não informada, encaixe no mesmo dia, horário sem serviço, nada nos próximos dias', { skip: pular }, () => {
+  const seg = proximo(1), qui = proximo(4);
+  // manutenção consultada sem a duração (o padrão de 60 min não pode virar "avaliação")
+  const semDur = rodar({ acao: 'consultar', data: dia(seg), servico: 'Manutenção – mão de obra', periodo: 'qualquer' });
+  assert.match(semDur.resposta, /^QUADRO DO DIA — segunda-feira/, semDur.resposta.slice(0, 160));
+  // encaixe na falta: a hora dentro do encaixe oferecido passa pela consulta mesmo em dia com regra
+  const sinal = JSON.stringify({ encaixe: true, ag: 'ag-x', de: seg.set({ hour: 13 }).toUTC().toISO(), ate: seg.set({ hour: 15 }).toUTC().toISO() });
+  const enc = rodar({ acao: 'consultar', data: hora(seg, 13, 30), servico: 'Avaliação', duracao_minutos: 30, motivo: sinal });
+  assert.match(enc.resposta, /^ENCAIXE:/, enc.resposta.slice(0, 160));
+  // fora do encaixe continua barrado
+  const fora = rodar({ acao: 'consultar', data: hora(seg, 16), servico: 'Avaliação', duracao_minutos: 30, motivo: sinal });
+  assert.match(fora.resposta, /^REGRA DA GLEIDE/);
+  // remarcar horário sem serviço e sem observação: o texto diz o motivo real
+  const d = [{ id: 'ag-4', inicio: qui.set({ hour: 9 }).toISO(), fim: qui.set({ hour: 9, minute: 30 }).toISO(), observacoes: null, servicos: null }];
+  const r = rodar({ acao: 'remarcar', telefone: '5566900000000', data_hora_nova: hora(seg, 13) }, { dela: d, ocupados: [{ inicio: d[0].inicio, fim: d[0].fim, status: 'agendado' }] });
+  assert.strictEqual(r.ok, false);
+  assert.match(r.resposta, /sem serviço cadastrado/);
+  assert.match(r.resposta, /continua valendo/);
+  // regra em todos os dias: não manda pedir encaixe à dona
+  const tudo = Object.fromEntries(['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'].map((k) => [k, { nao: 'tudo' }]));
+  const nada = consultar(dia(seg), 'Avaliação', 30, { ia_dias: tudo });
+  assert.match(nada.resposta, /^REGRA DA GLEIDE/);
+  assert.ok(!/transferir_para_humano|encaixe/.test(nada.resposta), nada.resposta);
+});
+
 // ---------- IA de atendimento ----------
 test('a consulta de horários leva o serviço e o prompt lê a regra do banco', () => {
   const v = no(principal, 'consultar_horarios_livres').parameters.workflowInputs.value;

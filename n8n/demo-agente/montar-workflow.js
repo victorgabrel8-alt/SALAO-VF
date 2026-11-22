@@ -757,6 +757,12 @@ require('./cancelar-so-se-pediu.js')({ node, workflow, agendaWorkflow });
 // regra dos dias (regra-dos-dias.js, supabase/068): o que a dona mandou a IA não marcar em cada dia da semana fica no
 // banco e a agenda recusa no código (agenda-calculo.js, vale para todas as lojas). Aqui: prompt e consulta da Gleide.
 if (!LOJA) require('./regra-dos-dias.js')({ workflow, node });
+// nas lojas a consulta de horários ainda não leva o serviço: a assistente delas fica sem a ferramenta até isso ser ligado
+else {
+  const aw = assistente.assistenteWorkflow;
+  aw.nodes = aw.nodes.filter((n) => n.name !== 'regra_do_dia');
+  delete aw.connections.regra_do_dia;
+}
 
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');
