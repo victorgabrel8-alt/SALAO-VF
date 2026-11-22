@@ -6,10 +6,10 @@
 // montar-workflow.js) e a mensagem que leva o valor do cabelo para a cliente (pedidos-workflows.js).
 // Passou do último dia, a IA para de citar sozinha, sem novo deploy.
 //
-// ATENÇÃO: o último dia (31/12/2026) é suposição minha a partir de "Natal e final de ano". Confirmar com o Victor.
+// Último dia: 26/11/2026 (o Victor confirmou a data em 21/11/2026).
 // A IA não diz a data para a cliente: se perguntarem até quando vale, ela pergunta para a Gleide.
 
-const ULTIMO_DIA = '2026-12-31'; // AAAA-MM-DD, horário de Cuiabá
+const ULTIMO_DIA = '2026-11-26'; // AAAA-MM-DD, horário de Cuiabá
 
 const REGRA = 'PROMOÇÃO ATIVA AGORA — Natal e fim de ano: o CABELO do mega hair comprado no salão pode ser parcelado em até 10x sem juros no cartão de crédito. ' +
   'Vale SÓ para a compra do cabelo. NÃO entra: a colocação (mão de obra da aplicação), a manutenção, as químicas, os tratamentos e qualquer outro serviço; esses continuam no Pix ou no cartão com os juros da maquininha. ' +
