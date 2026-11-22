@@ -219,7 +219,11 @@ async function julgar(modeloJuiz, caso, resp) {
   const precosDaTabela = fixos.servicos.map((s) => Number(s.preco)).filter((v) => v > 0);
 
   let cred = String(env.N8N_GEMINI_TESTE_CRED_ID || '').trim();
-  if (opc('chave-das-clientes')) { cred = String(env.N8N_GEMINI_CRED_ID || '').trim(); console.log('ATENÇÃO: usando a chave do Gemini das clientes (gasta do mesmo limite da IA que atende).'); }
+  if (opc('chave-das-clientes')) {
+    // a credencial que vale é a do fluxo que está no ar (a do .env pode estar velha)
+    const noAr = await (await fetch(N8N + '/api/v1/workflows/' + fs.readFileSync(path.join(DIR, '.workflow-id'), 'utf8').trim(), { headers: N })).json();
+    const comChave = (noAr.nodes || []).find((n) => n.credentials && n.credentials.googlePalmApi);
+    cred = String((comChave && comChave.credentials.googlePalmApi.id) || env.N8N_GEMINI_CRED_ID || '').trim(); console.log('ATENÇÃO: usando a chave do Gemini das clientes (gasta do mesmo limite da IA que atende).'); }
   else if (cred && cred === String(env.N8N_GEMINI_CRED_ID || '').trim()) throw new Error('N8N_GEMINI_TESTE_CRED_ID é igual à credencial das clientes.');
   if (!cred && !SECO) throw new Error('Falta N8N_GEMINI_TESTE_CRED_ID no .env (credencial "Gemini - testes" do n8n). Com o ok do Victor, rode com --chave-das-clientes.');
 

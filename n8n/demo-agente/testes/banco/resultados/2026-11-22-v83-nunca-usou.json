@@ -1,0 +1,341 @@
+{
+ "resumo": {
+  "rotulo": "v83-nunca-usou",
+  "quando": "2026-11-22T16:58:46.074Z",
+  "prompt": "VERSÃO 8.3",
+  "letras": 82207,
+  "modelo": "gemini-3-flash-preview",
+  "juiz": "gemini-3-flash-preview",
+  "vezes": 1,
+  "casos": 9,
+  "passaram": 8,
+  "media": 8.5,
+  "criterios": {
+   "calor": 2,
+   "responde": 2,
+   "conduz": 2,
+   "especifica": 1.89,
+   "fiel": 2,
+   "esperado": 1.78
+  },
+  "falhas": {
+   "balão longo": 2,
+   "palavra proibida": 2,
+   "resposta longa": 1,
+   "não usou pedir_orcamento_cabelo": 1
+  },
+  "tokens": {
+   "entrada": 336300,
+   "cache": 183694,
+   "saida": 20158,
+   "chamadas": 22
+  }
+ },
+ "resultados": [
+  {
+   "id": "abre-quanto-custa",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Juliana! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Te explico certinho: a mão de obra é R$ 150 por tela e o cabelo é à parte, porque o valor final depende do comprimento e da quantidade que você escolher.",
+      "Uma coisa que ajuda muito é que estamos com a promoção de Natal, então o mega completo sai em até 10x sem juros no cartão! 🎄 Me conta, você sonha com mais comprimento, mais volume ou os dois?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta foi completa, educada, seguiu todos os fatos do salão e conduziu bem a conversa com uma pergunta relevante."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "abre-audio-valores",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Anny! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Cabelo comprido é uma delícia, né? Te explico certinho: a mão de obra é R$ 150 por tela e o cabelo é à parte.",
+      "O valor total muda muito pela quantidade de cabelo que você vai precisar, mas agora no fim de ano o mega completo sai em até 10x sem juros no cartão! Me conta, como seu cabelo tá hoje e até onde você sonha em chegar?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA foi simpática, seguiu rigorosamente os fatos do salão e conduziu bem a conversa com as perguntas de triagem."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "abre-duas-telas-e-arrumar",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Aliny! Tudo bem? 😊 Ter uma tela mais grossinha incomodando é ruim mesmo, a gente quer que o mega fique o mais natural possível. A mão de obra pra colocar fica a partir de R$ 150 por tela.",
+      "A Gleide faz esse ajuste de afinar a tela, sim! Vou confirmar com ela o valor e como funciona, e te aviso por aqui assim que ela responder. Só pra eu entender melhor: você já usa mega hoje ou seria a primeira vez colocando essas telas?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA foi empática, respondeu os valores corretamente e usou as ferramentas para tratar o ajuste da tela com a Gleide."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "nunca-usou-insiste-valor",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 8,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Seu loiro ficou com um tom maravilhoso, Rafaela! ✨",
+      "O valor do cabelo a Gleide passa na avaliação gratuita, porque ela mede a quantidade exata pra ficar bem natural no seu fio. Uma ajuda boa é que, na nossa promoção de Natal, você parcela o mega completo (cabelo e colocação) em até 10x sem juros no cartão!\n\nMe conta, até onde você sonha que o seu cabelo chegue?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "59 palavras: \"O valor do cabelo a Gleide passa na avaliação gratuita, porq…\""
+      },
+      {
+       "regra": "palavra proibida (propaganda)",
+       "grave": false,
+       "detalhe": "\"maravilhoso\""
+      }
+     ],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA foi empática com o loiro da cliente, explicou corretamente sobre o valor e seguiu o fluxo esperado."
+     },
+     "nota": 8,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "nunca-usou-de-fora-quer-enviar",
+   "etapa": "convite",
+   "origem": "real",
+   "nota": 8,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Ah, entendo! É um sonho antigo então, né? 💛 E olha, só pra te explicar: o mega hair é feito com cabelo humano mesmo, é a mesma coisa! O cuidado é bem tranquilo, como o do seu próprio cabelo.",
+      "Sobre mandar o cabelo pra você, vou confirmar com a Gleide se ela faz o envio e te aviso por aqui. Uma coisa que ajuda é que na nossa promoção de Natal você pode parcelar a compra do cabelo em até 10x sem juros no cartão!\n\nComo você quer chegar na cintura, o ideal é a Gleide te ligar pra entender a quantidade certa e te passar o valor real, pra você comparar com esse que você viu. A avaliação é gratuita e por ligação de voz aqui pelo WhatsApp mesmo. Tenho amanhã às 09:00 ou às 14:00, qual fica melhor pra você?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "consultar_horarios_livres"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "103 palavras: \"Sobre mandar o cabelo pra você, vou confirmar com a Gleide s…\""
+      },
+      {
+       "regra": "resposta longa",
+       "grave": false,
+       "detalhe": "142 palavras no total"
+      }
+     ],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA acolheu o sonho da cliente, esclareceu a dúvida sobre o cabelo humano e seguiu corretamente o fluxo de avaliação por ligação."
+     },
+     "nota": 8,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "cabelo-vende",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Sim, a Gleide vende os fios por aqui também! 😊 O valor muda de acordo com a medida, e quem passa o orçamento certinho é ela.",
+      "Nessa promoção de Natal, a compra do cabelo sai em até 10x sem juros no cartão! ✨ Pra eu já pedir esse valor pra ela, qual a cor do seu cabelo ou a cor que você está procurando?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA respondeu corretamente sobre a venda, seguiu as regras de preço e conduziu bem pedindo detalhes para o orçamento."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "cabelo-orcamento-completo",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 4,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Anotei aqui as medidas, 65 cm e 200 gramas 😊 O valor do cabelo quem passa é a Gleide e eu já peço pra ela ver pra você.",
+      "Nesta promoção de Natal, você consegue parcelar o cabelo em até 10x sem juros no cartão. Qual seria a textura dele (liso, ondulado ou cacheado)?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "não usou pedir_orcamento_cabelo",
+       "grave": true,
+       "detalhe": "usou: anotar_no_crm"
+      }
+     ],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA seguiu todas as instruções, foi específica quanto às medidas e encaminhou corretamente o orçamento para a Gleide."
+     },
+     "nota": 4,
+     "passou": false,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "cabelo-valor-vago",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "O valor do cabelo varia bastante de acordo com o comprimento e a quantidade que você vai precisar, por isso a Gleide passa o valor certinho na avaliação gratuita, depois de olhar seu fio. 😊",
+      "E olha que legal: estamos com promoção de Natal e quem vai colocar o mega parcela tudo, o cabelo e a colocação, em até 10x sem juros no cartão!\n\nVocê já usa mega hair hoje ou seria a sua primeira vez?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA foi educada e seguiu as regras de preço, mas falhou em mencionar o valor da mão de obra (R$ 150 por tela) conforme solicitado no critério esperado."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  },
+  {
+   "id": "cabelo-80cm",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 8.2,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Simone, 80 centímetros fica um comprimento maravilhoso! 🥰 O valor do cabelo varia bastante pela quantidade e pelo tipo de fio que você escolher, e a mão de obra da aplicação é R$ 150 por tela.",
+      "Uma notícia ótima é que estamos com a promoção de Natal: o mega completo, cabelo e colocação, sai em até 10x sem juros no cartão! 💛 Me conta, você já usa mega hoje ou seria a sua primeira vez?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "palavra proibida (propaganda)",
+       "grave": false,
+       "detalhe": "\"maravilhoso\""
+      }
+     ],
+     "juiz": {
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A resposta foi excelente, mas falhou em mencionar explicitamente a avaliação gratuita como o local onde o valor é definido."
+     },
+     "nota": 8.2,
+     "passou": true,
+     "semFiltro": false
+    }
+   ]
+  }
+ ]
+}
