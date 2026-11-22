@@ -17,7 +17,10 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 const EMPRESA = '$env.EMPRESA_ID';
 const NUMEROS = "($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map(s => s.trim()).filter(Boolean)";
 // textos automáticos de ligação já usados nas instâncias (Gleide e Caroline): não são "a dona respondeu"
-const AUTOMATICA = 'atendimento é só por mensagem|não atendo ligações por aqui';
+// 22/11/2026: entrou também a saudação automática do WhatsApp/anúncio que ficou com o texto de exemplo ("Aqui você
+// pode colocar o que você quer dizer na primeira mensagem enviada pelo cliente"). Ela sai sozinha antes de a cliente
+// escrever, contava como "a dona respondeu" e pausava a IA 12 h (Aliny e Anny ficaram sem resposta em 21/11).
+const AUTOMATICA = 'atendimento é só por mensagem|não atendo ligações por aqui|aqui voc[eê] pode colocar o que voc[eê] quer dizer';
 
 const DADOS = String.raw`
 // Evento "call" da Evolution (Baileys): { id, from, status: offer|ringing|timeout|reject|accept, isGroup, isVideo }.
