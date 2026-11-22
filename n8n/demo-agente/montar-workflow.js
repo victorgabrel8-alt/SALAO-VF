@@ -754,6 +754,9 @@ require('./preco-pendente.js')({ node, REDIS, D })(workflow);
 if (!LOJA) require('./sinal-pix.js')({ node, workflow, agendaWorkflow, loja: { slug: 'gleide' }, semBloco: true, dona: 'Gleide' });
 // a IA só cancela um horário se a cliente pediu para cancelar ou desmarcar (cancelar-so-se-pediu.js): Gleide e todas as lojas
 require('./cancelar-so-se-pediu.js')({ node, workflow, agendaWorkflow });
+// regra dos dias (regra-dos-dias.js, supabase/068): o que a dona mandou a IA não marcar em cada dia da semana fica no
+// banco e a agenda recusa no código (agenda-calculo.js, vale para todas as lojas). Aqui: prompt e consulta da Gleide.
+if (!LOJA) require('./regra-dos-dias.js')({ workflow, node });
 
 // organiza os nós de todos os workflows e põe uma nota no topo de cada um (só visual, ver layout-n8n.js)
 const organizar = require('./layout-n8n.js');

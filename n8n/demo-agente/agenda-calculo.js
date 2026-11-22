@@ -31,6 +31,62 @@ const lerData = (s) => {
 // não marca e não remarca para ele. O CALCULAR preenche a partir do config.
 let BLOQUEIOS = [];
 const bloqueado = (dia) => { const d = dia.toISODate(); return BLOQUEIOS.some((b) => d >= b.de && d <= (b.ate || b.de)); };
+// Regra dos dias (ordem da dona pela assistente, supabase/068): empresas.config.ia_dias =
+// { dom: { nao: 'tudo' }, seg: { so: ['avaliacao_online', 'manutencao', 'aplicacao'] }, qua: { nao: ['avaliacao_presencial'] } }.
+// Vale só para o que a IA de atendimento oferece e marca (a dona marca o que quiser pelo app ou pela assistente).
+// Fica no banco, não na memória da conversa: o CALCULAR lê a cada consulta e a cada marcação.
+let IA_DIAS = {};
+const CHAVE_DIA = { 1: 'seg', 2: 'ter', 3: 'qua', 4: 'qui', 5: 'sex', 6: 'sab', 7: 'dom' };
+const NOME_TIPO = { avaliacao_presencial: 'avaliação presencial', avaliacao_online: 'avaliação online', manutencao: 'manutenção',
+  aplicacao: 'aplicação (colocação) de mega hair', visita: 'visita para escolher cabelo', outro: 'outros serviços' };
+const semAcento = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+// tipo do serviço pelo nome que a IA escreveu ("Avaliação online", "Manutenção – mão de obra"); '' = não informou.
+// Na dúvida fica com o tipo mais restrito: é melhor a IA perguntar à dona do que marcar o que ela proibiu.
+const tipoServico = (nome, motivo, minutos) => {
+  const t = semAcento(nome), m = semAcento(motivo);
+  if (!t.trim()) return '';
+  if (/avalia|orcamento|consulta/.test(t)) {
+    const online = /on[- ]?line|ligacao|chamada|telefone|video|distancia|remot/.test(t);
+    // "avaliação presencial (não é online)", "sem ser por ligação": presencial
+    return online && !/presencial|pessoalmente|(^|[^a-z])(nao|sem)([^a-z]|$)/.test(t) ? 'avaliacao_online' : 'avaliacao_presencial';
+  }
+  if (/visita|escolher/.test(t)) return 'visita';
+  const manutencao = /manuten/.test(t);
+  if (!manutencao && /remo|retir/.test(t)) return 'outro';
+  const tecnica = /aplica|coloca|mega|queratina|fita|tela|ponto americano/.test(t);
+  // o "Montar agendamento" lê "manutenção" no motivo quando a IA manda só a técnica no serviço ("Queratina")
+  const tipo = manutencao || (tecnica && /manuten/.test(m)) ? 'manutencao' : tecnica ? 'aplicacao' : 'outro';
+  // manutenção ou aplicação de menos de 1h30 é avaliação com outro nome (22/11/2026: a IA marcou "Manutenção – mão de obra"
+  // de 30 min com o motivo "avaliar manutenção")
+  if (tipo !== 'outro' && Number(minutos) > 0 && Number(minutos) < 90) return 'avaliacao_presencial';
+  return tipo;
+};
+const regraDoDia = (dia) => { const r = IA_DIAS[CHAVE_DIA[dia.weekday]]; return r && typeof r === 'object' ? r : null; };
+// sem serviço informado num dia com regra: não dá para saber, então não marca (a resposta pede o serviço)
+const podeNoDia = (dia, tipo) => {
+  const r = regraDoDia(dia);
+  if (!r) return true;
+  if (r.nao === 'tudo') return false;
+  if (Array.isArray(r.so)) return r.so.includes(tipo);
+  if (Array.isArray(r.nao)) return !!tipo && !r.nao.includes(tipo);
+  return true;
+};
+const listaTipos = (l) => { const n = l.map((x) => NOME_TIPO[x] || x); return n.length > 1 ? n.slice(0, -1).join(', ') + ' e ' + n[n.length - 1] : n[0] || ''; };
+// texto para a IA quando o dia tem regra e o serviço pedido não entra
+const avisoRegra = (dia, tipo) => {
+  const r = regraDoDia(dia);
+  if (!r) return '';
+  const d = dia.setLocale('pt-BR').toFormat('cccc');
+  if (r.nao === 'tudo') return 'REGRA DA GLEIDE: de ' + d + ' o salão não atende. Não ofereça nem marque nada para ' + d + ', nem se a cliente pedir: diga com carinho que nesse dia a Gleide não atende e ofereça outro dia.';
+  const pode = Array.isArray(r.so) ? 'de ' + d + ' a Gleide só atende ' + listaTipos(r.so) : 'de ' + d + ' a Gleide não atende ' + listaTipos(r.nao || []);
+  const online = (Array.isArray(r.so) ? r.so.includes('avaliacao_online') : !(r.nao || []).includes('avaliacao_online'));
+  return 'REGRA DA GLEIDE: ' + pode + '. ' +
+    (!tipo ? 'Você não informou o serviço: chame de novo com o campo servico preenchido para saber se ele pode nesse dia. '
+      : 'O serviço pedido (' + (NOME_TIPO[tipo] || tipo) + ') NÃO pode ser marcado para ' + d + '. ') +
+    (tipo === 'avaliacao_presencial' ? 'Ofereça a avaliação presencial em outro dia' + (online ? '; se a cliente só puder de ' + d + ', ofereça a avaliação online (a Gleide liga para ela no horário; ela NÃO vai ao salão) e consulte de novo com servico = "Avaliação online"' : '') + '. '
+      : tipo && tipo !== 'avaliacao_online' ? 'Ofereça outro dia; se a cliente só puder de ' + d + ', use perguntar_para_gleide para a Gleide decidir: se ela aceitar, é ela quem marca esse horário (você não consegue marcar esse serviço nesse dia). ' : '') +
+    'Diga com carinho, sem falar em "regra".';
+};
 const intervalos = (dia) => (bloqueado(dia) ? [] : EXPEDIENTE[dia.weekday] || []).map(([a, b]) => [
   dia.set({ hour: +a.slice(0, 2), minute: +a.slice(3), second: 0, millisecond: 0 }),
   dia.set({ hour: +b.slice(0, 2), minute: +b.slice(3), second: 0, millisecond: 0 }),
@@ -93,6 +149,7 @@ const FORA = 'A agenda está fora do ar agora. Peça desculpas à cliente e use 
 try {
   const cfg = $('Supabase: config do salão').first().json.config;
   if (cfg && Array.isArray(cfg.bloqueios)) BLOQUEIOS = cfg.bloqueios.filter((b) => b && b.de);
+  if (cfg && cfg.ia_dias && typeof cfg.ia_dias === 'object' && !Array.isArray(cfg.ia_dias)) IA_DIAS = cfg.ia_dias;
   if (cfg && cfg.horario_funcionamento) {
     const DIAS = { 1: 'seg', 2: 'ter', 3: 'qua', 4: 'qui', 5: 'sex', 6: 'sab', 7: 'dom' };
     const alm = cfg.almoco === null ? null : (cfg.almoco && cfg.almoco.inicio ? cfg.almoco : { inicio: '11:00', fim: '13:00' });
@@ -129,6 +186,8 @@ try {
   }
 } catch (e) {}
 const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
+// regra dos dias: o serviço desta chamada (consultar e criar)
+const tipoPedido = tipoServico(p.servico, p.motivo, p.dur);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
 // ---- horários futuros desta cliente ----
@@ -167,6 +226,8 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   }
   // o horário atual dela libera o que era dela, nunca um período que a Gleide bloqueou
   semEle.push(...blocosHora);
+  { const tipoAlvo = tipoServico(alvo.titulo === 'Horário' ? alvo.obs : alvo.titulo, '', dur);
+    if (!novo.hasSame(alvo.ini, 'day') && !podeNoDia(novo.startOf('day'), tipoAlvo)) return saida({ resposta: 'NÃO REMARCADO: ' + avisoRegra(novo.startOf('day'), tipoAlvo || 'outro') + ' O horário dela de ' + fmt(alvo.ini) + ' continua valendo.' }); }
   if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
@@ -181,6 +242,7 @@ if (p.acao === 'consultar') {
   // para não "mudar" as opções a cada pergunta)
   const vagasDoDia = (dia) => {
     const v = [];
+    if (!podeNoDia(dia, tipoPedido)) return v; // regra dos dias
     for (const [a, b] of intervalos(dia)) {
       for (let t = a; t.plus({ minutes: p.dur }) <= b; t = t.plus({ minutes: PASSO_MIN })) {
         if (t < agora.plus({ minutes: ANTECEDENCIA_MIN })) continue;
@@ -246,9 +308,11 @@ if (p.acao === 'consultar') {
   const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');
   // dia bloqueado no app (folga, viagem) também é "fechado": senão a IA dizia "não temos mais vaga"
   const fechado = !(EXPEDIENTE[pedido.weekday]) || bloqueado(pedido);
+  // regra dos dias: o dia pedido não aceita este serviço (a resposta explica e já traz o próximo dia que aceita)
+  const barrado = !fechado && !podeNoDia(pedido, tipoPedido);
 
   // Horário específico pedido pela cliente
-  if (p.inicio && !fechado) {
+  if (p.inicio && !fechado && !barrado) {
     const t = DateTime.fromISO(p.inicio).setZone(TZ);
     const f = t.plus({ minutes: p.dur });
     let motivo = null;
@@ -276,8 +340,8 @@ if (p.acao === 'consultar') {
   }
   const nomeDia = pedido.setLocale('pt-BR').toFormat('cccc, dd/LL');
   let resposta;
-  if (!opcoes.length) resposta = 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';
-  else if (diaAlternativo) resposta = (fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +
+  if (!opcoes.length) resposta = (barrado ? avisoRegra(pedido, tipoPedido) + ' ' : '') + 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';
+  else if (diaAlternativo) resposta = (barrado ? avisoRegra(pedido, tipoPedido) : fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +
     ' Próximo dia com vaga: ' + quadro(diaAlternativo, opcoes);
   else resposta = quadro(pedido, opcoes);
   return [{ json: { acao: 'consultar', ok: true, resposta } }];
@@ -287,6 +351,7 @@ if (p.acao === 'consultar') {
 const ini = DateTime.fromISO(p.inicio).setZone(TZ);
 const fim = ini.plus({ minutes: p.dur });
 if (ini < agora) return saida({ resposta: 'Esse horário já passou. Consulte os horários livres de novo.' });
+if (!podeNoDia(ini.startOf('day'), tipoPedido)) return saida({ resposta: 'NÃO AGENDADO: ' + avisoRegra(ini.startOf('day'), tipoPedido) });
 if (!noExpediente(ini, fim)) return saida({ resposta: 'Esse horário está fora do horário de funcionamento (ou não cabe a duração do serviço). Consulte os horários livres de novo.' });
 if (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' });
 return [{ json: {

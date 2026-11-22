@@ -232,6 +232,12 @@ switch (v('acao')) {
   case 'tirar_regra':
     funcao = 'n8n_assistente_tirar_regra'; args = { ...base, p_qual: v('texto') };
     break;
+  // regra dos dias (regra-dos-dias.js, supabase/068): o que a IA de atendimento pode marcar em cada dia da semana.
+  // Fica em empresas.config.ia_dias e a agenda confere no código; não é a lista de regras da assistente.
+  case 'regra_do_dia':
+    funcao = 'n8n_assistente_regra_dia';
+    args = { ...base, p_dia: v('data'), p_regra: v('tipo'), p_servicos: ou(v('extras')), p_fala: ou(v('texto')) };
+    break;
   // conferência semanal de vendas (conferencia-vendas.js, supabase/066): o que a Gleide confirmou ou corrigiu.
   // O banco acha o atendimento pelo primeiro nome e o dia; "13/11" sem ano é deste ano (ou do ano passado, se ainda não chegou)
   case 'conferir_venda': {
@@ -270,7 +276,7 @@ const ENVIO = ['chamar_cliente', 'avisar_cliente'];
 const ESCRITA = [...ENVIO, 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
   'marcar_horario', 'ajustar_duracao', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
   'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'pausar_ia', 'editar_cliente', 'cadastrar_cliente',
-  'combinar_retorno', 'guardar_regra', 'tirar_regra', 'ensinar_resposta', 'tirar_resposta', 'conferir_venda'];
+  'combinar_retorno', 'guardar_regra', 'tirar_regra', 'ensinar_resposta', 'tirar_resposta', 'conferir_venda', 'regra_do_dia'];
 // "qui 12/11 15:38" no fuso do salão (Cuiabá, -04:00 o ano todo)
 const QUANDO_JS = "const quandoFoi = (ms) => { const d = new Date(ms - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); };";
 const CONTEXTO = [
@@ -327,6 +333,25 @@ REGRAS FIXAS QUE A GLEIDE TE PASSOU (valem sempre, acima do resto, até ela mand
 - Se o pedido for sobre a IA de atendimento das clientes (ex.: "me consulta antes de marcar horário", "não fala preço"), você NÃO
   consegue mudar isso. Diga com franqueza em uma frase: "Isso é a IA que atende as clientes, eu não consigo mudar daqui. Avisa o
   Victor que ele ajusta." Nunca diga "pode deixar" para algo que não depende de você.
+  A exceção é o que a IA marca em cada dia da semana: isso você grava, com regra_do_dia (bloco abaixo).
+
+O QUE A IA DE ATENDIMENTO MARCA EM CADA DIA DA SEMANA (gravado no sistema; a agenda obedece sozinha e não esquece)
+Valendo agora:
+{{ (() => { const t = $('Ler regra dos dias').first().json.data; try { return JSON.parse(t) || '(nenhuma regra: a IA marca em todos os dias de funcionamento)'; } catch (e) { return t || '(nenhuma regra: a IA marca em todos os dias de funcionamento)'; } })() }}
+- Ela disse em que dia da semana a IA não deve marcar, ou o que pode e o que não pode num dia ("não marca mais nada no domingo",
+  "segunda só avaliação online", "na segunda não marca avaliação presencial, mas manutenção e colocação pode", "pode voltar a
+  marcar no domingo"): use regra_do_dia NA HORA, sem pedir confirmação (a ordem dela já é o sim). Uma chamada para cada dia da
+  semana que ela citou. NUNCA use guardar_regra para isso: guardar_regra não chega na IA que atende as clientes.
+- Ela falou o que pode e também o que não pode no mesmo dia? Grave o que PODE (regra = so), com todos os serviços que ela liberou.
+- Depois do OK, confirme em 1 ou 2 frases, do jeito que se fala, o que ficou valendo (use o que a ferramenta devolveu) e diga
+  uma vez que fica assim até ela te avisar. Exemplo: "Combinado, Gleide. De domingo a IA não marca mais nada, e de segunda só
+  avaliação online, manutenção e colocação. Fica assim até você me falar pra mudar." Sem lista numerada e sem nome de ferramenta.
+- Se a ferramenta devolver horários que já estão marcados nesse dia da semana, conte quem e quando em uma frase e pergunte se
+  ela quer que você peça para remarcarem. Não mexa neles sem ela mandar.
+- "Pode voltar a marcar", "esquece isso da segunda", "libera o domingo": regra_do_dia com regra = liberar, e confirme em uma frase.
+- Ela perguntou o que está valendo: responda com a lista acima, em fala normal.
+- É regra para TODAS as semanas. Um dia só ("este domingo não atendo", "dia 25 tô cheia") continua sendo bloquear_dias ou bloquear_horario.
+- A regra é para a IA de atendimento. Se a própria Gleide mandar você marcar alguém num desses dias, marque: quem decide é ela.
 
 COMO ENTENDER O QUE ELA ESCREVE
 - Ela manda em pedaços. Quando chegar "Ela mandou N mensagens seguidas", junte tudo como UM pedido antes de agir:
@@ -783,6 +808,9 @@ module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) 
       // regras fixas que ela mandou guardar (supabase/035): valem até ela mandar tirar
       rpc('Ler regras', [1600, -60], 'n8n_assistente_regras_texto', `{ p_empresa_id: ${EMPRESA} }`,
         { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
+      // regra dos dias (supabase/068): o que a IA de atendimento pode marcar em cada dia da semana, em texto
+      rpc('Ler regra dos dias', [1620, -100], 'n8n_assistente_regra_dias_texto', `{ p_empresa_id: ${EMPRESA} }`,
+        { texto: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
       // pedidos da IA que a Gleide ainda não respondeu (somem do Redis quando ela responde ou em 3 dias)
       node('Ler pedidos abertos', 'n8n-nodes-base.redis', 1, [1650, -140], {
         operation: 'keys', keyPattern: 'pedido:*', getValues: true,
@@ -990,10 +1018,17 @@ module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) 
           ['tipo', '"aviso" (horário mudado, cancelamento, recado) ou "remarcacao" (imprevisto da Gleide: pede para a cliente remarcar)', 'string'],
           ['texto', 'Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto da mensagem', 'string']]),
       // regras fixas (supabase/035): o que ela pede para valer "a partir de agora" no jeito da ASSISTENTE trabalhar
-      tool('guardar_regra', [3880, 220], 'Guarda uma regra fixa que a Gleide pediu para você seguir sempre ("a partir de agora…", "sempre que…", "nunca mais…"). Fica valendo até ela pedir para tirar. Só para o jeito de VOCÊ trabalhar; regra para a IA de atendimento das clientes você não consegue mudar.',
+      tool('guardar_regra', [3880, 220], 'Guarda uma regra fixa que a Gleide pediu para você seguir sempre ("a partir de agora…", "sempre que…", "nunca mais…"). Fica valendo até ela pedir para tirar. Só para o jeito de VOCÊ trabalhar; regra para a IA de atendimento das clientes você não consegue mudar por aqui. Dia da semana em que a IA não marca, ou o que ela pode marcar num dia, NÃO é aqui: é regra_do_dia.',
         'guardar_regra', [['texto', 'A regra, curta e clara, como ela pediu (ex.: "antes de marcar qualquer horário novo, mostrar o resumo e esperar o ok")', 'string']]),
       tool('tirar_regra', [3880, 440], 'Tira uma regra fixa que a Gleide não quer mais.',
         'tirar_regra', [['texto', 'O número da regra (1, 2…) ou um pedaço do texto dela', 'string']]),
+      // regra dos dias (regra-dos-dias.js, supabase/068): vale para a IA de atendimento e para a agenda, não vence
+      tool('regra_do_dia', [4040, 220], 'Grava no sistema o que a IA de atendimento pode marcar num dia da semana, para TODAS as semanas, até a Gleide mandar mudar ("não marca mais nada no domingo", "segunda só avaliação online", "pode voltar a marcar no domingo"). A agenda passa a recusar sozinha o que não pode. Devolve o que ficou valendo e os horários que já estão marcados nesse dia da semana. Use na hora: a ordem dela já é o sim. Uma chamada por dia da semana.',
+        'regra_do_dia', [
+          ['data', 'Dia da semana: dom, seg, ter, qua, qui, sex ou sab', 'string'],
+          ['tipo', '"nada" = a IA não marca nada nesse dia; "so" = só marca os serviços de extras; "nao" = marca tudo menos os serviços de extras; "liberar" = tira a regra desse dia (volta ao normal)', 'string'],
+          ['extras', 'Para "so" e "nao": os serviços, separados por vírgula, só com estas palavras: avaliacao_presencial, avaliacao_online, manutencao, aplicacao (colocação de mega hair), visita (visita para escolher cabelo), outro (química, tratamento e o resto). Para "nada" e "liberar": vazio', 'string'],
+          ['texto', 'A frase da Gleide, como ela disse', 'string']]),
       evoPost('Responder a Gleide', [2000, 0], 'message/sendText',
         // **negrito** de markdown aparece com os asteriscos no WhatsApp: vira *negrito*
         // a resposta vem do agente (o $json que chega aqui é o do "digitando…")
@@ -1024,7 +1059,8 @@ module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) 
       'Juntar mensagens': main('Marcar como lida'),
       'Marcar como lida': main('Ler pendências'),
       'Ler pendências': main('Ler regras'),
-      'Ler regras': main('Ler pedidos abertos'),
+      'Ler regras': main('Ler regra dos dias'),
+      'Ler regra dos dias': main('Ler pedidos abertos'),
       'Ler pedidos abertos': main('Ler feitos'),
       'Ler feitos': main('Contexto'),
       'Contexto': main('Agente assistente'),
@@ -1042,7 +1078,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) 
       ...Object.fromEntries(['buscar_cliente', 'agenda_do_dia', 'resultado_avaliacao', 'status_atendimento', 'registrar_atendimento', 'anotar', 'liberar_horario',
         'horarios_livres', 'marcar_horario', 'ajustar_duracao', 'reagendar', 'atrasar_agenda', 'concluir', 'chegou', 'excluir_horario', 'bloquear_dias',
         'desbloquear_dias', 'bloquear_horario', 'desbloquear_horario', 'ver_bloqueios_horario', 'pausar_ia', 'editar_cliente', 'avisar_cliente', 'cadastrar_cliente', 'chamar_cliente',
-        'combinar_retorno', 'guardar_regra', 'tirar_regra']
+        'combinar_retorno', 'guardar_regra', 'tirar_regra', 'regra_do_dia']
         .map((t) => [t, { ai_tool: [[{ node: 'Agente assistente', type: 'ai_tool', index: 0 }]] }])),
     },
     settings,
