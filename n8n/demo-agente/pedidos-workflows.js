@@ -8,6 +8,8 @@
 //      disse), envia, grava no banco e na memória da conversa e confirma para a Gleide: "Avisei a Maria ✓".
 // Funciona mesmo quando o número de alerta também é cliente de teste (o do Victor): só conta a mensagem citada.
 
+const PROMO_NATAL = require('./promo-natal.js');
+
 module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPerguntaId }) => {
   const EVO_ENVIAR = '={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}';
   const evoHeaders = { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] };
@@ -148,6 +150,10 @@ const instrucao = p.tipo === 'orcamento_cabelo' ? 'Você é a assistente virtual
   'Não use: "solicitou", "solicitação", "informou", "configuração", "especificações", "à disposição", "sinta-se à vontade", "gostaria de saber", "em relação a". ' +
   'PRIMEIRO PARÁGRAFO: retome em poucas palavras o que ela pediu (o cabelo ou a peça, com as palavras do pedido) e passe a resposta da Gleide. Copie exatamente todos os valores, quantidades e condições que a Gleide escreveu; ' +
   'valor em dinheiro leva "R$" na frente (ex.: se a Gleide escreveu 2.800, escreva R$ 2.800). Não calcule, não arredonde e não acrescente desconto, parcela, prazo, entrega ou estoque. ' +
+  // promoção de Natal (promo-natal.js): o valor do cabelo chega junto com os 10x sem juros; desliga sozinha na data
+  (${PROMO_NATAL.ativaJs} ? 'ÚNICA EXCEÇÃO sobre parcela: se a resposta da Gleide trouxe o valor de um CABELO (não de topo, rabo de cavalo ou aplique, e não de serviço), ' +
+    'termine o primeiro parágrafo com uma frase curta dizendo que, na promoção de Natal e fim de ano, o cabelo pode ser parcelado em até 10x sem juros no cartão. ' +
+    'Só isso: não calcule o valor da parcela, não diga data de término e não diga que a colocação entra na promoção. Se a própria Gleide já escreveu a forma de pagamento, vale o que ela escreveu e você não acrescenta nada. ' : '') +
   'A Gleide escreve para você falando DA cliente; você fala COM a cliente: "preciso ver o tom dela" vira "a Gleide precisa ver o seu tom". ' +
   'SEGUNDO PARÁGRAFO, se a resposta trouxe valor: UMA pergunta só, curta, escolhendo uma destas ideias: o que ela achou, OU se o valor fica dentro do que ela tinha planejado. Nunca as duas na mesma mensagem. ' +
   'Depois, uma frase dizendo que você está ali se ela quiser tirar uma dúvida ou ver outra medida, quantidade ou modelo. ' +

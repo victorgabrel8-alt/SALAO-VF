@@ -20,7 +20,8 @@ const saida = (arquivo) => path.join(LOJA ? LOJA.pasta : dir, path.basename(arqu
 
 // sem \r: no Windows o Git baixa o .md com CRLF e o prompt no n8n ficaria diferente do publicado pelo Linux
 const md = fs.readFileSync(saida('prompt-agente.md'), 'utf8').replace(/\r\n/g, '\n');
-const prompt = md.match(/```text\r?\n([\s\S]*?)```/)[1].trim();
+// %%PROMOCAO_ATIVA%% (só o prompt da Gleide tem): promoção com data para acabar, promo-natal.js
+const prompt = md.match(/```text\r?\n([\s\S]*?)```/)[1].trim().replace('%%PROMOCAO_ATIVA%%', () => require('./promo-natal.js').expressaoPrompt);
 
 const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };
 const GEMINI = env.N8N_GEMINI_CRED_ID ? { googlePalmApi: { id: env.N8N_GEMINI_CRED_ID, name: 'Google Gemini(PaLM) Api account' } } : undefined;
