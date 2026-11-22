@@ -1,0 +1,77 @@
+{
+ "servicos": [
+  {
+   "nome": "Aplicação de mega hair – mão de obra",
+   "categoria": "aplicacao",
+   "preco": 150,
+   "duracao_min": 240,
+   "a_partir_de": false
+  },
+  {
+   "nome": "Avaliação",
+   "categoria": "avaliacao",
+   "preco": 0,
+   "duracao_min": 30,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Avaliação online",
+   "categoria": "avaliacao",
+   "preco": 0,
+   "duracao_min": 30,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Manutenção – mão de obra",
+   "categoria": "manutencao",
+   "preco": 150,
+   "duracao_min": 210,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Botox capilar",
+   "categoria": "quimica",
+   "preco": 200,
+   "duracao_min": 180,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Coloração",
+   "categoria": "quimica",
+   "preco": 150,
+   "duracao_min": 90,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Mechas / luzes",
+   "categoria": "quimica",
+   "preco": 500,
+   "duracao_min": 240,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Selagem",
+   "categoria": "quimica",
+   "preco": 160,
+   "duracao_min": 180,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Hidratação ou reconstrução",
+   "categoria": "tratamento",
+   "preco": 180,
+   "duracao_min": 60,
+   "a_partir_de": true
+  },
+  {
+   "nome": "Visita para escolher cabelo",
+   "categoria": "venda",
+   "preco": 0,
+   "duracao_min": 30,
+   "a_partir_de": true
+  }
+ ],
+ "audios": "(nenhum áudio pronto cadastrado: responda sempre em texto)",
+ "aprendidas": {},
+ "fichaNova": "Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato."
+}
