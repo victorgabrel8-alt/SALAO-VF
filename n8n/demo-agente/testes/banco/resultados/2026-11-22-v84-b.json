@@ -1,0 +1,386 @@
+{
+ "resumo": {
+  "rotulo": "v84-b",
+  "quando": "2026-11-23T02:10:40.876Z",
+  "prompt": "VERSÃO 8.4",
+  "letras": 84838,
+  "modelo": "gemini-3-flash-preview",
+  "juiz": "gemini-3-flash-preview",
+  "vezes": 1,
+  "casos": 9,
+  "passaram": 7,
+  "media": 7.12,
+  "criterios": {
+   "calor": 1.33,
+   "responde": 1.89,
+   "conduz": 1,
+   "especifica": 1.67,
+   "fiel": 1.89,
+   "esperado": 1.44
+  },
+  "falhas": {
+   "balão longo": 3,
+   "exclamação na oferta": 1,
+   "mais de uma pergunta": 1
+  },
+  "tokens": {
+   "entrada": 294822,
+   "cache": 163311,
+   "saida": 37573,
+   "chamadas": 20
+  }
+ },
+ "resultados": [
+  {
+   "id": "abre-quanto-custa",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Juliana! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "O valor certinho do seu caso a Gleide passa na avaliação, que é gratuita, porque depende muito do comprimento e da quantidade de cabelo que você vai precisar. Não precisa se preocupar com valores agora! Me conta, você sonha com mais comprimento, mais volume ou os dois?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'você sonha com mais comprimento, mais volume ou os dois?' é uma pergunta fechada de formulário, o que é considerado um passo fraco na condução.",
+       "O trecho 'O valor certinho do seu caso a Gleide passa na avaliação... depende muito do comprimento e da quantidade' é uma frase-muleta genérica."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A resposta usou uma pergunta fechada de formulário e frases padronizadas, falhando em ser uma condução forte e personalizada."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83029
+    }
+   ]
+  },
+  {
+   "id": "abre-audio-valores",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 7.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Anny! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "O valor certinho para o seu caso a Gleide passa na avaliação, porque depende muito do comprimento e da quantidade de cabelo que você vai precisar. A avaliação é gratuita e você não precisa se preocupar com valores agora, tá bom?\n\nMe conta, como seu cabelo está hoje e até onde você sonha em chegar com o mega?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "58 palavras: \"O valor certinho para o seu caso a Gleide passa na avaliação…\""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "O balão 1 é uma saudação padrão e impessoal, sem reagir ao conteúdo específico do áudio da cliente.",
+       "A explicação sobre a variação de preços (balão 2) utiliza um miolo de texto padronizado e genérico.",
+       "A condução final apresenta duas perguntas distintas ('como seu cabelo está' e 'até onde você sonha'), o que dilui o foco em um único próximo passo claro."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA seguiu as regras de negócio e o campo esperado, mas a resposta é mecanizada e a condução final é sobrecarregada com duas perguntas."
+     },
+     "nota": 7.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83026
+    }
+   ]
+  },
+  {
+   "id": "abre-duas-telas-e-arrumar",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 7.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Aliny! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "A Gleide faz o ajuste e a confecção de telas, sim. Já perguntei para ela sobre essa que está muito grossa e te aviso por aqui assim que ela me responder!\n\nPra colocar as duas telas, a mão de obra fica a partir de R$ 150 por tela. Você já usa mega hair hoje ou seria a sua primeira vez com esse cabelo?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "63 palavras: \"A Gleide faz o ajuste e a confecção de telas, sim. Já pergun…\""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "a partir de R$ 150 por tela (o fato diz que o valor é R$ 150, sem o 'a partir de')",
+       "Você já usa mega hair hoje ou seria a sua primeira vez com esse cabelo? (pergunta redundante e de formulário, já que a cliente disse que tem telas e uma está grossa)"
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 1,
+      "esperado": 2,
+      "motivo": "A IA inseriu incerteza no preço fixo e fez uma pergunta de condução que ignora o contexto óbvio de que a cliente já possui o cabelo."
+     },
+     "nota": 7.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83027
+    }
+   ]
+  },
+  {
+   "id": "cabelo-valor-vago",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Elaine, o valor do cabelo muda bastante pelo comprimento e pela quantidade que você vai precisar, por isso a Gleide passa o valor certinho na avaliação gratuita.",
+      "Lá ela olha seu fio e você sai com o orçamento fechado, sem compromisso, e não precisa se preocupar com valores agora. Você já usa mega ou seria a sua primeira vez?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'Você já usa mega ou seria a sua primeira vez?' é uma pergunta fechada de formulário, o que torna a condução fraca.",
+       "O trecho 'não precisa se preocupar com valores agora' pode soar dismissivo para uma cliente que acabou de perguntar o preço."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA respondeu corretamente sobre o preço, mas falhou na condução ao usar uma pergunta fechada de formulário."
+     },
+     "nota": 7.5,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83028
+    }
+   ]
+  },
+  {
+   "id": "dinheiro-mais-ou-menos",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 2.2,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Você está certa em querer se planejar, Marina, ninguém gosta de surpresa no valor 💛",
+      "Como o total muda pela quantidade de cabelo que você vai precisar, a Gleide passa o valor certinho na avaliação gratuita, sem compromisso. E pra te ajudar, dá pra parcelar tudo, o cabelo e a colocação, em até 10x sem juros no cartão!\n\nO que fica melhor pra você: vir conhecer o valor agora ou prefere que eu te chame em outra data?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "63 palavras: \"Como o total muda pela quantidade de cabelo que você vai pre…\""
+      },
+      {
+       "regra": "exclamação na oferta",
+       "grave": false,
+       "detalhe": ""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "Ignorou a instrução de explicar que o cabelo de 80 cm é a maior parte do valor no campo 'esperado'.",
+       "A condução 'vir conhecer o valor agora ou prefere que eu te chame em outra data?' é uma pergunta fechada e pressiona a cliente que acabou de demonstrar preocupação com o orçamento.",
+       "O trecho 'ninguém gosta de surpresa no valor' é uma frase de efeito genérica e com tom de propaganda.",
+       "Repetiu o convite de forma insistente em vez de focar na dúvida da cliente."
+      ],
+      "calor": 1,
+      "responde": 1,
+      "conduz": 0,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A IA ignorou a orientação de mencionar os 80cm na explicação do preço e usou uma condução agressiva com pergunta fechada."
+     },
+     "nota": 2.2,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83028
+    }
+   ]
+  },
+  {
+   "id": "ja-usa-so-colocar",
+   "etapa": "manutenção",
+   "origem": "típico",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Como você já tem o cabelo e já usa as telas, o serviço pra você é a manutenção. 😊",
+      "Me conta, quantas telas você usa e quanto tempo faz da sua última manutenção?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Fez duas perguntas simultâneas no segundo balão ('quantas telas' e 'quanto tempo'), violando a regra de um único próximo passo.",
+       "As perguntas são fechadas, com estilo de formulário, o que torna a condução fraca.",
+       "O tom do primeiro balão é puramente informativo e óbvio ('o serviço pra você é a manutenção'), faltando o calor de uma consultora que acolhe a necessidade da cliente."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA identificou corretamente o caso de manutenção, mas falhou na condução ao acumular duas perguntas fechadas em uma única resposta."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83029
+    }
+   ]
+  },
+  {
+   "id": "ja-usa-90-gramas",
+   "etapa": "manutenção",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendi, 90 gramas certinho 😊 E faz quanto tempo que você fez a última manutenção?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A IA usou a ferramenta de consultar horários, mas não ofereceu nenhum horário na resposta, descumprindo o campo 'esperado'.",
+       "A pergunta 'E faz quanto tempo que você fez a última manutenção?' é uma pergunta de formulário que atrasa o agendamento em vez de conduzir para o convite."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA ignorou a instrução de oferecer um horário para a manutenção, preferindo fazer mais uma pergunta de triagem."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83025
+    }
+   ]
+  },
+  {
+   "id": "promo-manutencao",
+   "etapa": "promoção",
+   "origem": "típico",
+   "nota": 8.2,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Dirce! Tudo bem? 😊 Que bom que você chamou!",
+      "Essa condição dos 10x sem juros é para quem vai colocar o mega ou comprar o cabelo novo. Na manutenção, você consegue pagar no Pix ou no cartão.\n\nE como está sendo com o mega que você usa hoje? Já está sentindo que precisa de manutenção?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "mais de uma pergunta",
+       "grave": false,
+       "detalhe": "2 perguntas"
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "Omitiu a informação de que a manutenção no cartão de crédito incide os juros da maquininha, conforme solicitado expressamente no campo esperado."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A resposta foi muito boa e natural, mas falhou ao não mencionar os juros da maquininha para a manutenção, como exigido no critério esperado."
+     },
+     "nota": 8.2,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83000
+    }
+   ]
+  },
+  {
+   "id": "promo-anuncio",
+   "etapa": "promoção",
+   "origem": "típico",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Thaís! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "A promoção de Natal está valendo: com ela você divide tudo, o cabelo e a colocação, em até 10x sem juros no cartão. Me conta, você já usa mega ou seria a sua primeira vez?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "O balão 2 utiliza um tom de texto de propaganda ('A promoção de Natal está valendo...'), o que soa menos natural e mais genérico.",
+       "A pergunta final 'você já usa mega ou seria a sua primeira vez?' é uma pergunta fechada de formulário, que não incentiva a cliente a falar abertamente sobre seus desejos ou necessidades."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA respondeu corretamente sobre a promoção, mas o tom de propaganda e a pergunta fechada prejudicaram o calor e a condução."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 83027
+    }
+   ]
+  }
+ ]
+}

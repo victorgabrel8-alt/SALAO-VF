@@ -1,0 +1,919 @@
+{
+ "rotulo": "novo2",
+ "prompt": "modular",
+ "conversas": [
+  {
+   "id": "iniciante-de-fora",
+   "nome": "Rafaela",
+   "persona": "Nunca usou mega hair e não entende do assunto (acha que 'cabelo humano' e 'mega hair' são coisas diferentes). Cabelo loiro claro, no ombro, pintou há pouco. Sonha faz tempo em ter o cabelo na cintura. Viu um orçamento de uns R$ 3 mil em outro lugar e achou caro. Mora em outra cidade e não consegue ir a Sinop; pensa em comprar o cabelo e colocar na cidade dela. Quer muito saber o valor e pergunta de novo se não responderem. Não sabe gramas, telas nem centímetros: se perguntarem, diz que não sabe. Aceita uma ligação com a dona se sentir que foi entendida e que vai sair com o valor.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Aonde fica essa salão"
+    },
+    {
+     "de": "cliente",
+     "texto": "Quanto custa para colocar"
+    },
+    {
+     "de": "ia",
+     "texto": "Oi, Rafaela! Boa noite 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop."
+    },
+    {
+     "de": "ia",
+     "texto": "Ficamos na Rua das Papoulas, 443, no Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 A mão de obra da aplicação é R$ 150 por tela e o cabelo é à parte.\n\nPra eu te ajudar, me conta: como você imagina seu cabelo depois do mega?"
+    },
+    {
+     "de": "cliente",
+     "texto": "ai eu sonho com ele bem comprido na cintura sabe"
+    },
+    {
+     "de": "cliente",
+     "texto": "pq o meu ta no ombro e nao cresce de jeito nenhum"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas vcs vendem o cabelo tbm ou so o mega hair? queria saber o valor pq vi um de 3 mil e achei caro dms"
+    },
+    {
+     "de": "ia",
+     "texto": "Chegar na cintura muda totalmente o visual, né? 🥰 E essa sensação de que o cabelo \"estacionou\" no ombro é bem chata mesmo. Nós vendemos o cabelo e fazemos a colocação também, Rafaela."
+    },
+    {
+     "de": "ia",
+     "texto": "A mão de obra é R$ 150 por tela e o cabelo é à parte. Como você quer esse comprimento, vale a Gleide olhar seu fio pra te passar o valor fechado, e nessa promoção você parcela tudo em até 10x sem juros! A avaliação é gratuita. Tenho amanhã às 09:00 ou às 14:00, qual fica melhor?"
+    },
+    {
+     "de": "cliente",
+     "texto": "então eu nao moro em sinop nao kkkk sou de fora"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas vcs vendem o cabelo humano tbm ou so o mega hair?"
+    },
+    {
+     "de": "cliente",
+     "texto": "pq eu queria saber o valor do cabelo pra ver se compensa eu ir ai buscar ou vcs entregam sei la pq 3 mil nao da pra mim nao o valor ta mto alto nesse outro lugar que eu vi"
+    },
+    {
+     "de": "ia",
+     "texto": "Entendi, Rafaela! Como você é de fora, fica difícil vir só pra ver o valor mesmo. Nós vendemos o cabelo humano sim, e vou confirmar com a Gleide se ela faz o envio para outras cidades; assim que ela responder, eu te aviso aqui. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Para você não vir à toa e já saber o valor certinho do seu caso, a Gleide faz uma avaliação gratuita por ligação de voz aqui pelo WhatsApp. Ela entende o que você quer e já te passa o orçamento fechado.\n\nE olha, na nossa promoção o cabelo sai em até 10x sem juros no cartão, o que ajuda muito! Tenho horário pra essa ligação amanhã às 09:00 ou às 14:00, qual fica melhor pra você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "pode ser as 14h entao"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas vcs nao responderam se o cabelo humano é mais barato q o mega hair... eu queria o humano pq me falaram q é melhor"
+    },
+    {
+     "de": "cliente",
+     "texto": "queria saber o valor logo pq se for os 3 mil nem compensa eu ligar pq nao tenho esse dinheiro todo nao kkkk ai ja vejo se vcs entregam tbm ou se tenho q ir ai buscar"
+    },
+    {
+     "de": "ia",
+     "texto": "Rafaela, o mega hair é o nome do procedimento de colocar o cabelo, e o cabelo que a Gleide usa é o humano, tá? É o melhor mesmo porque você cuida como se fosse o seu. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Vou confirmar com a Gleide sobre o envio e essa questão do valor e te aviso por aqui assim que ela responder.\n\nAgendado! Sua avaliação online está marcada para amanhã, segunda-feira (23/11), às 14:00. A Gleide vai te ligar por voz aqui mesmo pelo WhatsApp.\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você, e a primeira avaliação com ela é gratuita.\n\nSó te peço pra ficar atenta ao celular no horário, porque um atraso pode mexer em toda a agenda dela. Se surgir um imprevisto, é só me avisar antes que a gente vê outro horário, sem custo. 😊"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Oi, Rafaela! Boa noite 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "Ficamos na Rua das Papoulas, 443, no Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 A mão de obra da aplicação é R$ 150 por tela e o cabelo é à parte.\n\nPra eu te ajudar, me conta: como você imagina seu cabelo depois do mega?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "primeira_vez",
+      "de_fora"
+     ]
+    },
+    {
+     "baloes": [
+      "Chegar na cintura muda totalmente o visual, né? 🥰 E essa sensação de que o cabelo \"estacionou\" no ombro é bem chata mesmo. Nós vendemos o cabelo e fazemos a colocação também, Rafaela.",
+      "A mão de obra é R$ 150 por tela e o cabelo é à parte. Como você quer esse comprimento, vale a Gleide olhar seu fio pra te passar o valor fechado, e nessa promoção você parcela tudo em até 10x sem juros! A avaliação é gratuita. Tenho amanhã às 09:00 ou às 14:00, qual fica melhor?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "situacoes": [
+      "primeira_vez",
+      "dinheiro"
+     ]
+    },
+    {
+     "baloes": [
+      "Entendi, Rafaela! Como você é de fora, fica difícil vir só pra ver o valor mesmo. Nós vendemos o cabelo humano sim, e vou confirmar com a Gleide se ela faz o envio para outras cidades; assim que ela responder, eu te aviso aqui. 😊",
+      "Para você não vir à toa e já saber o valor certinho do seu caso, a Gleide faz uma avaliação gratuita por ligação de voz aqui pelo WhatsApp. Ela entende o que você quer e já te passa o orçamento fechado.\n\nE olha, na nossa promoção o cabelo sai em até 10x sem juros no cartão, o que ajuda muito! Tenho horário pra essa ligação amanhã às 09:00 ou às 14:00, qual fica melhor pra você?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "consultar_horarios_livres"
+     ],
+     "situacoes": [
+      "de_fora",
+      "dinheiro",
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "Rafaela, o mega hair é o nome do procedimento de colocar o cabelo, e o cabelo que a Gleide usa é o humano, tá? É o melhor mesmo porque você cuida como se fosse o seu. 😊",
+      "Vou confirmar com a Gleide sobre o envio e essa questão do valor e te aviso por aqui assim que ela responder.\n\nAgendado! Sua avaliação online está marcada para amanhã, segunda-feira (23/11), às 14:00. A Gleide vai te ligar por voz aqui mesmo pelo WhatsApp.\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você, e a primeira avaliação com ela é gratuita.\n\nSó te peço pra ficar atenta ao celular no horário, porque um atraso pode mexer em toda a agenda dela. Se surgir um imprevisto, é só me avisar antes que a gente vê outro horário, sem custo. 😊"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "perguntar_para_gleide",
+      "anotar_no_crm",
+      "criar_agendamento"
+     ],
+     "situacoes": [
+      "agenda",
+      "dinheiro",
+      "de_fora"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "troca-de-metodo",
+   "nome": "Juliana",
+   "persona": "Usa mega hair no ponto americano há um ano e já tem o cabelo. Quer trocar de método porque marca quando prende e pesa na raiz; quer algo natural, que dê para amarrar. Mora em Sinop. Responde curto. Entende de mega e se irrita se tratarem como iniciante ou como manutenção simples. Quer saber se a dona faz e quanto fica a troca. Marca a avaliação se sentir que entenderam o problema dela; se oferecerem horário antes de entender, para de responder.",
+   "fim": "acabaram os turnos",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Oi"
+    },
+    {
+     "de": "cliente",
+     "texto": "Eu tenho um cabelo"
+    },
+    {
+     "de": "cliente",
+     "texto": "Ela faz a aplicação e a troca do método desse cabelo que eu já tenho"
+    },
+    {
+     "de": "cliente",
+     "texto": "?"
+    },
+    {
+     "de": "ia",
+     "texto": "Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Boa noite, Juliana! Tudo bem? 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Fazemos sim, a Gleide consegue reaproveitar seu cabelo e aplicar em um método novo. Qual técnica você usa hoje e o que mais está te incomodando nela?"
+    },
+    {
+     "de": "cliente",
+     "texto": "uso ponto americano tem 1 ano ja"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas ta pesando demais a raiz e qdo eu prendo o cabelo fica aparecendo tudo"
+    },
+    {
+     "de": "cliente",
+     "texto": "quero algo mais natural que nao marque tanto sabe"
+    },
+    {
+     "de": "ia",
+     "texto": "Nossa, Juliana, imagino como deve ser ruim sentir o cabelo pesado e ainda ter que se preocupar se está aparecendo quando você prende."
+    },
+    {
+     "de": "ia",
+     "texto": "Pra trocar de método e resolver isso, a Gleide precisa ver de perto seu fio e o cabelo que você já tem, pra indicar a técnica que vai ficar invisível e bem leve no seu caso.\n\nA avaliação é gratuita e ela já te passa o valor certinho pra refazer. Tenho amanhã às 09:00 ou às 14:00, algum desses horários fica bom pra você? 😊"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas ela faz fita ou nanopele?"
+    },
+    {
+     "de": "cliente",
+     "texto": "queria saber a media de valor da mao de obra pra trocar o metodo antes de ir ai"
+    },
+    {
+     "de": "ia",
+     "texto": "A Gleide trabalha com a fita adesiva sim! Sobre a nanopele e essa média de valor para preparar seu cabelo e trocar o método, vou confirmar isso com a Gleide e te aviso por aqui quando ela responder. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Como envolve retirar o ponto americano e refazer o acabamento do seu cabelo para a nova técnica, ela consegue te dar uma orientação melhor sobre o valor antes de você vir."
+    },
+    {
+     "de": "cliente",
+     "texto": "ve com ela se ela faz a nanopele msm"
+    },
+    {
+     "de": "cliente",
+     "texto": "pq o adesivo comum tbm marca mto se nao for a invisivel"
+    },
+    {
+     "de": "cliente",
+     "texto": "tenho 150g de cabelo pra preparar"
+    },
+    {
+     "de": "ia",
+     "texto": "Pode deixar, Juliana! Vou confirmar agora mesmo com a Gleide sobre a nanopele e se ela faz esse acabamento invisível na fita para não marcar nadinha. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Assim que ela me responder, eu te aviso por aqui!"
+    },
+    {
+     "de": "cliente",
+     "texto": "blz fico no aguardo"
+    },
+    {
+     "de": "cliente",
+     "texto": "ve certinho pq nao quero perder viagem se ela nao fizer a nano msm"
+    },
+    {
+     "de": "cliente",
+     "texto": "e o valor da mao de obra pra preparar as 150g pfvr"
+    },
+    {
+     "de": "ia",
+     "texto": "Entendido, Juliana. Já perguntei para a Gleide sobre a nanopele e o valor para preparar as 150g de cabelo para a troca do método."
+    },
+    {
+     "de": "ia",
+     "texto": "Vou confirmar isso com ela e te aviso por aqui quando ela responder. 😊"
+    },
+    {
+     "de": "cliente",
+     "texto": "blz"
+    },
+    {
+     "de": "cliente",
+     "texto": "vê se ela faz a injetada msm"
+    },
+    {
+     "de": "cliente",
+     "texto": "quero a mais fininha q tiver pra não sentir o degrau na cabeça"
+    },
+    {
+     "de": "ia",
+     "texto": "Pode deixar, Juliana, vou incluir essa pergunta sobre a técnica injetada também."
+    },
+    {
+     "de": "ia",
+     "texto": "Vou confirmar com a Gleide se ela faz esse método e o valor para preparar suas 150g, e te aviso por aqui assim que ela responder! 😊"
+    },
+    {
+     "de": "cliente",
+     "texto": "isso"
+    },
+    {
+     "de": "cliente",
+     "texto": "ve o valor certinho da mao de obra"
+    },
+    {
+     "de": "cliente",
+     "texto": "fico no aguardo"
+    },
+    {
+     "de": "ia",
+     "texto": "Pode deixar, Juliana, já enviei essa pergunta detalhada para a Gleide. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Vou confirmar com ela sobre a técnica injetada e o valor certinho para preparar suas 150g, e te aviso por aqui assim que ela responder!"
+    },
+    {
+     "de": "cliente",
+     "texto": "blz"
+    },
+    {
+     "de": "cliente",
+     "texto": "vê se ela tem foto de algum trabalho dela pra eu ver se é o que eu quero msm"
+    },
+    {
+     "de": "cliente",
+     "texto": "quero bem fininho pra não marcar nada quando eu prender o cabelo postado em: terça-feira, às 10:14 por: Juliana Souza"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Boa noite, Juliana! Tudo bem? 😊",
+      "Fazemos sim, a Gleide consegue reaproveitar seu cabelo e aplicar em um método novo. Qual técnica você usa hoje e o que mais está te incomodando nela?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "troca_metodo"
+     ]
+    },
+    {
+     "baloes": [
+      "Nossa, Juliana, imagino como deve ser ruim sentir o cabelo pesado e ainda ter que se preocupar se está aparecendo quando você prende.",
+      "Pra trocar de método e resolver isso, a Gleide precisa ver de perto seu fio e o cabelo que você já tem, pra indicar a técnica que vai ficar invisível e bem leve no seu caso.\n\nA avaliação é gratuita e ela já te passa o valor certinho pra refazer. Tenho amanhã às 09:00 ou às 14:00, algum desses horários fica bom pra você? 😊"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "troca_metodo",
+      "delicado"
+     ]
+    },
+    {
+     "baloes": [
+      "A Gleide trabalha com a fita adesiva sim! Sobre a nanopele e essa média de valor para preparar seu cabelo e trocar o método, vou confirmar isso com a Gleide e te aviso por aqui quando ela responder. 😊",
+      "Como envolve retirar o ponto americano e refazer o acabamento do seu cabelo para a nova técnica, ela consegue te dar uma orientação melhor sobre o valor antes de você vir."
+     ],
+     "usadas": [
+      "anotar_no_crm",
+      "perguntar_para_gleide"
+     ],
+     "situacoes": [
+      "troca_metodo",
+      "delicado"
+     ]
+    },
+    {
+     "baloes": [
+      "Pode deixar, Juliana! Vou confirmar agora mesmo com a Gleide sobre a nanopele e se ela faz esse acabamento invisível na fita para não marcar nadinha. 😊",
+      "Assim que ela me responder, eu te aviso por aqui!"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "troca_metodo",
+      "dinheiro"
+     ]
+    },
+    {
+     "baloes": [
+      "Entendido, Juliana. Já perguntei para a Gleide sobre a nanopele e o valor para preparar as 150g de cabelo para a troca do método.",
+      "Vou confirmar isso com ela e te aviso por aqui quando ela responder. 😊"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "ja_usa",
+      "delicado"
+     ]
+    },
+    {
+     "baloes": [
+      "Pode deixar, Juliana, vou incluir essa pergunta sobre a técnica injetada também.",
+      "Vou confirmar com a Gleide se ela faz esse método e o valor para preparar suas 150g, e te aviso por aqui assim que ela responder! 😊"
+     ],
+     "usadas": [
+      "anotar_no_crm",
+      "perguntar_para_gleide"
+     ],
+     "situacoes": [
+      "troca_metodo",
+      "de_fora"
+     ]
+    },
+    {
+     "baloes": [
+      "Pode deixar, Juliana, já enviei essa pergunta detalhada para a Gleide. 😊",
+      "Vou confirmar com ela sobre a técnica injetada e o valor certinho para preparar suas 150g, e te aviso por aqui assim que ela responder!"
+     ],
+     "usadas": [
+      "anotar_no_crm",
+      "perguntar_para_gleide"
+     ],
+     "situacoes": [
+      "ja_usa",
+      "troca_metodo"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "anuncio-fala-pouco",
+   "nome": "Carla",
+   "persona": "Chegou por anúncio. Nunca usou. Responde com poucas palavras ('os dois', 'no ombro', 'sim'). Só se abre se a pergunta for boa: cortou o cabelo chanel há dois meses, se arrependeu e tem um aniversário de 15 anos da filha em janeiro. Mora em Sinop. Tem medo de ficar artificial. Se a conversa virar formulário ou se receber preço e promoção sem ter perguntado, some. Se sentir que foi ouvida, aceita um horário à tarde.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Olá! Gostaria de saber mais sobre mega hair!"
+    },
+    {
+     "de": "ia",
+     "texto": "Boa noite, Carla! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Que bom que você chamou!"
+    },
+    {
+     "de": "ia",
+     "texto": "Me conta, como você imagina seu cabelo depois do mega? O que você mais sonha em mudar nele?"
+    },
+    {
+     "de": "cliente",
+     "texto": "queria ele mais comprido"
+    },
+    {
+     "de": "cliente",
+     "texto": "e mais cheio tbm"
+    },
+    {
+     "de": "ia",
+     "texto": "Comprimento e volume juntos mudam bastante o visual, né? 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Hoje, o que mais te incomoda no seu cabelo: é ele ser mais ralo ou o fato de não crescer como você gostaria?"
+    },
+    {
+     "de": "cliente",
+     "texto": "os dois"
+    },
+    {
+     "de": "ia",
+     "texto": "Entendo, quando as duas coisas incomodam, a gente acaba ficando meio desanimada com o espelho, né?"
+    },
+    {
+     "de": "ia",
+     "texto": "Faz tempo que você tem essa vontade de mudar ou aconteceu algo agora que te fez decidir pelo mega?"
+    },
+    {
+     "de": "cliente",
+     "texto": "cortei chanel faz 2 meses e me arrependi"
+    },
+    {
+     "de": "cliente",
+     "texto": "minha filha faz 15 anos em janeiro e queria ta com cabelao"
+    },
+    {
+     "de": "ia",
+     "texto": "No máximo em janeiro você vai estar maravilhosa para o aniversário da sua filha! 💛 O arrependimento de corte curto é difícil, mas o mega ajuda muito nessa fase de crescimento."
+    },
+    {
+     "de": "ia",
+     "texto": "Como você quer recuperar o comprimento e esconder a base do chanel, o ideal é a Gleide olhar seu cabelo de perto. Ela consegue ver onde encaixar as mechas para o acabamento ficar bem natural e já te passa o valor certinho de tudo.\n\nA avaliação é gratuita e dura uns 30 minutos. Tenho horário amanhã às 09:00 ou às 14:00, qual fica melhor para você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "as 14h fica bom"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas morro de medo de ficar artificial sabe"
+    },
+    {
+     "de": "cliente",
+     "texto": "nunca usei essas coisas"
+    },
+    {
+     "de": "ia",
+     "texto": "Está agendado, Carla! Segunda-feira, dia 23/11, às 14h. Ficamos na Rua das Papoulas, 443, Jardim Paraíso, aqui em Sinop."
+    },
+    {
+     "de": "ia",
+     "texto": "É super normal ter esse receio por nunca ter usado, mas é justamente na avaliação que esse medo passa. A Gleide vai te mostrar como a técnica e a escolha do cabelo certo fazem a emenda do seu chanel sumir e ficar bem natural.\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só para você, e a primeira avaliação com ela é gratuita.\n\nSó te peço para chegar no horário, porque um atraso pequeno pode acabar mexendo em toda a agenda dela. Se surgir algum imprevisto, é só me avisar antes que a gente encontra outro horário para você, sem custo nenhum.\n\nAqui está o mapa para facilitar: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 😊"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Boa noite, Carla! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Que bom que você chamou!",
+      "Me conta, como você imagina seu cabelo depois do mega? O que você mais sonha em mudar nele?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "Comprimento e volume juntos mudam bastante o visual, né? 😊",
+      "Hoje, o que mais te incomoda no seu cabelo: é ele ser mais ralo ou o fato de não crescer como você gostaria?"
+     ],
+     "usadas": [],
+     "situacoes": [
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "Entendo, quando as duas coisas incomodam, a gente acaba ficando meio desanimada com o espelho, né?",
+      "Faz tempo que você tem essa vontade de mudar ou aconteceu algo agora que te fez decidir pelo mega?"
+     ],
+     "usadas": [],
+     "situacoes": [
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "No máximo em janeiro você vai estar maravilhosa para o aniversário da sua filha! 💛 O arrependimento de corte curto é difícil, mas o mega ajuda muito nessa fase de crescimento.",
+      "Como você quer recuperar o comprimento e esconder a base do chanel, o ideal é a Gleide olhar seu cabelo de perto. Ela consegue ver onde encaixar as mechas para o acabamento ficar bem natural e já te passa o valor certinho de tudo.\n\nA avaliação é gratuita e dura uns 30 minutos. Tenho horário amanhã às 09:00 ou às 14:00, qual fica melhor para você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "primeira_vez",
+      "delicado"
+     ]
+    },
+    {
+     "baloes": [
+      "Está agendado, Carla! Segunda-feira, dia 23/11, às 14h. Ficamos na Rua das Papoulas, 443, Jardim Paraíso, aqui em Sinop.",
+      "É super normal ter esse receio por nunca ter usado, mas é justamente na avaliação que esse medo passa. A Gleide vai te mostrar como a técnica e a escolha do cabelo certo fazem a emenda do seu chanel sumir e ficar bem natural.\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só para você, e a primeira avaliação com ela é gratuita.\n\nSó te peço para chegar no horário, porque um atraso pequeno pode acabar mexendo em toda a agenda dela. Se surgir algum imprevisto, é só me avisar antes que a gente encontra outro horário para você, sem custo nenhum.\n\nAqui está o mapa para facilitar: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 😊"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "criar_agendamento",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "primeira_vez",
+      "agenda",
+      "delicado"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "quanto-custa-e-acha-caro",
+   "nome": "Priscila",
+   "persona": "Nunca usou. Mora em Sinop. Quer volume porque o cabelo afinou nas pontas. Só quer saber o preço total e insiste ('mas mais ou menos quanto?'). Quando ouvir R$ 150 por tela mais o cabelo, acha caro e diz que vai pensar. Se a atendente acolher sem pressionar e mostrar um caminho sem custo para saber o valor certo, pode aceitar a avaliação gratuita num sábado de manhã. Se for pressionada, encerra.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Quanto custa o mega hair?"
+    },
+    {
+     "de": "ia",
+     "texto": "Boa noite, Priscila! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop."
+    },
+    {
+     "de": "ia",
+     "texto": "A mão de obra da aplicação é R$ 150 por tela e o cabelo é à parte. Como o valor total depende da quantidade e do tipo de cabelo que a Gleide definir para o seu caso, o orçamento fechado sai na avaliação.\n\nMe conta, como você imagina seu cabelo depois do mega?"
+    },
+    {
+     "de": "cliente",
+     "texto": "eu queria dar volume pq meu cabelo afinou mt nas pontas"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas mais ou menos quanto q fica no total?"
+    },
+    {
+     "de": "cliente",
+     "texto": "pq 150 a tela mais o cabelo parece q vai ficar caro kkkk me da uma base ai pfvr"
+    },
+    {
+     "de": "ia",
+     "texto": "Entendo super, Priscila. Pontas fininhas incomodam mesmo e o mega é ótimo para dar esse preenchimento e devolver o volume que você quer."
+    },
+    {
+     "de": "ia",
+     "texto": "Sobre o valor, é difícil dar uma base porque o cabelo é o que mais muda o total, mas para te ajudar, estamos com uma promoção de Natal: o mega completo (cabelo e colocação) sai em até 10x sem juros no cartão! 🎄✨\n\nNa avaliação gratuita a Gleide vê seu cabelo e você sai com o valor fechado para se planejar com calma e ver se cabe no seu bolso. Tenho amanhã às 09:00 ou às 14:00, qual fica melhor para você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "entendi"
+    },
+    {
+     "de": "cliente",
+     "texto": "amanha é sabado né? se for de graça msm eu posso ir as 9h"
+    },
+    {
+     "de": "cliente",
+     "texto": "so pra ver o valor certinho entao e nao perder a viagem né rsrs"
+    },
+    {
+     "de": "ia",
+     "texto": "Priscila, amanhã já é segunda-feira, dia 23/11, tá? 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Deixei reservado seu horário para a avaliação gratuita amanhã, às 09:00, aqui no salão (Rua das Papoulas, 443, Jardim Paraíso). O mapa é este: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nA Gleide atende uma cliente por vez, então esse tempo fica reservado só para você.\n\nSó te peço para chegar no horário, porque 15 minutinhos de atraso podem mexer em quase uma hora da agenda dela. Se surgir algum imprevisto, é só me avisar antes que a gente encontra outro horário sem custo, certinho? ✨"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Boa noite, Priscila! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "A mão de obra da aplicação é R$ 150 por tela e o cabelo é à parte. Como o valor total depende da quantidade e do tipo de cabelo que a Gleide definir para o seu caso, o orçamento fechado sai na avaliação.\n\nMe conta, como você imagina seu cabelo depois do mega?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "Entendo super, Priscila. Pontas fininhas incomodam mesmo e o mega é ótimo para dar esse preenchimento e devolver o volume que você quer.",
+      "Sobre o valor, é difícil dar uma base porque o cabelo é o que mais muda o total, mas para te ajudar, estamos com uma promoção de Natal: o mega completo (cabelo e colocação) sai em até 10x sem juros no cartão! 🎄✨\n\nNa avaliação gratuita a Gleide vê seu cabelo e você sai com o valor fechado para se planejar com calma e ver se cabe no seu bolso. Tenho amanhã às 09:00 ou às 14:00, qual fica melhor para você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "primeira_vez",
+      "dinheiro"
+     ]
+    },
+    {
+     "baloes": [
+      "Priscila, amanhã já é segunda-feira, dia 23/11, tá? 😊",
+      "Deixei reservado seu horário para a avaliação gratuita amanhã, às 09:00, aqui no salão (Rua das Papoulas, 443, Jardim Paraíso). O mapa é este: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nA Gleide atende uma cliente por vez, então esse tempo fica reservado só para você.\n\nSó te peço para chegar no horário, porque 15 minutinhos de atraso podem mexer em quase uma hora da agenda dela. Se surgir algum imprevisto, é só me avisar antes que a gente encontra outro horário sem custo, certinho? ✨"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "criar_agendamento",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "agenda",
+      "primeira_vez",
+      "dinheiro"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ja-usa-manutencao",
+   "nome": "Sandra",
+   "persona": "Usa 3 telas há dois anos, colocadas em outro salão que fechou. A última manutenção foi há uns 70 dias e as telas estão soltando. Mora em Sinop. Quer saber o preço e um horário esta semana. Objetiva, não quer conversa longa. Pergunta se a promoção de 10x do anúncio vale para ela. Marca se oferecerem horário logo.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Boa tarde, vcs fazem manutenção de mega de tela?"
+    },
+    {
+     "de": "ia",
+     "texto": "Boa tarde, Sandra! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop."
+    },
+    {
+     "de": "ia",
+     "texto": "Fazemos sim a manutenção de tela! Para eu te orientar melhor, há quanto tempo você fez a última manutenção e quantas telas você usa hoje?"
+    },
+    {
+     "de": "cliente",
+     "texto": "uso 3 telas"
+    },
+    {
+     "de": "cliente",
+     "texto": "faz uns 70 dias q fiz a ultima"
+    },
+    {
+     "de": "cliente",
+     "texto": "as telas tao soltando ja... qto vcs cobram?"
+    },
+    {
+     "de": "ia",
+     "texto": "70 dias já está na hora mesmo, Sandra! É normal elas começarem a soltar depois desse tempo, e imagino que o peso já esteja incomodando um pouco. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "A manutenção fica a partir de R$ 150 por tela, e a Gleide confirma o valor certinho avaliando o tamanho delas aqui no salão.\n\nPara deixar seu mega firme e confortável de novo, tenho amanhã (segunda) às 09:00 ou às 14:00. Qual desses horários fica melhor para você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "pode ser as 14h entao"
+    },
+    {
+     "de": "cliente",
+     "texto": "vi um anuncio de vcs q parcela em 10x vale pra mim tbm?"
+    },
+    {
+     "de": "ia",
+     "texto": "Sandra, está agendado! Amanhã, segunda-feira, às 14:00, para sua manutenção de 3 telas. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "O salão fica na Rua das Papoulas, 443, Jardim Paraíso. Aqui está o mapa para facilitar: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nSobre a promoção de 10x sem juros, ela vale para quem vai colocar o mega completo (cabelo e aplicação). Para a manutenção, o pagamento é no Pix ou no cartão de crédito com os juros da maquininha, tá?\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só para você. Só te peço para chegar no horário, porque um atrasinho de 15 minutos pode mexer em toda a agenda dela. Se surgir algum imprevisto, é só me avisar antes que a gente encontra outro horário para você, sem custo. 🥰"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Boa tarde, Sandra! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "Fazemos sim a manutenção de tela! Para eu te orientar melhor, há quanto tempo você fez a última manutenção e quantas telas você usa hoje?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "ja_usa"
+     ]
+    },
+    {
+     "baloes": [
+      "70 dias já está na hora mesmo, Sandra! É normal elas começarem a soltar depois desse tempo, e imagino que o peso já esteja incomodando um pouco. 😊",
+      "A manutenção fica a partir de R$ 150 por tela, e a Gleide confirma o valor certinho avaliando o tamanho delas aqui no salão.\n\nPara deixar seu mega firme e confortável de novo, tenho amanhã (segunda) às 09:00 ou às 14:00. Qual desses horários fica melhor para você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "ja_usa"
+     ]
+    },
+    {
+     "baloes": [
+      "Sandra, está agendado! Amanhã, segunda-feira, às 14:00, para sua manutenção de 3 telas. 😊",
+      "O salão fica na Rua das Papoulas, 443, Jardim Paraíso. Aqui está o mapa para facilitar: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nSobre a promoção de 10x sem juros, ela vale para quem vai colocar o mega completo (cabelo e aplicação). Para a manutenção, o pagamento é no Pix ou no cartão de crédito com os juros da maquininha, tá?\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só para você. Só te peço para chegar no horário, porque um atrasinho de 15 minutos pode mexer em toda a agenda dela. Se surgir algum imprevisto, é só me avisar antes que a gente encontra outro horário para você, sem custo. 🥰"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "criar_agendamento"
+     ],
+     "situacoes": [
+      "agenda",
+      "dinheiro"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "queda-e-medo",
+   "nome": "Rosana",
+   "persona": "Nunca usou. Teve muita queda depois de emagrecer; a queda já parou há uns quatro meses, mas o cabelo ficou ralo e ela tem vergonha. Tem medo de o mega arrancar o resto do cabelo. Mora em Sinop. Conta isso só se sentir acolhimento. Não gosta de emoji nem de elogio exagerado quando fala de queda. Aceita a avaliação se disserem com honestidade que a dona olha o fio antes de qualquer coisa.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Quero mais volume no meu cabelo!"
+    },
+    {
+     "de": "ia",
+     "texto": "Oi, Rosana! Boa noite 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Que bom que você nos procurou!"
+    },
+    {
+     "de": "ia",
+     "texto": "Volume faz uma diferença enorme na autoestima, né? Me conta, como seu cabelo está hoje e o que você imagina de resultado com o mega?"
+    },
+    {
+     "de": "cliente",
+     "texto": "Ele ta muito ralo"
+    },
+    {
+     "de": "cliente",
+     "texto": "Queria so volume mesmo, nao gosto de nada muito longo"
+    },
+    {
+     "de": "cliente",
+     "texto": "Mas morro de medo de estraga mais o que eu tenho"
+    },
+    {
+     "de": "ia",
+     "texto": "Entendo perfeitamente o seu receio, Rosana. Quando o cabelo está mais ralo, a gente fica com medo de colocar qualquer coisa que possa pesar ou forçar os fios que já estão sensíveis."
+    },
+    {
+     "de": "ia",
+     "texto": "Você sente que ele sempre foi ralo ou percebeu que ele afinou mais de uns tempos pra cá por algum motivo?"
+    },
+    {
+     "de": "cliente",
+     "texto": "nao era assim nao"
+    },
+    {
+     "de": "cliente",
+     "texto": "emagreci muito e caiu demais"
+    },
+    {
+     "de": "cliente",
+     "texto": "ai agora ta esse rastro e tenho medo de acabar de estragar o que sobrou"
+    },
+    {
+     "de": "ia",
+     "texto": "Sinto muito que você tenha passado por isso, Rosana. Perder o volume do cabelo por causa de emagrecimento mexe muito com a gente e o seu medo de proteger o que sobrou faz todo sentido."
+    },
+    {
+     "de": "ia",
+     "texto": "Antes de qualquer coisa, é importante saber: essa queda já parou ou você sente que o cabelo ainda está caindo?"
+    },
+    {
+     "de": "cliente",
+     "texto": "parou faz uns 4 meses"
+    },
+    {
+     "de": "cliente",
+     "texto": "mas o que sobrou ta muito ralo"
+    },
+    {
+     "de": "cliente",
+     "texto": "tenho medo de colocar peso e puxar o resto"
+    },
+    {
+     "de": "ia",
+     "texto": "É um alívio saber que a queda já parou, mas entendo que o medo de puxar o que sobrou continue aí. O que protege o seu cabelo é justamente essa análise que a Gleide faz antes de indicar qualquer técnica: ela olha a resistência do seu fio pra saber exatamente quanto peso ele aguenta sem forçar."
+    },
+    {
+     "de": "ia",
+     "texto": "Como você quer recuperar o volume sem colocar o seu cabelo em risco, vale muito a Gleide olhar ele de perto aqui no salão pra te dar essa segurança. A avaliação é gratuita e sem compromisso. Tenho amanhã às 09h ou às 14h, qual fica melhor pra você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "ela olha mesmo o fio antes de qualquer coisa?"
+    },
+    {
+     "de": "cliente",
+     "texto": "pq morro de vergonha de como ta"
+    },
+    {
+     "de": "cliente",
+     "texto": "pode ser as 14h entao"
+    },
+    {
+     "de": "ia",
+     "texto": "Olha, Rosana, não precisa ter vergonha nenhuma! A Gleide atende muitas mulheres que passaram por isso e ela olha o fio com todo cuidado justamente pra te dar a segurança que você precisa. Ela é super discreta e profissional. 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Está agendado! Te espero amanhã, segunda-feira (23/11), às 14h, para a sua avaliação aqui no salão.\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você, e a primeira avaliação com ela é gratuita.\n\nSó te peço pra chegar no horário, porque 15 minutos de atraso podem mexer muito na agenda dela. Se surgir um imprevisto, é só me avisar antes que eu vejo outro horário pra você, sem custo.\n\nFicamos na Rua das Papoulas, 443, Jardim Paraíso.\nAqui o mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Oi, Rosana! Boa noite 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Que bom que você nos procurou!",
+      "Volume faz uma diferença enorme na autoestima, né? Me conta, como seu cabelo está hoje e o que você imagina de resultado com o mega?"
+     ],
+     "usadas": [],
+     "situacoes": [
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "Entendo perfeitamente o seu receio, Rosana. Quando o cabelo está mais ralo, a gente fica com medo de colocar qualquer coisa que possa pesar ou forçar os fios que já estão sensíveis.",
+      "Você sente que ele sempre foi ralo ou percebeu que ele afinou mais de uns tempos pra cá por algum motivo?"
+     ],
+     "usadas": [],
+     "situacoes": [
+      "primeira_vez",
+      "delicado"
+     ]
+    },
+    {
+     "baloes": [
+      "Sinto muito que você tenha passado por isso, Rosana. Perder o volume do cabelo por causa de emagrecimento mexe muito com a gente e o seu medo de proteger o que sobrou faz todo sentido.",
+      "Antes de qualquer coisa, é importante saber: essa queda já parou ou você sente que o cabelo ainda está caindo?"
+     ],
+     "usadas": [],
+     "situacoes": [
+      "primeira_vez",
+      "delicado"
+     ]
+    },
+    {
+     "baloes": [
+      "É um alívio saber que a queda já parou, mas entendo que o medo de puxar o que sobrou continue aí. O que protege o seu cabelo é justamente essa análise que a Gleide faz antes de indicar qualquer técnica: ela olha a resistência do seu fio pra saber exatamente quanto peso ele aguenta sem forçar.",
+      "Como você quer recuperar o volume sem colocar o seu cabelo em risco, vale muito a Gleide olhar ele de perto aqui no salão pra te dar essa segurança. A avaliação é gratuita e sem compromisso. Tenho amanhã às 09h ou às 14h, qual fica melhor pra você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "situacoes": [
+      "delicado",
+      "primeira_vez"
+     ]
+    },
+    {
+     "baloes": [
+      "Olha, Rosana, não precisa ter vergonha nenhuma! A Gleide atende muitas mulheres que passaram por isso e ela olha o fio com todo cuidado justamente pra te dar a segurança que você precisa. Ela é super discreta e profissional. 😊",
+      "Está agendado! Te espero amanhã, segunda-feira (23/11), às 14h, para a sua avaliação aqui no salão.\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você, e a primeira avaliação com ela é gratuita.\n\nSó te peço pra chegar no horário, porque 15 minutos de atraso podem mexer muito na agenda dela. Se surgir um imprevisto, é só me avisar antes que eu vejo outro horário pra você, sem custo.\n\nFicamos na Rua das Papoulas, 443, Jardim Paraíso.\nAqui o mapa: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "criar_agendamento",
+      "anotar_no_crm"
+     ],
+     "situacoes": [
+      "agenda",
+      "delicado"
+     ]
+    }
+   ]
+  }
+ ]
+}

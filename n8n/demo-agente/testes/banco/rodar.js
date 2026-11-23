@@ -31,6 +31,9 @@ const opc = (nome) => { const i = args.indexOf('--' + nome); return i < 0 ? null
 const rotulo = args[0] && !args[0].startsWith('--') ? args[0].replace(/[^a-z0-9-]/gi, '-') : 'teste';
 const VEZES = Math.max(1, Math.min(5, Number(opc('vezes')) || 1));
 const JUNTOS = 4;
+const EDITOR = !!opc('editor'); // segunda passada que só arruma o jeito de falar (ver editar())
+const NOVO = !!opc('novo'); // usa o prompt modular (prompt-modular/) em vez do prompt único que está no ar
+const modular = require('../../prompt-modular/montar.js');
 const SECO = !!opc('seco'); // ensaio sem Gemini: confere a montagem do prompt, das ferramentas e dos balões
 const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -170,7 +173,16 @@ async function responder(agente, caso, fixos) {
     'Sobre esta cliente': { texto: caso.ficha || fixos.fichaNova }, 'Áudios disponíveis': { texto: fixos.audios },
     'Supabase: tabela de serviços': fixos.servicos, 'Supabase: respostas aprendidas': fixos.aprendidas || {},
   };
-  const sistema = montarSistema(agente.sistema, ambiente(dados, agora));
+  let situacoes = null; let modelo = agente.sistema;
+  if (NOVO) { // prompt modular: o roteador diz a situação e o prompt leva só o núcleo e os blocos dela
+    const conv = h.slice(-8).map((m) => (m.de === 'cliente' ? 'CLIENTE: ' : 'SALÃO: ') + m.texto).join('\n');
+    const r = await gemini(agente.modelo, { contents: [{ role: 'user', parts: [{ text: modular.pedidoRoteador(conv, caso.ficha || fixos.fichaNova) }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } });
+    const t = ((r.candidates[0].content && r.candidates[0].content.parts) || []).filter((p) => p.text && !p.thought).map((p) => p.text).join('');
+    try { situacoes = JSON.parse(t.replace(/^```json\s*|\s*```$/g, '')).situacoes; } catch (e) { situacoes = []; }
+    situacoes = (situacoes || []).filter((x) => modular.SITUACOES[x]).slice(0, 3);
+    modelo = modular.modeloModular(situacoes);
+  }
+  const sistema = montarSistema(modelo, ambiente(dados, agora));
   // histórico no formato do Gemini: mensagens seguidas do mesmo lado viram uma só
   const conteudo = [];
   for (const m of h) { const role = m.de === 'cliente' ? 'user' : 'model'; const u = conteudo[conteudo.length - 1]; if (u && u.role === role) u.parts[0].text += '\n' + m.texto; else conteudo.push({ role, parts: [{ text: m.texto }] }); }
@@ -181,29 +193,78 @@ async function responder(agente, caso, fixos) {
     const r = await gemini(agente.modelo, { systemInstruction: { parts: [{ text: sistema }] }, contents: conteudo, tools: [{ functionDeclarations: agente.ferramentas }], generationConfig: { temperature: agente.temperatura } });
     const partes = (r.candidates[0].content && r.candidates[0].content.parts) || [];
     const chamadas = partes.filter((p) => p.functionCall);
-    texto = partes.filter((p) => p.text && !p.thought).map((p) => p.text).join('');
+    // o modelo às vezes escreve a resposta na mesma volta em que chama uma ferramenta e depois devolve vazio:
+    // vale o último texto que ele escreveu
+    const escrito = partes.filter((p) => p.text && !p.thought).map((p) => p.text).join('');
+    if (escrito.trim() || !texto) texto = escrito;
     if (!chamadas.length) break;
     conteudo.push({ role: 'model', parts: partes }); // devolve como veio (inclui a assinatura de raciocínio do Gemini 3)
     conteudo.push({ role: 'user', parts: chamadas.map((p) => { usadas.push({ nome: p.functionCall.name, args: p.functionCall.args || {} }); return { functionResponse: { name: p.functionCall.name, response: { resposta: respostas[p.functionCall.name] || 'OK' } } }; }) });
   }
   const { baloes, falhou, semFiltro } = baloesDe(agente.quebrar, texto, dados, agora);
-  return { baloes, bruto: texto, usadas, falhou, semFiltro };
+  let finais = baloes;
+  if (EDITOR && baloes.length && !falhou) finais = await editar(agente.modelo, h, baloes);
+  return { baloes: finais, rascunho: baloes, bruto: texto, usadas, falhou, semFiltro, situacoes, letras: sistema.length };
+}
+
+// ---------- 5b. o editor: segunda passada, só sobre o JEITO de falar ----------
+// A IA que decide o que dizer (com agenda e ferramentas) escreve um rascunho. O editor recebe o rascunho, as últimas
+// mensagens e um guia curto de fala, e devolve a mesma resposta com jeito de gente. Ele não pode mudar fato nenhum:
+// se mexer em número, horário ou link, vale o rascunho.
+const numeros = (t) => (String(t).match(/\d+[\d:.,hx]*|https?:\/\/\S+/g) || []).map((x) => x.replace(/[.,]$/, '')).sort().join('|');
+async function editar(modelo, historico, baloes) {
+  const ultCliente = []; for (let i = historico.length - 1; i >= 0 && historico[i].de === 'cliente'; i--) ultCliente.unshift(historico[i].texto);
+  const iaAntes = historico.filter((m) => m.de === 'ia').slice(-4).map((m) => m.texto);
+  const rascunho = baloes.join('\n\n');
+  const pedido = 'Você é a editora de uma atendente de salão que conversa por WhatsApp. Reescreva o RASCUNHO para soar como uma pessoa de verdade digitando no celular, sem mudar o que ele informa.\n\n' +
+    'NÃO PODE MUDAR: preços, horários, datas, endereço, links, nomes, o que foi marcado ou perguntado para a Gleide, e o sentido de cada informação. Não acrescente informação nova nem promessa.\n\n' +
+    'O QUE TIRAR:\n' +
+    '- ECO: frase que só repete ou comenta o que a cliente acabou de dizer ("Ver essa divisão dá receio mesmo", "Sentir o cabelo pesado incomoda bastante", "Arrependimento de corte acontece muito"). Corte a frase inteira. No máximo uma reação de poucas palavras, e só se a resposta anterior da atendente não começou com reação.\n' +
+    '- "Entendo", "Entendo perfeitamente", "Imagino", "Pode ficar tranquila", "Fica tranquila" como abertura.\n' +
+    '- "né?", "tá?", "tá bom?" no fim de frase.\n' +
+    '- Comentário sobre a própria oferta: "o que ajuda muito", "uma ótima notícia", "olha que legal", "lembrando que", "aproveitando", "pra te ajudar".\n' +
+    '- Superlativo e promessa: maravilhoso, incrível, perfeito, lindo demais, "devolve a autoestima na hora", "ninguém percebe".\n' +
+    '- "justamente", "exatamente", listas de três, frase que serviria para qualquer cliente, fecho vazio ("vou ficar de olho!", "qualquer coisa me chama").\n' +
+    '- Exclamação e emoji junto de preço, promoção ou convite.\n\n' +
+    'COMO DEIXAR:\n' +
+    '- A forma tem de ser DIFERENTE da resposta anterior da atendente (veja abaixo). Se a anterior foi comentário + pergunta, esta começa direto pelo conteúdo ou pela pergunta.\n' +
+    '- Frases de tamanhos diferentes; pode haver uma bem curta. Primeira pessoa quando couber. "Olha," e "Então," no começo: só se nenhuma das últimas respostas da atendente começou assim.\n' +
+    '- Se o rascunho traz a apresentação "Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop", mantenha essa frase inteira: a cliente precisa saber que fala com uma assistente virtual.\n' +
+    '- Se a cliente contou algo pessoal ou triste (uma perda, um medo, uma data importante), uma frase curta de carinho fica; o que sai é repetir o que ela disse.\n' +
+    '- Se o rascunho responde a uma pergunta da cliente, a resposta vem primeiro.\n' +
+    '- No máximo 2 balões (separe com uma linha em branco). Mantenha a pergunta do rascunho só se ela for necessária para a conversa andar; nunca mais de uma.\n' +
+    '- Continua simpática e gentil. Não fique seca.\n\n' +
+    '=== ÚLTIMAS RESPOSTAS DA ATENDENTE (para não repetir a forma) ===\n' + (iaAntes.join('\n') || '(nenhuma)') +
+    '\n\n=== O QUE A CLIENTE ACABOU DE ESCREVER ===\n' + ultCliente.join('\n') +
+    '\n\n=== RASCUNHO ===\n' + rascunho +
+    '\n\nDevolva só o texto final, pronto para enviar.';
+  try {
+    const r = await gemini(modelo, { contents: [{ role: 'user', parts: [{ text: pedido }] }], generationConfig: { temperature: 0.7 } });
+    const t = ((r.candidates[0].content && r.candidates[0].content.parts) || []).filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim();
+    if (!t || numeros(t) !== numeros(rascunho)) return baloes; // mexeu em número, horário ou link: fica o rascunho
+    return t.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).slice(0, 3);
+  } catch (e) { return baloes; }
 }
 
 const JUIZ = fs.readFileSync(path.join(AQUI, 'criterios.md'), 'utf8').split('## Conferências automáticas')[0];
 async function julgar(modeloJuiz, caso, resp) {
   const conversa = caso.historico.map((m) => (m.de === 'cliente' ? 'CLIENTE: ' : 'SALÃO (IA): ') + m.texto).join('\n');
   const pedido = 'Você avalia respostas de uma atendente virtual de um salão de mega hair (Toda Bonita Mega Hair, Sinop/MT) no WhatsApp. ' +
-    'Seja exigente e justo: nota 2 só quando o critério foi cumprido de verdade.\n\n' + JUIZ +
+    'Você é um avaliador duro: a maioria das respostas tem defeito e a sua função é achar. Leia a resposta procurando primeiro o que está errado em cada critério; só depois dê a nota. Não dê 2 por educação.\n\n' + JUIZ +
     '\nFatos do salão para o critério "fiel": mão de obra da aplicação e da manutenção R$ 150 por tela; o valor do cabelo só a Gleide passa (a IA nunca diz valor nem faixa de cabelo); a avaliação é gratuita; ' +
     'promoção em vigor: quem vai colocar o mega parcela cabelo e colocação em até 10x sem juros no cartão, e a manutenção de quem já usa não entra; a IA não diz a data final da promoção; ' +
     'endereço Rua das Papoulas, 443, Jardim Paraíso, Sinop; a IA não fala de sinal nem de multa ao marcar; quem escolhe a técnica é a Gleide, na avaliação.\n\n' +
-    '=== FICHA DA CLIENTE ===\n' + (caso.ficha || 'Cliente nova, primeiro contato.') +
+    'A promoção em vigor se chama promoção de Natal e fim de ano; a Gleide recomenda manutenção em até 60 dias. ' +
+    'Também são fatos: o mega hair do salão é feito com cabelo humano e a cliente cuida dele como cuida do próprio cabelo; a avaliação online é por ligação de voz no WhatsApp. ' +
+    'Não são defeitos: chamar a cliente pelo nome abaixo (vem do WhatsApp); a apresentação padrão na primeira mensagem ("sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop"); ' +
+    'convidar para a avaliação já com dois horários QUANDO a cliente já contou o motivo ou o desejo dela. Na primeira mensagem de uma cliente que quase não disse nada, "especifica" vale 2 se a resposta reage ao pouco que ela disse.\n\n' +
+    '=== NOME DA CLIENTE NO WHATSAPP ===\n' + (caso.nome || '(sem nome)') +
+    '\n\n=== FICHA DA CLIENTE ===\n' + (caso.ficha || 'Cliente nova, primeiro contato.') +
     '\n\n=== CONVERSA ATÉ AQUI ===\n' + conversa +
     '\n\n=== RESPOSTA A AVALIAR (cada balão é uma mensagem separada no WhatsApp) ===\n' + (resp.baloes.map((b, i) => '[balão ' + (i + 1) + '] ' + b).join('\n') || '(a IA não escreveu nada)') +
     '\n\n=== FERRAMENTAS QUE A IA USOU ===\n' + (resp.usadas.map((u) => u.nome + ' ' + JSON.stringify(u.args)).join('\n') || '(nenhuma)') +
     '\n\n=== ESPERADO NESTE CASO ===\n' + caso.esperado +
-    '\n\nResponda só com JSON: {"calor":0-2,"responde":0-2,"conduz":0-2,"especifica":0-2,"fiel":0-2,"esperado":0-2,"motivo":"uma frase curta, em português, com o principal acerto ou erro"}';
+    '\n\nResponda só com JSON, nesta ordem (primeiro os defeitos, depois as notas): {"defeitos":["cada defeito que você achou, citando o trecho"],"calor":0-2,"responde":0-2,"conduz":0-2,"especifica":0-2,"fiel":0-2,"esperado":0-2,"motivo":"uma frase curta, em português, com o principal erro (ou o principal acerto, se não houver erro)"}';
   const r = await gemini(modeloJuiz, { contents: [{ role: 'user', parts: [{ text: pedido }] }], generationConfig: { temperature: 0, responseMimeType: 'application/json' } });
   const t = ((r.candidates[0].content && r.candidates[0].content.parts) || []).filter((p) => p.text && !p.thought).map((p) => p.text).join('');
   try { return JSON.parse(t.replace(/^```json\s*|\s*```$/g, '')); } catch (e) { return { motivo: 'o juiz não devolveu JSON: ' + t.slice(0, 80) }; }
@@ -234,6 +295,64 @@ async function julgar(modeloJuiz, caso, resp) {
   if (SECO) { const c = casos[0]; const ag = new Agora(Date.now()); const d = { 'Montar entrada': { nome: c.nome, telefone: '5566900000000' }, 'Sobre esta cliente': { texto: c.ficha || fixos.fichaNova }, 'Áudios disponíveis': { texto: fixos.audios }, 'Supabase: tabela de serviços': fixos.servicos, 'Supabase: respostas aprendidas': fixos.aprendidas || {} };
     const sis = montarSistema(agente.sistema, ambiente(d, ag)); if (/\{\{|undefined|\[object/.test(sis.slice(-9000))) throw new Error('o fim do prompt ficou com expressão sem resolver');
     console.log(['--- fim do prompt montado (ensaio a seco) ---', sis.slice(-2600), '--- ferramentas ---'].concat(agente.ferramentas.map((t) => t.name + '(' + Object.keys((t.parameters || {}).properties || {}).join(', ') + ')')).join(String.fromCharCode(10))); }
+  // --simular: conversas INTEIRAS. Uma cliente de mentira (personas.json) conversa com a IA por vários turnos.
+  // Serve para ver a condução, que uma resposta solta não mostra. Não dá nota: é para uma pessoa ler e julgar.
+  if (opc('simular')) {
+    const personas = JSON.parse(fs.readFileSync(path.join(AQUI, 'personas.json'), 'utf8')).filter((p) => !filtro || filtro.some((f) => p.id.startsWith(f)));
+    const TURNOS = Math.max(2, Math.min(10, Number(opc('turnos')) || 7));
+    const p = await criarPonte(cred); const saida = [];
+    try {
+      await Promise.all(personas.map(async (per) => {
+        const historico = per.abertura.map((texto) => ({ de: 'cliente', texto })); const passos = []; let fim = '';
+        for (let t = 0; t < TURNOS && !fim; t++) {
+          let resp;
+          try { resp = await responder(agente, { nome: per.nome, ficha: per.ficha, historico }, fixos); } catch (e) { fim = 'erro: ' + e.message.slice(0, 120); break; }
+          for (const b of resp.baloes) historico.push({ de: 'ia', texto: b });
+          passos.push({ baloes: resp.baloes, usadas: resp.usadas.map((u) => u.nome), situacoes: resp.situacoes });
+          if (resp.usadas.some((u) => u.nome === 'criar_agendamento')) { fim = 'marcou horário'; break; }
+          if (!resp.baloes.length) { fim = 'a IA não respondeu'; break; }
+          const conv = historico.map((m) => (m.de === 'cliente' ? 'VOCÊ: ' : 'SALÃO: ') + m.texto).join('\n');
+          const pedido = 'Você vai fazer o papel de uma CLIENTE REAL conversando por WhatsApp com um salão de mega hair. Fique no papel.\n\nQUEM VOCÊ É: ' + per.nome + '. ' + per.persona +
+            '\n\nCOMO VOCÊ ESCREVE: como gente escreve no WhatsApp, mensagens curtas, às vezes com erro de digitação, sem pontuação caprichada. Responda só ao que faz sentido para você. Não entregue tudo de uma vez: conte as coisas aos poucos, conforme a atendente perguntar bem. ' +
+            'Se a atendente fizer algo que faria você desistir (pressão, formulário, ignorar o que você disse, pergunta que você não sabe responder repetida), responda seco ou escreva exatamente [SUMIU]. Se você decidiu não seguir agora, despeça-se e termine com [FIM]. Se aceitar um horário, diga qual.\n\n' +
+            'CONVERSA ATÉ AGORA:\n' + conv + '\n\nEscreva só a sua próxima mensagem (pode ser de 1 a 3 mensagens curtas, uma por linha), sem aspas e sem "VOCÊ:".';
+          const r = await gemini(agente.modelo, { contents: [{ role: 'user', parts: [{ text: pedido }] }], generationConfig: { temperature: 0.8 } });
+          const fala = ((r.candidates[0].content && r.candidates[0].content.parts) || []).filter((x) => x.text && !x.thought).map((x) => x.text).join('').trim();
+          if (/\[SUMIU\]/.test(fala)) { fim = 'a cliente sumiu'; break; }
+          for (const linha of fala.replace(/\[FIM\]/g, '').split(/\n+/).map((s) => s.trim()).filter(Boolean).slice(0, 3)) historico.push({ de: 'cliente', texto: linha });
+          if (/\[FIM\]/.test(fala)) fim = 'a cliente encerrou';
+        }
+        saida.push({ id: per.id, nome: per.nome, persona: per.persona, fim: fim || 'acabaram os turnos', historico, passos });
+        console.log(per.id.padEnd(28), '→', fim || 'acabaram os turnos');
+      }));
+    } finally { await apagarPonte(p); }
+    saida.sort((a, b) => personas.findIndex((x) => x.id === a.id) - personas.findIndex((x) => x.id === b.id));
+    const pasta = path.join(AQUI, 'resultados'); fs.mkdirSync(pasta, { recursive: true });
+    const base = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10) + '-conversas-' + rotulo;
+    fs.writeFileSync(path.join(pasta, base + '.json'), JSON.stringify({ rotulo, prompt: NOVO ? 'modular' : 'no ar', conversas: saida }, null, 1));
+    fs.writeFileSync(path.join(pasta, base + '.md'), '# Conversas simuladas: ' + rotulo + ' (prompt ' + (NOVO ? 'modular' : 'que está no ar') + ')\n\n' + saida.map((c) => '## ' + c.id + ' — ' + c.fim + '\n\n' + c.historico.map((m) => (m.de === 'cliente' ? '**' + c.nome + ':** ' : '> ') + m.texto.replace(/\n/g, m.de === 'cliente' ? ' ' : '\n> ')).join('\n\n')).join('\n\n') + '\n');
+    console.log('Conversas: testes/banco/resultados/' + base + '.md | tokens ' + gasto.entrada + ' entrada, ' + gasto.saida + ' saída');
+    return;
+  }
+  // --calibrar: testa o JUIZ com respostas reais que sabemos que foram ruins ou boas (calibragem.json)
+  if (opc('calibrar')) {
+    const cal = JSON.parse(fs.readFileSync(path.join(AQUI, 'calibragem.json'), 'utf8'));
+    const p = await criarPonte(cred); let erros = 0;
+    try {
+      for (const c of cal) {
+        const resp = { baloes: c.resposta_real, usadas: (c.ferramentas_reais || []).map((nome) => ({ nome, args: {} })) };
+        const falhas = conferir(resp.baloes, c, { precosDaTabela, ferramentas: c.ferramentas_reais || [] });
+        const juiz = await julgar(modeloJuiz, c, resp); const n = nota(juiz, falhas);
+        const certo = c.nota_maxima != null ? n <= c.nota_maxima : n >= c.nota_minima; if (!certo) erros++;
+        console.log((certo ? 'ok   ' : 'ERROU') + ' nota ' + String(n).padStart(4) + ' (esperado ' + (c.nota_maxima != null ? 'até ' + c.nota_maxima : 'a partir de ' + c.nota_minima) + ')  ' + c.id);
+        console.log('      ' + CRITERIOS.map((k) => k + ' ' + (juiz[k] ?? '?')).join(', ') + (falhas.length ? ' | falhas: ' + falhas.map((f) => f.regra).join('; ') : ''));
+        console.log('      ' + String(juiz.motivo || '').slice(0, 200));
+      }
+    } finally { await apagarPonte(p); }
+    console.log(erros ? 'O juiz errou ' + erros + ' de ' + cal.length + ': ajuste a régua em criterios.md.' : 'O juiz acertou as ' + cal.length + ' respostas de calibragem.');
+    console.log('tokens ' + gasto.entrada + ' entrada, ' + gasto.saida + ' saída');
+    return;
+  }
   const ponte = SECO ? null : await criarPonte(cred);
   const resultados = [];
   try {
@@ -247,7 +366,7 @@ async function julgar(modeloJuiz, caso, resp) {
             const falhas = conferir(resp.baloes, caso, { precosDaTabela, ferramentas: resp.usadas.map((u) => u.nome) });
             const juiz = await julgar(modeloJuiz, caso, resp);
             const n = nota(juiz, falhas);
-            rodadas.push({ baloes: resp.baloes, usadas: resp.usadas.map((u) => u.nome), falhas, juiz, nota: n, passou: passou(n, juiz, falhas), semFiltro: !!resp.semFiltro });
+            rodadas.push({ baloes: resp.baloes, usadas: resp.usadas.map((u) => u.nome), falhas, juiz, nota: n, passou: passou(n, juiz, falhas), semFiltro: !!resp.semFiltro, situacoes: resp.situacoes, letras: resp.letras });
           } catch (e) { if (String(e.message).startsWith('PARAR')) throw e; rodadas.push({ baloes: [], usadas: [], falhas: [{ regra: 'erro no teste', grave: true, detalhe: e.message.slice(0, 200) }], juiz: {}, nota: 0, passou: false, erro: true }); }
         }
         const media = Math.round((rodadas.reduce((s, r) => s + r.nota, 0) / rodadas.length) * 10) / 10;
@@ -296,6 +415,7 @@ async function julgar(modeloJuiz, caso, resp) {
     const c = casos.find((k) => k.id === r.id); const x = r.rodadas[0];
     L.push('### ' + r.id + ' (' + r.nota + (r.passou ? '' : ', não passou') + ')', '', 'Cliente: ' + c.historico.filter((m) => m.de === 'cliente').slice(-2).map((m) => '"' + m.texto.replace(/\n/g, ' ') + '"').join(' + '), '');
     for (const b of x.baloes) L.push('> ' + b.replace(/\n/g, '\n> '), '');
+    if (x.situacoes) L.push('Situação: ' + (x.situacoes.join(', ') || '(nenhuma)') + ' (' + x.letras + ' letras de prompt).', '');
     L.push('Ferramentas: ' + (x.usadas.join(', ') || 'nenhuma') + '. Juiz: ' + CRITERIOS.map((k) => k + ' ' + (x.juiz[k] ?? '?')).join(', ') + '.' + (x.semFiltro ? ' (sem o filtro de balões do fluxo)' : ''), '');
   }
   L.push('', 'Tokens: ' + gasto.entrada + ' de entrada (' + gasto.cache + ' em cache), ' + gasto.saida + ' de saída, ' + gasto.chamadas + ' chamadas.');

@@ -5,14 +5,21 @@ conversa que termina numa mensagem da cliente; a IA responde e a resposta ganha 
 
 ## Notas do juiz (outro modelo lê a resposta; 0 = não, 1 = em parte, 2 = sim)
 
-| Critério | Pergunta que o juiz responde |
-|---|---|
-| calor | Parece uma atendente simpática e gentil, de bom humor, que reage ao que a cliente disse? Fria, seca ou cansada é 0. Elogio exagerado ou texto de propaganda é 1. |
-| responde | Respondeu o que a cliente perguntou ou disse, sem ignorar nenhuma pergunta? |
-| conduz | Termina com o próximo passo certo para o momento (uma pergunta para entender, um convite, um horário)? Convidar para avaliação antes de entender o motivo de uma cliente nova é 0. Pressionar quem pediu tempo é 0. |
-| especifica | Usa o que ESTA cliente contou (motivo, cabelo, cidade, técnica), em vez de frase que serviria para qualquer uma? |
-| fiel | Só disse o que o salão autoriza: nada de valor de cabelo inventado, prazo inventado, promessa de resultado, técnica recomendada sem a Gleide ver? |
-| esperado | Cumpriu o que o caso pede no campo "esperado"? |
+O salão vende um serviço de alto valor (em torno de R$ 1.500). A régua é a de uma consultora experiente, que escuta
+antes de oferecer. Na dúvida entre duas notas, dê a menor. Nota 2 é para resposta que você não mudaria em nada naquele
+critério.
+
+| Critério | 2 | 1 | 0 |
+|---|---|---|---|
+| calor | Simpática e gentil de um jeito natural; reage ao que ESTA cliente disse. | Educada, mas genérica; ou calor exagerado (superlativo, texto de propaganda: "maravilhoso", "incrível", "espetáculo"). | Fria, seca, cansada, ou resposta que é só informação. |
+| responde | Respondeu tudo o que ela perguntou ou disse, na ordem que importa para ela. | Respondeu, mas deixou uma pergunta de lado ou enterrou a resposta no meio de outro assunto. | Ignorou a pergunta ou respondeu outra coisa. |
+| conduz | O próximo passo é o certo para o momento, e é um só: uma pergunta aberta que faz ela falar, ou o convite quando já existe motivo. | Próximo passo aceitável, mas fraco: pergunta fechada de formulário ("comprimento ou volume?"), ou convite sem ligar ao motivo dela. | Oferece horário ou preço antes de entender o caso; pergunta dado técnico (gramas, telas, centímetros, técnica) a quem nunca usou; pressiona quem pediu tempo; trata como manutenção quem quer outra coisa; ou termina sem próximo passo. |
+| especifica | Usa as palavras e o caso DELA (o que incomoda, o que sonha, o método que usa, a cidade). | Cita um detalhe dela, mas o miolo é frase pronta. | Serviria para qualquer cliente. Frase-muleta conta como 0: "a Gleide escolhe a técnica que melhor se adapta ao seu fio", "trabalha com quatro técnicas e vê qual esconde melhor". |
+| fiel | Só disse o que o salão autoriza. | Um deslize pequeno (um termo errado para o caso dela, como falar em "telas" para quem usa outro método). | Inventou valor de cabelo, prazo, envio, estoque; prometeu resultado; indicou técnica sem a Gleide ver. |
+| esperado | Cumpriu o que o caso pede no campo "esperado". | Cumpriu parte. | Fez o contrário ou o que o caso proíbe. |
+
+Tira um ponto de "calor" ou de "conduz" (o que couber): citar a promoção sem a cliente ter falado de dinheiro, de
+anúncio ou de promoção; despejar preço, promoção e convite na mesma resposta.
 
 ## Conferências automáticas (sem IA)
 
@@ -39,3 +46,9 @@ Nota 7 ou mais, nenhuma falha grave e o "esperado" pelo menos em parte.
 O que importa é a comparação entre duas rodadas (antes e depois de mexer no prompt): a média geral, a média de cada
 critério e a lista de casos que mudaram de lado. A IA responde com temperatura 0,6, então a mesma rodada varia um
 pouco; diferença de até meio ponto na média pode ser só sorte. Para tirar a dúvida, rode com `--vezes 3`.
+
+## O juiz também é testado
+
+`calibragem.json` guarda respostas reais que sabemos que foram ruins (e algumas boas). `node testes/banco/rodar.js x
+--calibrar` manda só essas para o juiz: resposta ruim tem de ficar abaixo de 6 e resposta boa acima de 8. Se o juiz
+errar, o problema é a régua acima, não o prompt da IA.
