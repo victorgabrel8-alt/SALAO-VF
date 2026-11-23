@@ -4,14 +4,14 @@
 const test = require('node:test');
 const assert = require('node:assert');
 let DateTime;
-try { ({ DateTime } = require('luxon')); } catch (e) { console.log('equipe-agenda.test.js: sem o luxon, pulei (npm i luxon e NODE_PATH)'); return; }
+try { ({ DateTime } = require('luxon')); } catch (e) { test('equipe na agenda (sem o luxon: npm i luxon numa pasta e NODE_PATH para ela)', { skip: 'sem o luxon' }, () => {}); return; }
 
 const wf = require('../lojas/carol/workflow-agenda-salao.json');
 const codigo = (nome) => wf.nodes.find((n) => n.name === nome).parameters.jsCode;
 const TZ = 'America/Cuiaba';
 const C = 'c0000000-0000-4000-8000-000000000001', D = 'd0000000-0000-4000-8000-000000000002', B = 'b0000000-0000-4000-8000-000000000003';
 const CAROL = { id: C, nome: 'Caroline Ferreira', preferencia: 0, apelidos: ['carol'] };
-const DUDA = { id: D, nome: 'Duda', preferencia: 1, apelidos: ['eduarda'] };
+const DUDA = { id: D, nome: 'Duda', preferencia: 1, apelidos: ['eduarda', 'dud'] };
 const BIA = { id: B, nome: 'Bia', preferencia: 0, apelidos: [] };
 // um dia de semana daqui a 3 dias ou mais, das 8h às 18h, sem almoço
 const DIA = (() => { let d = DateTime.now().setZone(TZ).startOf('day').plus({ days: 3 }); while (d.weekday > 5) d = d.plus({ days: 1 }); return d; })();
@@ -178,4 +178,20 @@ test('sem a equipe (banco fora): não oferece nem marca; listar continua', () =>
   assert.equal(criar(9, {}, { semEquipe: true }).ok, false);
   const r = rodar({ acao: 'listar' }, { semEquipe: true, daCliente: [{ id: 'a1', ...ag(D, 9, 11, { servicos: { nome: 'Manicure' } }) }] });
   assert.equal(r.ok, true);
+});
+
+test('jeitos de chamar: Carolina, Carolzinha e Dudinha acham a profissional certa', () => {
+  for (const nome of ['Carolina', 'a Carolzinha', 'CAROL']) assert.equal(criar(9, { profissional: nome }).profissional_id, C, nome);
+  for (const nome of ['Dudinha', 'com a Duda', 'Eduarda']) assert.equal(criar(9, { profissional: nome }, { dela: C }).profissional_id, D, nome);
+});
+
+test('veio mais de um nome ("Caroline ou a Duda"): ela não escolheu, vale a ordem de sempre', () => {
+  assert.equal(criar(9, { profissional: 'Caroline ou a Duda' }).profissional_id, D);
+  assert.equal(criar(9, { profissional: 'Caroline ou a Duda' }, { dela: C }).profissional_id, C);
+  assert.equal(criar(9, { profissional: 'Caroline ou a Duda' }, { ocupados: [ag(C, 8, 12)] }).profissional_id, D);
+});
+
+test('a preferida com um horário só no dia: ele e mais um da outra', () => {
+  const o = oferta(consultar({}, { ocupados: [ag(D, 8, 15), { ...ag(D, 15, 16), fim: hora(15, 30).toUTC().toISO() }] }));
+  assert.match(o, /^8h com a Caroline .* ou 15h30 com a Duda /);
 });
