@@ -31,6 +31,10 @@ function conferir(baloes, caso, ctx) {
   if (palavras(texto) > 110) falha('resposta longa', false, palavras(texto) + ' palavras no total');
   if (!permite.has('duas_perguntas') && perguntas(texto) > 1) falha('mais de uma pergunta', false, perguntas(texto) + ' perguntas');
   for (const [nome, re] of PROIBIDAS) { const m = texto.match(re); if (m) falha('palavra proibida (' + nome + ')', false, '"' + m[0] + '"'); }
+  // jeito de vendedora (skill venda-consultiva, fala.md): enfeitar a oferta e pedir concordância
+  { const m = texto.match(/(o que|que) (ajuda|facilita) (muito|bastante|bem)|[óo]tima not[ií]cia|boa not[ií]cia|olha que legal|o melhor [eé] que|e o mais legal|aproveitando,|lembrando que/i); if (m) falha('vendeu a vantagem', false, '"' + m[0] + '"'); }
+  { const m = texto.match(/[^.!?\n]{0,40},? n[eé]\?/i); if (m) falha('pediu concordância', false, '"' + m[0].trim() + '"'); }
+  { const m = baloes.find((b) => /R\$|10x|sem juros|gratuit/i.test(b) && /!/.test(b.replace(/^[^!]{0,60}!/, ''))); if (m && /(10x|sem juros)[^.?\n]{0,60}!/i.test(m)) falha('exclamação na oferta', false, ''); }
   if (!permite.has('sinal')) { const m = texto.match(/\bsinal\b|\bmulta\b|taxa de falta|R\$\s?20\b/i); if (m) falha('falou de sinal ou cobrança', true, '"' + m[0] + '"'); }
   const fora = valores(texto).filter((v) => !(ctx.precosDaTabela || []).includes(v) && !(caso.valores_permitidos || []).includes(v));
   if (fora.length) falha('valor fora da tabela do app', true, 'R$ ' + fora.join(', R$ '));

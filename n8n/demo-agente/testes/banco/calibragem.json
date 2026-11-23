@@ -1,0 +1,155 @@
+[
+ {
+  "id": "ruim-troca-de-metodo-virou-manutencao",
+  "nota_maxima": 5.9,
+  "nome": "Juliana",
+  "ficha": "Cliente nova: é a primeira conversa dela com o salão.",
+  "historico": [
+   {
+    "de": "cliente",
+    "texto": "Eu tenho um cabelo"
+   },
+   {
+    "de": "cliente",
+    "texto": "Ela faz a aplicação e a troca do método desse cabelo que eu já tenho"
+   },
+   {
+    "de": "ia",
+    "texto": "Fazemos sim! A Gleide faz a aplicação e também a troca do método pra você, sem problemas. Qual método você usa hoje e pra qual você quer mudar?"
+   },
+   {
+    "de": "cliente",
+    "texto": "Um ponto americano"
+   },
+   {
+    "de": "cliente",
+    "texto": "Queria algo mais natural e que conseguisse amarrar"
+   },
+   {
+    "de": "cliente",
+    "texto": "Sem marcação"
+   }
+  ],
+  "esperado": "Não é manutenção: ela quer trocar de método. A IA devolve o que ela disse (natural, amarrar, sem marcação), faz uma pergunta aberta sobre o incômodo com o ponto americano ou convida para a avaliação ligando ao motivo. Não fala em telas, não oferece horário de manutenção nem preço por tela.",
+  "resposta_real": [
+   "Nossa, conseguir amarrar o cabelo sem nada aparecendo é essencial pra gente se sentir livre com o mega, né? 😊",
+   "A Gleide trabalha com quatro técnicas diferentes e, na hora, ela vê qual delas vai esconder melhor no seu fio pra você ter esse resultado bem natural. Como você já tem o cabelo, a gente marca direto o horário da manutenção!\n\nFica a partir de R$ 150 por tela e a Gleide confirma o valor certinho vendo o tamanho das suas telas. Tenho amanhã às 14h30 ou terça às 13h, qual fica melhor pra você?"
+  ],
+  "ferramentas_reais": [
+   "consultar_horarios_livres"
+  ]
+ },
+ {
+  "id": "ruim-gramas-para-quem-nunca-usou",
+  "nota_maxima": 5.9,
+  "nome": "Rafaela",
+  "historico": [
+   {
+    "de": "cliente",
+    "texto": "Quanto custa para colocar"
+   },
+   {
+    "de": "ia",
+    "texto": "Oi, Rafaela! Tudo bem? 😊 A mão de obra pra colocar é R$ 150 por tela, e o cabelo é à parte. O que te fez pensar no mega agora?"
+   },
+   {
+    "de": "cliente",
+    "texto": "[áudio] Eu já tenho vontade de ponhar faz tempo, entendeu? Eu tava vendo o cabelo humano pra comprar, mas tava ficando muito caro, ia ficar uns três mil, acho, pra comprar e colocar. Aí eu queria ver se o mega hair compensa do que comprar o cabelo humano."
+   },
+   {
+    "de": "cliente",
+    "texto": "[áudio] É no caso eu queria comprar o mega hair pra pôr, só que no caso eu ia ponhar aqui, entendeu? Que eu não tenho como ir até Sinop. Eu queria comprar só o mega hair e mandar pra cá."
+   }
+  ],
+  "esperado": "Ela nunca usou. A IA acolhe, explica que mega hair é cabelo humano, e convida para a avaliação por ligação. Não pergunta gramas, telas nem centímetros e não promete envio.",
+  "resposta_real": [
+   "Rafaela, que vídeo ótimo! Chegar na cintura com esse loiro claríssimo vai ficar um espetáculo! 🤩",
+   "Só pra te explicar um detalhe importante: o mega hair que a Gleide trabalha é justamente o cabelo humano, tá? É o melhor que existe porque você cuida como se fosse o seu mesmo.\n\nPra eu pedir o valor certinho pra Gleide, você sabe me dizer quantas gramas você pretende comprar? E pode ficar tranquila que a gente envia pra você, sim, e o cabelo também entra na nossa promoção de até 10x sem juros no cartão! 🎄"
+  ],
+  "ferramentas_reais": []
+ },
+ {
+  "id": "ruim-fria-e-direta",
+  "nota_maxima": 5.9,
+  "nome": "Carla",
+  "historico": [
+   {
+    "de": "cliente",
+    "texto": "Olá! Gostaria de saber mais sobre mega hair!"
+   }
+  ],
+  "esperado": "Cumprimenta com calor, se apresenta, diz que fica em Sinop e faz uma pergunta aberta. Sem convite ainda.",
+  "resposta_real": [
+   "Boa tarde. A mão de obra é R$ 150 por tela e o cabelo é à parte. Quer agendar uma avaliação?"
+  ],
+  "ferramentas_reais": []
+ },
+ {
+  "id": "ruim-generica-com-muleta",
+  "nota_maxima": 6.9,
+  "nome": "Bianca",
+  "historico": [
+   {
+    "de": "cliente",
+    "texto": "Quero mais volume, meu cabelo não cresce"
+   },
+   {
+    "de": "ia",
+    "texto": "Oi, Bianca! Tudo bem? 😊 Você prefere algo mais prático no dia a dia ou que fique bem imperceptível?"
+   },
+   {
+    "de": "cliente",
+    "texto": "Meu cabelo é mtoo fino .. \nSimm... gostaria de algo bemm natural.."
+   }
+  ],
+  "esperado": "Mostra que ouviu (fio fino, natural), liga isso ao que a Gleide olha na avaliação e convida.",
+  "resposta_real": [
+   "Que ótimo! 😊 A Gleide trabalha com quatro técnicas e escolhe a que melhor se adapta ao seu fio. Estamos com promoção de Natal em até 10x sem juros! Quer que eu veja um horário pra sua avaliação gratuita?"
+  ],
+  "ferramentas_reais": []
+ },
+ {
+  "id": "boa-de-fora-avaliacao-por-ligacao",
+  "nota_minima": 7,
+  "nome": "Rafaela",
+  "historico": [
+   {
+    "de": "cliente",
+    "texto": "Quanto custa para colocar"
+   },
+   {
+    "de": "ia",
+    "texto": "Oi, Rafaela! Tudo bem? 😊 A mão de obra pra colocar é R$ 150 por tela, e o cabelo é à parte. Me conta, como você imagina seu cabelo depois do mega?"
+   },
+   {
+    "de": "cliente",
+    "texto": "[áudio] Eu já tenho vontade de ponhar faz tempo, queria na cintura. Eu tava vendo o cabelo humano pra comprar, mas ia ficar uns três mil pra comprar e colocar. Aí eu queria ver se o mega hair compensa. E não tenho como ir até Sinop."
+   }
+  ],
+  "esperado": "Acolhe o sonho antigo e o medo do preço, explica que mega hair é cabelo humano, e convida para a avaliação por ligação com a Gleide. Não pergunta dado técnico.",
+  "resposta_real": [
+   "Ah, então é um sonho antigo, que bom que você me contou 💛 Só pra te tranquilizar: o mega hair é feito com cabelo humano, é a mesma coisa, e você cuida como cuida do seu.",
+   "Como você não consegue vir, a Gleide faz a avaliação por ligação aqui no WhatsApp: ela entende o que você quer, vê a quantidade certa pra chegar na cintura e te passa os valores, pra você comparar com esse orçamento que viu. É gratuita. Tenho amanhã às 9h ou às 14h, qual fica melhor?"
+  ],
+  "ferramentas_reais": [
+   "consultar_horarios_livres"
+  ]
+ },
+ {
+  "id": "boa-abertura-pergunta-aberta",
+  "nota_minima": 8,
+  "nome": "Patrícia",
+  "historico": [
+   {
+    "de": "cliente",
+    "texto": "Quero alongar meu cabelo!"
+   }
+  ],
+  "esperado": "Cumprimenta com calor, se apresenta, reage ao desejo de alongar e faz uma pergunta de descoberta. Sem convite ainda.",
+  "resposta_real": [
+   "Oi, Patrícia! Tudo bem? 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. Que bom que você chamou!",
+   "Me conta, como seu cabelo tá hoje e até onde você sonha em chegar?"
+  ],
+  "ferramentas_reais": []
+ }
+]

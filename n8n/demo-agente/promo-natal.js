@@ -13,7 +13,7 @@
 const ULTIMO_DIA = '2026-11-26'; // AAAA-MM-DD, horário de Cuiabá
 
 const REGRA = 'PROMOÇÃO ATIVA AGORA — Natal e fim de ano: quem vai COLOCAR o mega hair parcela TUDO em até 10x sem juros no cartão de crédito: o cabelo e a colocação (mão de obra da aplicação). A compra do cabelo sozinha também entra. ' +
-  'NÃO entra: a MANUTENÇÃO de quem já usa mega hair, que continua no Pix ou no cartão com os juros da maquininha. Química e tratamento não estão definidos na promoção: se perguntarem, use perguntar_para_gleide. ' +
+  'NÃO entra: a MANUTENÇÃO de quem já usa mega hair, que é paga no Pix ou no cartão (não fale de juros por conta própria). Química e tratamento não estão definidos na promoção: se perguntarem, use perguntar_para_gleide. ' +
   'Como e quando citar: seção 04, PROMOÇÃO DE 10X SEM JUROS.';
 const SEM = 'PROMOÇÃO ATIVA AGORA: nenhuma. Não cite promoção nem parcelamento sem juros; se a cliente perguntar de uma promoção que viu em anúncio, diga que vai confirmar e use perguntar_para_gleide.';
 
