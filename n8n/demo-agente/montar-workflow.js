@@ -861,6 +861,10 @@ if (!LOJA) require('./lembrete-sem-repetir.js')({ faltasWorkflow: faltas.faltasW
 // Depois do conversa-antiga: o Conferente acrescenta autor na consulta das últimas mensagens, que ele confere.
 if (!LOJA) require('./conferente.js')({ node, ifNode, cond, workflow,
   loja: { slug: 'gleide', empresa_id: '00000000-0000-0000-0000-000000000001', nome: 'Salão Toda Bonita', dona: 'Gleide', conferente: 'observar', outra_loja: false } });
+// Segunda passada de fala (fala-editor.js, 23/11/2026): uma chamada pequena reescreve só o JEITO de falar do rascunho da IA
+// (tira eco, "né?", comentário sobre a própria oferta); número, horário e link não podem mudar, senão vale o rascunho.
+// Em teste: só o número do Victor. Para abrir a todas, trocar a lista (e antes medir o custo da chamada a mais).
+if (!LOJA) require('./fala-editor.js')({ workflow, so_para: ['5566999270860'] });
 // Encaixe na falta (parte 4 do portão, 21/11/2026; encaixe.js, supabase/067): a Gleide confirma a falta, a assistente pergunta se pode ver
 // com a próxima cliente do dia se ela consegue vir antes, e só com o "pode" sai UMA mensagem. A cliente diz a hora, a IA confirma e só
 // então remarca. Fica por último: mexe no que os outros módulos já montaram (ficha, agenda, assistente, rotina de vagas).
