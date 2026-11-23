@@ -30,6 +30,8 @@ prompt e o conserto. Registre defeito novo aqui quando o Victor apontar um.
 | 21 | Muleta antes da pergunta | "Pra eu te ajudar melhor,", "Pra eu te orientar melhor,", "Me conta," em toda pergunta | Frase de preenchimento (humanizer-pt-br, regra 1 e padrão 24) | "Me conta," em 7 exemplos do prompt | Tirar a muleta; "Me conta," no máximo uma vez |
 | 22 | Pergunta de situação demais | "Já usa ou é a primeira vez?", "Em que altura está?", "Quantas telas?" em sequência | Pergunta de situação tem relação negativa com a venda (SPIN); abrir com pergunta aberta, fechada só para confirmar | Roteiro de triagem no prompt | Uma de situação no máximo; depois, o que incomoda |
 | 23 | Não responder o que ela pediu | Cliente pede "mais informações" e recebe só uma pergunta de volta | Quem chega por conta própria quer confirmar e aprofundar: responda curto e depois troque por uma pergunta (sales-discovery-questions) | Regra "siga com a pergunta" | Uma frase de resposta, depois a pergunta |
+| 24 | Horário no salão sem saber a cidade | Oferece "amanhã às 9h ou 13h" e depois descobre que ela é de Lucas ou Colíder | Pergunta de situação só vale se muda o próximo passo; esta muda (sales-discovery-questions, item 9 do quality gate) | Regra de cidade passiva ("se ela mostrar que é de fora") e exemplos com horário direto | O convite termina com "Você é aqui de Sinop?"; horário na resposta seguinte |
+| 25 | Exemplo negativo copiado | A regra cita a frase ruim como "não faça" e a IA diz a frase quase igual | O modelo copia frase, mesmo dentro de proibição | Proibições com a frase entre aspas | Descrever o defeito sem citar a frase |
 
 ## Como consertar sem remendo
 

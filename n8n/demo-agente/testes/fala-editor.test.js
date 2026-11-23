@@ -48,6 +48,9 @@ test('fatos: pega número, horário, link e e-mail, sem ligar para a ordem', () 
   assert.strictEqual(fatos('às 14h, R$ 150, 10x'), fatos('10x de R$ 150 às 14h.'));
   assert.strictEqual(escolherFala(RASCUNHO, 'A avaliação é gratuita. A Gleide te atende na quarta às 14h, pode ser?').usou, 'rascunho');
   assert.notStrictEqual(fatos('amanhã às 9h'), fatos('hoje às 9h'));
+  assert.notStrictEqual(fatos('em até 10x sem juros'), fatos('em 10x sem juros'));
+  assert.notStrictEqual(fatos('a partir de R$ 150 por tela'), fatos('R$ 150 por tela'));
+  assert.strictEqual(fatos('fica a partir de R$ 150, em até 10x'), fatos('Em até 10x. A partir de R$150.'));
   assert.notStrictEqual(fatos('chave pix: gleide@salao.com'), fatos('chave pix: outra@salao.com'));
 });
 
