@@ -932,9 +932,10 @@ if (LOJA) {
   if (LOJA.assistente_consertos && LOJA.envio_cuidadoso) require('./assistente-consertos.js')({ node, ifNode, cond, ferramentasWorkflow: assistente.ferramentasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, empresaId: LOJA.empresa_id });
   // Lote 2 de 20/11: "confirmo" ao lembrete grava confirmado_em e o app mostra "Confirmou" (confirmou-presenca.js, supabase/055)
   if (LOJA.confirmou_presenca) require('./confirmou-presenca.js')({ node, workflow, empresaId: LOJA.empresa_id });
-  // 20/11: segunda profissional (Duda) na mesma agenda, separada; a IA oferece o horário livre de quem for (duas-profissionais.js).
+  // 23/11: equipe na agenda (loja.json: "equipe": true): cada profissional com a sua agenda, lida do cadastro na hora, e a
+  // preferência de quem a IA oferece primeiro (equipe-agenda.js, supabase/069). Entrou no lugar do duas-profissionais.js (20/11).
   // Fica no fim: troca textos que os módulos da agenda e do lembrete já puseram.
-  if (LOJA.segunda_profissional) require('./duas-profissionais.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
+  if (LOJA.equipe) require('./equipe-agenda.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // 20/11: voucher de R$ 20 da esmaltação em gel; manda o código sozinho e mostra na ficha (voucher-gel.js, supabase/057)
   if (LOJA.voucher_gel) require('./voucher-gel.js')({ faltasWorkflow: faltas.faltasWorkflow, workflow, loja: LOJA });
   // 20/11: pergunta à dona com número (#27): ela responde '27 sim' sem citar; pedido aberto vai nas pendências, no resumo da noite e na ficha da cliente (pedido-numerado.js)
