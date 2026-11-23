@@ -15,7 +15,8 @@ const crypto = require('crypto');
 function fatos(t) {
   // dia escrito por extenso também é fato: "terça" não pode virar "quarta"
   const dias = (String(t).toLowerCase().match(/segunda|ter[çc]a|quarta|quinta|sexta|s[áa]bado|domingo|depois de amanh[ãa]|amanh[ãa]|hoje|janeiro|fevereiro|mar[çc]o|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro/g) || []);
-  return (String(t).match(/https?:\/\/\S+|[\w.+-]+@[\w-]+\.[\w.]+|\d+[\d:.,hx]*/g) || []).map((x) => x.replace(/[.,]$/, '')).concat(dias).sort().join('|');
+  // "até 10x" e "a partir de R$ 150" não podem virar "10x" e "R$ 150": o limite faz parte do fato
+  return (String(t).match(/https?:\/\/\S+|[\w.+-]+@[\w-]+\.[\w.]+|(?:at[ée] |a partir de )?(?:R\$ ?)?\d+[\d:.,hx]*/gi) || []).map((x) => x.toLowerCase().replace(/r\$ ?/, '').replace(/^até /, 'ate ')).map((x) => x.replace(/[.,]$/, '')).concat(dias).sort().join('|');
 }
 
 function pedidoEditor(e) {
