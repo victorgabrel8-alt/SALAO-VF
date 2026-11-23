@@ -26,11 +26,14 @@ frase nenhuma do prompt por conta própria, sem antes passar o diagnóstico e a 
 3. **Ache a origem no prompt.** A IA imita os exemplos e as frases-modelo do prompt mais do que obedece às regras.
    Procure no prompt a frase parecida com a que ela disse (`grep`). Quase sempre o defeito foi ensinado por um
    exemplo. Tire ou reescreva o exemplo; não basta somar uma proibição.
-4. **Reescreva a resposta do jeito certo** usando [fala.md](references/fala.md) e o princípio de
-   [principios.md](references/principios.md). Essa reescrita vira o exemplo novo do prompt.
-5. **Confira com o teste**: `node testes/banco/rodar.js <rótulo> --simular --novo` gera conversas inteiras;
+4. **Abra o original que trata do assunto** em [originais/](originais/LEIA.md) (humanizer em português, perguntas de
+   descoberta, SPIN, objeção). `fala.md` e `principios.md` são resumos meus e carregam os meus pontos cegos: não
+   reescreva só por eles.
+5. **Reescreva a resposta** e passe o checklist do `originais/humanizer-pt-br/SKILL.md` na frase nova. Essa reescrita
+   vira o exemplo novo do prompt. Confira se os OUTROS exemplos do prompt não repetem o mesmo molde.
+6. **Confira com o teste**: `node testes/banco/rodar.js <rótulo> --simular --novo` gera conversas inteiras;
    `conferir.js` acusa as frases de vendedor. Leia as conversas, não só a nota.
-6. **Mostre ao Victor o antes e o depois** da mesma situação, lado a lado, e só publique com o ok dele.
+7. **Mostre ao Victor o antes e o depois** da mesma situação, lado a lado, e só publique com o ok dele.
 
 ## As três perguntas que resolvem quase tudo
 
@@ -49,10 +52,12 @@ Para cada resposta da IA, pergunte:
 - [fala.md](references/fala.md): o jeito de falar; o que soa vendedor e como dizer a mesma coisa como consultora.
 - [diagnostico.md](references/diagnostico.md): os erros que se repetem neste projeto, com origem e conserto.
 - [fontes.md](references/fontes.md): livros e repositórios usados.
+- [originais/](originais/LEIA.md): os repositórios inteiros (humanizer, humanizer-pt-br, sales-skills, founder-playbook) e qual abrir para cada problema.
 
 ## Regras deste projeto que valem acima do método
 
-- Preço: só a mão de obra da tabela do app; valor de cabelo e total só a Gleide passa.
+- Preço: só a mão de obra da tabela do app; valor de cabelo e total só a Gleide passa. A IA não negocia nem pede desconto.
+- Cabelo caindo nunca dispensa a cliente: vai para a avaliação. Nunca mandar procurar médico.
 - Nada de escassez inventada, depoimento inventado ou garantia de resultado.
 - Quem nunca usou mega não recebe pergunta técnica; o caminho dela é a avaliação.
 - Simpática e gentil sempre: consultiva não é fria. O que sai é a empolgação de vendedor, não o calor.

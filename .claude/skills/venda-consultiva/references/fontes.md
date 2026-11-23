@@ -35,7 +35,8 @@ Vistas na lista e ainda não lidas: `mbfinotti/sales-skills` (sales-discovery-qu
 sales-call-review), `getagentseal/founder-playbook` (spin-selling), `louisblythe/sales-skills`
 (asking-effective-questions), `vercel/eve` (human-writing).
 
-Nenhuma skill de fora foi instalada: li o texto como referência e escrevi a nossa.
+Até 22/11 nenhuma skill de fora estava aqui dentro: só os meus resumos. Em 23/11/2026, a pedido do Victor, os
+repositórios com licença MIT foram copiados inteiros para `originais/` (ver `originais/LEIA.md`).
 
 ## Material deste projeto
 

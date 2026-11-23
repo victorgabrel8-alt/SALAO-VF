@@ -25,6 +25,11 @@ prompt e o conserto. Registre defeito novo aqui quando o Victor apontar um.
 
 | 17 | Objeção entregue de graça | "…no cartão com os juros da maquininha" sem ninguém perguntar | Não criar a objeção; dizer primeiro o que ela pode | Regra de pagamento escrita como regulamento ("parcelado COM JUROS") | Dizer só "no Pix ou no cartão"; verdade curta se ela perguntar. Ver fala.md 10 |
 | 18 | Valor que não ajuda | "A mão de obra é R$ 150 por tela e o cabelo é à parte" para quem nunca usou | Preço depois do valor; não dar número que não decide nada | Regra antiga "responda o preço em uma frase" | Iniciante: avaliação gratuita, sem se preocupar com valor agora. Ver fala.md 11 |
+| 19 | Pergunta dupla | "Como está seu cabelo hoje e o que você sonha em mudar?"; "Tudo bem?" antes da pergunta que importa | Uma ideia por pergunta: a dupla recebe a resposta da metade mais fácil (sales-discovery-questions) | Exemplos do prompt com "e" no meio; cumprimento "Tudo bem? 😊" em todo exemplo | Uma pergunta só. Sem "tudo bem?" por conta própria |
+| 20 | Rastro de chatbot | "Com certeza, posso te passar as informações", "Claro!", "Que bom que você chamou!", "Que ótimo que você quer..." | Padrões 20 e 21 do humanizer-pt-br (rastro de chatbot, bajulação) | Hábito do modelo; exemplo "Que bom que você chamou" | Responder direto o que ela pediu |
+| 21 | Muleta antes da pergunta | "Pra eu te ajudar melhor,", "Pra eu te orientar melhor,", "Me conta," em toda pergunta | Frase de preenchimento (humanizer-pt-br, regra 1 e padrão 24) | "Me conta," em 7 exemplos do prompt | Tirar a muleta; "Me conta," no máximo uma vez |
+| 22 | Pergunta de situação demais | "Já usa ou é a primeira vez?", "Em que altura está?", "Quantas telas?" em sequência | Pergunta de situação tem relação negativa com a venda (SPIN); abrir com pergunta aberta, fechada só para confirmar | Roteiro de triagem no prompt | Uma de situação no máximo; depois, o que incomoda |
+| 23 | Não responder o que ela pediu | Cliente pede "mais informações" e recebe só uma pergunta de volta | Quem chega por conta própria quer confirmar e aprofundar: responda curto e depois troque por uma pergunta (sales-discovery-questions) | Regra "siga com a pergunta" | Uma frase de resposta, depois a pergunta |
 
 ## Como consertar sem remendo
 
