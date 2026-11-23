@@ -63,5 +63,5 @@ grant execute on function n8n_equipe_da_agenda(uuid, text) to service_role;
 -- ("carolzinha", "dudinha"). Sem isto todas ficam com 0 e a IA não dá preferência a ninguém.
 update profissionais set preferencia = 1, apelidos = '{eduarda,dud}'
  where id = '195862b8-efdc-4087-a653-083fdf7e0c35' and empresa_id = '26a5d3eb-e8e4-4ed8-b206-095095292fdd';
-update profissionais set apelidos = '{carol}'
+update profissionais set apelidos = '{carol,karol}'
  where id = 'bcc300c7-a83f-4c8c-81a7-0f50c65bf5dc' and empresa_id = '26a5d3eb-e8e4-4ed8-b206-095095292fdd';

@@ -70,8 +70,12 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     '} catch (e) { return null; } })();',
     '// sem a equipe não dá para saber de quem é cada horário: não oferece nem grava (ver os horários dela e cancelar continuam)',
     "if (!EQUIPE && ['consultar', 'criar', 'remarcar'].includes(p.acao)) return saida({ resposta: FORA });",
-    'const PROFS = (EQUIPE ? EQUIPE.lista : [{ id: null, nome: ' + JSON.stringify(loja.dona) + ' }]).map((x) => { const nome = String(x.nome).trim().split(/\\s+/)[0];',
-    '  return { id: x.id, nome, pref: Number(x.preferencia) || 0, chaves: [nome, ...(Array.isArray(x.apelidos) ? x.apelidos : [])].map(semAcento).filter(Boolean), ocupados: [] }; });',
+    'const PROFS = (EQUIPE ? EQUIPE.lista : [{ id: null, nome: ' + JSON.stringify(loja.dona) + ' }]).map((x, i, todas) => { const partes = String(x.nome).trim().split(/\\s+/);',
+    '  // duas com o mesmo primeiro nome (Ana Paula e Ana Clara): cada uma sai com dois nomes',
+    '  const repetido = todas.some((y, j) => j !== i && semAcento(String(y.nome).trim().split(/\\s+/)[0]) === semAcento(partes[0]));',
+    "  const nome = repetido && partes[1] ? partes[0] + ' ' + partes[1] : partes[0];",
+    "  const chaves = [repetido ? partes[1] || '' : partes[0], nome, partes.join(' '), ...(Array.isArray(x.apelidos) ? x.apelidos : [])].map((k) => semAcento(k).replace(/[^a-z0-9]+/g, ' ').trim()).filter(Boolean);",
+    '  return { id: x.id, nome, pref: Number(x.preferencia) || 0, chaves, ocupados: [] }; });',
     '// a primeira do cadastro é a dona: horário sem profissional e a Google Agenda são dela',
     'const DONA_P = PROFS[0];',
     'const porId = (id) => PROFS.find((x) => x.id === id) || DONA_P;',
@@ -84,8 +88,13 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     'const livreDe = (lista, ini, fim) => !lista.some(([a, b]) => ini < b && fim > a);',
     '// a profissional que a cliente pediu pelo nome ("carol" acha a Caroline; apelidos do cadastro também valem, e apelido',
     '// curto vale como começo: "dud" acha "dudinha"). Veio mais de um nome ("Caroline ou Duda"): ela não escolheu, é sem pedido',
-    'const PEDIDA = (() => { const pal = semAcento(p.profissional).split(/[^a-z0-9]+/).filter((w) => w.length >= 3);',
-    '  const achadas = PROFS.filter((x) => x.chaves.some((k) => pal.some((w) => w === k || (w.length >= 4 && (k.startsWith(w) || (k.length >= 3 && w.startsWith(k)))))));',
+    '// Nome ou apelido inteiro ganha de "começa com" ("Anabela" não é a Ana) e o mais comprido ganha do mais curto.',
+    "const PEDIDA = (() => { const txt = ' ' + semAcento(p.profissional).replace(/[^a-z0-9]+/g, ' ').trim() + ' ';",
+    "  const pal = txt.trim().split(' ').filter((w) => w.length >= 3);",
+    "  const inteiro = PROFS.map((x) => [x, x.chaves.filter((k) => txt.includes(' ' + k + ' ')).sort((m, n) => n.length - m.length)[0]]).filter((m) => m[1]);",
+    '  // "ana clara" contém "ana": vale só a do nome mais comprido; nomes diferentes ("Caroline ou a Duda") = ela não escolheu',
+    "  if (inteiro.length) { const com = inteiro.filter((m) => !inteiro.some((o) => o[1] !== m[1] && (' ' + o[1] + ' ').includes(' ' + m[1] + ' '))); return com.length === 1 ? com[0][0] : null; }",
+    "  const achadas = PROFS.filter((x) => x.chaves.some((k) => !k.includes(' ') && pal.some((w) => w.length >= 4 && (k.startsWith(w) || (k.length >= 3 && w.startsWith(k))))));",
     '  return achadas.length === 1 ? achadas[0] : null; })();',
     '// a profissional desta cliente (último horário marcado ou feito): ela continua com quem a atende',
     'const DELA = EQUIPE && EQUIPE.dela ? PROFS.find((x) => x.id === EQUIPE.dela) || null : null;',
@@ -124,7 +133,12 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     '  // primeiro a profissional do horário atual, depois as outras pela ordem',
     '  const ordemR = PEDIDA ? [PEDIDA] : [alvo.prof, ...ORDEM.filter((x) => x.id !== alvo.prof.id)];',
     '  const novaProf = ordemR.find((x) => !listaDe(x).some(([a, b]) => novo < b && fimNovo > a));',
-    "  if (!novaProf) return saida({ resposta: 'O novo horário está ocupado' + (PEDIDA ? ' com a ' + PEDIDA.nome : '') + '. Consulte os horários livres e ofereça outro.' });",
+    '  // ela já tem OUTRO horário dela nessa hora (com qualquer profissional): não fica com dois na mesma hora',
+    '  { const meu = vagasDela.find((v) => +v.a !== +alvo.ini && novo < v.b && fimNovo > v.a);',
+    "    if (meu) return saida({ resposta: 'NÃO REMARCADO: nesse horário ela já tem outro horário dela (' + meu.nome + ', ' + fmt(meu.a) + '). Diga isso a ela e ofereça outro horário.' }); }",
+    '  if (!novaProf) { const o = PEDIDA ? [...PROFS].sort((m, n) => peso(n) - peso(m)).find((x) => x.id !== PEDIDA.id && !listaDe(x).some(([a, b]) => novo < b && fimNovo > a)) : null;',
+    "    return saida({ resposta: o ? 'NÃO REMARCADO: a ' + PEDIDA.nome + ' já tem cliente nesse horário, mas a ' + o.nome + ' está livre nele. Ofereça a ' + o.nome + ' de um jeito positivo; se a cliente aceitar, chame de novo com profissional = ' + o.nome + '.'",
+    "      : 'O novo horário está ocupado' + (PEDIDA ? ' com a ' + PEDIDA.nome : '') + '. Consulte os horários livres e ofereça outro.' }); }",
   ].join('\n'));
   t("  return [{ json: { acao: 'remarcar', ok: true, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo),",
     "  return [{ json: { acao: 'remarcar', ok: true, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo) + ' com a ' + novaProf.nome, profissional_id: novaProf.id,");
@@ -140,6 +154,16 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
   t("if (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' });",
     "if (!livre(ini, fim)) { const o = outraLivre(ini, fim); return saida({ resposta: o ? 'NÃO AGENDADO: a ' + PEDIDA.nome + ' já tem cliente nesse horário, mas a ' + o.nome + ' está livre nele. Ofereça a ' + o.nome + ' de um jeito positivo; se a cliente aceitar, chame de novo com profissional = ' + o.nome + '.'" +
     " : 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' }); }");
+  // a pedida sem horário no dia e outra com: a IA conta, de um jeito positivo, em vez de dizer que o dia está cheio
+  t("    ' Próximo dia com vaga: ' + quadro(diaAlternativo, opcoes);", [
+    "    (() => { if (!PEDIDA || fechado) return '';",
+    '      for (const [a, b] of intervalos(pedido)) for (let h = a; h.plus({ minutes: p.dur }) <= b; h = h.plus({ minutes: PASSO_MIN })) {',
+    "        if (h < agora.plus({ minutes: ANTECEDENCIA_MIN }) || (p.periodo.startsWith('manh') && h.hour >= 12) || (p.periodo.startsWith('tard') && h.hour < 12) || noAlmocoFlex(h, h.plus({ minutes: p.dur }))) continue;",
+    '        const o = outraLivre(h, h.plus({ minutes: p.dur }));',
+    "        if (o) return ' Isso vale para a ' + PEDIDA.nome + ', que ela pediu. Nesse dia a ' + o.nome + ' tem horário (ex.: ' + hm(h) + ', data_hora_inicio: ' + iso(h) + '): diga isso de um jeito positivo e deixe a cliente escolher entre esse horário com a ' + o.nome + ' ou esperar a ' + PEDIDA.nome + '.';",
+    "      } return ''; })() +",
+    "    ' Próximo dia com vaga' + (PEDIDA ? ' com a ' + PEDIDA.nome : '') + ': ' + quadro(diaAlternativo, opcoes);",
+  ].join('\n'));
   t("resposta: 'LIVRE: ' + fmt(t) + ' está disponível para '", "resposta: 'LIVRE: ' + fmt(t) + ' com ' + comQuem(t, f) + ' está disponível para '");
   // criar: grava com a primeira da ordem que está livre
   t("return [{ json: {\n  acao: 'criar', ok: true,\n  quando: fmt(ini),", [

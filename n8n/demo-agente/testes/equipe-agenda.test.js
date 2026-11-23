@@ -10,7 +10,7 @@ const wf = require('../lojas/carol/workflow-agenda-salao.json');
 const codigo = (nome) => wf.nodes.find((n) => n.name === nome).parameters.jsCode;
 const TZ = 'America/Cuiaba';
 const C = 'c0000000-0000-4000-8000-000000000001', D = 'd0000000-0000-4000-8000-000000000002', B = 'b0000000-0000-4000-8000-000000000003';
-const CAROL = { id: C, nome: 'Caroline Ferreira', preferencia: 0, apelidos: ['carol'] };
+const CAROL = { id: C, nome: 'Caroline Ferreira', preferencia: 0, apelidos: ['carol', 'karol'] };
 const DUDA = { id: D, nome: 'Duda', preferencia: 1, apelidos: ['eduarda', 'dud'] };
 const BIA = { id: B, nome: 'Bia', preferencia: 0, apelidos: [] };
 // um dia de semana daqui a 3 dias ou mais, das 8h às 18h, sem almoço
@@ -194,4 +194,48 @@ test('veio mais de um nome ("Caroline ou a Duda"): ela não escolheu, vale a ord
 test('a preferida com um horário só no dia: ele e mais um da outra', () => {
   const o = oferta(consultar({}, { ocupados: [ag(D, 8, 15), { ...ag(D, 15, 16), fim: hora(15, 30).toUTC().toISO() }] }));
   assert.match(o, /^8h com a Caroline .* ou 15h30 com a Duda /);
+});
+
+test('nome que é começo de outro: "Anabela" não é a Ana', () => {
+  const A = { id: C, nome: 'Ana', preferencia: 0, apelidos: [] }, AB = { id: D, nome: 'Anabela Souza', preferencia: 0, apelidos: [] };
+  assert.equal(criar(9, { profissional: 'a Anabela' }, { equipe: [A, AB] }).profissional_id, D);
+  assert.equal(criar(9, { profissional: 'Ana' }, { equipe: [A, AB] }).profissional_id, C);
+});
+
+test('duas com o mesmo primeiro nome: saem com dois nomes e o pedido acha a certa', () => {
+  const equipe = [{ id: C, nome: 'Érica Lima', preferencia: 0, apelidos: [] }, { id: D, nome: 'Ana Paula', preferencia: 1, apelidos: ['paulinha'] }, { id: B, nome: 'Ana Clara', preferencia: 0, apelidos: [] }];
+  const c = criar(9, { profissional: 'Ana Clara' }, { equipe });
+  assert.equal(c.profissional_id, B);
+  assert.match(c.quando, /com a Ana Clara$/);
+  assert.equal(criar(9, { profissional: 'a Clara' }, { equipe }).profissional_id, B);
+  assert.equal(criar(9, { profissional: 'Paulinha' }, { equipe }).profissional_id, D);
+  assert.match(oferta(consultar({}, { equipe })), /^8h com a Ana Paula /);
+  // só "Ana": não dá para saber qual, vale a ordem
+  assert.equal(criar(9, { profissional: 'Ana' }, { equipe }).profissional_id, D);
+});
+
+test('"Karol" e "Karoline" acham a Caroline pelo apelido', () => {
+  for (const nome of ['Karol', 'Karoline']) assert.equal(criar(9, { profissional: nome }).profissional_id, C, nome);
+});
+
+test('remarcar para a hora de outro horário dela: não fica com dois na mesma hora', () => {
+  const a1 = { id: 'a1', ...ag(D, 9, 11, { observacoes: '', servicos: { nome: 'Manicure' } }) }, a2 = { id: 'a2', ...ag(C, 14, 16, { observacoes: '', servicos: { nome: 'Pedicure' } }) };
+  const r = rodar({ acao: 'remarcar', data_hora_inicio: isoH(9), data_hora_nova: isoH(14) }, { ocupados: [ag(D, 9, 11), ag(C, 14, 16)], daCliente: [a1, a2], dela: C });
+  assert.equal(r.ok, false);
+  assert.match(r.resposta, /^NÃO REMARCADO: nesse horário ela já tem outro horário dela .Pedicure/);
+});
+
+test('remarcar pedindo uma profissional ocupada: avisa que a outra está livre', () => {
+  const a1 = { id: 'a1', ...ag(D, 9, 11, { observacoes: '', servicos: { nome: 'Manicure' } }) };
+  const r = rodar({ acao: 'remarcar', data_hora_nova: isoH(14), profissional: 'Caroline' }, { ocupados: [ag(D, 9, 11), ag(C, 13, 16)], daCliente: [a1], dela: D });
+  assert.equal(r.ok, false);
+  assert.match(r.resposta, /^NÃO REMARCADO: a Caroline já tem cliente nesse horário, mas a Duda está livre nele/);
+});
+
+test('pediu a Duda e ela está cheia no dia: diz que a Caroline tem horário e mostra o próximo dia da Duda', () => {
+  const r = consultar({ profissional: 'Duda' }, { ocupados: [ag(D, 8, 18)] });
+  assert.match(r.resposta, /Isso vale para a Duda, que ela pediu. Nesse dia a Caroline tem horário .ex.: 8h,/);
+  assert.match(r.resposta, /Próximo dia com vaga com a Duda: /);
+  // sem pedido de nome, o texto é o de sempre
+  assert.match(consultar({}, { ocupados: [ag(D, 8, 18), ag(C, 8, 18)] }).resposta, /Próximo dia com vaga: /);
 });
