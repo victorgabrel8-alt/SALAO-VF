@@ -29,7 +29,7 @@ import {
 } from "@/lib/atendimentos";
 import { lerAlmoco } from "@/lib/almoco";
 import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
-import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
+import { bloqueioDoDia, bloqueiosDeProfissionalNoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import { guardar, lembrar } from "@/lib/memoriaTela";
 import {
@@ -397,11 +397,27 @@ function AgendaPageConteudo() {
             <span aria-hidden className="text-lg">›</span>
           </Link>
         )}
-        {/* Horas sem atender, que a dona pede à assistente */}
+        {/* Dia sem atender de UMA profissional (supabase/076): o studio abre, só a agenda dela fecha */}
+        {!bloqueioDoDia(empresa.config, dia) &&
+          bloqueiosDeProfissionalNoDia(empresa.config, dia).map((b) => (
+            <Link
+              key={`dia-${b.profissional_id}`}
+              href="/agenda/bloqueios"
+              className="mb-3 flex min-h-12 items-center gap-2.5 rounded-[14px] bg-rose px-4 py-3 text-rose-texto active:scale-[0.99]"
+            >
+              <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-atencao" />
+              <span className="min-w-0 flex-1 text-[15px]">
+                <b>{b.profissional ?? "Uma profissional"} sem atender</b>
+                {b.motivo && ` · ${b.motivo}`}
+              </span>
+              <span aria-hidden className="text-lg">›</span>
+            </Link>
+          ))}
+        {/* Horas sem atender, que a dona pede à assistente (com o nome quando são de uma profissional só) */}
         {bloqueiosHorarioDoDia(empresa.config, dia).map((b) => (
-          <p key={`${b.inicio}-${b.fim}`} className="mb-3 rounded-[14px] bg-rose px-4 py-3 text-[15px] text-rose-texto">
+          <p key={`${b.inicio}-${b.fim}-${b.profissional_id ?? "studio"}`} className="mb-3 rounded-[14px] bg-rose px-4 py-3 text-[15px] text-rose-texto">
             <b>
-              Sem atender das {b.inicio} às {b.fim}
+              {b.profissional ? `${b.profissional} sem atender` : "Sem atender"} das {b.inicio} às {b.fim}
             </b>
             {b.motivo && ` · ${b.motivo}`}
           </p>
