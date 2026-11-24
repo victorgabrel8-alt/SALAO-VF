@@ -99,6 +99,7 @@ const pedido = [
   'Responda só JSON: {"erros":[{"cliente":"nome","final":"1234","hora":"10:19","tipo":"codigo","gravidade":"alta|media|baixa","trecho":"frase da IA","conserto":"..."}]}',
   '', 'CONVERSAS DE HOJE:', texto || '(nenhuma)',
 ].join('\n');
+if (!conversas) return { json: { empresa_id: loja.empresa_id, nome: loja.nome, dia: loja.dia, conversas, respostasIa, semResposta, pedido: 'Responda só {"erros":[]}', vazio: true } };
 return { json: { empresa_id: loja.empresa_id, nome: loja.nome, dia: loja.dia, conversas, respostasIa, semResposta, pedido, vazio: !conversas } };
 });
 `;
@@ -109,15 +110,17 @@ return $input.all().map((it, idx) => {
 const $json = it.json;
 const base = bases[idx];
 let erros = [];
+let falhou = '';
 if (!base.vazio) {
   const parts = ($json.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('');
   try { erros = (JSON.parse(parts.replace(/^\s*${'```'}(json)?|${'```'}\s*$/g, '')).erros || []).filter((e) => e && e.tipo && e.trecho); }
-  catch (e) { erros = [{ cliente: '-', final: '', hora: '', tipo: 'conferencia_falhou', gravidade: 'baixa', trecho: String(parts || $json.error?.message || 'sem resposta do Gemini').slice(0, 200), conserto: 'rodar de novo' }]; }
+  catch (e) { erros = []; falhou = String($json.error?.message || parts || 'sem resposta do Gemini').slice(0, 160); }
 }
 const ordem = { alta: 0, media: 1, baixa: 2 };
 erros.sort((a, b) => (ordem[a.gravidade] ?? 3) - (ordem[b.gravidade] ?? 3));
-const por100 = base.respostasIa ? Math.round((erros.length / base.respostasIa) * 1000) / 10 : null;
-return { json: { ...base, erros, n_erros: erros.length, erros_por_100: por100 } };
+erros = erros.map((e) => ({ cliente: e.cliente || '-', final: e.final || '', hora: e.hora || '', tipo: e.tipo, gravidade: e.gravidade || 'media', trecho: e.trecho, conserto: e.conserto || '-' }));
+const por100 = base.respostasIa && !falhou ? Math.round((erros.length / base.respostasIa) * 1000) / 10 : null;
+return { json: { ...base, erros, falhou, n_erros: erros.length, erros_por_100: por100 } };
 });
 `;
 
@@ -128,12 +131,15 @@ const linhas = ['🔎 Conferência das conversas, ' + dia];
 for (const l of lojas) {
   linhas.push('');
   if (l.vazio) { linhas.push('*' + l.nome + '*: nenhuma conversa hoje.'); continue; }
+  if (l.falhou) { linhas.push('*' + l.nome + '*: ' + l.conversas + ' conversas. ⚠️ A conferência falhou (' + l.falhou + '). Me avisa que eu rodo de novo.'); if (l.semResposta.length) linhas.push('⚠️ Sem resposta: ' + l.semResposta.map((s) => s.cliente + ' (' + s.final + ') desde ' + s.desde).join('; ')); continue; }
   const altas = l.erros.filter((e) => e.gravidade === 'alta').length;
   linhas.push('*' + l.nome + '*: ' + l.conversas + ' conversas, ' + l.n_erros + ' erro(s)' + (altas ? ' (' + altas + (altas > 1 ? ' graves)' : ' grave)') : '') + (l.erros_por_100 !== null ? ', ' + String(l.erros_por_100).replace('.', ',') + ' a cada 100 respostas' : ''));
   if (l.semResposta.length) linhas.push('⚠️ Sem resposta: ' + l.semResposta.map((s) => s.cliente + ' (' + s.final + ') desde ' + s.desde).join('; '));
   for (const e of l.erros.slice(0, 6)) linhas.push('• ' + (e.gravidade === 'alta' ? '🔴 ' : '') + e.cliente + ' ' + e.final + ' ' + e.hora + ': "' + String(e.trecho).slice(0, 90) + '" → ' + e.conserto);
   if (l.erros.length > 6) linhas.push('… e mais ' + (l.erros.length - 6) + ' (lista completa guardada no banco)');
 }
+let naoGravou = false; try { naoGravou = $('Guardar').all().some((i) => i.json && (i.json.error || i.json.code)); } catch (e) {}
+if (naoGravou) linhas.push('', '⚠️ Não consegui guardar esta conferência no banco (a contagem desta noite fica fora do histórico).');
 linhas.push('', 'Para consertar, me manda este resumo no Claude.');
 return [{ json: { texto: linhas.join('\n') } }];
 `;
@@ -147,13 +153,15 @@ const workflow = {
   nodes: [
     node('Às 21h', 'n8n-nodes-base.scheduleTrigger', 1.2, [0, 0], { rule: { interval: [{ field: 'days', triggerAtHour: 21, triggerAtMinute: 0 }] } }),
     node('Lojas', 'n8n-nodes-base.code', 2, [220, 0], {
-      jsCode: `const dia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nreturn ${JSON.stringify(LOJAS.map(({ empresa_id, nome, regras }) => ({ empresa_id, nome, regras })))}.map((l) => ({ json: { ...l, dia, desde: new Date(dia + 'T00:00:00-04:00').toISOString() } }));`,
+      jsCode: `const dia = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nreturn ${JSON.stringify(LOJAS.map(({ empresa_id, nome, regras }) => ({ empresa_id, nome, regras })))}.map((l) => ({ json: { ...l, dia, desde: new Date(new Date(dia + 'T21:00:00-04:00').getTime() - 24 * 3600 * 1000).toISOString() } }));`,
     }),
     node('Mensagens do dia', 'n8n-nodes-base.httpRequest', 4.2, [440, 0], {
       method: 'GET',
       // uma chamada só para todas as lojas (executeOnce); o "Montar conversas" separa pela empresa
-      url: "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?select=empresa_id,cliente_id,autor,conteudo,criado_em,clientes(nome,telefone)&empresa_id=in.({{ $('Lojas').all().map((i) => i.json.empresa_id).join(',') }})&criado_em=gte.{{ $('Lojas').first().json.desde }}&order=criado_em.asc&limit=5000",
-      sendHeaders: true, headerParameters: supaHeaders, options: {},
+      url: "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?select=empresa_id,cliente_id,autor,conteudo,criado_em,clientes(nome,telefone)&empresa_id=in.({{ $('Lojas').all().map((i) => i.json.empresa_id).join(',') }})&criado_em=gte.{{ $('Lojas').first().json.desde }}&order=criado_em.asc",
+      sendHeaders: true, headerParameters: supaHeaders,
+      // o Supabase devolve no máximo 1000 linhas: pede de 1000 em 1000 até vir vazio
+      options: { pagination: { pagination: { parameters: { parameters: [{ type: 'qs', name: 'offset', value: '={{ $pageCount * 1000 }}' }, { type: 'qs', name: 'limit', value: '1000' }] }, paginationCompleteWhen: 'responseIsEmpty', limitPagesFetched: true, maxRequests: 20, requestInterval: 200 } } },
     }, { alwaysOutputData: true, executeOnce: true }),
     node('Montar conversas', 'n8n-nodes-base.code', 2, [660, 0], { jsCode: montarCode }),
     node('Auditor (Gemini)', 'n8n-nodes-base.httpRequest', 4.2, [880, 0], {
@@ -165,8 +173,8 @@ const workflow = {
     }, { credentials: GEMINI_CRED, onError: 'continueRegularOutput', retryOnFail: true, maxTries: 2, waitBetweenTries: 5000 }),
     node('Resultado', 'n8n-nodes-base.code', 2, [1100, 0], { jsCode: resultadoCode }),
     node('Guardar', 'n8n-nodes-base.httpRequest', 4.2, [1320, -120], {
-      method: 'POST', url: '={{ $env.SUPABASE_URL }}/rest/v1/auditoria_noturna',
-      sendHeaders: true, headerParameters: supaHeaders, sendBody: true, specifyBody: 'json',
+      method: 'POST', url: '={{ $env.SUPABASE_URL }}/rest/v1/auditoria_noturna?on_conflict=empresa_id,dia',
+      sendHeaders: true, headerParameters: { parameters: [...supaHeaders.parameters, { name: 'Prefer', value: 'resolution=merge-duplicates' }] }, sendBody: true, specifyBody: 'json',
       jsonBody: `={{ JSON.stringify({ empresa_id: $json.empresa_id, dia: $json.dia, conversas: $json.conversas, respostas_ia: $json.respostasIa, erros: $json.erros, sem_resposta: $json.semResposta, n_erros: $json.n_erros, erros_por_100: $json.erros_por_100, modelo: '${MODELO}' }) }}`,
       options: {},
     }, { onError: 'continueRegularOutput' }),

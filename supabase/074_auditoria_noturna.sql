@@ -19,3 +19,5 @@ create table if not exists auditoria_noturna (
 create index if not exists auditoria_noturna_empresa_dia on auditoria_noturna (empresa_id, dia desc);
 alter table auditoria_noturna enable row level security;
 revoke all on auditoria_noturna from anon, authenticated;
+-- uma linha por loja por dia: rodar de novo no mesmo dia atualiza (o fluxo grava com on_conflict=empresa_id,dia)
+create unique index if not exists auditoria_noturna_empresa_dia_unico on auditoria_noturna (empresa_id, dia);
