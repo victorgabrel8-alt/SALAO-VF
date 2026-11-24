@@ -1,6 +1,6 @@
 # Teste da assistente da Caroline (versão nova) na Loja Teste
 
-Rodado em 23/11/2026 às 22:04. A "dona" é o número de teste da assistente da Loja Teste; as clientes Kelly e Rita são números de teste. Nenhuma mensagem saiu para celular.
+Rodado em 23/11/2026 às 22:11. A "dona" é o número de teste da assistente da Loja Teste; as clientes Kelly e Rita são números de teste. Nenhuma mensagem saiu para celular.
 ## Placar
 
 - Tudo passou.
@@ -12,7 +12,7 @@ Rodado em 23/11/2026 às 22:04. A "dona" é o número de teste da assistente da 
 
 **Esperado:** Resposta curta, sem oferecer nada
 
-**Assistente** (19 s): Oi! O que você precisa?
+**Assistente** (20 s): Oi! O que você precisa?
 
 **Conferência:** ok
 
@@ -25,10 +25,10 @@ Rodado em 23/11/2026 às 22:04. A "dona" é o número de teste da assistente da 
 > `buscar_cliente` {"busca":"55…"}
 > → OK: []
 
-> `cadastrar_cliente` {"observacoes":"","telefone":"55…","nome":"Kelly Teste"}
-> → OK: {"nome":"Kelly Teste","nova":true,"tel_final":"0097","cliente_id":"cc308928-8c00-4234-8c3a-1769b824b00a"}
+> `cadastrar_cliente` {"nome":"Kelly Teste","observacoes":"","telefone":"55…"}
+> → OK: {"nome":"Kelly Teste","nova":true,"tel_final":"0097","cliente_id":"3e4ceeab-f2fa-4457-aeaa-d3fa32180226"}
 
-**Assistente** (22 s): Cadastrei a *Kelly Teste* ✅
+**Assistente** (22 s): OK: Cadastrei a *Kelly Teste* ✅
 
 **Conferência:** ok
 
@@ -38,10 +38,10 @@ Rodado em 23/11/2026 às 22:04. A "dona" é o número de teste da assistente da 
 
 **Esperado:** Marca na hora com a Duda, sem "Pode?"
 
-> `marcar_horario` {"minutos":"","nome":"Kelly Teste","forcar":"sim","cliente_id":"cc308928-8c00-4234-8c3a-1769b824b00a","observacoes":"","telefone":"55…","inicio":"2026-11-28T08:00","profissional":"Duda","servico":"Manicure e pedicure"}
-> → OK: {"ate":"09:30","nome":"Kelly Teste","quando":"sáb, 28/11 às 08:00","servico":"Manicure e pedicure","tel_final":"0097","cliente_id":"cc308928-8c00-4234-8c3a-1769b824b00a","agendamento_id":"b148c807-8bff-4def-a316-5c198e0fed75","servico_origem":"dito_pela_dona"}
+> `marcar_horario` {"forcar":"sim","inicio":"2026-11-28T08:00","cliente_id":"3e4ceeab-f2fa-4457-aeaa-d3fa32180226","servico":"Manicure e pedicure","profissional":"Duda","minutos":"","observacoes":"","nome":"Kelly Teste","telefone":"55…"}
+> → OK: {"ate":"09:30","nome":"Kelly Teste","quando":"sáb, 28/11 às 08:00","servico":"Manicure e pedicure","tel_final":"0097","cliente_id":"3e4ceeab-f2fa-4457-aeaa-d3fa32180226","agendamento_id":"9289d06b-32f4-4528-94bb-1c4199f67d25","servico_origem":"dito_pela_dona"}  GOOGLE AGENDA DA DONA em sábado, 2
 
-**Assistente** (21 s): *Kelly Teste*, 28/11 às 08:00 (Duda) ✅ — Manicure e pedicure.
+**Assistente** (23 s): *Kelly Teste*, 28/11 às 08:00 (Duda) ✅ — Manicure e pedicure.
 
 **Conferência:** ok
 
@@ -52,29 +52,31 @@ Rodado em 23/11/2026 às 22:04. A "dona" é o número de teste da assistente da 
 **Esperado:** Lista a semana com o nome de quem atende
 
 > `agenda_do_dia` {"data":"2026-11-23"}
-> → OK: [{"com":"Caroline","fim":"08:45","hora":"08:00","nome":"Rita Teste","valor":null,"chegou":false,"inicio":"2026-11-23T12:00:00+00:00","status":"agendado","servico":"Manicure","lembrete":"não enviado","tel_final":"0098","cliente_id":"f5f56a44-65e1-445e-ae53-61fff3bd108d","agendamento_id":"3c32483d
+> → OK: [{"com":"Caroline","fim":"08:45","hora":"08:00","nome":"Rita Teste","valor":null,"chegou":false,"inicio":"2026-11-23T12:00:00+00:00","status":"agendado","servico":"Manicure","lembrete":"não enviado","tel_final":"0098","cliente_id":"e9a09a9a-115f-47e6-9bdd-b7cca18a03fe","agendamento_id":"7f4c3719
 
 > `agenda_do_dia` {"data":"2026-11-24"}
-> → OK: []
+> → OK: []  GOOGLE AGENDA DA DONA em terça-feira, 24/11 (clientes que ainda não estão no app; conta como ocupado, junto com o app): - 13:00 às 15:30: Helena moreno - 15:30 às 18:00: Rebeca - 17:00 às 19:30: Maila Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofe
 
 > `agenda_do_dia` {"data":"2026-11-25"}
-> → OK: []
+> → OK: []  GOOGLE AGENDA DA DONA em quarta-feira, 25/11 (clientes que ainda não estão no app; conta como ocupado, junto com o app): - 14:00 às 16:30: Gravaco de video Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona conf
 
 > `agenda_do_dia` {"data":"2026-11-26"}
-> → OK: []
+> → OK: []  GOOGLE AGENDA DA DONA em quinta-feira, 26/11 (clientes que ainda não estão no app; conta como ocupado, junto com o app): - nada marcado na Google neste dia Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona conf
 
 > `agenda_do_dia` {"data":"2026-11-27"}
-> → OK: []
+> → OK: []  GOOGLE AGENDA DA DONA em sexta-feira, 27/11 (clientes que ainda não estão no app; conta como ocupado, junto com o app): - 17:00 às 19:30: Prova na faculdade Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona con
 
 > `agenda_do_dia` {"data":"2026-11-28"}
-> → OK: [{"com":"Duda","fim":"09:30","hora":"08:00","nome":"Kelly Teste","valor":null,"chegou":false,"inicio":"2026-11-28T12:00:00+00:00","status":"agendado","servico":"Manicure e pedicure","lembrete":"não enviado","tel_final":"0097","cliente_id":"cc308928-8c00-4234-8c3a-1769b824b00a","agendamento_id":"
+> → OK: [{"com":"Duda","fim":"09:30","hora":"08:00","nome":"Kelly Teste","valor":null,"chegou":false,"inicio":"2026-11-28T12:00:00+00:00","status":"agendado","servico":"Manicure e pedicure","lembrete":"não enviado","tel_final":"0097","cliente_id":"3e4ceeab-f2fa-4457-aeaa-d3fa32180226","agendamento_id":"
 
 > `agenda_do_dia` {"data":"2026-11-29"}
-> → OK: []
+> → OK: []  GOOGLE AGENDA DA DONA em domingo, 29/11 (clientes que ainda não estão no app; conta como ocupado, junto com o app): - nada marcado na Google neste dia Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona confirmar
 
-**Assistente** (25 s): Hoje (23/11): 08:00 Rita Teste (Caroline)  
-Sáb (28/11): 08:00 Kelly Teste (Duda)  
-Os outros dias estão livres.
+**Assistente** (29 s): 23/11: 08:00 Rita (Caroline)  
+24/11: Google: 13:00 Helena, 15:30 Rebeca, 17:00 Maila  
+25/11: Google: 14:00 Gravação  
+27/11: Google: 17:00 Prova  
+28/11: 08:00 Kelly (Duda)
 
 **Conferência:** ok
 
@@ -84,10 +86,10 @@ Os outros dias estão livres.
 
 **Esperado:** Bloqueia na hora, sem "Pode?", e diz que fecha para as duas
 
-> `bloquear_horario` {"hora_inicio":"14:00","data":"2026-12-05","hora_fim":"16:00","texto":"médico"}
+> `bloquear_horario` {"data":"2026-12-05","hora_inicio":"14:00","texto":"médico","hora_fim":"16:00"}
 > → OK: {"bloqueado":"sábado, 5 de dezembro, das 14:00 às 16:00","horarios_marcados_nesse_periodo":[]}
 
-**Assistente** (21 s): Sábado, 05/12, das 14:00 às 16:00 ✅ — Studio fechado (médico).
+**Assistente** (22 s): Bloqueio gravado: 05/12 das 14:00 às 16:00 ✅ (Studio fechado)
 
 **Conferência:** ok
 
@@ -110,16 +112,16 @@ Os outros dias estão livres.
 
 **Esperado:** Conclui com os dois serviços e o valor da tabela, sem perguntar
 
-> `concluir` {"agendamento_id":"3c32483d-3719-4b12-ba7a-1edd41db59b6","servico":"Manicure e pedicure","valor":"","extras":"Francesinha","cliente_nome":"Rita"}
+> `concluir` {"servico":"Manicure e pedicure","extras":"Francesinha","valor":"","cliente_nome":"Rita","agendamento_id":"7f4c3719-8446-41dc-b6f8-a14a7a335181"}
 > → ERRO: 400 - {"code":"P0001","details":null,"hint":null,"message":"não achei o serviço \"Francesinha\". Os serviços do salão são: Alongamento molde F1 – aplicação; Banho de gel; Esmaltação em gel; Lixamento de pedicure avulso (cada pé); Manicure; Manicure e pedicure; Manutenção de alongamento; Pedicu
 
-> `concluir` {"agendamento_id":"3c32483d-3719-4b12-ba7a-1edd41db59b6","cliente_nome":"Rita","servico":"Manicure e pedicure","extras":"","valor":""}
-> → OK: {"valor":110,"status":"realizado","servico":"Manicure e pedicure","valor_origem":"tabela","agendamento_id":"3c32483d-3719-4b12-ba7a-1edd41db59b6","servicos_a_mais":[]}
+> `concluir` {"extras":"","cliente_nome":"Rita","servico":"Manicure e pedicure","valor":"","agendamento_id":"7f4c3719-8446-41dc-b6f8-a14a7a335181"}
+> → OK: {"valor":110,"status":"realizado","servico":"Manicure e pedicure","valor_origem":"tabela","agendamento_id":"7f4c3719-8446-41dc-b6f8-a14a7a335181","servicos_a_mais":[]}
 
-> `anotar` {"cliente_id":"f5f56a44-65e1-445e-ae53-61fff3bd108d","cliente_nome":"Rita","texto":"Fez francesinha em 23/11"}
-> → OK: {"cliente_id":"f5f56a44-65e1-445e-ae53-61fff3bd108d"}
+> `anotar` {"cliente_nome":"Rita","cliente_id":"e9a09a9a-115f-47e6-9bdd-b7cca18a03fe","texto":"Fez francesinha no atendimento de 23/11"}
+> → OK: {"cliente_id":"e9a09a9a-115f-47e6-9bdd-b7cca18a03fe"}
 
-**Assistente** (26 s): *Rita* concluída ✅ — Manicure e pedicure, R$ 110. Anotei a francesinha na ficha.
+**Assistente** (25 s): *Rita* concluída ✅ — Manicure e pedicure, R$ 110. Anotei a francesinha na ficha.
 
 **Conferência:** ok
 
@@ -129,14 +131,14 @@ Os outros dias estão livres.
 
 **Esperado:** Muda para 9h e tenta avisar a cliente; o envio falha na Loja Teste e ela tem de dizer que não foi
 
-> `reagendar` {"forcar":"sim","agendamento_id":"b148c807-8bff-4def-a316-5c198e0fed75","cliente_nome":"Kelly","inicio":"2026-11-28T09:00:00","servico":"Manicure e pedicure","profissional":""}
-> → OK: {"de":"sáb, 28/11 às 08:00","ate":"10:30","nome":"Kelly Teste","para":"sáb, 28/11 às 09:00","servico":"Manicure e pedicure","tel_final":"0097","agendamento_id":"b148c807-8bff-4def-a316-5c198e0fed75"}
+> `reagendar` {"cliente_nome":"Kelly","agendamento_id":"9289d06b-32f4-4528-94bb-1c4199f67d25","profissional":"","forcar":"sim","servico":"Manicure e pedicure","inicio":"2026-11-28T09:00"}
+> → OK: {"de":"sáb, 28/11 às 08:00","ate":"10:30","nome":"Kelly Teste","para":"sáb, 28/11 às 09:00","servico":"Manicure e pedicure","tel_final":"0097","agendamento_id":"9289d06b-32f4-4528-94bb-1c4199f67d25"}  GOOGLE AGENDA DA DONA em sábado, 28/11 (clientes que ainda não estão no app; conta como ocupado
 
-> `avisar_cliente` {"texto":"","agendamento_id":"b148c807-8bff-4def-a316-5c198e0fed75","tipo":"aviso","cliente_nome":"Kelly"}
+> `avisar_cliente` {"agendamento_id":"9289d06b-32f4-4528-94bb-1c4199f67d25","tipo":"aviso","texto":"","cliente_nome":"Kelly"}
 > → ERRO: o WhatsApp não enviou a mensagem (404 - "{\"status\":404,\"error\":\"Not Found\",\"response\":{\"message\":[\"The \\\"loja-teste\\\" instance does not exist\"]}}"). Nada foi enviado para a cliente.
 
-**Assistente** (30 s): *Kelly*, 28/11 às 09:00 ✅  
-⚠️ Não consegui avisar a cliente (instância não encontrada).
+**Assistente** (31 s): *Kelly*, 28/11 às 09:00 ✅  
+⚠️ Não consegui avisar a cliente (erro no sistema).
 
 **Conferência:** ok
 
@@ -146,10 +148,10 @@ Os outros dias estão livres.
 
 **Esperado:** Marca em 10/12/2026 (nunca num ano que já passou), com a Caroline
 
-> `marcar_horario` {"nome":"Rita Teste","inicio":"2026-12-10T10:00","cliente_id":"f5f56a44-65e1-445e-ae53-61fff3bd108d","profissional":"Caroline","observacoes":"","telefone":"55…","servico":"Manicure","forcar":"sim","minutos":"45"}
-> → OK: {"ate":"10:45","nome":"Rita Teste","quando":"qui, 10/12 às 10:00","servico":"Manicure","tel_final":"0098","cliente_id":"f5f56a44-65e1-445e-ae53-61fff3bd108d","agendamento_id":"bbca498b-1f2c-4826-a4c5-7f1d0b1ff6b6","servico_origem":"dito_pela_dona"}
+> `marcar_horario` {"minutos":"45","telefone":"55…","inicio":"2026-12-10T10:00","nome":"Rita Teste","cliente_id":"e9a09a9a-115f-47e6-9bdd-b7cca18a03fe","profissional":"Caroline","servico":"Manicure","observacoes":"","forcar":"sim"}
+> → OK: {"ate":"10:45","nome":"Rita Teste","quando":"qui, 10/12 às 10:00","servico":"Manicure","tel_final":"0098","cliente_id":"e9a09a9a-115f-47e6-9bdd-b7cca18a03fe","agendamento_id":"37cf5d64-6a5d-4eb8-9dce-d04af003ce05","servico_origem":"dito_pela_dona"}  GOOGLE AGENDA DA DONA em quinta-feira, 10/12 (
 
-**Assistente** (22 s): *Rita Teste*, 10/12 às 10:00 ✅ — Manicure.
+**Assistente** (23 s): *Rita*, 10/12 às 10:00 ✅ — Manicure.
 
 **Conferência:** ok
 
