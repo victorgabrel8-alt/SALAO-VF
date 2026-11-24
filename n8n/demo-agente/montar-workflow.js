@@ -758,6 +758,8 @@ const alerta = require('./alerta-workflows.js')({ env, node, main, workflow });
 // IA fora do ar (ia-fora-do-ar.js, 21/11/2026): em vez de repetir "pode mandar de novo?" a cada mensagem, um recado de
 // espera uma vez só e a dona é avisada. Só na Gleide por enquanto. Depois do alerta (usa o "IA falhou? (alerta)").
 if (!LOJA) require('./ia-fora-do-ar.js')({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS, dona: 'Gleide' });
+// cliente que a IA passou para a dona: o que ela escreve com a IA parada vai para a dona (repasse-pausada.js, 24/11/2026)
+if (!LOJA) require('./repasse-pausada.js')({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS, D });
 
 // memória sem começo quebrado no meio de uma ferramenta (ver memoria-janela.js)
 const memoriaJanela = require('./memoria-janela.js')({ node, main });

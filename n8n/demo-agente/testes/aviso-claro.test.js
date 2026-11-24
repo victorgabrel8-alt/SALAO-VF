@@ -26,7 +26,7 @@ test('o caso da Joana: quem, o que fazer, o que ela escreveu, o número e para q
     '*Joana* precisa de você: gerar e enviar link de pagamento.',
     'Ela escreveu: «Queria saber se ela consegue me mandar um link de pagamento» «Amanhã vou viajar e não consigo passar aí»',
     'A IA disse a ela que você responde e não vai mais responder ela por 12 h.',
-    'Pode falar com ela pelo WhatsApp do salão (o número dela é (66) 99999-0011) ou me dizer aqui o que mandar.',
+    'Fala direto com ela no (66) 99999-0011: https://wa.me/5566999990011',
     'Conversa dela no app: https://app.oistudio.com.br/conversas/' + ID,
   ].join('\n'));
   // a memória da assistente: o mesmo texto, com a hora e os dados para ela agir
@@ -138,7 +138,9 @@ test('o "Guardei essa resposta" e o "Avisei a …" também vão para a memória 
   const carla = avisoTransferencia({ nome: 'Carla Souza', telefone: '556699990000', o_que_precisa: 'Conferir se a Carla tem horário dia 12/12 às 10h.',
     mensagens: [{ direcao: 'entrada', conteudo: '[foto da cliente] Foto caseira de costas' }, { direcao: 'entrada', conteudo: '[áudio] três tela quanto ela cobra' }] }).texto;
   assert.match(carla, /^\*Carla Souza\* precisa de você: conferir se a Carla tem horário dia 12\/12 às 10h\.\nEla escreveu: «três tela quanto ela cobra» \(mandou uma foto\)\n/);
-  assert.match(carla, /\(o número dela é \(66\) 99999-0000\)/);
+  assert.match(carla, /\nFala direto com ela no \(66\) 99999-0000: https:\/\/wa\.me\/5566999990000$/);
+  // sem telefone que dê para discar: sem link
+  assert.match(avisoTransferencia({ nome: 'Lia', telefone: '123', o_que_precisa: 'x' }).texto, /\nPode falar com ela pelo WhatsApp do salão\.$/);
 });
 
 test('assistente: lê as conversas das clientes e sabe explicar um aviso; as regras antigas saíram', () => {

@@ -11,7 +11,7 @@
 //   *Joana* precisa de você: gerar e enviar o link de pagamento.
 //   Ela escreveu: «Queria saber se ela consegue me mandar um link de pagamento» «Amanhã vou viajar…»
 //   A IA disse a ela que você responde e não vai mais responder ela por 12 h.
-//   Pode falar com ela pelo WhatsApp do salão (o número dela é (66) 99999-0011) ou me dizer aqui o que mandar.
+//   Fala direto com ela no (66) 99999-0011: https://wa.me/5566999990011
 //   Conversa dela no app: https://app.oistudio.com.br/conversas/…
 // O mesmo texto entra na memória da assistente, com o id da cliente, para ela saber explicar e agir.
 
@@ -69,7 +69,10 @@ function avisoTransferencia(ctx) {
   if (citacao.length > 420) citacao = citacao.slice(0, 420) + '…';
   if (citacao) linhas.push('Ela escreveu: ' + citacao);
   linhas.push('A IA disse a ela que você responde e não vai mais responder ela por 12 h.');
-  linhas.push('Pode falar com ela pelo WhatsApp do salão' + (tel ? ' (o número dela é ' + tel + ')' : '') + ' ou me dizer aqui o que mandar.');
+  // pagamento e o que for delicado a Gleide resolve direto com a cliente (Victor, 24/11): vai o contato com o link que abre a
+  // conversa, em vez de "me diz o que mandar"
+  const wa = tel ? 'https://wa.me/55' + tel.replace(/\D/g, '') : '';
+  linhas.push(wa ? 'Fala direto com ela no ' + tel + ': ' + wa : 'Pode falar com ela pelo WhatsApp do salão.');
   if (ctx.cliente_id) linhas.push('Conversa dela no app: ' + String(ctx.app || 'https://app.oistudio.com.br').replace(/\/$/, '') + '/conversas/' + ctx.cliente_id);
   const texto = linhas.join('\n');
   // "ter 24/11 17:21" no fuso do salão (Cuiabá, -04:00 o ano todo), como as outras mensagens da memória da assistente
