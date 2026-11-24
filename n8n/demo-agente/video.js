@@ -21,7 +21,8 @@ VÍDEO DA CLIENTE
   responda ao que ela mostrou e siga a conversa. Não diga que não consegue ver vídeo.
 - "[vídeo da cliente que não consegui abrir]": ela mandou para mostrar algo dela, então isso ganha atenção na resposta. Agradeça,
   diga com leveza que o vídeo não abriu aqui e peça uma foto ou que ela conte o que queria mostrar, ligando ao que ela quer
-  ("Obrigada por mandar! O vídeo não abriu aqui pra mim. Consegue me mandar uma foto ou me contar o que queria mostrar?").
+  ("Obrigada por mandar! O vídeo não abriu aqui pra mim. Se puder, me manda uma foto ou me conta o que queria mostrar 😊"),
+  sem ponto de interrogação nesse pedido: a única pergunta da resposta fica no fim.
   Não finja que viu e não deixe para "a ligação" ou "o dia".`;
 
 module.exports = ({ workflow, D }) => {
