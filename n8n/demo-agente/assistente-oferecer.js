@@ -124,11 +124,21 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     'return [{ json: { bloqueio, recado, telefone: tel,',
   ].join('\n'));
 
+  // f. WhatsApp que não enviou: em vez do erro cru da Evolution ("400 - {\"status\":400...}"), uma frase que a dona entende
+  // (24/11, teste do Victor: "Não mandei: o WhatsApp não enviou a mensagem (400 - ...)")
+  {
+    const resp = achar(F, 'Resposta');
+    const a = (resp.parameters.assignments?.assignments || []).find((x) => x.name === 'resposta');
+    const de = "if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';";
+    if (!a || String(a.value).split(de).length !== 2) throw new Error('assistente-oferecer: a Resposta das ferramentas mudou');
+    a.value = a.value.replace(de, () => "if (!r || !r.key?.id) { const em = String((r && r.error && (r.error.message || JSON.stringify(r.error))) || ''); return /exists.{0,4}false/.test(em) ? 'ERRO: esse número não tem WhatsApp. Nada foi enviado. Diga em uma frase que o número da cliente não tem WhatsApp e peça para conferir o número.' : 'ERRO: o WhatsApp não conseguiu mandar agora. Nada foi enviado. Diga em uma frase que não deu para mandar agora e que ela pode pedir de novo em alguns minutos.'; }");
+  }
+
   // e. "mandei" quando todo envio desta resposta foi recusado
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode',
     'if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {',
     "const recusados = novos.filter((f) => ENVIO.includes(f.t) && !ok(f.r) && !/^GUARDEI COMO RECADO/i.test(f.r));\n" +
-    "if (afirma && !enviou && recusados.length && !passado) { texto = '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0]; corrigida = true; }\n" +
+    "if (afirma && !enviou && recusados.length && !passado) { texto = '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
     'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {');
 };
 
