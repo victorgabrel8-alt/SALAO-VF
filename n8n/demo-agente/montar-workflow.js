@@ -882,6 +882,8 @@ if (!LOJA) require('./conferente.js')({ node, ifNode, cond, workflow,
 // (tira eco, "né?", comentário sobre a própria oferta); número, horário e link não podem mudar, senão vale o rascunho.
 // Em teste: só o número do Victor. Para abrir a todas, trocar a lista (e antes medir o custo da chamada a mais).
 if (!LOJA) require('./fala-editor.js')({ workflow, so_para: ['5566999270860'] });
+// 10x uma vez por conversa e sem "o que ajuda" depois do fato, no código (promo-uma-vez.js, 24/11/2026)
+if (!LOJA) require('./promo-uma-vez.js')({ workflow });
 // Encaixe na falta (parte 4 do portão, 21/11/2026; encaixe.js, supabase/067): a Gleide confirma a falta, a assistente pergunta se pode ver
 // com a próxima cliente do dia se ela consegue vir antes, e só com o "pode" sai UMA mensagem. A cliente diz a hora, a IA confirma e só
 // então remarca. Fica por último: mexe no que os outros módulos já montaram (ficha, agenda, assistente, rotina de vagas).
