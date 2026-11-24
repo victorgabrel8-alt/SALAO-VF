@@ -60,7 +60,7 @@
   },
   "guardar_regra": {
     "campos": {
-      "texto": "A regra, curta, com as palavras dela (ex.: \"aos sábados, oferecer primeiro os horários da manhã\")"
+      "texto": "A regra, curta, com as palavras dela (ex.: \"antes de marcar, me mostra o resumo\"). Regra de quando a IA marca vai em regra_da_agenda"
     }
   },
   "resultado_avaliacao": {

@@ -7,6 +7,7 @@
   "dona": "Caroline",
   "cidade": "Sinop",
   "equipe": true,
+  "regras_agenda": true,
   "prompt_inteiro": true,
   "assistente_numeros": [
     "5593991144926"
@@ -88,6 +89,7 @@
   "conversa_antiga": true,
   "sinal_pix": true,
   "google_agenda": true,
+  "lembrete_confere_google": true,
   "almoco_flexivel": true,
   "preco_livre": true,
   "bloco_minutos": 150,

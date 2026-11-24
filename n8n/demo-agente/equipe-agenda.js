@@ -85,7 +85,8 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     '  porId(a.profissional_id).ocupados.push([ini, a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : ini.plus({ hours: 1 })]);');
   t('{ ocupados.push([ini, fim]); blocosHora.push([ini, fim]); }', '{ for (const x of PROFS) x.ocupados.push([ini, fim]); blocosHora.push([ini, fim]); }');
   t('const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);', [
-    'const livreDe = (lista, ini, fim) => !lista.some(([a, b]) => ini < b && fim > a);',
+    '// regras da dona (supabase/071, agenda-calculo.js): faixa em que a IA não começa vale para todas',
+    'const livreDe = (lista, ini, fim) => podeComecar(ini) && !lista.some(([a, b]) => ini < b && fim > a);',
     '// a profissional que a cliente pediu pelo nome ("carol" acha a Caroline; apelidos do cadastro também valem, e apelido',
     '// curto vale como começo: "dud" acha "dudinha"). Veio mais de um nome ("Caroline ou Duda"): ela não escolheu, é sem pedido',
     '// Nome ou apelido inteiro ganha de "começa com" ("Anabela" não é a Ana) e o mais comprido ganha do mais curto.',
@@ -123,7 +124,7 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     'const livresDela = (dia) => { for (let i = 0; i < DIAS_BUSCA; i++) { const d = dia.plus({ days: i }), v = [];',
     '  for (const [a, b] of intervalos(d)) for (let h = a; h.plus({ minutes: p.dur }) <= b; h = h.plus({ minutes: PASSO_MIN })) {',
     '    if (h < agora.plus({ minutes: ANTECEDENCIA_MIN }) || noAlmocoFlex(h, h.plus({ minutes: p.dur }))) continue;',
-    '    if (livreDe(DELA.ocupados, h, h.plus({ minutes: p.dur }))) v.push(h); }',
+    '    if (livreDe(DELA.ocupados, h, h.plus({ minutes: p.dur })) && !periodoFechado(h)) v.push(h); }',
     '  if (v.length) return v; } return []; };',
     'const notaDela = (dia, horarios) => { if (!DELA || PEDIDA || !horarios.length) return \'\';',
     '  if (horarios.some((h) => livreDe(DELA.ocupados, h, h.plus({ minutes: p.dur })))) return \'\';',

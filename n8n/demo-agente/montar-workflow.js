@@ -896,6 +896,8 @@ if (LOJA) {
   // a assistente da dona lê foto e print (assistente-fotos.js)
   if (LOJA.assistente_fotos) require('./assistente-fotos.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   // a assistente marca sem inventar tempo e tira o "serviço não confirmado" quando a dona diz o serviço (assistente-marcar.js)
+  // 24/11: regras de quando a IA de atendimento marca, gravadas pela assistente (regras-da-agenda.js, supabase/071)
+  if (LOJA.regras_agenda) require('./regras-da-agenda.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   if (LOJA.assistente_marcar) require('./assistente-marcar.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
   // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
   if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite });
@@ -938,6 +940,9 @@ if (LOJA) {
   if (LOJA.equipe) require('./equipe-agenda.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // 20/11: voucher de R$ 20 da esmaltação em gel; manda o código sozinho e mostra na ficha (voucher-gel.js, supabase/057)
   if (LOJA.voucher_gel) require('./voucher-gel.js')({ faltasWorkflow: faltas.faltasWorkflow, workflow, loja: LOJA });
+  // 24/11: a confirmação da véspera confere a Google da dona; horário diferente no app e na Google espera a dona acertar (lembrete-confere-google.js)
+  if (LOJA.lembrete_confere_google && LOJA.google_agenda) require('./lembrete-confere-google.js')({ node, faltasWorkflow: faltas.faltasWorkflow,
+    NUMEROS: "($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map(s => s.trim()).filter(Boolean)", REDIS: { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } } });
   // 20/11: pergunta à dona com número (#27): ela responde '27 sim' sem citar; pedido aberto vai nas pendências, no resumo da noite e na ficha da cliente (pedido-numerado.js)
   // Tem que ser o último antes do paraLoja: encaixa nós ao lado de outros que os módulos acima já puseram.
   if (LOJA.pedido_numerado) require('./pedido-numerado.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pendenciasWorkflow: assistente.pendenciasWorkflow, faltasWorkflow: faltas.faltasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA });
