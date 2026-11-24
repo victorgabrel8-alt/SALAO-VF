@@ -217,7 +217,7 @@
         220
       ],
       "parameters": {
-        "jsCode": "// pedido-numerado.js: esta cliente já tem pergunta à dona sem resposta? Então não manda outra (a dona reclama de pergunta demais)\nconst r = $('Recebe pergunta da IA').first().json;\nconst fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);\nconst meus = Object.values($('Pedido nº: abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === '26a5d3eb-e8e4-4ed8-b206-095095292fdd' && p.telefone && p.pergunta).filter((p) => fim8(p.telefone) === fim8(r.telefone) && (p.tipo || 'pergunta') === (r.tipo || 'pergunta'));\nreturn [{ json: { aberto: meus.sort((a, b) => (b.criado || 0) - (a.criado || 0))[0] || null } }];"
+        "jsCode": "// pedido-numerado.js: esta cliente já tem pergunta à dona sem resposta? Então não manda outra (a dona reclama de pergunta demais)\nconst r = $('Recebe pergunta da IA').first().json;\nconst fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);\nconst aviso = (t) => /^AVISO/i.test(String(t || ''));\nconst meus = Object.values($('Pedido nº: abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === '26a5d3eb-e8e4-4ed8-b206-095095292fdd' && p.telefone && p.pergunta).filter((p) => fim8(p.telefone) === fim8(r.telefone) && (p.tipo || 'pergunta') === (r.tipo || 'pergunta'))\n  // AVISO não espera resposta: não segura pergunta nenhuma; só segura outro AVISO da mesma cliente nas últimas 6 h\n  // (o aviso \"não vem\" do nao-vem.js sai antes da IA responder: o AVISO dela sobre o mesmo assunto não sai repetido)\n  .filter((p) => (aviso(r.pergunta) ? aviso(p.pergunta) && Date.now() - (p.criado || 0) < 6 * 3600e3 : !aviso(p.pergunta)));\nreturn [{ json: { aberto: meus.sort((a, b) => (b.criado || 0) - (a.criado || 0))[0] || null } }];"
       }
     },
     {
@@ -270,7 +270,7 @@
               "id": "a-resposta",
               "name": "resposta",
               "type": "string",
-              "value": "={{ (() => { const p = $('Pedido nº: já tem aberto?').first().json.aberto || {}; return 'JÁ PERGUNTADO: esta cliente já tem uma pergunta com a Caroline' + (p.num ? ' (pedido #' + p.num + ')' : '') + ', ainda sem resposta: \"' + p.pergunta + '\". NÃO mandei outra pergunta. Diga à cliente, numa frase, que ainda está vendo isso com a Caroline e que avisa por aqui assim que ela responder. Não invente a resposta. Se for um problema novo e sério com o atendimento, use transferir_para_humano.'; })() }}"
+              "value": "={{ (() => { const p = $('Pedido nº: já tem aberto?').first().json.aberto || {}; if (/^AVISO/i.test(String(p.pergunta || ''))) return 'AVISO JÁ DADO: a Caroline já recebeu este aviso. NÃO mandei outro. Não fale disso com a cliente; siga o atendimento normalmente.'; return 'JÁ PERGUNTADO: esta cliente já tem uma pergunta com a Caroline' + (p.num ? ' (pedido #' + p.num + ')' : '') + ', ainda sem resposta: \"' + p.pergunta + '\". NÃO mandei outra pergunta. Diga à cliente, numa frase, que ainda está vendo isso com a Caroline e que avisa por aqui assim que ela responder. Não invente a resposta. Se for um problema novo e sério com o atendimento, use transferir_para_humano.'; })() }}"
             }
           ]
         },

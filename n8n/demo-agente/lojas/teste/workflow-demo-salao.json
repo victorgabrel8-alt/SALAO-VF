@@ -2465,7 +2465,7 @@
         3380
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst ficha = $('Supabase: ficha da cliente').first().json;\nconst hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);\nconst dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');\nconst data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');\nconst NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';\n// Mensagens dela que ficaram sem resposta (ex.: a IA falhou e só mandou o pedido de desculpas): não estão na\n// memória do Redis, mas estão no banco. Sem isso a IA esquece o que ela pediu antes.\nlet agora_ids = [];\ntry { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]').map((m) => m.id).filter(Boolean); } catch (e) {}\nconst recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);\nconst pendentes = [];\nfor (const m of recentes) {\n  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada\n  // aceno (\"ok\", \"assim\") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente\n  if (/^\\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\\s.!]*$/iu.test(m.conteudo || '')) continue;\n  if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);\n}\nconst SEM_RESPOSTA = pendentes.length ? '\\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +\n  pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';\n// Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo\nconst ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));\n// contexto-saidas.js: o que o salão já mandou a ela (assistente da dona, a própria dona ou você), mais antiga primeiro\nconst saidas = recentes.filter((m) => m.direcao === 'saida' && m.conteudo && !/^Desculpa, tive um probleminha/.test(m.conteudo) && !/^\\[m[ií]dia\\]$/.test(m.conteudo)).slice(0, 4).reverse();\nconst SAIDAS_TXT = saidas.length ? '\\nO QUE O SALÃO JÁ MANDOU A ELA NAS ÚLTIMAS HORAS (por você, pela assistente da dona ou pela própria dona; pode não estar no seu histórico): ' +\n  saidas.map((m) => '«' + String(m.conteudo).slice(0, 320) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') +\n  '\\nSe ela está respondendo a uma dessas mensagens, continue DENTRO desse assunto. Se o salão confirmou ou ofereceu um horário a ela, esse horário vale: nunca diga que ele está ocupado, que é de outra pessoa nem peça sinal por ele. Se o salão OFERECEU ou RESERVOU um horário e ela aceitou: se ele já aparece em Horário marcado, só confirme o dia e a hora (não cancele, não marque de novo, não transfira); se ainda não está marcado, marque na hora com criar_agendamento (regra HORÁRIO QUE O SALÃO OFERECEU OU RESERVOU), sem pedir permissão à dona. Se o salão CONFIRMOU um horário que você não acha em ver_agendamentos, não negue: diga que vai confirmar e use perguntar_para_gleide. Não repita pergunta nem oferta que já foi feita a ela.' : '';\n// envio-cuidadoso.js: recado que a Caroline mandou pela assistente enquanto a cliente conversava com você (não foi enviado a ela)\nlet RECADO_TXT = '';\ntry { const r = String($('Recado da dona: ler').first().json.recado || '').trim(); if (r) RECADO_TXT = '\\nRECADO DA CAROLINE PARA ESTA CLIENTE (chegou pela assistente enquanto vocês conversavam; AINDA NÃO FOI MANDADO a ela; hora entre colchetes): ' + r +\n  '\\nUse este recado AGORA, na sua resposta, com as suas palavras e junto do assunto da conversa. O que a Caroline mandou oferecer ou dizer vale mais que a sua sugestão: se ela mandou oferecer um horário, ofereça esse; se disse que um horário não dá, não ofereça. Se o recado não fala de sinal nem Pix, o horário que ela ofereceu não pede sinal. Não diga que é recado nem cite a assistente: fale como o salão.'; } catch (e) {}\n// pedido-numerado.js: pergunta que a IA fez à Caroline por esta cliente e que ainda não teve resposta\nlet PEDIDO_TXT = '';\ntry {\n  const fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);\n  const eu = fim8($('Montar entrada').first().json.telefone);\n  const meus = Object.values($('Pedido nº: abertos da cliente').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => fim8(p.telefone) === eu).sort((a, b) => (a.criado || 0) - (b.criado || 0));\n  if (meus.length) PEDIDO_TXT = '\\nPERGUNTA À CAROLINE AINDA SEM RESPOSTA: ' + meus.map((p) => (p.num ? '#' + p.num + ' ' : '') + '«' + p.pergunta + '»' +\n    (p.criado ? ' (perguntada em ' + DateTime.fromMillis(p.criado).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + ')' : '')).join(' · ') +\n    '\\nVocê disse a ela que ia confirmar isso com a Caroline. Se ela perguntar disso ou cobrar (\"conseguiu ver?\", \"e aí?\", \"ficou de confirmar\"), diga em uma frase que ainda está vendo com a Caroline e que avisa por aqui assim que ela responder. NÃO use perguntar_para_gleide de novo para isso, não invente a resposta e não diga que a Caroline já respondeu. A resposta dela chega sozinha à cliente.';\n} catch (e) {}\nconst JA_FALOU = PEDIDO_TXT + RECADO_TXT + SAIDAS_TXT + (ultimaIA ? '\\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +\n  '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '');\n// conversa-antiga.js: o que ela conversou antes de a memória (Redis) vencer\nconst PRAZO_MEMORIA_MS = 41040 * 1000;\nlet ANTIGA = '';\ntry {\n  const todas = $('Supabase: conversa antiga').all().map((i) => i.json).filter((m) => m.direcao && m.criado_em && m.conteudo); // mais nova primeiro\n  const dela = todas.filter((m) => m.direcao === 'entrada');\n  let corte = null; // a mensagem dela logo ANTES do silêncio mais recente maior que o prazo\n  for (let i = 0; i + 1 < dela.length; i++) {\n    if (DateTime.fromISO(dela[i].criado_em).toMillis() - DateTime.fromISO(dela[i + 1].criado_em).toMillis() > PRAZO_MEMORIA_MS) { corte = dela[i + 1]; break; }\n  }\n  if (corte) {\n    // tudo até a última resposta do salão a essa mensagem (o que saiu antes de ela voltar a escrever)\n    const volta = dela[dela.indexOf(corte) - 1];\n    const antigas = todas.filter((m) => m.criado_em < volta.criado_em && !/^Desculpa, tive um probleminha/.test(m.conteudo) && !/^\\[m[ií]dia\\]$/.test(m.conteudo)).slice(0, 24).reverse();\n    const quem = (m) => m.direcao === 'entrada' ? 'Ela' : m.autor === 'ia' ? 'Você' : 'Salão';\n    if (antigas.length) ANTIGA = '\\nCONVERSA ANTERIOR COM ELA (de ' + dia(antigas[0].criado_em).toFormat('dd/LL') + ' a ' + dia(antigas[antigas.length - 1].criado_em).toFormat('dd/LL') +\n      '; aconteceu de verdade, mas NÃO está no seu histórico de mensagens):\\n' +\n      antigas.map((m) => '[' + dia(m.criado_em).toFormat('dd/LL HH:mm') + '] ' + quem(m) + ': ' + String(m.conteudo).replace(/\\s*\\n\\s*/g, ' ').slice(0, 240)).join('\\n') +\n      '\\nUse isso como quem lembra dela: não se apresente de novo e NÃO pergunte de novo o que ela já respondeu ali. Retome de onde parou, citando em poucas palavras o que ela já contou. Horários, valores e ofertas daquela conversa não valem mais: consulte de novo. Só confirme em uma frase algo que pode ter mudado.';\n  }\n} catch (e) {}\nif (!ficha.id) return [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA + ANTIGA } }];\n// A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então \"sem visita\" sozinho não diz se é nova:\n// nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).\nconst recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });\nif (recente && !ficha.total_visitas && !hist.length) return [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: (ultimaIA || ANTIGA ? 'Ainda não veio ao salão e não tem nada marcado.' : NOVA) + (ficha.observacoes ? '\\nObservações da Caroline: ' + ficha.observacoes : '') + JA_FALOU + SEM_RESPOSTA + ANTIGA } }];\n\nconst SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',\n  inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };\nconst linhas = [];\nif (ficha.nome) linhas.push('Nome: ' + ficha.nome);\nlinhas.push('Situação: ' + (SITUACAO[ficha.status] || ficha.status));\nif (ficha.total_visitas) linhas.push('Veio ' + ficha.total_visitas + 'x; última visita em ' + data(ficha.ultima_visita) + '.');\n\nconst agora = DateTime.now();\nconst futuros = hist.filter((a) => a.status === 'agendado' && dia(a.inicio) > agora).reverse();\nfor (const a of futuros) linhas.push('Horário marcado: ' + dia(a.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' — ' + (a.servicos?.nome || 'serviço não informado'));\n\n// um por serviço (o mais recente), com o retorno previsto de cada um\nconst vistos = new Set();\nfor (const a of hist.filter((x) => x.status === 'realizado')) {\n  const nome = a.servicos?.nome || 'serviço não informado';\n  if (vistos.has(nome)) continue;\n  vistos.add(nome);\n  linhas.push('Já fez: ' + nome + ' em ' + data(a.inicio) + (a.retorno_previsto ? ' → voltar por volta de ' + data(a.retorno_previsto) : ''));\n}\n// voucher-gel.js: voucher da esmaltação em gel que ainda vale (supabase/057); erro na leitura só tira a linha\nconst VOUCHERS = (() => { try { return [].concat($('Supabase: voucher da cliente').first().json.vouchers || []); } catch (e) { return []; } })();\nfor (const v of VOUCHERS) {\n  if (!v || !v.codigo) continue;\n  const ate = String(v.valido_ate || '').match(/^(\\d{4})-(\\d{2})-(\\d{2})/);\n  linhas.push('VOUCHER: código ' + v.codigo + ', R$ ' + Number(v.valor || 20).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' no próximo serviço' +\n    (ate ? ', vale até ' + ate[3] + '/' + ate[2] : '') + ' (não usado' + (v.enviado ? '' : '; a mensagem com o código ainda não saiu para ela') + ')');\n}\nconst faltas = hist.filter((a) => a.status === 'faltou').length;\nif (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');\nif (ficha.observacoes) linhas.push('Observações da Caroline: ' + ficha.observacoes.replace(/\\s*\\n\\s*/g, ' | '));\n// a Caroline chamou pelo CRM e esta mensagem é a resposta dela\nconst alo = $('Supabase: último alô').first().json;\n// remarcação: a Caroline teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)\n// falta: ela não veio e a IA a chamou sozinha para marcar outro horário (ver supabase/007)\nif (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'antes') +\n  ' e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');\n// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)\nelse if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : 'hoje') +\n  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));\n// lembrete: a IA lembrou do horário na véspera ou no dia (ver supabase/027)\n// (só enquanto aquele horário ainda vale: remarcou, cancelou ou já passou, o lembrete não conta mais)\nelse if (alo.mensagem && alo.tipo === 'lembrete') {\n  if (alo.agendamentos?.status === 'agendado' && alo.agendamentos?.inicio && alo.horario_original &&\n      +dia(alo.agendamentos.inicio) === +dia(alo.horario_original) && dia(alo.horario_original) > DateTime.now()) linhas.push('ALÔ DE LEMBRETE: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você lembrou do horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.' +\n  // conversa da Lizete (08/11): respondeu à noite e a IA disse \"hoje\" para o horário do dia seguinte\n  (alo.horario_original ? (() => { const n = Math.round(dia(alo.horario_original).startOf('day').diff(DateTime.now().setZone(TZ).startOf('day'), 'days').days); return ' Esse horário é ' + (n === 0 ? 'HOJE' : n === 1 ? 'AMANHÃ' : 'daqui a ' + n + ' dias') + ': fale assim com ela.'; })() : ''));\n}\n// vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)\nelse if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'agora') +\n  ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)\n  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))\n    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));\nelse if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Caroline pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'ela') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');\n// aviso: a Caroline pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)\nelse if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Caroline mandou avisar: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');\n// ciclo de manutenção: a IA chamou sozinha para acompanhar o cabelo depois do serviço (ver supabase/048)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia' && [].concat(alo.retornos_combinados || []).some((r) => r && r.origem === 'ciclo')) {\n  const etapa = ([].concat(alo.retornos_combinados || []).find((r) => r && r.origem === 'ciclo') || {}).etapa;\n  linhas.push('ALÔ DE ACOMPANHAMENTO (o salão chamou, ela não pediu): em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n    ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. ' +\n    (etapa === 'cuidado'\n      ? 'Era só cuidado dos primeiros dias: se está tudo bem, fique feliz com ela usando as palavras dela e encerre com leveza, sem oferecer horário nem falar de manutenção. Se ela contar dor, incômodo forte ou problema, acolha e siga a regra de complicação depois do serviço.'\n      : etapa === 'meio'\n        ? 'Se ela está confortável: diga que a Caroline recomenda a manutenção em até 60 dias e pergunte, uma vez e sem pressa, se ela quer que você já veja um horário para mais perto dessa data. Se ela contar incômodo, tela soltando ou aparecendo: acolha e ofereça a manutenção agora (consultar_horarios_livres para a manutenção).'\n        : 'Se ela topar ver horário: use consultar_horarios_livres para a manutenção e ofereça 2 horários, seguindo as regras da manutenção. Se disser que agora não pode, acolha e pergunte quando fica melhor para ela; se der um prazo, vale a regra do alô combinado.') +\n    ' Não repita o texto do alô e não pergunte o que ela já fez: está na ficha.');\n}\n// retorno combinado: ela tinha combinado de voltar a falar nesta data e a IA chamou (ver supabase/028)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia') linhas.push('ALÔ DE RETORNO (combinado com ela): ela tinha ficado de falar com o salão nesta data e em ' +\n  dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. Siga o assunto que ficou combinado; se ela ainda não decidiu, acolha sem insistir.');\nelse if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Caroline mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');\nreturn [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: linhas.join('\\n') + JA_FALOU + SEM_RESPOSTA + ANTIGA } }];\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst ficha = $('Supabase: ficha da cliente').first().json;\nconst hist = $('Supabase: histórico da cliente').all().map((i) => i.json).filter((a) => a.inicio);\nconst dia = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');\nconst data = (s) => (s.length === 10 ? DateTime.fromISO(s, { zone: TZ }) : dia(s)).toFormat('dd/LL/yyyy');\nconst NOVA = 'Cliente nova: é a primeira conversa dela com o salão. Nunca veio e não tem nada marcado; trate como primeiro contato.';\n// Mensagens dela que ficaram sem resposta (ex.: a IA falhou e só mandou o pedido de desculpas): não estão na\n// memória do Redis, mas estão no banco. Sem isso a IA esquece o que ela pediu antes.\nlet agora_ids = [];\ntry { agora_ids = JSON.parse($('Montar entrada').first().json.mensagens || '[]').map((m) => m.id).filter(Boolean); } catch (e) {}\nconst recentes = $('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m.direcao);\nconst pendentes = [];\nfor (const m of recentes) {\n  if (m.direcao !== 'entrada') { if (/^Desculpa, tive um probleminha/.test(m.conteudo || '')) continue; break; } // o pedido de desculpas não responde nada\n  // aceno (\"ok\", \"assim\") que a IA deixou sem resposta de propósito ([[NAO_ENVIAR]], prompt v7.3) não volta como pendente\n  if (/^\\s*(ok+|okay|assim|certo|t[áa]( bom)?|aham|blz|beleza|entendi|combinado|obrigad[ao]|valeu|[👍🙏😊❤️]+)[\\s.!]*$/iu.test(m.conteudo || '')) continue;\n  if (!agora_ids.includes(m.wa_message_id)) pendentes.unshift(m);\n}\nconst SEM_RESPOSTA = pendentes.length ? '\\nMENSAGENS ANTERIORES DELA AINDA SEM RESPOSTA (responda junto com a de agora; podem não estar no histórico): ' +\n  pendentes.map((m) => '«' + String(m.conteudo || '').slice(0, 300) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') : '';\n// Já respondeu nas últimas horas (a memória do Redis pode ter sido perdida ou apagada): não se apresentar de novo\nconst ultimaIA = recentes.find((m) => m.direcao === 'saida' && !/^Desculpa, tive um probleminha/.test(m.conteudo || ''));\n// contexto-saidas.js: o que o salão já mandou a ela (assistente da dona, a própria dona ou você), mais antiga primeiro\nconst saidas = recentes.filter((m) => m.direcao === 'saida' && m.conteudo && !/^Desculpa, tive um probleminha/.test(m.conteudo) && !/^\\[m[ií]dia\\]$/.test(m.conteudo)).slice(0, 4).reverse();\nconst SAIDAS_TXT = saidas.length ? '\\nO QUE O SALÃO JÁ MANDOU A ELA NAS ÚLTIMAS HORAS (por você, pela assistente da dona ou pela própria dona; pode não estar no seu histórico): ' +\n  saidas.map((m) => '«' + String(m.conteudo).slice(0, 320) + '» (' + dia(m.criado_em).toFormat('HH:mm') + ')').join(' · ') +\n  '\\nSe ela está respondendo a uma dessas mensagens, continue DENTRO desse assunto. Se o salão confirmou ou ofereceu um horário a ela, esse horário vale: nunca diga que ele está ocupado, que é de outra pessoa nem peça sinal por ele. Se o salão OFERECEU ou RESERVOU um horário e ela aceitou: se ele já aparece em Horário marcado, só confirme o dia e a hora (não cancele, não marque de novo, não transfira); se ainda não está marcado, marque na hora com criar_agendamento (regra HORÁRIO QUE O SALÃO OFERECEU OU RESERVOU), sem pedir permissão à dona. Se o salão CONFIRMOU um horário que você não acha em ver_agendamentos, não negue: diga que vai confirmar e use perguntar_para_gleide. Não repita pergunta nem oferta que já foi feita a ela.' : '';\n// envio-cuidadoso.js: recado que a Caroline mandou pela assistente enquanto a cliente conversava com você (não foi enviado a ela)\nlet RECADO_TXT = '';\ntry { const r = String($('Recado da dona: ler').first().json.recado || '').trim(); if (r) RECADO_TXT = '\\nRECADO DA CAROLINE PARA ESTA CLIENTE (chegou pela assistente enquanto vocês conversavam; AINDA NÃO FOI MANDADO a ela; hora entre colchetes): ' + r +\n  '\\nUse este recado AGORA, na sua resposta, com as suas palavras e junto do assunto da conversa. O que a Caroline mandou oferecer ou dizer vale mais que a sua sugestão: se ela mandou oferecer um horário, ofereça esse; se disse que um horário não dá, não ofereça. Se o recado não fala de sinal nem Pix, o horário que ela ofereceu não pede sinal. Não diga que é recado nem cite a assistente: fale como o salão.'; } catch (e) {}\n// pedido-numerado.js: pergunta que a IA fez à Caroline por esta cliente e que ainda não teve resposta\nlet PEDIDO_TXT = '';\ntry {\n  const fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);\n  const eu = fim8($('Montar entrada').first().json.telefone);\n  const meus = Object.values($('Pedido nº: abertos da cliente').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => fim8(p.telefone) === eu && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.criado || 0) - (b.criado || 0));\n  if (meus.length) PEDIDO_TXT = '\\nPERGUNTA À CAROLINE AINDA SEM RESPOSTA: ' + meus.map((p) => (p.num ? '#' + p.num + ' ' : '') + '«' + p.pergunta + '»' +\n    (p.criado ? ' (perguntada em ' + DateTime.fromMillis(p.criado).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + ')' : '')).join(' · ') +\n    '\\nVocê disse a ela que ia confirmar isso com a Caroline. Se ela perguntar disso ou cobrar (\"conseguiu ver?\", \"e aí?\", \"ficou de confirmar\"), diga em uma frase que ainda está vendo com a Caroline e que avisa por aqui assim que ela responder. NÃO use perguntar_para_gleide de novo para isso, não invente a resposta e não diga que a Caroline já respondeu. A resposta dela chega sozinha à cliente.';\n} catch (e) {}\nconst JA_FALOU = PEDIDO_TXT + RECADO_TXT + SAIDAS_TXT + (ultimaIA ? '\\nVocê já conversou com ela hoje (sua última resposta foi às ' + dia(ultimaIA.criado_em).toFormat('HH:mm') +\n  '): continue a conversa, sem se apresentar de novo nem cumprimentar como primeiro contato.' : '');\n// conversa-antiga.js: o que ela conversou antes de a memória (Redis) vencer\nconst PRAZO_MEMORIA_MS = 41040 * 1000;\nlet ANTIGA = '';\ntry {\n  const todas = $('Supabase: conversa antiga').all().map((i) => i.json).filter((m) => m.direcao && m.criado_em && m.conteudo); // mais nova primeiro\n  const dela = todas.filter((m) => m.direcao === 'entrada');\n  let corte = null; // a mensagem dela logo ANTES do silêncio mais recente maior que o prazo\n  for (let i = 0; i + 1 < dela.length; i++) {\n    if (DateTime.fromISO(dela[i].criado_em).toMillis() - DateTime.fromISO(dela[i + 1].criado_em).toMillis() > PRAZO_MEMORIA_MS) { corte = dela[i + 1]; break; }\n  }\n  if (corte) {\n    // tudo até a última resposta do salão a essa mensagem (o que saiu antes de ela voltar a escrever)\n    const volta = dela[dela.indexOf(corte) - 1];\n    const antigas = todas.filter((m) => m.criado_em < volta.criado_em && !/^Desculpa, tive um probleminha/.test(m.conteudo) && !/^\\[m[ií]dia\\]$/.test(m.conteudo)).slice(0, 24).reverse();\n    const quem = (m) => m.direcao === 'entrada' ? 'Ela' : m.autor === 'ia' ? 'Você' : 'Salão';\n    if (antigas.length) ANTIGA = '\\nCONVERSA ANTERIOR COM ELA (de ' + dia(antigas[0].criado_em).toFormat('dd/LL') + ' a ' + dia(antigas[antigas.length - 1].criado_em).toFormat('dd/LL') +\n      '; aconteceu de verdade, mas NÃO está no seu histórico de mensagens):\\n' +\n      antigas.map((m) => '[' + dia(m.criado_em).toFormat('dd/LL HH:mm') + '] ' + quem(m) + ': ' + String(m.conteudo).replace(/\\s*\\n\\s*/g, ' ').slice(0, 240)).join('\\n') +\n      '\\nUse isso como quem lembra dela: não se apresente de novo e NÃO pergunte de novo o que ela já respondeu ali. Retome de onde parou, citando em poucas palavras o que ela já contou. Horários, valores e ofertas daquela conversa não valem mais: consulte de novo. Só confirme em uma frase algo que pode ter mudado.';\n  }\n} catch (e) {}\nif (!ficha.id) return [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: (ultimaIA ? '' : NOVA) + JA_FALOU + SEM_RESPOSTA + ANTIGA } }];\n// A ficha é criada na 1ª mensagem (n8n_registrar_entrada), então \"sem visita\" sozinho não diz se é nova:\n// nova = cadastrada há menos de 1 dia e sem nenhum atendimento (nem marcado nem feito).\nconst recente = DateTime.fromISO(ficha.criado_em) > DateTime.now().minus({ days: 1 });\nif (recente && !ficha.total_visitas && !hist.length) return [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: (ultimaIA || ANTIGA ? 'Ainda não veio ao salão e não tem nada marcado.' : NOVA) + (ficha.observacoes ? '\\nObservações da Caroline: ' + ficha.observacoes : '') + JA_FALOU + SEM_RESPOSTA + ANTIGA } }];\n\nconst SITUACAO = { em_dia: 'em dia', retorno_chegando: 'retorno de algum serviço chegando', retorno_atrasado: 'passou da data de voltar e ainda não marcou',\n  inativa: 'sumida há bastante tempo', sem_visita: 'já conversou, mas ainda não veio ao salão' };\nconst linhas = [];\nif (ficha.nome) linhas.push('Nome: ' + ficha.nome);\nlinhas.push('Situação: ' + (SITUACAO[ficha.status] || ficha.status));\nif (ficha.total_visitas) linhas.push('Veio ' + ficha.total_visitas + 'x; última visita em ' + data(ficha.ultima_visita) + '.');\n\nconst agora = DateTime.now();\nconst futuros = hist.filter((a) => a.status === 'agendado' && dia(a.inicio) > agora).reverse();\nfor (const a of futuros) linhas.push('Horário marcado: ' + dia(a.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' — ' + (a.servicos?.nome || 'serviço não informado'));\n\n// um por serviço (o mais recente), com o retorno previsto de cada um\nconst vistos = new Set();\nfor (const a of hist.filter((x) => x.status === 'realizado')) {\n  const nome = a.servicos?.nome || 'serviço não informado';\n  if (vistos.has(nome)) continue;\n  vistos.add(nome);\n  linhas.push('Já fez: ' + nome + ' em ' + data(a.inicio) + (a.retorno_previsto ? ' → voltar por volta de ' + data(a.retorno_previsto) : ''));\n}\n// voucher-gel.js: voucher da esmaltação em gel que ainda vale (supabase/057); erro na leitura só tira a linha\nconst VOUCHERS = (() => { try { return [].concat($('Supabase: voucher da cliente').first().json.vouchers || []); } catch (e) { return []; } })();\nfor (const v of VOUCHERS) {\n  if (!v || !v.codigo) continue;\n  const ate = String(v.valido_ate || '').match(/^(\\d{4})-(\\d{2})-(\\d{2})/);\n  linhas.push('VOUCHER: código ' + v.codigo + ', R$ ' + Number(v.valor || 20).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + ' no próximo serviço' +\n    (ate ? ', vale até ' + ate[3] + '/' + ate[2] : '') + ' (não usado' + (v.enviado ? '' : '; a mensagem com o código ainda não saiu para ela') + ')');\n}\nconst faltas = hist.filter((a) => a.status === 'faltou').length;\nif (faltas) linhas.push('Faltou ' + faltas + 'x sem avisar.');\nif (ficha.observacoes) linhas.push('Observações da Caroline: ' + ficha.observacoes.replace(/\\s*\\n\\s*/g, ' | '));\n// a Caroline chamou pelo CRM e esta mensagem é a resposta dela\nconst alo = $('Supabase: último alô').first().json;\n// remarcação: a Caroline teve um imprevisto e pediu pelo app para remarcar um horário (ver CONTRATO.md)\n// falta: ela não veio e a IA a chamou sozinha para marcar outro horário (ver supabase/007)\nif (alo.mensagem && alo.tipo === 'falta') linhas.push('ALÔ DE FALTA: ela faltou ao horário de ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'antes') +\n  ' e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.');\n// atraso: passou do horário dela, ela não chegou e a IA perguntou se está a caminho (ver supabase/011)\nelse if (alo.mensagem && alo.tipo === 'atraso') linhas.push('ALÔ DE ATRASO: o horário dela era ' +\n  (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : 'hoje') +\n  ', ela não tinha chegado e em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  (alo.agendamentos?.status === 'faltou' ? ' ATENÇÃO: ela não respondeu a tempo e esse horário já ficou como falta (pode ter ido para outra cliente).' : ''));\n// lembrete: a IA lembrou do horário na véspera ou no dia (ver supabase/027)\n// (só enquanto aquele horário ainda vale: remarcou, cancelou ou já passou, o lembrete não conta mais)\nelse if (alo.mensagem && alo.tipo === 'lembrete') {\n  if (alo.agendamentos?.status === 'agendado' && alo.agendamentos?.inicio && alo.horario_original &&\n      +dia(alo.agendamentos.inicio) === +dia(alo.horario_original) && dia(alo.horario_original) > DateTime.now()) linhas.push('ALÔ DE LEMBRETE: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você lembrou do horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_inicio = ' + dia(alo.horario_original).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta.' +\n  // conversa da Lizete (08/11): respondeu à noite e a IA disse \"hoje\" para o horário do dia seguinte\n  (alo.horario_original ? (() => { const n = Math.round(dia(alo.horario_original).startOf('day').diff(DateTime.now().setZone(TZ).startOf('day'), 'days').days); return ' Esse horário é ' + (n === 0 ? 'HOJE' : n === 1 ? 'AMANHÃ' : 'daqui a ' + n + ' dias') + ': fale assim com ela.'; })() : ''));\n}\n// vaga: abriu um horário antes do dela e a IA ofereceu adiantar (ver supabase/010)\nelse if (alo.mensagem && alo.tipo === 'vaga') linhas.push('ALÔ DE VAGA: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' você ofereceu adiantar o horário dela de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'agora') +\n  ' para a vaga de ' + (alo.vagas?.inicio ? dia(alo.vagas.inicio).toFormat(\"cccc, dd/LL 'às' HH:mm\") + ' (data_hora_nova = ' + dia(alo.vagas.inicio).toFormat(\"yyyy-LL-dd'T'HH:mm\") + ')' : '?') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta.' +\n  // vaga de atraso: confere na hora se a cliente atrasada não apareceu (a rotina de 5 min pode não ter fechado a vaga ainda)\n  (alo.vagas && (alo.vagas.status !== 'aberta' || (alo.vagas.motivo === 'atraso' && alo.vagas.agendamentos?.status !== 'faltou'))\n    ? ' ATENÇÃO: essa vaga não está mais livre (outra pessoa ficou com ela ou já está em cima da hora).' : ''));\nelse if (alo.mensagem && alo.tipo === 'remarcacao') linhas.push('ALÔ DE REMARCAÇÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Caroline pediu para remarcar o horário de ' + (alo.horario_original ? dia(alo.horario_original).toFormat(\"cccc, dd/LL 'às' HH:mm\") : 'ela') +\n  ' e mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse pedido.');\n// aviso: a Caroline pediu à assistente para avisar a cliente (horário mudado, cancelamento, recado; ver supabase/013)\nelse if (alo.mensagem && alo.tipo === 'aviso') linhas.push('AVISO DO SALÃO: em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Caroline mandou avisar: «' + alo.mensagem + '». A mensagem de agora pode ser a resposta a esse aviso.');\n// ciclo de manutenção: a IA chamou sozinha para acompanhar o cabelo depois do serviço (ver supabase/048)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia' && [].concat(alo.retornos_combinados || []).some((r) => r && r.origem === 'ciclo')) {\n  const etapa = ([].concat(alo.retornos_combinados || []).find((r) => r && r.origem === 'ciclo') || {}).etapa;\n  linhas.push('ALÔ DE ACOMPANHAMENTO (o salão chamou, ela não pediu): em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n    ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. ' +\n    (etapa === 'cuidado'\n      ? 'Era só cuidado dos primeiros dias: se está tudo bem, fique feliz com ela usando as palavras dela e encerre com leveza, sem oferecer horário nem falar de manutenção. Se ela contar dor, incômodo forte ou problema, acolha e siga a regra de complicação depois do serviço.'\n      : etapa === 'meio'\n        ? 'Se ela está confortável: diga que a Caroline recomenda a manutenção em até 60 dias e pergunte, uma vez e sem pressa, se ela quer que você já veja um horário para mais perto dessa data. Se ela contar incômodo, tela soltando ou aparecendo: acolha e ofereça a manutenção agora (consultar_horarios_livres para a manutenção).'\n        : 'Se ela topar ver horário: use consultar_horarios_livres para a manutenção e ofereça 2 horários, seguindo as regras da manutenção. Se disser que agora não pode, acolha e pergunte quando fica melhor para ela; se der um prazo, vale a regra do alô combinado.') +\n    ' Não repita o texto do alô e não pergunte o que ela já fez: está na ficha.');\n}\n// retorno combinado: ela tinha combinado de voltar a falar nesta data e a IA chamou (ver supabase/028)\nelse if (alo.mensagem && alo.tipo === 'retorno' && alo.canal === 'ia') linhas.push('ALÔ DE RETORNO (combinado com ela): ela tinha ficado de falar com o salão nesta data e em ' +\n  dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") + ' você mandou: «' + alo.mensagem + '». A mensagem de agora é a resposta. Siga o assunto que ficou combinado; se ela ainda não decidiu, acolha sem insistir.');\nelse if (alo.mensagem) linhas.push('ALÔ DE ' + (alo.tipo === 'reativacao' ? 'REATIVAÇÃO' : 'RETORNO') + ': em ' + dia(alo.criado_em).toFormat(\"dd/LL 'às' HH:mm\") +\n  ' a Caroline mandou para ela: «' + alo.mensagem + '». A mensagem de agora é a resposta a esse alô.');\nreturn [{ json: { pediuCancelar: ((ms) => { const pede = new RegExp(\"(cancel|desmarc|n[aã]o (vou|posso|consigo|vai dar|d[aá]|tenho como|quero)|imprevisto|desist|remarc|reagend|adiar|deix[ao]r? pra|outro dia|outra semana|pr[oó]xima semana|n[aã]o vai rolar|passando mal|doente|hospital)\", 'i'); const haMin = (m) => (Date.now() - Date.parse(m.criado_em)) / 60000; return ms.some((m) => m.direcao === 'entrada' && haMin(m) < 120 && pede.test(String(m.conteudo || ''))) || ms.some((m) => m.direcao === 'saida' && haMin(m) < 30 && /(cancel|desmarc)[^?]*\\?/i.test(String(m.conteudo || ''))); })($('Supabase: últimas mensagens').all().map((i) => i.json).filter((m) => m && m.direcao)), texto: linhas.join('\\n') + JA_FALOU + SEM_RESPOSTA + ANTIGA } }];\n"
       }
     },
     {
@@ -5758,6 +5758,166 @@
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
       "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000459",
+      "name": "Não vem: avisar?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -300,
+        1220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_cliente_nao_vem",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_cliente_id: $('Supabase: registrar entrada').first().json.cliente_id || null, p_texto: String($('Texto da mensagem').first().json.texto || '') }) }}",
+        "options": {
+          "timeout": 5000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000460",
+      "name": "Não vem: tem aviso?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -80,
+        1220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "nv1",
+              "leftValue": "={{ $json.avisar === true }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000461",
+      "name": "Não vem: mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        140,
+        1220
+      ],
+      "parameters": {
+        "jsCode": "\n// nao-vem.js: o aviso que a dona recebe. Não diz o que fazer com o horário: ela decide (\"libera\", \"remarca\").\nconst r = $input.first().json;\nconst TZ = 'America/Cuiaba';\nconst ini = DateTime.fromISO(String(r.inicio)).setZone(TZ);\nconst hoje = DateTime.now().setZone(TZ).startOf('day');\nconst dias = Math.round(ini.startOf('day').diff(hoje, 'days').days);\nconst hora = ini.minute ? ini.toFormat(\"H'h'mm\") : ini.toFormat(\"H'h'\");\nconst quando = (dias === 0 ? 'hoje' : dias === 1 ? 'amanhã' : ini.setLocale('pt-BR').toFormat(\"cccc, dd/LL\")) + ' às ' + hora;\nconst partes = String(r.nome || 'A cliente').trim().split(/\\s+/);\nconst nome = partes.slice(0, /^(d[aeo]s?|e)$/i.test(partes[1] || '') ? 3 : 2).join(' ');\n// \"com a Duda\" só quando é de outra profissional (a dona não precisa ler \"com a Caroline\" sobre ela mesma)\nconst prof = r.profissional && !new RegExp('^' + \"Caroline\", 'i').test(String(r.profissional).trim()) ? ' com a ' + String(r.profissional).trim().split(/\\s+/)[0] : '';\nconst fala = String(r.texto || '').replace(/^\\[áudio\\]\\s*/i, '').replace(/\\s+/g, ' ').trim();\nconst trecho = fala.length > 220 ? fala.slice(0, 217).trim() + '…' : fala;\nconst texto = '⚠️ *' + nome + '* tem horário ' + quando + prof + (r.servico ? ' (' + String(r.servico).toLowerCase() + ')' : '') +\n  ' e escreveu:' + String.fromCharCode(10) + '\"' + trecho + '\"' + String.fromCharCode(10, 10) +\n  'A IA continua a conversa com ela. Se quiser liberar o horário, me fala.';\nconst numeros = ('5566999270860' || '').split(',').map((s) => s.trim()).filter(Boolean);\n// pedido AVISO aberto (pedido-numerado.js): o AVISO da IA sobre o mesmo assunto não sai repetido\nconst pedido = JSON.stringify({ telefone: $('Extrair dados').first().json.telefone, jid: $('Extrair dados').first().json.jid || null,\n  nome: r.nome || null, pergunta: 'AVISO, não precisa responder: ' + nome + ' não vem ' + quando + ' (' + trecho + ')',\n  tipo: 'pergunta', empresa: \"ff4b7937-1abb-4803-83c8-e0896d94fc9f\", num: null, criado: Date.now() });\nreturn numeros.map((tel) => ({ json: { tel, texto, agendamento_id: r.agendamento_id, pedido,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000462",
+      "name": "Não vem: avisar a dona",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        1220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000463",
+      "name": "Não vem: memória da assistente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        580,
+        1220
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:assistente:{{ $('Não vem: mensagem').item.json.tel }}",
+        "messageData": "={{ $('Não vem: mensagem').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000464",
+      "name": "Não vem: segurar o AVISO da IA",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        360,
+        1400
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:pedido:{{ 'naovem-' + $json.agendamento_id }}",
+        "value": "={{ $json.pedido }}",
+        "expire": true,
+        "ttl": 21600
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "executeOnce": true
     }
   ],
   "connections": {
@@ -6455,6 +6615,11 @@
           },
           {
             "node": "Presença: confirmou?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Não vem: avisar?",
             "type": "main",
             "index": 0
           }
@@ -7762,6 +7927,56 @@
         [
           {
             "node": "Sobre esta cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Não vem: avisar?": {
+      "main": [
+        [
+          {
+            "node": "Não vem: tem aviso?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Não vem: tem aviso?": {
+      "main": [
+        [
+          {
+            "node": "Não vem: mensagem",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Não vem: mensagem": {
+      "main": [
+        [
+          {
+            "node": "Não vem: segurar o AVISO da IA",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Não vem: avisar a dona",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Não vem: avisar a dona": {
+      "main": [
+        [
+          {
+            "node": "Não vem: memória da assistente",
             "type": "main",
             "index": 0
           }

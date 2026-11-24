@@ -200,10 +200,9 @@
   "assistente_marcar": true,
   "lembrete_duplo": true,
   "pendencias_horas": [
-    12,
-    18
+    12
   ],
-  "resumo_noite": "19:00",
+  "resumo_noite": "18:00",
   "conferente": "ligado",
   "assistente_consertos": true,
   "confirmou_presenca": true,
@@ -220,5 +219,9 @@
   "gemini_teste": true,
   "assistente_modelo": "models/gemini-3.5-flash",
   "assistente_espera": 5,
-  "bloqueio_por_profissional": true
+  "bloqueio_por_profissional": true,
+  "pendencias_sem": [
+    "atendimento_sem_status"
+  ],
+  "aviso_nao_vem": true
 }
