@@ -1,0 +1,69 @@
+{
+  "status_atendimento": {
+    "descricao": "Marca um horário como realizado (veio), faltou ou cancelado. Use na hora quando ela contar ou mandar.",
+    "campos": {}
+  },
+  "registrar_atendimento": {
+    "campos": {
+      "servico": "Serviço feito, com o nome da lista SERVIÇOS E PREÇOS (ex.: Manicure, Esmaltação em gel)"
+    }
+  },
+  "marcar_horario": {
+    "descricao": "Marca um horário novo na agenda. Cliente da lista (cliente_id) ou nova (nome + telefone). Ela disse a cliente e a hora: use na hora, com forcar = sim. Se a ideia de marcar foi sua: só depois do sim dela, sem forcar. Para falar com uma cliente sem marcar, a ferramenta é chamar_cliente.",
+    "campos": {
+      "servico": "Serviço com o nome da lista SERVIÇOS E PREÇOS, só se ela disse; senão vazio (o sistema usa o da última vez ou pergunta)",
+      "forcar": "\"sim\" quando ela ditou a cliente e a hora (vale mesmo encostando em outra cliente, no almoço ou fora do horário). Vazio só quando a ideia de marcar foi sua"
+    }
+  },
+  "reagendar": {
+    "campos": {
+      "servico": "Serviço com o nome da lista, só se ela disse ou pediu para trocar; senão vazio",
+      "forcar": "\"sim\" quando ela mandou mudar para essa hora ou disse o serviço de um horário já marcado. Vazio só quando a ideia foi sua"
+    }
+  },
+  "ajustar_duracao": {
+    "campos": {
+      "forcar": "\"sim\" quando ela disse o tempo ou a hora de terminar. Vazio só quando a ideia foi sua"
+    }
+  },
+  "concluir": {
+    "campos": {
+      "servico": "O serviço principal que ela fez, com o nome da lista, se ela disse (o que tem manutenção: alongamento, banho de gel, esmaltação em gel; senão o primeiro). Vazio se ela não disse",
+      "extras": "Os outros serviços que ela fez, com os nomes da lista, separados por vírgula (ex.: Pedicure, Francesinha); senão vazio"
+    }
+  },
+  "bloquear_dias": {
+    "descricao": "Marca dias sem atender (viagem, folga, curso): o app e a IA de atendimento param de oferecer horário, para as duas profissionais. Devolve os horários já marcados nesses dias. Use na hora quando ela mandar.",
+    "campos": {}
+  },
+  "desbloquear_dias": {
+    "descricao": "Tira o bloqueio que cobre um dia (o studio volta a atender). Use na hora quando ela mandar.",
+    "campos": {}
+  },
+  "bloquear_horario": {
+    "descricao": "Marca um período sem atender num dia (ex.: das 14:00 às 16:00), para as duas profissionais: o app e a IA de atendimento param de oferecer esse período. Devolve os horários já marcados nele. Use na hora quando ela mandar.",
+    "campos": {}
+  },
+  "desbloquear_horario": {
+    "descricao": "Tira os períodos sem atender de um dia; com hora_inicio, só o que cobre essa hora. Use na hora quando ela mandar.",
+    "campos": {}
+  },
+  "cadastrar_cliente": {
+    "campos": {
+      "observacoes": "O que a cliente quer, como ela contou (ex.: faz banho de gel na mão e esmaltação em gel no pé). Vazio se ela não disse"
+    }
+  },
+  "combinar_retorno": {
+    "campos": {
+      "texto": "Assunto, para a IA saber o que falar (ex.: ver os horários de dezembro, lembrar do Pix do sinal)"
+    }
+  },
+  "guardar_regra": {
+    "campos": {
+      "texto": "A regra, curta, com as palavras dela (ex.: \"aos sábados, oferecer primeiro os horários da manhã\")"
+    }
+  },
+  "resultado_avaliacao": {
+    "remover": true
+  }
+}

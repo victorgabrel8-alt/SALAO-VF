@@ -87,27 +87,7 @@ module.exports = ({ workflow, loja }) => {
   agente.parameters.options.systemMessage = '=' + texto;
 
   // ---------- 4. descrição das ferramentas: troca inteira, pelo arquivo da loja ----------
-  const arq = path.join(loja.pasta, 'ferramentas.json');
-  if (fs.existsSync(arq)) {
-    for (const [nome, f] of Object.entries(JSON.parse(fs.readFileSync(arq, 'utf8')))) {
-      const no = workflow.nodes.find((n) => n.name === nome);
-      if (!no) throw new Error(`prompt-inteiro: ferramentas.json fala de "${nome}", que não existe no agente`);
-      const p = no.parameters;
-      const campoDesc = 'description' in p ? 'description' : 'toolDescription' in p ? 'toolDescription' : null;
-      if (!campoDesc) throw new Error(`prompt-inteiro: não achei a descrição de "${nome}"`);
-      p[campoDesc] = f.descricao;
-      for (const [campo, desc] of Object.entries(f.campos || {})) {
-        const v = (p.workflowInputs || { value: {} }).value;
-        const antes = String(v[campo] || '');
-        const depois = antes.replace(/(\$fromAI\('[^']*',\s*`)[\s\S]*?(`)/, (m, a, b) => a + desc.replace(/`/g, "'") + b);
-        if (!antes.includes('$fromAI(') || depois === antes && !antes.includes(desc)) throw new Error(`prompt-inteiro: não consegui trocar a descrição do campo "${campo}" de "${nome}"`);
-        v[campo] = depois;
-      }
-      const texto2 = [f.descricao, ...Object.values(f.campos || {})].join('\n');
-      const e2 = PROIBIDO.map(([re, porque]) => { const m = texto2.match(re); return m ? `"${m[0]}": ${porque}` : null; }).filter(Boolean);
-      if (e2.length) throw new Error(`prompt-inteiro: ferramentas.json, "${nome}":\n- ` + e2.join('\n- '));
-    }
-  }
+  ferramentasDaLoja(workflow, path.join(loja.pasta, 'ferramentas.json'));
 
   // ---------- 5. cumprimento de volta: o filtro da saída não apaga o "Oi Ana boa tarde" quando ELA cumprimentou ----------
   // (a base tira o cumprimento de quem já recebeu resposta nas últimas 3 h; o prompt da loja manda cumprimentar de volta
@@ -117,6 +97,81 @@ module.exports = ({ workflow, loja }) => {
   if (!quebrar || quebrar.parameters.jsCode.split(DE).length !== 2) throw new Error('prompt-inteiro: o filtro do cumprimento em "Quebrar mensagens" mudou');
   quebrar.parameters.jsCode = quebrar.parameters.jsCode.replace(DE,
     "const elaCumprimentou = /^\\s*(\\[\\d+\\]\\s*)?(oi+e*|ol[áa]|opa|bom dia|boa tarde|boa noite)(?![a-zà-ú])/i.test(String($('Montar entrada').first().json.texto_cliente || ''));\nif (jaFalou && !elaCumprimentou) {");
+};
+
+// A descrição (e a dos campos) de cada ferramenta citada no arquivo da loja é trocada inteira: uma ferramenta que diz
+// coisa diferente do prompt é uma segunda regra para o mesmo assunto.
+function ferramentasDaLoja(workflow, arq) {
+  if (!fs.existsSync(arq)) return;
+  for (const [nome, f] of Object.entries(JSON.parse(fs.readFileSync(arq, 'utf8')))) {
+    const no = workflow.nodes.find((n) => n.name === nome);
+    if (!no) throw new Error(`prompt-inteiro: ${path.basename(arq)} fala de "${nome}", que não existe no agente`);
+    // ferramenta que não serve para esta loja (ex.: resultado de avaliação de mega hair numa loja de unhas) sai inteira
+    if (f.remover) { workflow.nodes = workflow.nodes.filter((n) => n !== no); delete workflow.connections[nome]; continue; }
+    const p = no.parameters;
+    const campoDesc = 'description' in p ? 'description' : 'toolDescription' in p ? 'toolDescription' : null;
+    if (f.descricao !== undefined) {
+      if (!campoDesc) throw new Error(`prompt-inteiro: não achei a descrição de "${nome}"`);
+      p[campoDesc] = f.descricao;
+    }
+    for (const [campo, desc] of Object.entries(f.campos || {})) {
+      const v = (p.workflowInputs || { value: {} }).value;
+      const antes = String(v[campo] || '');
+      const depois = antes.replace(/(\$fromAI\('[^']*',\s*`)[\s\S]*?(`)/, (m, a, b) => a + desc.replace(/`/g, "'") + b);
+      if (!antes.includes('$fromAI(') || depois === antes && !antes.includes(desc)) throw new Error(`prompt-inteiro: não consegui trocar a descrição do campo "${campo}" de "${nome}"`);
+      v[campo] = depois;
+    }
+    const texto2 = [f.descricao || '', ...Object.values(f.campos || {})].join('\n');
+    const e2 = PROIBIDO.map(([re, porque]) => { const m = texto2.match(re); return m ? `"${m[0]}": ${porque}` : null; }).filter(Boolean);
+    if (e2.length) throw new Error(`prompt-inteiro: ${path.basename(arq)}, "${nome}":\n- ` + e2.join('\n- '));
+  }
+}
+
+// A ASSISTENTE DA DONA (lojas/<slug>/<prompt_assistente> com marcas @@NOME@@): o mesmo caminho. O arquivo da loja é todo o
+// texto de regras; dos blocos que os módulos colam (registro do que já fez, conversas das clientes, serviços, chave Pix,
+// endereço) fica só o dado. Descrição de ferramenta: lojas/<slug>/ferramentas-assistente.json.
+const DADOS_ASSISTENTE = {
+  ENDERECO: (e) => e.includes('c.endereco') && e.includes('mapa') && e.length < 900,
+  SERVICOS: (e) => e.includes("$('Ler serviços')"),
+  PIX: (e) => e.includes('sinal_pix') && e.includes('nome_recebedor'),
+  CONVERSAS: (e) => e.includes("$('Ler conversas')"),
+  FEITOS: (e) => e.includes("$('Contexto').first().json.texto"),
+};
+module.exports.assistente = ({ assistenteWorkflow, loja }) => {
+  if (!loja.prompt_assistente) return false;
+  let texto = fs.readFileSync(path.join(loja.pasta, loja.prompt_assistente), 'utf8').replace(/\r\n/g, '\n').trim();
+  if (!/@@[A-Z_]+@@/.test(texto)) return false; // prompt antigo, sem as marcas: fica como está
+  const agente = assistenteWorkflow.nodes.find((n) => n.name === 'Agente assistente');
+  if (!agente) throw new Error('prompt-inteiro: sem o nó "Agente assistente"');
+  const todas = expressoes(String(agente.parameters.options.systemMessage || ''));
+  for (const [nome, ehEste] of Object.entries(DADOS_ASSISTENTE)) {
+    const e = [...new Set(todas.filter(ehEste))];
+    const marca = '@@' + nome + '@@', vezes = texto.split(marca).length - 1;
+    if (e.length > 1) throw new Error(`prompt-inteiro (assistente): achei ${e.length} expressões diferentes para ${nome}`);
+    if (e.length && vezes !== 1) throw new Error(`prompt-inteiro (assistente): o prompt precisa ter ${marca} uma vez (tem ${vezes})`);
+    if (e.length) texto = texto.split(marca).join(e[0]);
+  }
+  const sobrou = texto.match(/@@[A-Z_]+@@/);
+  if (sobrou) throw new Error(`prompt-inteiro (assistente): ${sobrou[0]} não tem dado correspondente (o módulo que monta esse dado está desligado?)`);
+  const semCodigo = expressoes(texto).reduce((t, e) => t.split(e).join(''), texto);
+  const erros = PROIBIDO.map(([re, porque]) => { const m = semCodigo.match(re); return m ? `"${m[0]}": ${porque}` : null; }).filter(Boolean);
+  if (erros.length) throw new Error('prompt-inteiro (assistente): o prompt tem regra empilhada ou recado que não é para a IA:\n- ' + erros.join('\n- '));
+  agente.parameters.options.systemMessage = '=' + texto;
+  ferramentasDaLoja(assistenteWorkflow, path.join(loja.pasta, 'ferramentas-assistente.json'));
+
+  // mais ágil: a assistente é da dona, não precisa de ritmo de gente digitando. Junta mensagens seguidas por 10 s (eram 15),
+  // "lendo" de 0,5 a 1,5 s e "digitando" de 1 a 2,5 s (eram 1,5-4 s e 2-8 s). Valores trocados, não somados.
+  const achar = (nome) => { const n = assistenteWorkflow.nodes.find((x) => x.name === nome); if (!n) throw new Error('prompt-inteiro (assistente): sem o nó ' + nome); return n; };
+  const juntar = achar('Aguardar (juntar mensagens)').parameters;
+  if (juntar.amount !== 15) throw new Error('prompt-inteiro (assistente): a espera de juntar mensagens mudou (' + juntar.amount + ')');
+  juntar.amount = 10;
+  const ritmo = achar('Ritmo humano').parameters;
+  const DE1 = 'const pausa = Math.min(4, 1.5 + dela.length / 120 + (dela.startsWith(\'[áudio]\') ? 1 : 0));';
+  const DE2 = 'const delay = Math.round(Math.min(8000, Math.max(2000, texto.length * 30)));';
+  if (!ritmo.jsCode.includes(DE1) || !ritmo.jsCode.includes(DE2)) throw new Error('prompt-inteiro (assistente): o "Ritmo humano" mudou');
+  ritmo.jsCode = ritmo.jsCode.replace(DE1, 'const pausa = Math.min(1.5, 0.5 + dela.length / 400);')
+    .replace(DE2, 'const delay = Math.round(Math.min(2500, Math.max(1000, texto.length * 10)));');
+  return true;
 };
 
 module.exports.expressoes = expressoes;

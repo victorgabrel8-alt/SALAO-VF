@@ -70,3 +70,43 @@ test('a consulta de horários leva o telefone (cliente antiga continua com quem 
   assert.equal(v.telefone, no('criar_agendamento').parameters.workflowInputs.value.telefone);
   assert.ok(String(v.telefone).includes('telefone'));
 });
+
+// ---------- assistente da dona ----------
+const wfA = JSON.parse(fs.readFileSync(path.join(PASTA, 'workflow-assistente.json'), 'utf8'));
+const noA = (nome) => wfA.nodes.find((n) => n.name === nome);
+const sistemaA = noA('Agente assistente').parameters.options.systemMessage;
+const semDadosA = expressoes(sistemaA).reduce((t, e) => t.split(e).join('«dado»'), sistemaA);
+
+test('assistente: texto sem regra empilhada, sem Gleide e sem mega hair', () => {
+  for (const [re, porque] of PROIBIDO) assert.doesNotMatch(semDadosA, re, porque);
+  assert.doesNotMatch(semDadosA, /gleide|mega hair|cabelo|queratina/i);
+  assert.doesNotMatch(sistemaA, /@@[A-Z_]+@@/);
+  assert.ok(semDadosA.length < 20000, 'texto da assistente com ' + semDadosA.length + ' caracteres');
+});
+
+test('assistente: os blocos que os módulos colavam não voltaram, e os dados entraram uma vez', () => {
+  for (const velho of ['DÚVIDAS QUE A IA DE ATENDIMENTO JÁ SABE', 'A HORA DAS MENSAGENS', 'Essa lista é a verdade', 'Para mandar a chave a alguém'])
+    assert.ok(!semDadosA.includes(velho), 'bloco colado voltou: ' + velho);
+  for (const trecho of ["$('Ler serviços')", "$('Ler conversas')", "$('Contexto').first().json.texto", "$('Ler regras')", "$('Ler pendências')", "$('Ler pedidos abertos')", 'c.endereco'])
+    assert.equal(expressoes(sistemaA).filter((e) => e.includes(trecho)).length, 1, trecho);
+});
+
+test('assistente: cada linha do arquivo da loja está no texto gerado (arquivo gerado em dia)', () => {
+  const txt = fs.readFileSync(path.join(PASTA, 'prompt-assistente.txt'), 'utf8').replace(/\r\n/g, '\n');
+  for (const linha of txt.split('\n').filter((l) => l.trim() && !l.includes('{{') && !l.includes('@@'))) assert.ok(sistemaA.includes(linha), 'falta: ' + linha.slice(0, 80));
+});
+
+test('assistente: ferramentas dizem o mesmo que o texto (forcar com a ordem dela, bloquear sem pedir licença)', () => {
+  const desc = (n) => { const p = noA(n).parameters; return (p.description || p.toolDescription || '') + JSON.stringify(p.workflowInputs ? p.workflowInputs.value : {}); };
+  for (const n of ['marcar_horario', 'reagendar', 'ajustar_duracao']) assert.doesNotMatch(desc(n), /Vazio na primeira tentativa, sempre/, n);
+  for (const n of ['bloquear_dias', 'bloquear_horario', 'desbloquear_dias', 'desbloquear_horario', 'status_atendimento']) assert.doesNotMatch(desc(n), /DEPOIS do sim|só depois do sim/i, n);
+  assert.ok(!noA('resultado_avaliacao'), 'a ferramenta de avaliação de mega hair voltou');
+  // o que a IA lê: a descrição e a descrição de cada campo (os nomes de coluna internos não contam)
+  const lido = wfA.nodes.filter((n) => /toolWorkflow|toolCode/.test(n.type)).map((n) => (n.parameters.description || n.parameters.toolDescription || '') + JSON.stringify((n.parameters.workflowInputs || {}).value || {})).join('');
+  assert.doesNotMatch(lido, /cabelo|selagem|hidrata/i);
+});
+
+test('assistente: mais ágil (junta mensagens por 10 s e não imita digitação longa)', () => {
+  assert.equal(noA('Aguardar (juntar mensagens)').parameters.amount, 10);
+  assert.ok(noA('Ritmo humano').parameters.jsCode.includes('Math.min(2500'));
+});
