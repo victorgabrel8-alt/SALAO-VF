@@ -2,7 +2,7 @@
 
 import { Voltar } from "@/components/Voltar";
 import { useState } from "react";
-import { useEmpresa, useTrocarConfig } from "@/lib/empresa";
+import { useEmpresa, useTrocarConfig, SoDaDona } from "@/lib/empresa";
 import { supabase } from "@/lib/supabase/client";
 
 // Dados da loja: a própria dona preenche (manicure, estúdio de beleza ou mega hair) sem depender da gente.
@@ -58,7 +58,16 @@ function texto(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
+// login de profissional que não é a dona não mexe aqui (supabase/070)
 export default function DadosLojaPage() {
+  return (
+    <SoDaDona>
+      <DadosLojaPageConteudo />
+    </SoDaDona>
+  );
+}
+
+function DadosLojaPageConteudo() {
   const empresa = useEmpresa();
   const trocarConfig = useTrocarConfig();
   const loja = (empresa.config.loja ?? {}) as DadosLoja;

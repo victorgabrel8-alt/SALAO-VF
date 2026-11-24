@@ -8,7 +8,7 @@ import { Folha } from "@/components/Folha";
 import { BotaoPedir, SeloPedido, usePedidos } from "@/components/PedidoRemarcacao";
 import { buscarProximos, type Atendimento } from "@/lib/atendimentos";
 import { bloqueiosFuturos, salvarBloqueios, type Bloqueio } from "@/lib/bloqueios";
-import { useEmpresa, useTrocarConfig } from "@/lib/empresa";
+import { useEmpresa, useTrocarConfig, SoDaDona } from "@/lib/empresa";
 import { dataNoSalao, diasEntre, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, somarDias } from "@/lib/formato";
 
 // Dias sem atender: viagem, folga, curso, imprevisto. Bloqueado, o app e a IA deixam de oferecer
@@ -31,7 +31,16 @@ function quantosDias(b: { de: string; ate: string }): string {
   return n === 1 ? "1 dia" : `${n} dias`;
 }
 
+// login de profissional que não é a dona não mexe aqui (supabase/070)
 export default function BloqueiosPage() {
+  return (
+    <SoDaDona>
+      <BloqueiosPageConteudo />
+    </SoDaDona>
+  );
+}
+
+function BloqueiosPageConteudo() {
   const empresa = useEmpresa();
   const trocarConfig = useTrocarConfig();
   const { dialogo, perguntar, avisar } = useDialogo();

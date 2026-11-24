@@ -4,7 +4,7 @@ import { Voltar } from "@/components/Voltar";
 import { useEffect, useState } from "react";
 import { useDialogo } from "@/components/Dialogo";
 import { Folha } from "@/components/Folha";
-import { useEmpresa } from "@/lib/empresa";
+import { useEmpresa, SoDaDona } from "@/lib/empresa";
 import { categoriasDo, exemploServico, nichoDa, type Categoria } from "@/lib/nicho";
 import { supabase } from "@/lib/supabase/client";
 
@@ -69,7 +69,16 @@ async function buscarServicos(empresaId: string): Promise<{ servicos: Servico[] 
   return { servicos: (data ?? []).map((s) => ({ ...s, preco: s.preco === null ? null : Number(s.preco) })) as Servico[] };
 }
 
+// login de profissional que não é a dona não mexe aqui (supabase/070)
 export default function ServicosPage() {
+  return (
+    <SoDaDona>
+      <ServicosPageConteudo />
+    </SoDaDona>
+  );
+}
+
+function ServicosPageConteudo() {
   const empresa = useEmpresa();
   const categorias = categoriasDo(nichoDa(empresa));
   const [servicos, setServicos] = useState<Servico[] | null>(null);
