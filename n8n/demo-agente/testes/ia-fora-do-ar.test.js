@@ -78,13 +78,16 @@ test('entrada estranha não quebra', () => {
 
 test('aviso para a dona: conversa normal, com quem é e o que ela escreveu', () => {
   const t = avisoDaDona({ nome: 'dienne souza de lima', telefone: '556696736156', mensagem: 'Oi cheguei' });
-  assert.strictEqual(t, '⚠️ Estou com um problema aqui no sistema e não consegui responder a *Dienne Souza* (final 6156), que escreveu agora: «Oi cheguei». ' +
-    'Você consegue responder ela pelo WhatsApp do salão? Eu só disse que você responde assim que puder. O Victor já foi avisado do problema.');
+  assert.strictEqual(t, 'Estou com um problema aqui no sistema e não consegui responder a *Dienne Souza*, que escreveu agora: «Oi cheguei». ' +
+    'Eu só disse a ela que você responde assim que puder.\nConsegue responder ela pelo WhatsApp do salão? O número dela é (66) 99673-6156.\nO Victor já foi avisado do problema.');
+  // 24/11/2026: com o link da conversa no app (a Gleide perguntou "Qual o WhatsApp dela?")
+  assert.ok(avisoDaDona({ nome: 'Lia', telefone: '5566999990022', mensagem: 'oi', link: 'https://app.oistudio.com.br/conversas/abc' })
+    .endsWith('O número dela é (66) 99999-0022.\nConversa dela no app: https://app.oistudio.com.br/conversas/abc\nO Victor já foi avisado do problema.'));
   assert.doesNotMatch(t, /\b(responda|sim ou n[ãa]o|digite)\b|^\s*\d+\)/im);
   // sem nome: o número; numeração do buffer sai; mensagem comprida é cortada
   assert.match(avisoDaDona({ nome: '', telefone: '5566999990000', mensagem: '[1] oi\n[2] cheguei' }), /responder o número \(66\) 99999-0000, que escreveu agora: «oi cheguei»/);
-  assert.match(avisoDaDona({ nome: '5566999990000', telefone: '', mensagem: '' }), /responder uma cliente\. Você consegue/);
-  assert.ok(avisoDaDona({ nome: 'Ana', telefone: '5566999990000', mensagem: 'x'.repeat(500) }).length < 480);
+  assert.match(avisoDaDona({ nome: '5566999990000', telefone: '', mensagem: '' }), /responder uma cliente\. Eu só disse/);
+  assert.ok(avisoDaDona({ nome: 'Ana', telefone: '5566999990000', mensagem: 'x'.repeat(500) }).length < 520);
 });
 
 // ---------- montagem (sem gravar arquivo) ----------
@@ -159,7 +162,11 @@ test('montagem: ramo da dona sai do "Quebrar mensagens", lá embaixo na tela, s�
     'Montar entrada': { telefone: '556696736156', texto_cliente: 'Oi cheguei' } }, { ASSISTENTE_NUMEROS: '5500000000001' });
   assert.strictEqual(out.length, 1);
   assert.strictEqual(out[0].json.tel, '5500000000001');
-  assert.match(out[0].json.texto, /responder a \*Dienne\* \(final 6156\), que escreveu agora: «Oi cheguei»/);
+  assert.match(out[0].json.texto, /responder a \*Dienne\*, que escreveu agora: «Oi cheguei»[\s\S]*O número dela é \(66\) 99673-6156\./);
+  // com a ficha: o link da conversa dela no app
+  const comFicha = rodar(no('IA fora: aviso da dona').parameters.jsCode, { 'Supabase: ficha da cliente': { nome: 'Dienne', id: 'id-dienne' }, 'Extrair dados': { nome: 'Di' },
+    'Montar entrada': { telefone: '556696736156', texto_cliente: 'Oi' } }, { ASSISTENTE_NUMEROS: '5500000000001' });
+  assert.ok(comFicha[0].json.texto.includes('\nConversa dela no app: https://app.oistudio.com.br/conversas/id-dienne\n'), comFicha[0].json.texto);
   assert.strictEqual(JSON.parse(out[0].json.memoria).data.content, out[0].json.texto);
   // sem a ficha (cliente nova): usa o nome do WhatsApp
   const novo = rodar(no('IA fora: aviso da dona').parameters.jsCode, { 'Extrair dados': { nome: 'Bia' }, 'Montar entrada': { telefone: '5566999990000', texto_cliente: 'oi' } }, {});
@@ -204,12 +211,12 @@ test('testador: "suspended" não é teto de gasto e "R$ 429,00" não é o códig
 });
 
 test('testador: nome com emoji, nome que não é nome e contato sem número de verdade', () => {
-  assert.match(avisoDaDona({ nome: '💕mari💕', telefone: '5566999990000', mensagem: 'oi' }), /a \*Mari\* \(final 0000\)/);
+  assert.match(avisoDaDona({ nome: '💕mari💕', telefone: '5566999990000', mensagem: 'oi' }), /a \*Mari\*, que escreveu[\s\S]*O número dela é \(66\) 99999-0000\./);
   assert.match(avisoDaDona({ nome: '.', telefone: '5566999990000', mensagem: 'oi' }), /responder o número \(66\) 99999-0000/);
   // contato @lid: o "telefone" é um código, não ajuda a achar a conversa
   const lid = avisoDaDona({ nome: 'Bia', telefone: '123456789012345', mensagem: 'oi' });
   assert.match(lid, /a \*Bia\*, que escreveu/);
-  assert.doesNotMatch(lid, /final/);
+  assert.doesNotMatch(lid, /final|número dela/);
 });
 
 test('testador: a mesma cliente não gera dois avisos à dona em 10 minutos (recado descartado), mas depois disso avisa de novo', () => {

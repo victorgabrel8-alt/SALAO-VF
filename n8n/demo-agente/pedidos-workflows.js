@@ -38,8 +38,8 @@ module.exports = ({ node, str, main, toolSub, workflow, REDIS, GEMINI, lerPergun
         sendHeaders: true, headerParameters: supaHeaders, options: {},
       }, { onError: 'continueRegularOutput', alwaysOutputData: true }),
       enviar('Enviar pergunta à Gleide', [440, 0], '$json.alerta',
-        `(${ORCAMENTO} ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + (${P}.nome || 'sem nome') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
-        (${ORCAMENTO} ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor (ou o que precisa saber dela). Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')`),
+        `(${ORCAMENTO} ? 'Orçamento de cabelo: ' : 'Pergunta da cliente ') + (${P}.nome || 'sem nome') + ' · ' + ${FONE} + '\\n' + ${P}.pergunta + (${P}.contexto ? '\\n' + ${P}.contexto : '') +
+        (${ORCAMENTO} ? '\\n\\nToque em Responder nesta mensagem e escreva o valor (ou o que precisa saber dela). Eu passo para ela.' : '\\n\\nToque em Responder nesta mensagem e escreva o que digo a ela.')`),
       node('Guardar pedido', 'n8n-nodes-base.redis', 1, [660, 0], {
         operation: 'set', key: "=pedido:{{ $json.key?.id || 'falhou' }}", expire: true, ttl: 259200,
         value: `={{ JSON.stringify({ telefone: ${P}.telefone, jid: ${P}.jid, nome: ${P}.nome, pergunta: ${P}.pergunta, tipo: ${P}.tipo || 'pergunta', empresa: $env.EMPRESA_ID }) }}`,
@@ -214,11 +214,21 @@ return [{ json: { ...p, texto: t } }];
       operation: 'push', list: `=memoria:{{ ${PD}.telefone }}`, tail: false,
       messageData: "={{ JSON.stringify({ type: 'ai', data: { content: $('Pedido: texto').first().json.texto, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}",
     }, { credentials: REDIS, onError: 'continueRegularOutput' }),
+    // a assistente da Gleide também fica sabendo: a resposta dela não passa pela assistente (vem citando o pedido) e, sem
+    // isto, "mandou pra ela?" ou "o que você mandou?" ficavam sem resposta (24/11/2026)
+    node('Pedido: memória da assistente', 'n8n-nodes-base.redis', 1, [2200, -1000], {
+      operation: 'push', tail: false,
+      list: `=assistente:{{ (() => { const ns = ($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map((s) => s.trim()).filter(Boolean); const t = String(${E}.telefone || ''); return ns.find((n) => n === t || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === t) || t || 'sem-numero'; })() }}`,
+      messageData: `={{ (() => { const d = new Date(Date.now() - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); ` +
+        `const quando = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); ` +
+        `return JSON.stringify({ type: 'ai', data: { content: '[' + quando + '] Avisei ' + (${PD}.nome ? 'a *' + ${PD}.nome + '*' : 'a cliente') + ' (você respondeu ao pedido dela «' + (${PD}.pergunta || '') + '» com «' + (${PD}.resposta || '') + '»). Mandei para ela: «' + ($('Pedido: texto').first().json.texto || '') + '»', ` +
+        `additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }); })() }}`,
+    }, { credentials: REDIS, onError: 'continueRegularOutput' }),
     node('Pedido: apagar', 'n8n-nodes-base.redis', 1, [2310, -900], {
       operation: 'delete', key: `=pedido:{{ ${E}.citado }}`,
     }, { credentials: REDIS, onError: 'continueRegularOutput' }),
     enviar('Pedido: confirmar à Gleide', [2530, -900], `${E}.jid`,
-      `'Avisei ' + (${PD}.nome ? 'a ' + ${PD}.nome : 'a cliente') + ' ✓\\n' + $('Pedido: texto').first().json.texto`),
+      `'Avisei ' + (${PD}.nome ? 'a ' + ${PD}.nome : 'a cliente') + ':\\n' + $('Pedido: texto').first().json.texto`),
   );
   // o Redis devolve só o campo pedido: o resto do fluxo precisa do item de Extrair dados de volta
   workflow.nodes.push(node('Pedido: seguir normal', 'n8n-nodes-base.code', 2, [660, -760], {
@@ -234,7 +244,8 @@ return [{ json: { ...p, texto: t } }];
   workflow.connections['Pedido: enviar à cliente'] = main('Pedido: registrar saída');
   workflow.connections['Pedido: registrar saída'] = main('Pedido: memória (resposta da Gleide)');
   workflow.connections['Pedido: memória (resposta da Gleide)'] = main('Pedido: memória (mensagem enviada)');
-  workflow.connections['Pedido: memória (mensagem enviada)'] = main('Pedido: apagar');
+  workflow.connections['Pedido: memória (mensagem enviada)'] = main('Pedido: memória da assistente');
+  workflow.connections['Pedido: memória da assistente'] = main('Pedido: apagar');
   workflow.connections['Pedido: apagar'] = main('Pedido: confirmar à Gleide');
 
   return { perguntaWorkflow, idFile: require('path').join(__dirname, '.workflow-pergunta-id'), modalidadeWorkflow, modalidadeIdFile };

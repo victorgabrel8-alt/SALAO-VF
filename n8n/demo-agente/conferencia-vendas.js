@@ -52,11 +52,11 @@ function montarConferencia(itens, agoraMs) {
   if (lista.length === 1) {
     const i = lista[0];
     return abre + ': a *' + nome(i) + '* veio ' + quando(i.inicio) + ' e eu anotei ' + servico(i) + valor(i) +
-      '. Foi isso mesmo? Se foi diferente, ou se teve mais alguém, me conta que eu acerto 🙂';
+      '. Foi isso mesmo? Se foi diferente, ou se teve mais alguém, me conta que eu acerto.';
   }
   return abre + ', eu anotei assim:\n\n' +
     lista.map((i) => '• *' + nome(i) + '*, ' + quando(i.inicio) + ': ' + servico(i) + valor(i)).join('\n') +
-    '\n\nTá certinho? Se alguma foi diferente (cabelo novo ou o cabelo dela mesmo), ou se teve alguém que não está aqui, me conta do seu jeito que eu acerto 🙂';
+    '\n\nTá certinho? Se alguma foi diferente (cabelo novo ou o cabelo dela mesmo), ou se teve alguém que não está aqui, me conta do seu jeito que eu acerto.';
 }
 
 // O que a assistente precisa saber para entender a resposta (entra no fim do prompt dela). A lista que espera resposta vem
@@ -82,7 +82,7 @@ Ainda esperando a Gleide confirmar (nome, dia e o que a lista mostrou):
   que você anotou está errado e não sabe o certo: conferir_venda com desfazer = sim (apaga o valor).
 - Ela falou de alguém que não estava na lista: conferir_venda com o nome e o dia que ela disse. Se a ferramenta disser que não
   achou o atendimento, ela veio sem estar na agenda: registrar_atendimento e depois conferir_venda.
-- Depois responda curto, do jeito dela: "Anotado ✅ Vitoria com cabelo novo; Renata e Dienne, manutenção." Sem número, sem
+- Depois responda curto, do jeito dela: "Anotado. Vitoria com cabelo novo; Renata e Dienne, manutenção." Sem número, sem
   "responda sim ou não", sem falar em relatório ou comissão.
 - Se ela não responder à lista, não cobre.`;
 

@@ -43,21 +43,26 @@ function decidirFalha(ctx) {
 }
 
 // O aviso para a dona, em conversa normal. Colada no nó "IA fora: aviso da dona".
-// ctx: nome (cadastro ou WhatsApp), telefone, mensagem (o que a cliente escreveu).
+// ctx: nome (cadastro ou WhatsApp), telefone, mensagem (o que a cliente escreveu), link (conversa dela no app).
+// 24/11/2026: o aviso trazia só o final do telefone e a Gleide teve de perguntar "Qual o WhatsApp dela?" (e a assistente,
+// também sem a IA, não respondeu). Agora leva o número inteiro e o link da conversa.
 function avisoDaDona(ctx) {
   ctx = ctx || {};
-  const fone = (t) => { const m = String(t || '').replace(/\D/g, '').match(/^55(\d{2})(\d{4,5})(\d{4})$/); return m ? '(' + m[1] + ') ' + m[2] + '-' + m[3] : ''; };
+  // celular gravado sem o 9 sai com o 9, como a Gleide disca
+  const fone = (t) => { const m = String(t || '').replace(/\D/g, '').match(/^55(\d{2})(\d{4,5})(\d{4})$/); if (!m) return ''; const meio = m[2].length === 4 && /^[6-9]/.test(m[2]) ? '9' + m[2] : m[2]; return '(' + m[1] + ') ' + meio + '-' + m[3]; };
   // só as letras do nome ("💕mari💕" vira "Mari"; "." e número não são nome)
   const dois = String(ctx.nome || '').replace(/[^\p{L}\s'-]/gu, ' ').trim().split(/\s+/).filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2)
     .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-  // o final do telefone só ajuda quando é telefone de verdade (contato sem número traz um código que não é o dela)
-  const final = fone(ctx.telefone) ? String(ctx.telefone).replace(/\D/g, '').slice(-4) : '';
-  const quem = dois && !/^cliente( teste)?$/i.test(dois) ? 'a *' + dois + '*' + (final ? ' (final ' + final + ')' : '') : (fone(ctx.telefone) ? 'o número ' + fone(ctx.telefone) : 'uma cliente');
+  // o número só quando é telefone de verdade (contato sem número traz um código que não é o dela)
+  const tel = fone(ctx.telefone);
+  const temNome = !!dois && !/^cliente( teste)?$/i.test(dois);
+  const quem = temNome ? 'a *' + dois + '*' : (tel ? 'o número ' + tel : 'uma cliente');
   // "[1] oi\n[2] cheguei" é a numeração do buffer: sai
   const msg = String(ctx.mensagem || '').replace(/(^|\n)\s*\[\d+\]\s*/g, '$1').replace(/\s+/g, ' ').trim();
   const corta = msg.length > 200 ? msg.slice(0, 200) + '…' : msg;
-  return '⚠️ Estou com um problema aqui no sistema e não consegui responder ' + quem + (corta ? ', que escreveu agora: «' + corta + '».' : '.') +
-    ' Você consegue responder ela pelo WhatsApp do salão? Eu só disse que você responde assim que puder. O Victor já foi avisado do problema.';
+  return 'Estou com um problema aqui no sistema e não consegui responder ' + quem + (corta ? ', que escreveu agora: «' + corta + '».' : '.') +
+    ' Eu só disse a ela que você responde assim que puder.\nConsegue responder ela pelo WhatsApp do salão?' + (temNome && tel ? ' O número dela é ' + tel + '.' : '') +
+    (ctx.link ? '\nConversa dela no app: ' + ctx.link : '') + '\nO Victor já foi avisado do problema.';
 }
 
 module.exports = ({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS, dona = 'Gleide' }) => {
@@ -117,8 +122,9 @@ module.exports = ({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS
       "const nome = pega(() => $('Supabase: ficha da cliente').first().json.nome) || pega(() => $('Extrair dados').first().json.nome) || '';",
       "const mensagem = pega(() => $('Montar entrada').first().json.texto_cliente) || '';",
       "const texto = avisos.length === 4",
-      "  ? 'Tem mais clientes escrevendo e eu continuo sem conseguir responder. Dá uma olhada no WhatsApp do salão quando puder 🙏 O Victor já foi avisado.'",
-      "  : avisoDaDona({ nome, telefone, mensagem });",
+      "  ? 'Tem mais clientes escrevendo e eu continuo sem conseguir responder. Dá uma olhada no WhatsApp do salão quando puder. O Victor já foi avisado.'",
+      "  : avisoDaDona({ nome, telefone, mensagem, link: (() => { const id = pega(() => $('Supabase: ficha da cliente').first().json.id);",
+      "      return id ? String(pega(() => $env.APP_URL) || 'https://app.oistudio.com.br').replace(/\\/$/, '') + '/conversas/' + id : ''; })() });",
       "const memoria = JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } });",
       `return ${NUMEROS}.map((tel) => ({ json: { tel, texto, memoria } }));`,
       '} catch (e) { return []; }',

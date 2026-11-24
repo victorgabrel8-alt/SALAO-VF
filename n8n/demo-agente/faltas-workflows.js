@@ -168,7 +168,7 @@ const itens = $input.all().map((i) => i.json)
 return itens.length ? [{ json: { itens } }] : [];
 `;
 
-module.exports = ({ env, node, main }) => {
+module.exports = ({ env, node, main, semEmoji = false }) => {
   const REDIS = { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } };
   const supaHeaders = { parameters: [
     { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
@@ -346,5 +346,16 @@ module.exports = ({ env, node, main }) => {
     settings: { executionOrder: 'v1', timezone: 'America/Cuiaba', saveDataSuccessExecution: 'all', saveManualExecutions: true },
   };
 
+  // semEmoji (a Gleide, 24/11/2026): os avisos que vão para a dona saem sem emoji. As lojas continuam como estavam.
+  if (semEmoji) {
+    const tirar = [["'⏰ *' + (a.nome", "'*' + (a.nome"], ["'⚠️ ' + n(c.nome_atrasada)", 'n(c.nome_atrasada)'], ["return '🔁 ' + n + ' mudou a avaliação", "return n + ' mudou a avaliação"],
+      ["? '❌ ' + n + ' cancelou", "? n + ' cancelou"], [": '📅 ' + n + ' mudou o horário", ": n + ' mudou o horário"], ["return '⏩ ' + n + ' adiantou", "return n + ' adiantou"],
+      ["? '✅ Remarquei ' + n", "? 'Remarquei ' + n"], [": '✅ ' + n + ' remarcou", ": n + ' remarcou"], ["return '⚠️ ' + n + ' não respondeu", "return n + ' não respondeu"]];
+    for (const [de, para] of tirar) {
+      const nos = faltasWorkflow.nodes.filter((x) => typeof x.parameters?.jsCode === 'string' && x.parameters.jsCode.includes(de));
+      if (nos.length !== 1) throw new Error('faltas sem emoji: achei ' + nos.length + ' nós com ' + de);
+      nos[0].parameters.jsCode = nos[0].parameters.jsCode.split(de).join(para);
+    }
+  }
   return { faltasWorkflow, idFile: require('path').join(__dirname, '.workflow-faltas-id') };
 };

@@ -14,7 +14,7 @@ const TEL_BR = (t) => `(() => { const d = String(${t} || '').replace(/\\D/g, '')
 const TIPO = (t) => `({ audioMessage: 'audio', imageMessage: 'imagem', conversation: 'texto', extendedTextMessage: 'texto' })[${t}] || 'outro'`;
 const EMPRESA = '$env.EMPRESA_ID';
 
-module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow }) => {
+module.exports = ({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow, REDIS }) => {
   const headers = { parameters: [
     { name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' },
     { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
@@ -299,17 +299,46 @@ Use a ficha como quem já conhece a cliente:
   // Sai pelo número do salão, então o número de alerta tem de ser outro (o WhatsApp não manda para ele mesmo).
   entre(pausaWorkflow, 'Supabase: pausar IA', supa('Supabase: número de alerta', 'GET',
     `empresas?select=alerta:config->>whatsapp_alerta&id=eq.{{ ${EMPRESA} }}`, null, { executeOnce: true }), 'Resposta');
+  // O aviso é um repasse completo (aviso-transferencia.js): o que ela precisa fazer, o que a cliente escreveu, o número e
+  // para que serve o link. Até 24/11/2026 era só "🔔 nome · telefone / 10 palavras / link" e a Gleide não entendia o link.
   const CLI = "$('Supabase: pausar IA').first().json";
-  const FONE = `String(${CLI}.telefone || '').replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3')`;
-  entre(pausaWorkflow, 'Supabase: número de alerta', node('Avisar a Gleide (WhatsApp)', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
+  entre(pausaWorkflow, 'Supabase: número de alerta', supa('Supabase: mensagens da cliente', 'GET',
+    `mensagens?select=direcao,conteudo,criado_em&cliente_id=eq.{{ ${CLI}.id || '00000000-0000-0000-0000-000000000000' }}` +
+    "&criado_em=gte.{{ $now.minus(3, 'hours').toUTC().toISO() }}&order=criado_em.desc&limit=12", null, { executeOnce: true }), 'Resposta');
+  const { avisoTransferencia } = require('./aviso-transferencia.js');
+  entre(pausaWorkflow, 'Supabase: mensagens da cliente', node('Montar aviso à Gleide', 'n8n-nodes-base.code', 2, [0, 0], { jsCode: [
+    '// aviso-transferencia.js: o repasse da cliente para a dona; o mesmo texto vai para a memória da assistente',
+    `const avisoTransferencia = ${avisoTransferencia.toString()};`,
+    'const pega = (f) => { try { return f(); } catch (e) { return undefined; } };',
+    `const cli = pega(() => ${CLI}) || {};`,
+    `const pedido = pega(() => ${P}) || {};`,
+    "const mensagens = (pega(() => $('Supabase: mensagens da cliente').all().map((i) => i.json)) || []).filter((m) => m && m.direcao);",
+    "const numero = String(pega(() => $('Supabase: número de alerta').first().json.alerta) || '').replace(/\\D/g, '');",
+    // a chave da memória é a que a assistente lê: o número como está em ASSISTENTE_NUMEROS (o alerta pode estar sem o 9)
+    "const semNove = (n) => String(n || '').replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2');",
+    "const daLista = (pega(() => ($env.ASSISTENTE_NUMEROS || '5566999596740')) || '5566999596740').split(',').map((s) => s.trim()).filter(Boolean);",
+    "const chave = daLista.find((n) => semNove(n) === semNove(numero)) || numero;",
+    'let r;',
+    "try { r = avisoTransferencia({ nome: cli.nome, telefone: cli.telefone || pedido.telefone, cliente_id: cli.id, o_que_precisa: pedido.o_que_precisa,",
+    "  motivo: pedido.motivo, mensagens, app: pega(() => $env.APP_URL) || 'https://app.oistudio.com.br', agora: Date.now() }); }",
+    'catch (e) {',
+    "  const texto = (cli.nome || 'Uma cliente') + ' precisa de você: ' + (pedido.o_que_precisa || pedido.motivo || 'quer falar com você') + '. A IA parou de responder ela por 12 h.';",
+    "  r = { texto, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) };",
+    '}',
+    'return [{ json: { numero, chave, texto: r.texto, memoria: r.memoria } }];',
+  ].join('\n') }, { executeOnce: true }), 'Resposta');
+  entre(pausaWorkflow, 'Montar aviso à Gleide', node('Avisar a Gleide (WhatsApp)', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
     method: 'POST', url: '={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}',
     sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
     sendBody: true, specifyBody: 'json',
-    jsonBody: `={{ JSON.stringify({ number: $json.alerta, text: '🔔 ' + (${CLI}.nome || 'Cliente') + ' · ' + ${FONE} +
-      '\\n' + (${P}.o_que_precisa || ${P}.motivo || 'Quer falar com você') +
-      '\\n' + ($env.APP_URL || 'https://app.oistudio.com.br') + '/conversas/' + ${CLI}.id }) }}`,
+    jsonBody: '={{ JSON.stringify({ number: $json.numero, text: $json.texto }) }}',
     options: {},
   }, { retryOnFail: true, maxTries: 3, waitBetweenTries: 3000, onError: 'continueRegularOutput', executeOnce: true }), 'Resposta');
+  // a assistente fica sabendo do aviso: se a Gleide perguntar "o que é isso?", ela explica e já tem o id da cliente
+  entre(pausaWorkflow, 'Avisar a Gleide (WhatsApp)', node('Memória da assistente (aviso)', 'n8n-nodes-base.redis', 1, [0, 0], {
+    operation: 'push', list: "=assistente:{{ $('Montar aviso à Gleide').first().json.chave || 'sem-numero' }}",
+    messageData: "={{ $('Montar aviso à Gleide').first().json.memoria }}", tail: false,
+  }, { credentials: REDIS, onError: 'continueRegularOutput', executeOnce: true }), 'Resposta');
 
   // ---------- CRM: anotar_no_crm também no Supabase ----------
   // O que a IA anota (interesse, orçamento, objeção) vira a pré-avaliação da cliente (supabase/004):

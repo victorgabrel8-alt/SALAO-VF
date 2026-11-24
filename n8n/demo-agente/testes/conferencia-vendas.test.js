@@ -32,7 +32,7 @@ test('lista de várias clientes: natural, sem número de pedido e sem "responda 
 test('uma cliente só: frase corrida', () => {
   const t = montarConferencia([item('Vitoria', '2026-11-19T13:00:00Z', 'mega_novo')], SEGUNDA);
   assert.strictEqual(t, 'Oi, Gleide! Fechando a semana das clientes que vieram pelo WhatsApp: a *Vitoria* veio quinta 19/11 e eu anotei ' +
-    'mega hair com cabelo novo. Foi isso mesmo? Se foi diferente, ou se teve mais alguém, me conta que eu acerto 🙂');
+    'mega hair com cabelo novo. Foi isso mesmo? Se foi diferente, ou se teve mais alguém, me conta que eu acerto.');
 });
 
 test('primeira vez (itens de semanas atrás): "Organizando aqui os atendimentos das últimas semanas"', () => {
