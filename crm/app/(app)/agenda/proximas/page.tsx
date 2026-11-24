@@ -104,12 +104,15 @@ export default function ProximasPage() {
     const hoje = hojeNoSalao();
     buscarProximos(empresa.id, ate === null ? null : somarDias(hoje, ate), de === null ? null : somarDias(hoje, de)).then((r) => {
       if (!ativo) return;
-      setResultado(r.erro ? { erro: r.erro } : { chave: periodo, atendimentos: r.atendimentos });
+      // login de profissional que não é a dona (supabase/070): só os horários dela
+      const soDela = empresa.soDela ? empresa.profissional?.id : undefined;
+      const atendimentos = soDela ? r.atendimentos.filter((a) => a.profissional_id === soDela) : r.atendimentos;
+      setResultado(r.erro ? { erro: r.erro } : { chave: periodo, atendimentos });
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, periodo, versao]);
+  }, [empresa.id, empresa.soDela, empresa.profissional, periodo, versao]);
 
   // A IA marca e remarca sozinha: a lista se atualiza na hora
   useTempoReal(["agendamentos"], empresa.id, () => setVersao((v) => v + 1));
