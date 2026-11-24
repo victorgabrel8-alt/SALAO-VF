@@ -4,12 +4,16 @@
 // quando a dona escreve; esta rotina manda sozinha, na hora marcada, a lista de amanhã (app + Google Agenda),
 // o que falta (serviço não confirmado, cliente que está só na Google) e os horários que se sobrepõem.
 // A mensagem sai pelo número do salão para o número da dona e entra na memória da assistente: quando ela
-// responder, a assistente sabe do que se trata. Dia sem nenhuma cliente: não manda nada.
+// responder, a assistente sabe do que se trata. Dia sem nenhuma cliente e nada sem baixa: não manda nada.
+// 24/11/2026 (Victor): "a IA não precisa perguntar se a cliente veio, é a Caroline que avisa; se veio e demora, entra no
+// resumo das 18:00". O resumo traz também os horários que já começaram (há 30 min ou mais, até 14 dias) e continuam
+// sem baixa, só como lista ("Ainda sem baixa"), sem perguntar nada de cada um.
 // Os nós entram no workflow "IA - Faltas e avisos" (que já fala com a dona), com um gatilho próprio.
 
 const { LER_ICS } = require('./google-agenda.js');
 
 const MONTAR = LER_ICS + String.raw`
+const DONA = '%%DONA%%';
 const TZ = 'America/Cuiaba';
 const NL = String.fromCharCode(10);
 const dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });
@@ -40,14 +44,34 @@ const soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.i
 const vistos = new Set();
 const soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });
 
-if (!doApp.length && !soGoogleUnicos.length) return [];
+// horários que já começaram e continuam sem baixa (app): só a lista, sem pergunta de cada um
+const hoje = DateTime.now().setZone(TZ).startOf('day');
+const semBaixa = (() => { try {
+  return $('Resumo: sem baixa').all().map((i) => i.json).filter((a) => a && a.inicio)
+    .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), nome: (a.clientes && a.clientes.nome) || 'sem nome', prof: (a.profissionais && a.profissionais.nome) || '' }))
+    .sort((x, y) => x.ini - y.ini);
+} catch (e) { return []; } })();
+const temAmanha = doApp.length > 0 || soGoogleUnicos.length > 0;
+if (!temAmanha && !semBaixa.length) return [];
 
 const curto = (n) => { const p = String(n).trim().split(/\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };
-const linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat("cccc dd/LL") + '*'];
-for (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));
-if (soGoogleUnicos.length) {
-  linhas.push('', 'Só na Google (ainda não estão no app):');
-  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);
+const linhas = [];
+if (temAmanha) {
+  linhas.push('📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat("cccc dd/LL") + '*');
+  for (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));
+  if (soGoogleUnicos.length) {
+    linhas.push('', 'Só na Google (ainda não estão no app):');
+    for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);
+  }
+}
+if (semBaixa.length) {
+  if (linhas.length) linhas.push('');
+  linhas.push('🕒 *Ainda sem baixa:*');
+  const quando = (d) => { const n = Math.round(hoje.diff(d.startOf('day'), 'days').days); return (n === 0 ? 'hoje' : n === 1 ? 'ontem' : d.toFormat('dd/LL')) + ' ' + hh(d); };
+  // "com a Duda" só quando é de outra profissional
+  const outra = (p) => p && !new RegExp('^' + DONA, 'i').test(String(p).trim()) ? ' (' + String(p).trim().split(/\s+/)[0] + ')' : '';
+  for (const b of semBaixa) linhas.push(quando(b.ini) + '  ' + curto(b.nome) + outra(b.prof));
+  linhas.push('Se alguma faltou, me fala que eu anoto.');
 }
 const faltas = [];
 const semServ = doApp.filter((a) => a.semServico);
@@ -60,16 +84,18 @@ for (let i = 1; i < doApp.length; i++) {
 }
 if (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');
 if (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');
-else linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');
+else if (temAmanha) linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');
 const texto = linhas.join(NL);
 const numeros = ($env.ASSISTENTE_NUMEROS || '').split(',').map((s) => s.trim()).filter(Boolean);
 return numeros.map((tel) => ({ json: { tel, texto,
   memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));
 `;
 
-module.exports = ({ faltasWorkflow: wf, hora }) => {
+module.exports = ({ faltasWorkflow: wf, hora, dona }) => {
   const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(String(hora || ''));
   if (!m) throw new Error('resumo_noite: use a hora no formato "HH:MM" (ex.: "19:00")');
+  // primeiro nome da dona, para a lista "Ainda sem baixa" só pôr o nome da outra profissional
+  const donaPrimeiro = String(dona || '').trim().split(/\s+/)[0].replace(/[^\p{L}]/gu, '');
   const achar = (nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error(`resumo_noite: não achei "${nome}"`); return n; };
   const copia = (deNome, nome, id) => { const n = JSON.parse(JSON.stringify(achar(deNome))); n.name = nome; n.id = id; return n; };
   const supaH = { parameters: [{ name: 'apikey', value: '={{ $env.SUPABASE_SERVICE_KEY }}' }, { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' }] };
@@ -101,12 +127,20 @@ module.exports = ({ faltasWorkflow: wf, hora }) => {
       retryOnFail: true, maxTries: 2, waitBetweenTries: 1000,
       parameters: { method: 'GET', url: "={{ $json.url || 'https://calendar.google.com/sem-agenda' }}",
         options: { timeout: 15000, response: { response: { responseFormat: 'text', outputPropertyName: 'data' } } } } },
-    { id: 'c0a5e12a-7e11-4c0a-9d3b-a55157e47e15', name: 'Resumo: montar', type: 'n8n-nodes-base.code', typeVersion: 2, position: [1180, y], parameters: { jsCode: MONTAR } },
+    { id: 'c0a5e12a-7e11-4c0a-9d3b-a55157e47e15', name: 'Resumo: montar', type: 'n8n-nodes-base.code', typeVersion: 2, position: [1180, y],
+      parameters: { jsCode: MONTAR.replace("const DONA = '%%DONA%%';", () => 'const DONA = ' + JSON.stringify(donaPrimeiro || '#') + ';') } },
+    // horários que começaram há 30 min ou mais (até 14 dias) e continuam "agendado" (sem baixa)
+    { id: 'c0a5e12a-7e11-4c0a-9d3b-a55157e47e18', name: 'Resumo: sem baixa', type: 'n8n-nodes-base.httpRequest', typeVersion: 4.2, position: [360, y + 200], ...seguir, executeOnce: true,
+      parameters: { method: 'GET',
+        url: '={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=inicio,clientes(nome),profissionais(nome)&empresa_id=eq.{{ $env.EMPRESA_ID }}' +
+          "&status=eq.agendado&order=inicio&inicio=gte.{{ $now.minus({ days: 14 }).toUTC().toISO() }}&inicio=lt.{{ $now.minus({ minutes: 30 }).toUTC().toISO() }}",
+        sendHeaders: true, headerParameters: supaH, options: { timeout: 15000 } } },
     enviar, memoria,
   );
   const liga = (de, para) => { wf.connections[de] = { main: [[{ node: para, type: 'main', index: 0 }]] }; };
   liga('Toda noite (resumo de amanhã)', 'Resumo: agenda de amanhã');
-  liga('Resumo: agenda de amanhã', 'Resumo: config');
+  liga('Resumo: agenda de amanhã', 'Resumo: sem baixa');
+  liga('Resumo: sem baixa', 'Resumo: config');
   liga('Resumo: config', 'Resumo: links da Google');
   liga('Resumo: links da Google', 'Resumo: ler Google');
   liga('Resumo: ler Google', 'Resumo: montar');

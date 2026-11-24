@@ -77,7 +77,11 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
       '// pedido-numerado.js: esta cliente já tem pergunta à dona sem resposta? Então não manda outra (a dona reclama de pergunta demais)',
       `const r = ${R};`,
       "const fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);",
-      `const meus = ${PEDIDOS_DE("$('Pedido nº: abertos').first().json")}.filter((p) => fim8(p.telefone) === fim8(r.telefone) && (p.tipo || 'pergunta') === (r.tipo || 'pergunta'));`,
+      "const aviso = (t) => /^AVISO/i.test(String(t || ''));",
+      `const meus = ${PEDIDOS_DE("$('Pedido nº: abertos').first().json")}.filter((p) => fim8(p.telefone) === fim8(r.telefone) && (p.tipo || 'pergunta') === (r.tipo || 'pergunta'))`,
+      '  // AVISO não espera resposta: não segura pergunta nenhuma; só segura outro AVISO da mesma cliente nas últimas 6 h',
+      '  // (o aviso "não vem" do nao-vem.js sai antes da IA responder: o AVISO dela sobre o mesmo assunto não sai repetido)',
+      '  .filter((p) => (aviso(r.pergunta) ? aviso(p.pergunta) && Date.now() - (p.criado || 0) < 6 * 3600e3 : !aviso(p.pergunta)));',
       'return [{ json: { aberto: meus.sort((a, b) => (b.criado || 0) - (a.criado || 0))[0] || null } }];',
     ].join('\n') } },
     { id: uuid('P:if'), name: 'Pedido nº: perguntar?', type: 'n8n-nodes-base.if', typeVersion: 2.2, position: [rx + 550, ry + 220], parameters: {
@@ -85,7 +89,8 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
         conditions: [{ id: 'pn1', leftValue: '={{ !$json.aberto }}', rightValue: '', operator: { type: 'boolean', operation: 'true', singleValue: true } }], combinator: 'and' },
       options: {} } },
     { id: uuid('P:ja'), name: 'Pedido nº: já perguntado', type: 'n8n-nodes-base.set', typeVersion: 3.4, position: [rx + 770, ry + 400], parameters: {
-      assignments: { assignments: [{ id: 'a-resposta', name: 'resposta', type: 'string', value: "={{ (() => { const p = $('Pedido nº: já tem aberto?').first().json.aberto || {}; return 'JÁ PERGUNTADO: esta cliente já tem uma pergunta com a " + DONA +
+      assignments: { assignments: [{ id: 'a-resposta', name: 'resposta', type: 'string', value: "={{ (() => { const p = $('Pedido nº: já tem aberto?').first().json.aberto || {}; if (/^AVISO/i.test(String(p.pergunta || ''))) return 'AVISO JÁ DADO: a " + DONA +
+        " já recebeu este aviso. NÃO mandei outro. Não fale disso com a cliente; siga o atendimento normalmente.'; return 'JÁ PERGUNTADO: esta cliente já tem uma pergunta com a " + DONA +
         "' + (p.num ? ' (pedido #' + p.num + ')' : '') + ', ainda sem resposta: \"' + p.pergunta + '\". NÃO mandei outra pergunta. Diga à cliente, numa frase, que ainda está vendo isso com a " + DONA +
         " e que avisa por aqui assim que ela responder. Não invente a resposta. Se for um problema novo e sério com o atendimento, use transferir_para_humano.'; })() }}" }] },
       options: {} } },
@@ -159,7 +164,8 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
     'try {',
     "  const fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);",
     "  const eu = fim8($('Montar entrada').first().json.telefone);",
-    `  const meus = ${PEDIDOS_DE(`$('${LER_FICHA}').first().json`)}.filter((p) => fim8(p.telefone) === eu).sort((a, b) => (a.criado || 0) - (b.criado || 0));`,
+    // AVISO não é pergunta: a IA não disse à cliente que ia confirmar nada (aviso "não vem", reparo, voucher)
+    `  const meus = ${PEDIDOS_DE(`$('${LER_FICHA}').first().json`)}.filter((p) => fim8(p.telefone) === eu && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.criado || 0) - (b.criado || 0));`,
     "  if (meus.length) PEDIDO_TXT = '\\nPERGUNTA À " + DONA.toUpperCase() + " AINDA SEM RESPOSTA: ' + meus.map((p) => (p.num ? '#' + p.num + ' ' : '') + '«' + p.pergunta + '»' +",
     "    (p.criado ? ' (perguntada em ' + DateTime.fromMillis(p.criado).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + ')' : '')).join(' · ') +",
     "    '\\nVocê disse a ela que ia confirmar isso com a " + DONA + ". Se ela perguntar disso ou cobrar (\"conseguiu ver?\", \"e aí?\", \"ficou de confirmar\"), diga em uma frase que ainda está vendo com a " + DONA +

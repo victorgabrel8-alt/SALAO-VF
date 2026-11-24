@@ -977,7 +977,7 @@ if (LOJA) {
   // a assistente marca sem inventar tempo e tira o "serviço não confirmado" quando a dona diz o serviço (assistente-marcar.js)
   if (LOJA.assistente_marcar) require('./assistente-marcar.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
   // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
-  if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite });
+  if (LOJA.resumo_noite) require('./resumo-noite.js')({ faltasWorkflow: faltas.faltasWorkflow, hora: LOJA.resumo_noite, dona: LOJA.dona });
   // lembrete da loja na véspera e 2 horas antes, com o texto dela (lembrete-loja.js)
   if (LOJA.lembrete_duplo) require('./lembrete-loja.js')({ faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // a assistente cobra menos a dona: cada pendência uma vez, juntas, nas horas da lista (pendencias-loja.js)
@@ -1033,6 +1033,13 @@ if (LOJA) {
   if (LOJA.bloqueio_por_profissional && LOJA.equipe) require('./bloqueio-por-profissional.js')({ agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   // 24/11: cópia ao Victor de cada dúvida e erro da IA e da assistente (copia-victor.js). Depois do Conferente e do pedido-numerado.
   if (LOJA.copia_victor) require('./copia-victor.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pausaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, numero: LOJA.copia_victor });
+  // 24/11: a assistente não pergunta "fulana veio?" (loja.json "pendencias_sem"); o sem baixa vai no resumo da noite.
+  // Depois do pedido-numerado, que procura a linha da lista sem mudança (pendencias-loja.js).
+  if (LOJA.pendencias_sem) require('./pendencias-loja.js').semTipos({ pendenciasWorkflow: assistente.pendenciasWorkflow, tipos: LOJA.pendencias_sem });
+  // e o "veio ou libera" que sai na hora pelo fluxo de faltas (pendencias-loja.js)
+  if ([].concat(LOJA.pendencias_sem || []).includes('atraso_confirmar')) require('./pendencias-loja.js').semVeioOuLibera({ faltasWorkflow: faltas.faltasWorkflow });
+  // 24/11: a cliente diz que não vem -> aviso à dona na hora, sem depender da IA (nao-vem.js, supabase/078)
+  if (LOJA.aviso_nao_vem) require('./nao-vem.js')({ node, workflow, loja: LOJA, REDIS });
   // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado
   // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });

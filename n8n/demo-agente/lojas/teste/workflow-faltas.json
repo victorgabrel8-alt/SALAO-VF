@@ -529,135 +529,6 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000276",
-      "name": "Atrasos para confirmar",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        600,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_confirmar",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}",
-        "options": {}
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000277",
-      "name": "Mensagem veio ou libera",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        900,
-        600
-      ],
-      "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000278",
-      "name": "Perguntar à Caroline (atraso)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1200,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.EVOLUTION_API_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000279",
-      "name": "Guardar pergunta do atraso",
-      "type": "n8n-nodes-base.redis",
-      "typeVersion": 1,
-      "position": [
-        1500,
-        600
-      ],
-      "parameters": {
-        "operation": "push",
-        "list": "=teste:assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
-        "messageData": "={{ $('Mensagem veio ou libera').item.json.memoria }}",
-        "tail": false
-      },
-      "credentials": {
-        "redis": {
-          "id": "bSZHOsNCSsDVJpK7",
-          "name": "Redis local"
-        }
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000280",
-      "name": "Marcar atraso perguntado",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1800,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }) }}",
-        "options": {}
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
       "id": "00000000-0000-4000-8000-000000000281",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
@@ -1284,7 +1155,7 @@
           "interval": [
             {
               "field": "cronExpression",
-              "expression": "0 19 * * *"
+              "expression": "0 18 * * *"
             }
           ]
         }
@@ -1406,7 +1277,40 @@
         2600
       ],
       "parameters": {
-        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\nif (!doApp.length && !soGoogleUnicos.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*'];\nfor (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\nif (soGoogleUnicos.length) {\n  linhas.push('', 'Só na Google (ainda não estão no app):');\n  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\n// pedido-numerado.js: pergunta da IA à dona ainda sem resposta (há mais de 30 min), com o número\ntry {\n  for (const p of Object.values($('Resumo: pedidos abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => (!p.criado || Date.now() - p.criado > 30 * 60e3) && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.num || 0) - (b.num || 0)))\n    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta);\n} catch (e) {}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5566999270860' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst DONA = \"Caroline\";\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\n// horários que já começaram e continuam sem baixa (app): só a lista, sem pergunta de cada um\nconst hoje = DateTime.now().setZone(TZ).startOf('day');\nconst semBaixa = (() => { try {\n  return $('Resumo: sem baixa').all().map((i) => i.json).filter((a) => a && a.inicio)\n    .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), nome: (a.clientes && a.clientes.nome) || 'sem nome', prof: (a.profissionais && a.profissionais.nome) || '' }))\n    .sort((x, y) => x.ini - y.ini);\n} catch (e) { return []; } })();\nconst temAmanha = doApp.length > 0 || soGoogleUnicos.length > 0;\nif (!temAmanha && !semBaixa.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = [];\nif (temAmanha) {\n  linhas.push('📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*');\n  for (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\n  if (soGoogleUnicos.length) {\n    linhas.push('', 'Só na Google (ainda não estão no app):');\n    for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n  }\n}\nif (semBaixa.length) {\n  if (linhas.length) linhas.push('');\n  linhas.push('🕒 *Ainda sem baixa:*');\n  const quando = (d) => { const n = Math.round(hoje.diff(d.startOf('day'), 'days').days); return (n === 0 ? 'hoje' : n === 1 ? 'ontem' : d.toFormat('dd/LL')) + ' ' + hh(d); };\n  // \"com a Duda\" só quando é de outra profissional\n  const outra = (p) => p && !new RegExp('^' + DONA, 'i').test(String(p).trim()) ? ' (' + String(p).trim().split(/\\s+/)[0] + ')' : '';\n  for (const b of semBaixa) linhas.push(quando(b.ini) + '  ' + curto(b.nome) + outra(b.prof));\n  linhas.push('Se alguma faltou, me fala que eu anoto.');\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\n// pedido-numerado.js: pergunta da IA à dona ainda sem resposta (há mais de 30 min), com o número\ntry {\n  for (const p of Object.values($('Resumo: pedidos abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => (!p.criado || Date.now() - p.criado > 30 * 60e3) && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.num || 0) - (b.num || 0)))\n    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta);\n} catch (e) {}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse if (temAmanha) linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5566999270860' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+      }
+    },
+    {
+      "id": "c0a5e12a-7e11-4c0a-9d3b-a55157e47e18",
+      "name": "Resumo: sem baixa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        2800
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true,
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=inicio,clientes(nome),profissionais(nome)&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&status=eq.agendado&order=inicio&inicio=gte.{{ $now.minus({ days: 14 }).toUTC().toISO() }}&inicio=lt.{{ $now.minus({ minutes: 30 }).toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
       }
     },
     {
@@ -2045,40 +1949,6 @@
       }
     },
     {
-      "id": "59b9a357-a8f0-4552-8127-d5a2898d74df",
-      "name": "Trava de teste: Perguntar à Caroline (atraso)",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1200,
-        480
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      }
-    },
-    {
       "id": "4354dea4-261a-4fb9-88cd-744bac43e6f2",
       "name": "Trava de teste: Avisar a Caroline (conflito)",
       "type": "n8n-nodes-base.if",
@@ -2348,11 +2218,6 @@
             "index": 0
           },
           {
-            "node": "Atrasos para confirmar",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Conflitos de atraso",
             "type": "main",
             "index": 0
@@ -2395,11 +2260,6 @@
           },
           {
             "node": "Atrasos para chamar",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Atrasos para confirmar",
             "type": "main",
             "index": 0
           },
@@ -2513,50 +2373,6 @@
         [
           {
             "node": "Registrar chamada do atraso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Atrasos para confirmar": {
-      "main": [
-        [
-          {
-            "node": "Mensagem veio ou libera",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mensagem veio ou libera": {
-      "main": [
-        [
-          {
-            "node": "Trava de teste: Perguntar à Caroline (atraso)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Perguntar à Caroline (atraso)": {
-      "main": [
-        [
-          {
-            "node": "Guardar pergunta do atraso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guardar pergunta do atraso": {
-      "main": [
-        [
-          {
-            "node": "Marcar atraso perguntado",
             "type": "main",
             "index": 0
           }
@@ -2822,6 +2638,17 @@
       ]
     },
     "Resumo: agenda de amanhã": {
+      "main": [
+        [
+          {
+            "node": "Resumo: sem baixa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: sem baixa": {
       "main": [
         [
           {
@@ -3098,18 +2925,6 @@
         [
           {
             "node": "Lembrar a cliente",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Trava de teste: Perguntar à Caroline (atraso)": {
-      "main": [
-        [
-          {
-            "node": "Perguntar à Caroline (atraso)",
             "type": "main",
             "index": 0
           }

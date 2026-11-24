@@ -107,10 +107,9 @@
   "assistente_marcar": true,
   "lembrete_duplo": true,
   "pendencias_horas": [
-    12,
-    18
+    12
   ],
-  "resumo_noite": "19:00",
+  "resumo_noite": "18:00",
   "conferente": "ligado",
   "assistente_consertos": true,
   "confirmou_presenca": true,
@@ -125,5 +124,10 @@
   "pedido_numerado": true,
   "assistente_oferecer": true,
   "copia_victor": "556699270860",
-  "bloqueio_por_profissional": true
+  "bloqueio_por_profissional": true,
+  "pendencias_sem": [
+    "atendimento_sem_status",
+    "atraso_confirmar"
+  ],
+  "aviso_nao_vem": true
 }
