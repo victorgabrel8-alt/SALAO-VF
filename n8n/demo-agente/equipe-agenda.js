@@ -119,6 +119,7 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     '  return [w[0], outro].sort((m, n) => m - n); };',
     '// A cliente já é atendida por uma profissional (DELA) e o que a consulta achou é com outra: a IA diz isso e dá as duas',
     '// opções (outro horário com a dela, ou o horário achado com a outra). Sem isso a cliente da Duda ia para a Caroline calada.',
+    '// Na consulta de um horário exato o aviso vai junto do LIVRE; na consulta do dia, os 2 horários oferecidos já saem assim.',
     'const livresDela = (dia) => { for (let i = 0; i < DIAS_BUSCA; i++) { const d = dia.plus({ days: i }), v = [];',
     '  for (const [a, b] of intervalos(d)) for (let h = a; h.plus({ minutes: p.dur }) <= b; h = h.plus({ minutes: PASSO_MIN })) {',
     '    if (h < agora.plus({ minutes: ANTECEDENCIA_MIN }) || noAlmocoFlex(h, h.plus({ minutes: p.dur }))) continue;',
@@ -158,7 +159,14 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     "  return [{ json: { acao: 'remarcar', ok: true, agendamentoId: alvo.agendamentoId, observacoes, de: fmt(alvo.ini), quando: fmt(novo) + ' com a ' + novaProf.nome, profissional_id: novaProf.id,");
   // consultar: os 2 horários oferecidos são os da preferida (quando ela tem) e cada um diz com quem é
   t('    const m = v.find((t) => t.hour < 12), t = v.find((x) => x.hour >= 12);',
-    '    v = daPreferida(v, p.dur);\n    const m = v.find((t) => t.hour < 12), t = v.find((x) => x.hour >= 12);');
+    [
+      '    // a profissional desta cliente não tem nenhum destes horários: um deles com a outra e o próximo da dela, para ela escolher',
+      '    if (DELA && !PEDIDA && v.length && !v.some((x) => livreDe(DELA.ocupados, x, x.plus({ minutes: p.dur })))) { const d = livresDela(v[0].startOf(\'day\'))[0];',
+      "      return hm(v[0]) + ' com ' + comQuem(v[0], v[0].plus({ minutes: p.dur })) + ' (data_hora_inicio: ' + iso(v[0]) + ')' + (d ? ' ou, com a ' + DELA.nome + ', ' + fmt(d) + ' (data_hora_inicio: ' + iso(d) + ')' : '') +",
+      "        '. Esta cliente é atendida pela ' + DELA.nome + ', que não tem horário ' + (d ? 'no que ela pediu' : 'nos próximos ' + DIAS_BUSCA + ' dias') + ': diga isso a ela e deixe ela escolher'; }",
+      '    v = daPreferida(v, p.dur);',
+      '    const m = v.find((t) => t.hour < 12), t = v.find((x) => x.hour >= 12);',
+    ].join('\n'));
   t(".map((x) => hm(x) + ' (data_hora_inicio: ' + iso(x) + ')').join(' ou ');",
     ".map((x) => hm(x) + ' com ' + comQuem(x, x.plus({ minutes: p.dur })) + ' (data_hora_inicio: ' + iso(x) + ')').join(' ou ');");
   t('const res = ocupados.filter(([x, y]) => x < b && y > a)', 'const res = ocupadosQuadro().filter(([x, y]) => x < b && y > a)');
@@ -180,9 +188,6 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
   ].join('\n'));
   t("resposta: 'LIVRE: ' + fmt(t) + ' está disponível para '", "resposta: 'LIVRE: ' + fmt(t) + ' com ' + comQuem(t, f) + ' está disponível para '");
   t("'). Pode oferecer à cliente.' } }];", "'). Pode oferecer à cliente.' + notaDela(t, [t]) } }];");
-  // dia inteiro: os horários achados são todos de outra profissional
-  t("  return [{ json: { acao: 'consultar', ok: true, resposta } }];",
-    "  return [{ json: { acao: 'consultar', ok: true, resposta: resposta + (opcoes.length ? notaDela(diaAlternativo || pedido, opcoes) : '') } }];");
   // criar: grava com a primeira da ordem que está livre
   t("return [{ json: {\n  acao: 'criar', ok: true,\n  quando: fmt(ini),", [
     'const escolhida = quem(ini, fim)[0];',

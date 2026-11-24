@@ -70,8 +70,8 @@ test('cliente da Caroline continua com a Caroline', () => {
   assert.equal(criar(9, {}, { dela: C }).profissional_id, C);
 });
 
-test('cliente da Caroline: a Caroline cheia, vai para a Duda', () => {
-  assert.match(oferta(consultar({}, { dela: C, ocupados: [ag(C, 8, 18)] })), /^8h com a Duda/);
+test('cliente da Caroline: a Caroline cheia, oferece a Duda e o próximo dia da Caroline', () => {
+  assert.match(oferta(consultar({}, { dela: C, ocupados: [ag(C, 8, 18)] })), /^8h com a Duda .* ou, com a Caroline, /);
 });
 
 test('cliente pede a Caroline pelo nome: só ela, e avisa quando a Duda tem o horário', () => {
@@ -249,18 +249,20 @@ test('cliente da Duda pede um horário que só a Caroline tem: a consulta avisa 
 
 test('cliente da Duda e a Duda cheia no dia: oferece a Caroline, avisa e mostra o próximo dia da Duda', () => {
   const r = consultar({}, { dela: D, ocupados: [ag(D, 8, 18)] });
-  assert.match(oferta(r), /^8h com a Caroline/);
-  assert.match(r.resposta, /ATENÇÃO: esta cliente é atendida pela Duda/);
-  assert.match(r.resposta, /com a Duda, [^;]*às 08:00/);
+  assert.match(oferta(r), /^8h com a Caroline .* ou, com a Duda, .*às 08:00 .*Esta cliente é atendida pela Duda, que não tem horário no que ela pediu/);
+  // uma ordem só: o aviso não aparece de novo no fim da resposta
+  assert.equal(r.resposta.split('atendida pela Duda').length - 1, 1);
 });
 
 test('sem aviso quando a profissional dela tem o horário, quando ela pediu outra pelo nome e para cliente nova', () => {
-  assert.doesNotMatch(consultar({}, { dela: D }).resposta, /ATENÇÃO: esta cliente/);
-  assert.doesNotMatch(rodar({ acao: 'consultar', data: isoH(9), duracao_minutos: 150 }, { dela: D }).resposta, /ATENÇÃO: esta cliente/);
-  assert.doesNotMatch(consultar({ profissional: 'Caroline' }, { dela: D, ocupados: [ag(D, 8, 18)] }).resposta, /ATENÇÃO: esta cliente/);
-  assert.doesNotMatch(consultar({}, { ocupados: [ag(D, 8, 18)] }).resposta, /ATENÇÃO: esta cliente/);
+  assert.doesNotMatch(consultar({}, { dela: D }).resposta, /esta cliente é atendida/i);
+  assert.doesNotMatch(rodar({ acao: 'consultar', data: isoH(9), duracao_minutos: 150 }, { dela: D }).resposta, /esta cliente é atendida/i);
+  assert.doesNotMatch(consultar({ profissional: 'Caroline' }, { dela: D, ocupados: [ag(D, 8, 18)] }).resposta, /esta cliente é atendida/i);
+  assert.doesNotMatch(consultar({}, { ocupados: [ag(D, 8, 18)] }).resposta, /esta cliente é atendida/i);
+  // a profissional dela só tem a tarde e a cliente pediu a manhã: um da outra de manhã e o da dela à tarde
+  assert.match(oferta(consultar({ periodo: 'manhã' }, { dela: D, ocupados: [ag(D, 8, 13)] })), /^8h com a Caroline .* ou, com a Duda, .*às 13:00/);
 });
 
 test('cliente da Caroline com a Caroline cheia: mesmo aviso, com o nome dela', () => {
-  assert.match(consultar({}, { dela: C, ocupados: [ag(C, 8, 18)] }).resposta, /ATENÇÃO: esta cliente é atendida pela Caroline/);
+  assert.match(consultar({}, { dela: C, ocupados: [ag(C, 8, 18)] }).resposta, /Esta cliente é atendida pela Caroline/);
 });
