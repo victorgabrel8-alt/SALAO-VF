@@ -112,8 +112,9 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
   trocar(enviar, 'jsonBody', 'number: $json.alerta,', "number: $('Supabase: número de alerta').first().json.alerta,");
   // 24/11 (Victor: "olha o tanto de texto"): a pergunta à dona fica curta, sem "Pergunta da cliente" e sem
   // "Responda: 27 sim / 27 não / 27 + o que digo a ela / (ou toque em Responder...)". Ela responde do jeito dela.
-  trocar(enviar, 'jsonBody', "'❓ Pergunta da cliente '", `'❓ ' + (${NUM} ? '#' + ${NUM} + ' ' : '')`);
-  trocar(enviar, 'jsonBody', "'\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.'", "''");
+  // (24/11, PR #217: a Gleide passou a receber "Pergunta da cliente" sem o ❓ e sem o ↩️; nas lojas fica como era)
+  trocar(enviar, 'jsonBody', "'Pergunta da cliente '", `'❓ ' + (${NUM} ? '#' + ${NUM} + ' ' : '')`);
+  trocar(enviar, 'jsonBody', "'\\n\\nToque em Responder nesta mensagem e escreva o que digo a ela.'", "''");
   trocar(guardar, 'value', 'empresa: $env.EMPRESA_ID }) }}', `empresa: $env.EMPRESA_ID, num: ${NUM} || null, criado: $now.toMillis() }) }}`);
   trocar(memoria, 'messageData', "'Perguntei à Gleide sobre '", `'Perguntei à Gleide ' + (${NUM} ? '(pedido #' + ${NUM} + ') ' : '') + 'sobre '`);
 

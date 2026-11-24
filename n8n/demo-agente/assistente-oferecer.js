@@ -173,11 +173,12 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
   }
 
   // e. "mandei" quando todo envio desta resposta foi recusado
+  // (24/11, PR #217: a condição ganhou "&& !aoAviso" — resposta da dona a um aviso do sistema não é cobrada)
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode',
-    'if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {',
+    'if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado && !aoAviso) {',
     "const recusados = novos.filter((f) => ENVIO.includes(f.t) && !ok(f.r) && !/^GUARDEI COMO RECADO/i.test(f.r));\n" +
-    "if (afirma && !enviou && recusados.length && !passado) { texto = '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
-    'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {');
+    "if (afirma && !enviou && recusados.length && !passado && !aoAviso) { texto = '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
+    'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado && !aoAviso) {');
 };
 
 module.exports.ID_AGENDA = ID_AGENDA;
