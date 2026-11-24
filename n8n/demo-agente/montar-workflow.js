@@ -958,6 +958,22 @@ if (LOJA) {
   // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js').assistente({ assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA });
+  // 24/11: assistente mais rápida (medido na Loja Teste): com as 34 ferramentas, o gemini-3-flash-preview levou 19 a 24 s por
+  // passo e o gemini-3.5-flash 3 a 4 s, com a mesma escolha de ferramenta. loja.json: "assistente_modelo" troca o modelo da
+  // assistente; "assistente_espera" (segundos) troca a espera que junta mensagens seguidas (era 10 s).
+  if (LOJA.assistente_modelo || LOJA.assistente_espera) {
+    const A = assistente.assistenteWorkflow;
+    if (LOJA.assistente_modelo) {
+      const g = A.nodes.find((n) => n.name === 'Gemini Flash');
+      if (!g || !/gemini/.test(String(g.parameters.modelName))) throw new Error('assistente_modelo: sem o nó Gemini Flash da assistente');
+      g.parameters.modelName = LOJA.assistente_modelo;
+    }
+    if (LOJA.assistente_espera) {
+      const w = A.nodes.find((n) => n.name === 'Aguardar (juntar mensagens)');
+      if (!w || w.parameters.unit !== 'seconds') throw new Error('assistente_espera: a espera da assistente mudou');
+      w.parameters.amount = Number(LOJA.assistente_espera);
+    }
+  }
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   // loja de teste (loja.json: "gemini_teste": true): todo nó do Gemini usa a chave de teste, com teto próprio (24/11)
   if (LOJA.gemini_teste) for (const wf of todos) for (const nd of wf.nodes) if (nd.credentials && nd.credentials.googlePalmApi) nd.credentials.googlePalmApi = { id: '1dUDElLglPj5J1iG', name: 'Google Gemini(PaLM) Api teste' };
