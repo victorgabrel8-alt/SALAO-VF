@@ -1,0 +1,110 @@
+<title>Roadmap da IA da Caroline</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: uma coluna de leitura; cada falha é uma linha com pílula de situação; fases em lista vertical */
+:root {
+  --bg: #fbf8f9; --fg: #241c20; --muted: #6e6267; --line: #e8dfe3; --card: #ffffff;
+  --accent: #b03a6a; --ok: #1f7a4d; --okbg: #e3f3ea; --warn: #9a5b00; --warnbg: #fbefd9; --bad: #a3242f; --badbg: #f8e1e3;
+  --display: "Manrope", system-ui, sans-serif; --body: "Manrope", system-ui, sans-serif; --mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #1a1417; --fg: #f1e9ec; --muted: #b3a5ab; --line: #3a2e33; --card: #231b1f;
+  --accent: #e07aa3; --ok: #7fd3a6; --okbg: #183427; --warn: #f0c070; --warnbg: #3a2c12; --bad: #f19aa2; --badbg: #3c1c20; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #1a1417; --fg: #f1e9ec; --muted: #b3a5ab; --line: #3a2e33; --card: #231b1f;
+  --accent: #e07aa3; --ok: #7fd3a6; --okbg: #183427; --warn: #f0c070; --warnbg: #3a2c12; --bad: #f19aa2; --badbg: #3c1c20; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 32px 64px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: grid; gap: 36px; }
+h1 { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--display); font-weight: 700; font-size: 20px; margin: 0 0 12px; text-wrap: balance; }
+.sub { color: var(--muted); margin: 8px 0 0; max-width: 65ch; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin: 0 0 8px; }
+.nums { display: flex; flex-wrap: wrap; gap: 12px 28px; margin-top: 16px; font-variant-numeric: tabular-nums; }
+.nums div { display: grid; } .nums b { font-size: 24px; font-family: var(--display); } .nums span { color: var(--muted); font-size: 13px; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.flow span { background: var(--card); border: 1px solid var(--line); border-radius: 6px; padding: 4px 8px; color: var(--fg); }
+.list { display: grid; gap: 0; border-top: 1px solid var(--line); }
+.item { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.item > div { min-width: 0; }
+.item h3 { font-size: 15px; font-weight: 700; margin: 0; }
+.item p { margin: 4px 0 0; color: var(--muted); font-size: 14px; }
+.item p b { color: var(--fg); font-weight: 600; }
+.pill { align-self: start; font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-transform: uppercase; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.ok { background: var(--okbg); color: var(--ok); } .warn { background: var(--warnbg); color: var(--warn); } .bad { background: var(--badbg); color: var(--bad); }
+.fase { display: grid; grid-template-columns: 92px 1fr; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.fase > div { min-width: 0; }
+.fase .q { font-family: var(--mono); font-size: 12px; color: var(--accent); padding-top: 2px; }
+.fase ul { margin: 6px 0 0; padding-left: 18px; color: var(--muted); font-size: 14px; } .fase li + li { margin-top: 4px; }
+.fase h3 { margin: 0; font-size: 15px; }
+.call { background: var(--card); border: 1px solid var(--line); border-left: 3px solid var(--bad); border-radius: 8px; padding: 14px 16px; }
+.call ul { margin: 6px 0 0; padding-left: 18px; } .call li + li { margin-top: 6px; }
+code { font-family: var(--mono); font-size: 13px; }
+@media (max-width: 520px) { .item { grid-template-columns: 1fr; } .fase { grid-template-columns: 1fr; gap: 4px; } h1 { font-size: 25px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Studio Caroline Ferreira · 24/11/2026</p>
+    <h1>Roadmap da IA da Caroline</h1>
+    <p class="sub">Li os 56 pedidos que a Caroline fez à assistente (23/11 11h até 24/11 13h15) e as 56 conversas com clientes de 17 a 24/11. Abaixo estão os erros, o que já está consertado e a ordem do resto.</p>
+    <div class="nums">
+      <div><b>56</b><span>pedidos da Caroline lidos</span></div>
+      <div><b>16</b><span>falhas encontradas</span></div>
+      <div><b>9</b><span>consertadas hoje</span></div>
+      <div><b>8,7</b><span>erros da IA por 100 respostas (23/11)</span></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>Por onde passa um horário</h2>
+    <div class="flow"><span>Caroline pede à assistente</span>→<span>assistente busca horário</span>→<span>recado à cliente</span>→<span>cliente responde à IA</span>→<span>IA confere e marca</span>→<span>confirmação da véspera</span></div>
+    <p class="sub">O caso da Stela errou em quatro desses passos. A assistente buscou com 60 min em vez de 120. A IA achou o horário ocupado e perguntou à Caroline. A assistente marcou sem serviço e mandou "reservou… Pode ser?". A permuta ficou guardada só na assistente.</p>
+  </section>
+
+  <section class="call">
+    <h2 style="margin-bottom:4px">Para a Caroline ver hoje</h2>
+    <ul>
+      <li><b>Gleide (permuta), quinta 26/11 às 11h30: não está na agenda.</b> O pedido chegou às 10h22, quando o Gemini estava sem saldo, e se perdeu. A assistente respondeu "deu um erro, pode repetir?" três vezes.</li>
+      <li><b>Geisy: nada marcado.</b> Ela recebeu três horários em 6 minutos (14h, 10h30, 11h30). O de 11h30 encavala com a Edinanda (10h30 às 13h).</li>
+      <li><b>Stela "amanhã" (25/11, ela pediu "uma hora" = 13h): sem resposta.</b> O 19/12 ficou às 13h com a Caroline, gel na mão e no pé, sem sinal (permuta).</li>
+      <li><b>Shirley 21/12 18h20:</b> ela não tinha aceitado. O "Sim" de 22/11 respondia à confirmação de 23/11. O horário foi marcado mesmo assim, pelo pedido da Caroline.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Assistente da Caroline</h2>
+    <div class="list">
+      <div class="item"><div><h3>Busca horário com o serviço e o tempo errados</h3><p>Stela: "gel pé e mão" virou uma esmaltação de 60 min e ela recebeu 14h30 no dia 19, que não cabia. <b>Conserto:</b> nova busca <code>horarios_para_oferecer</code>, a mesma agenda da IA (regras da Caroline, Google, agenda da Duda), com a soma dos tempos.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Ofereceu horário fora das regras da Caroline</h3><p>Sexta de manhã inteira, Geisy às 14h e 15h30 no sábado, janelas no meio do dia. A busca antiga não lia as regras da agenda. <b>Conserto:</b> a mesma busca de cima.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Marcou sem serviço e perguntou de novo o que já sabia</h3><p>"Agenda a Stella às 13h" foi marcado como "Manicure, serviço não confirmado". Depois veio a lista numerada e "É permuta?". <b>Conserto:</b> o serviço dito antes vale; a pergunta, quando precisar, é "Qual o serviço dela?", sem lista.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>"A Carol reservou… Pode ser?" e troca sem motivo</h3><p>A cliente não sabe se está marcado nem por que mudou. <b>Conserto:</b> a mensagem afirma a reserva e diz o motivo da troca. Mensagem com "reservou" que termina em "pode ser?" não sai.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Disse "Mandei ✅" sem ter mandado</h3><p>Geisy, 10h21: o envio foi barrado por repetição e a Caroline leu "corrigi para 11:30". <b>Conserto:</b> agora ela recebe "⚠️ Não mandei:" com o motivo.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Permuta ficava só na assistente</h3><p>"Não precisa pedir sinal" virou regra que a IA não lê, e a agenda recusaria marcar sem comprovante. <b>Conserto:</b> marca "não cobrar sinal" na ficha da cliente; a agenda e a IA respeitam.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Pedido perdido quando o Gemini cai</h3><p>Gleide quinta 11h30 (sem saldo) e 4 áudios não ouvidos às 10h10 (Gemini fora). A Caroline teve de repetir, e um pedido nunca voltou. <b>Conserto:</b> guardar o pedido e refazer sozinho quando voltar, modelo reserva para áudio, aviso ao Victor.</p></div><span class="pill bad">fazer</span></div>
+      <div class="item"><div><h3>Marca por cima de outra cliente sem avisar</h3><p>Kelly no sábado às 8h, em cima da Edinanda; Geisy oferecida às 10h30 e às 11h30 em cima da Edinanda. <b>Conserto:</b> ao marcar ou oferecer hora que a Caroline ditou, avisar antes: "⚠️ encavala na Edinanda até 13h".</p></div><span class="pill bad">fazer</span></div>
+      <div class="item"><div><h3>Regras guardadas que ninguém segue</h3><p>"Horários colados", "sem janela", "escassez", "8h, 10h e 13h": 19 regras, algumas repetidas, guardadas só na assistente. <b>Conserto:</b> revisar com a Caroline; o que é de agenda vira regra da agenda; "colados" vira a agenda oferecer primeiro o horário encostado em outra cliente.</p></div><span class="pill warn">próxima</span></div>
+      <div class="item"><div><h3>Oferta sem resposta fica esquecida</h3><p>Shirley recebeu 21/12 ou 22/12 às 18h20 em 18/11 e nunca respondeu; ninguém voltou a chamar. <b>Conserto:</b> oferta do studio sem resposta em 24 h ganha um retorno.</p></div><span class="pill warn">próxima</span></div>
+      <div class="item"><div><h3>Chamou a Caroline de "Duda"</h3><p>24/11 08h33, "Ia tem programação pra hoje". <b>Conserto:</b> conferir de que número veio e como o nome é escolhido.</p></div><span class="pill warn">próxima</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>IA que atende as clientes</h2>
+    <div class="list">
+      <div class="item"><div><h3>"Você consegue uma hora?" virou 8h e 9h</h3><p><b>Conserto:</b> hora falada é de dia: uma hora = 13h, uma e meia = 13h30, meio-dia = 12h.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Horário do studio que não cabe vira pergunta à Caroline</h3><p>Stela aceitou 19/12 14h30, a IA viu que não cabia e disse "vou confirmar com ela". <b>Conserto:</b> oferece o mais perto no mesmo dia e marca com o sim, sem sinal.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Perguntou a unha de quem o studio chamou</h3><p>"Sua unha está natural ou tem gel?" à cliente que a própria Caroline mandou chamar. <b>Conserto:</b> não pergunta quando foi o studio que chamou.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Duas perguntas seguidas e oferta que não muda</h3><p>Stela 13h16: "8h ou 9h?" e "o que você vai fazer amanhã?". <b>Conserto:</b> uma pergunta por resposta, como já está na Gleide (trava no código).</p></div><span class="pill warn">próxima</span></div>
+      <div class="item"><div><h3>Venda em 3 passos</h3><p>Serviço → dia → 2 horários → Pix. Hoje a conversa ainda dá voltas antes de oferecer horário (análise de 17 a 23/11).</p></div><span class="pill warn">próxima</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ordem</h2>
+    <div class="fase"><div class="q">hoje</div><div><h3>Assistente e IA falando a mesma agenda</h3><ul><li>Busca de horário da assistente = agenda da IA; serviço e tempo certos.</li><li>Recado que afirma a reserva e explica a troca; "mandei" só se mandou.</li><li>Cliente sem sinal na ficha (Stela marcada).</li><li>IA: hora falada, horário do studio que não cabe, unha de quem o studio chamou.</li></ul></div></div>
+    <div class="fase"><div class="q">esta semana</div><div><h3>Nada se perde</h3><ul><li>Pedido da Caroline guardado e refeito quando o Gemini volta; aviso ao Victor.</li><li>Modelo reserva para áudio da assistente.</li><li>Aviso de encavalo antes de marcar ou oferecer hora ditada.</li><li>Oferta do studio sem resposta em 24 h ganha retorno.</li></ul></div></div>
+    <div class="fase"><div class="q">semana que vem</div><div><h3>Agenda do jeito da Caroline</h3><ul><li>Revisar as 19 regras com ela; o que é agenda vira regra da agenda.</li><li>Horários colados: a agenda oferece primeiro o horário encostado em outra cliente.</li><li>Uma pergunta por resposta na IA da Caroline.</li></ul></div></div>
+    <div class="fase"><div class="q">depois</div><div><h3>Vender mais em cada conversa</h3><ul><li>Venda em 3 passos e Pix sem atrito.</li><li>Chamar quem sumiu e oferecer o serviço junto (pé com mão, spa).</li><li>Meta da conferência noturna: menos de 3 erros por 100 respostas.</li></ul></div></div>
+  </section>
+</div>

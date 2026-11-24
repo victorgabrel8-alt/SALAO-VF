@@ -949,6 +949,9 @@ if (LOJA) {
   // 20/11: WhatsApp da segunda profissional (Duda) na assistente: ela usa a assistente e recebe só o que é dela (segunda-profissional-whatsapp.js).
   // Depois do pedido-numerado (troca nós dele) e antes do paraLoja.
   if (LOJA.segunda_profissional && LOJA.segunda_profissional.telefone) require('./segunda-profissional-whatsapp.js')({ node, ifNode, cond, workflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, perguntaWorkflow: pedidos.perguntaWorkflow, loja: LOJA });
+  // 24/11: a assistente oferece horário pela agenda da IA, cliente sem sinal, reserva sem "pode ser?", "mandei" só se mandou
+  // (assistente-oferecer.js, supabase/075). Depois dos módulos que mexem no "Envio: conferir" e no "Conferir resposta".
+  if (LOJA.assistente_oferecer) require('./assistente-oferecer.js')({ workflow, agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, agendaId: lerAgendaId() });
   // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado
   // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });
@@ -1073,7 +1076,8 @@ if (process.argv.includes('--enviar')) {
     // assistente: ferramentas primeiro (as tools do agente apontam para ele)
     const ferramentasId = await upsert(assistente.ferramentasWorkflow, assistente.ferramentasIdFile);
     if (process.argv.includes('--ativar')) await ativar(ferramentasId);
-    for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = ferramentasId;
+    // horarios_para_oferecer (assistente-oferecer.js) chama a agenda da IA; as outras, o subworkflow de ferramentas
+    for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = nd.name === 'horarios_para_oferecer' ? agendaId : ferramentasId;
     fs.writeFileSync(saida('workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
     const pendenciasId = await upsert(assistente.pendenciasWorkflow, path.join(dir, '.workflow-assistente-pendencias-id'));
     if (process.argv.includes('--ativar')) await ativar(pendenciasId);
