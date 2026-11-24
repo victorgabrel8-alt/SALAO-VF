@@ -7,9 +7,40 @@ import { useDialogo } from "@/components/Dialogo";
 import { Folha } from "@/components/Folha";
 import { BotaoPedir, SeloPedido, usePedidos } from "@/components/PedidoRemarcacao";
 import { buscarProximos, type Atendimento } from "@/lib/atendimentos";
-import { bloqueiosFuturos, salvarBloqueios, type Bloqueio } from "@/lib/bloqueios";
+import { bloqueiosFuturos, mesmoBloqueio, salvarBloqueios, type Bloqueio } from "@/lib/bloqueios";
 import { useEmpresa, useTrocarConfig, SoDaDona } from "@/lib/empresa";
 import { dataNoSalao, diasEntre, formatarDiaLongo, formatarHora, formatarTelefone, hojeNoSalao, somarDias } from "@/lib/formato";
+import { supabase } from "@/lib/supabase/client";
+
+// Profissionais ativas pela ordem do cadastro (a primeira é a dona: horário sem profissional é dela).
+// Loja com mais de uma: o bloqueio pode ser do studio todo ou de uma só (supabase/076).
+type Profissional = { id: string; nome: string };
+function useProfissionais(empresaId: string): Profissional[] {
+  const [lista, setLista] = useState<Profissional[]>([]);
+  useEffect(() => {
+    let ativo = true;
+    supabase()
+      .from("profissionais")
+      .select("id, nome")
+      .eq("empresa_id", empresaId)
+      .eq("ativo", true)
+      .order("criado_em")
+      .then(({ data }) => {
+        if (ativo) setLista((data ?? []) as Profissional[]);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, [empresaId]);
+  return lista;
+}
+
+// A cliente fica sem atender por causa deste bloqueio? (do studio: todas; de uma profissional: só as dela)
+function afetadaPor(a: Atendimento, b: Bloqueio, dona: string | undefined): boolean {
+  const dia = dataNoSalao(a.inicio);
+  if (dia < b.de || dia > b.ate) return false;
+  return !b.profissional_id || (a.profissional_id ?? dona) === b.profissional_id;
+}
 
 // Dias sem atender: viagem, folga, curso, imprevisto. Bloqueado, o app e a IA deixam de oferecer
 // horário nesses dias. Ao bloquear, a tela mostra quem já tem horário marcado no período, para a
@@ -46,6 +77,8 @@ function BloqueiosPageConteudo() {
   const { dialogo, perguntar, avisar } = useDialogo();
   const [novo, setNovo] = useState(false);
   const lista = bloqueiosFuturos(empresa.config);
+  const profissionais = useProfissionais(empresa.id);
+  const dona = profissionais[0]?.id;
 
   // Quem tem horário em algum dia bloqueado daqui para frente, para acompanhar os pedidos
   const ultimo = lista.reduce((m, b) => (b.ate > m ? b.ate : m), "");
@@ -57,17 +90,18 @@ function BloqueiosPageConteudo() {
     let ativo = true;
     buscarProximos(empresa.id, somarDias(fim, 1)).then((r) => {
       if (!ativo) return;
-      setAfetadas(r.atendimentos.filter((a) => bloqueios.some((b) => dataNoSalao(a.inicio) >= b.de && dataNoSalao(a.inicio) <= b.ate)));
+      setAfetadas(r.atendimentos.filter((a) => bloqueios.some((b) => afetadaPor(a, b, dona))));
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, empresa.config]);
+  }, [empresa.id, empresa.config, dona]);
   const afetadasAgora = ultimo ? afetadas : [];
 
   async function remover(b: Bloqueio) {
-    if (!(await perguntar(`Voltar a atender em ${periodo(b)}? A IA volta a oferecer horários nesses dias.`, { confirmar: "Voltar a atender" }))) return;
-    const r = await salvarBloqueios(empresa.id, (atuais) => atuais.filter((x) => !(x.de === b.de && x.ate === b.ate)));
+    const quem = b.profissional ? `A ${b.profissional} volta a atender` : "Voltar a atender";
+    if (!(await perguntar(`${quem} em ${periodo(b)}? A IA volta a oferecer horários nesses dias.`, { confirmar: "Voltar a atender" }))) return;
+    const r = await salvarBloqueios(empresa.id, (atuais) => atuais.filter((x) => !mesmoBloqueio(x, b)));
     if ("erro" in r) await avisar(`Não deu certo: ${r.erro}`);
     else trocarConfig(r.config);
   }
@@ -93,7 +127,7 @@ function BloqueiosPageConteudo() {
         ) : (
           <ul className="overflow-hidden rounded-[22px] bg-card borda-suave">
             {lista.map((b, i) => (
-              <li key={`${b.de}-${b.ate}`} className={`flex items-center gap-3 px-3.5 py-3 ${i > 0 ? "border-t border-borda" : ""}`}>
+              <li key={`${b.de}-${b.ate}-${b.profissional_id ?? "studio"}`} className={`flex items-center gap-3 px-3.5 py-3 ${i > 0 ? "border-t border-borda" : ""}`}>
                 <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-rose">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#7A2617" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <rect x="3" y="4" width="18" height="18" rx="2" />
@@ -103,6 +137,7 @@ function BloqueiosPageConteudo() {
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-[16px] font-semibold">{periodo(b)}</span>
                   <span className="truncate text-[13px] text-texto-2">
+                    {b.profissional ? `Só ${b.profissional} · ` : profissionais.length > 1 ? "Studio todo · " : ""}
                     {b.motivo ?? "Sem atender"} · {quantosDias(b)}
                   </span>
                 </span>
@@ -134,6 +169,7 @@ function BloqueiosPageConteudo() {
 
       {novo && (
         <NovoBloqueio
+          profissionais={profissionais}
           aoFechar={() => setNovo(false)}
           aoSalvar={(config) => {
             trocarConfig(config);
@@ -146,10 +182,22 @@ function BloqueiosPageConteudo() {
   );
 }
 
-// Folha para bloquear: motivo, de / até e, logo abaixo, quem já tem horário nesses dias
-function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: (config: Record<string, unknown>) => void }) {
+// Folha para bloquear: de quem (loja com mais de uma profissional), motivo, de / até e, logo abaixo, quem já tem horário
+// nesses dias na agenda que vai fechar
+function NovoBloqueio({
+  profissionais,
+  aoFechar,
+  aoSalvar,
+}: {
+  profissionais: Profissional[];
+  aoFechar: () => void;
+  aoSalvar: (config: Record<string, unknown>) => void;
+}) {
   const empresa = useEmpresa();
   const amanha = somarDias(hojeNoSalao(), 1);
+  // null = o studio todo; um id = só a agenda dessa profissional
+  const [deQuem, setDeQuem] = useState<string | null>(null);
+  const escolhida = profissionais.find((p) => p.id === deQuem) ?? null;
   const [motivo, setMotivo] = useState<string | null>(null);
   const [de, setDe] = useState(amanha);
   const [ate, setAte] = useState(amanha);
@@ -169,12 +217,14 @@ function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: 
       ativo = false;
     };
   }, [empresa.id, de, fim]);
-  const lista = afetadas?.chave === chave ? afetadas.lista : null;
+  const dona = profissionais[0]?.id;
+  const bloqueioNovo: Bloqueio = { de, ate: fim, motivo, ...(escolhida ? { profissional_id: escolhida.id, profissional: escolhida.nome } : {}) };
+  const lista = afetadas?.chave === chave ? afetadas.lista.filter((a) => afetadaPor(a, bloqueioNovo, dona)) : null;
 
   async function salvar() {
     setSalvando(true);
     setErro("");
-    const r = await salvarBloqueios(empresa.id, (atuais) => [...atuais, { de, ate: fim, motivo }]);
+    const r = await salvarBloqueios(empresa.id, (atuais) => [...atuais, bloqueioNovo]);
     setSalvando(false);
     if ("erro" in r) setErro(r.erro);
     else aoSalvar(r.config);
@@ -186,6 +236,30 @@ function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: 
     <Folha rotulo="Bloquear dias" aoFechar={aoFechar} className="bg-[var(--background)] px-5">
       <div className="flex flex-col gap-4 pt-1 pb-5">
         <h2 className="text-[22px] leading-tight font-bold">Quais dias você não vai atender?</h2>
+
+        {/* Loja com mais de uma profissional: fechar o studio todo ou só a agenda de uma (a outra continua atendendo) */}
+        {profissionais.length > 1 && (
+          <div className="flex flex-col gap-2">
+            <span className="rotulo text-texto-2">Quem não vai atender</span>
+            <div className="flex flex-wrap gap-2">
+              {[{ id: null as string | null, nome: "Studio todo" }, ...profissionais].map((p) => (
+                <button
+                  key={p.id ?? "studio"}
+                  onClick={() => setDeQuem(p.id)}
+                  aria-pressed={deQuem === p.id}
+                  className={`h-10 rounded-full px-4 text-[15px] font-semibold transition-colors ${deQuem === p.id ? "chip-ativo" : "bg-card text-texto borda-suave"}`}
+                >
+                  {p.id ? `Só ${p.nome}` : p.nome}
+                </button>
+              ))}
+            </div>
+            {escolhida && (
+              <p className="text-[13px] text-texto-2">
+                Só a agenda da {escolhida.nome} fecha. {profissionais.filter((p) => p.id !== escolhida.id).map((p) => p.nome).join(" e ")} continua atendendo.
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="flex flex-col gap-2">
           <span className="rotulo text-texto-2">Motivo</span>
@@ -249,7 +323,7 @@ function NovoBloqueio({ aoFechar, aoSalvar }: { aoFechar: () => void; aoSalvar: 
           disabled={salvando}
           className="h-14 rounded-full bg-grafite text-[17px] font-bold text-perola active:scale-[0.98] disabled:opacity-50"
         >
-          {salvando ? "Salvando…" : `Bloquear ${periodo({ de, ate: fim })}`}
+          {salvando ? "Salvando…" : `Bloquear ${periodo({ de, ate: fim })}${escolhida ? ` para a ${escolhida.nome}` : ""}`}
         </button>
         <button onClick={aoFechar} className="h-11 text-[16px] font-semibold text-texto-2">
           Cancelar
