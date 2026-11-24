@@ -106,11 +106,13 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
   // agenda: o sinal passa a ser conferido pela v2 (cliente sem_sinal marca sem comprovante)
   trocarUma(achar(AG, 'Supabase: conferir sinal'), 'url', 'rpc/n8n_sinal_conferir', 'rpc/n8n_sinal_conferir_v2');
 
-  // c. oferta da dona: outro horário no mesmo dia oferecido também vale (a IA oferece o mais perto quando não cabe)
+  // c. regra do Victor (24/11): a Caroline mandou agendar com a cliente = sem sinal, em QUALQUER horário que a cliente
+  // escolher (não só a hora do recado); se o recado fala em sinal ou Pix, cobra. Cliente que chega sozinha segue pagando.
+  // O recado vale por 15 dias (a Shirley respondeu 4 dias depois; antes eram 72 h).
+  trocarUma(achar(AG, 'Supabase: oferta da dona'), 'url', '$now.minus({ hours: 72 })', '$now.minus({ days: 15 })');
   trocarUma(achar(AG, 'Montar agendamento'), 'jsCode',
     'ofertaDaDona = avisos.some((t) => hora.test(t)) && !avisos.some((t) => /sinal|pix/.test(t));',
-    "const diaOf = new RegExp('(^|[^0-9])0?' + ini.day + '/0?' + ini.month + '([^0-9]|$)');\n" +
-    '  ofertaDaDona = avisos.some((t) => hora.test(t) || diaOf.test(t)) && !avisos.some((t) => /sinal|pix/.test(t));');
+    'ofertaDaDona = avisos.some((t) => hora.test(t) || /hor[aá]rio|agend|marc|reserv|vaga|encaix/.test(t)) && !avisos.some((t) => /sinal|pix/.test(t));');
 
   // d. "reservou ... Pode ser?": reserva afirma; se é pergunta, não é reserva
   trocarUma(achar(F, 'Envio: conferir'), 'jsCode', 'return [{ json: { bloqueio, recado, telefone: tel,', [

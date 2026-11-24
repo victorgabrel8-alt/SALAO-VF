@@ -50,7 +50,7 @@ code { font-family: var(--mono); font-size: 13px; }
     <p class="sub">Li os 56 pedidos que a Caroline fez à assistente (23/11 11h até 24/11 13h15) e as 56 conversas com clientes de 17 a 24/11. Abaixo estão os erros, o que já está consertado e a ordem do resto.</p>
     <div class="nums">
       <div><b>56</b><span>pedidos da Caroline lidos</span></div>
-      <div><b>16</b><span>falhas encontradas</span></div>
+      <div><b>15</b><span>falhas encontradas</span></div>
       <div><b>9</b><span>consertadas hoje</span></div>
       <div><b>8,7</b><span>erros da IA por 100 respostas (23/11)</span></div>
     </div>
@@ -80,12 +80,11 @@ code { font-family: var(--mono); font-size: 13px; }
       <div class="item"><div><h3>Marcou sem serviço e perguntou de novo o que já sabia</h3><p>"Agenda a Stella às 13h" foi marcado como "Manicure, serviço não confirmado". Depois veio a lista numerada e "É permuta?". <b>Conserto:</b> o serviço dito antes vale; a pergunta, quando precisar, é "Qual o serviço dela?", sem lista.</p></div><span class="pill ok">consertado</span></div>
       <div class="item"><div><h3>"A Carol reservou… Pode ser?" e troca sem motivo</h3><p>A cliente não sabe se está marcado nem por que mudou. <b>Conserto:</b> a mensagem afirma a reserva e diz o motivo da troca. Mensagem com "reservou" que termina em "pode ser?" não sai.</p></div><span class="pill ok">consertado</span></div>
       <div class="item"><div><h3>Disse "Mandei ✅" sem ter mandado</h3><p>Geisy, 10h21: o envio foi barrado por repetição e a Caroline leu "corrigi para 11:30". <b>Conserto:</b> agora ela recebe "⚠️ Não mandei:" com o motivo.</p></div><span class="pill ok">consertado</span></div>
-      <div class="item"><div><h3>Permuta ficava só na assistente</h3><p>"Não precisa pedir sinal" virou regra que a IA não lê, e a agenda recusaria marcar sem comprovante. <b>Conserto:</b> marca "não cobrar sinal" na ficha da cliente; a agenda e a IA respeitam.</p></div><span class="pill ok">consertado</span></div>
+      <div class="item"><div><h3>Sinal cobrado de quem a Caroline mandou chamar</h3><p>Só passava sem sinal a mesma hora do recado, em até 3 dias. <b>Regra agora:</b> a Caroline mandou agendar com a cliente = sem sinal em qualquer horário que ela escolher (recado vale 15 dias); a Caroline mandou cobrar = cobra; cliente que chegou sozinha = cobra. Permuta fica marcada na ficha ("não cobrar sinal").</p></div><span class="pill ok">consertado</span></div>
       <div class="item"><div><h3>Pedido perdido quando o Gemini cai</h3><p>Gleide quinta 11h30 (sem saldo) e 4 áudios não ouvidos às 10h10 (Gemini fora). A Caroline teve de repetir, e um pedido nunca voltou. <b>Conserto:</b> guardar o pedido e refazer sozinho quando voltar, modelo reserva para áudio, aviso ao Victor.</p></div><span class="pill bad">fazer</span></div>
       <div class="item"><div><h3>Marca por cima de outra cliente sem avisar</h3><p>Kelly no sábado às 8h, em cima da Edinanda; Geisy oferecida às 10h30 e às 11h30 em cima da Edinanda. <b>Conserto:</b> ao marcar ou oferecer hora que a Caroline ditou, avisar antes: "⚠️ encavala na Edinanda até 13h".</p></div><span class="pill bad">fazer</span></div>
       <div class="item"><div><h3>Regras guardadas que ninguém segue</h3><p>"Horários colados", "sem janela", "escassez", "8h, 10h e 13h": 19 regras, algumas repetidas, guardadas só na assistente. <b>Conserto:</b> revisar com a Caroline; o que é de agenda vira regra da agenda; "colados" vira a agenda oferecer primeiro o horário encostado em outra cliente.</p></div><span class="pill warn">próxima</span></div>
       <div class="item"><div><h3>Oferta sem resposta fica esquecida</h3><p>Shirley recebeu 21/12 ou 22/12 às 18h20 em 18/11 e nunca respondeu; ninguém voltou a chamar. <b>Conserto:</b> oferta do studio sem resposta em 24 h ganha um retorno.</p></div><span class="pill warn">próxima</span></div>
-      <div class="item"><div><h3>Chamou a Caroline de "Duda"</h3><p>24/11 08h33, "Ia tem programação pra hoje". <b>Conserto:</b> conferir de que número veio e como o nome é escolhido.</p></div><span class="pill warn">próxima</span></div>
     </div>
   </section>
 
