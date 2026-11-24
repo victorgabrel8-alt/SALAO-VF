@@ -214,6 +214,16 @@ return [{ json: { ...p, texto: t } }];
       operation: 'push', list: `=memoria:{{ ${PD}.telefone }}`, tail: false,
       messageData: "={{ JSON.stringify({ type: 'ai', data: { content: $('Pedido: texto').first().json.texto, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}",
     }, { credentials: REDIS, onError: 'continueRegularOutput' }),
+    // a assistente da Gleide também fica sabendo: a resposta dela não passa pela assistente (vem citando o pedido) e, sem
+    // isto, "mandou pra ela?" ou "o que você mandou?" ficavam sem resposta (24/11/2026)
+    node('Pedido: memória da assistente', 'n8n-nodes-base.redis', 1, [2200, -1000], {
+      operation: 'push', tail: false,
+      list: `=assistente:{{ (() => { const ns = ($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map((s) => s.trim()).filter(Boolean); const t = String(${E}.telefone || ''); return ns.find((n) => n === t || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === t) || t || 'sem-numero'; })() }}`,
+      messageData: `={{ (() => { const d = new Date(Date.now() - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); ` +
+        `const quando = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); ` +
+        `return JSON.stringify({ type: 'ai', data: { content: '[' + quando + '] Avisei ' + (${PD}.nome ? 'a *' + ${PD}.nome + '*' : 'a cliente') + ' ✓ (você respondeu ao pedido dela «' + (${PD}.pergunta || '') + '» com «' + (${PD}.resposta || '') + '»). Mandei para ela: «' + ($('Pedido: texto').first().json.texto || '') + '»', ` +
+        `additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }); })() }}`,
+    }, { credentials: REDIS, onError: 'continueRegularOutput' }),
     node('Pedido: apagar', 'n8n-nodes-base.redis', 1, [2310, -900], {
       operation: 'delete', key: `=pedido:{{ ${E}.citado }}`,
     }, { credentials: REDIS, onError: 'continueRegularOutput' }),
@@ -234,7 +244,8 @@ return [{ json: { ...p, texto: t } }];
   workflow.connections['Pedido: enviar à cliente'] = main('Pedido: registrar saída');
   workflow.connections['Pedido: registrar saída'] = main('Pedido: memória (resposta da Gleide)');
   workflow.connections['Pedido: memória (resposta da Gleide)'] = main('Pedido: memória (mensagem enviada)');
-  workflow.connections['Pedido: memória (mensagem enviada)'] = main('Pedido: apagar');
+  workflow.connections['Pedido: memória (mensagem enviada)'] = main('Pedido: memória da assistente');
+  workflow.connections['Pedido: memória da assistente'] = main('Pedido: apagar');
   workflow.connections['Pedido: apagar'] = main('Pedido: confirmar à Gleide');
 
   return { perguntaWorkflow, idFile: require('path').join(__dirname, '.workflow-pergunta-id'), modalidadeWorkflow, modalidadeIdFile };

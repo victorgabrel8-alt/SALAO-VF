@@ -600,7 +600,7 @@ const nodes = [
     { telefone: "={{ $('Montar entrada').first().json.telefone }}" },
     [['motivo', 'Motivo curto, até 12 palavras (ex.: quer avaliação à distância, mora longe)', 'string'],
       ['resumo', 'Uma frase curta para a ficha da cliente, até 20 palavras: nova ou já cliente, horário marcado, o que você já explicou. Não vai no aviso da Gleide.', 'string'],
-      ['o_que_precisa', 'É a única frase do aviso no WhatsApp da Gleide: o que ela precisa fazer e o motivo, até 10 palavras, sem nome da cliente (ex.: Ver reação no couro cabeludo depois da aplicação)', 'string']]),
+      ['o_que_precisa', 'O que a Gleide precisa fazer, começando por um verbo, até 10 palavras, sem o nome da cliente (ex.: Ver a reação no couro cabeludo depois da aplicação; Mandar o link de pagamento). O aviso dela já leva o nome, o telefone e as últimas mensagens da cliente.', 'string']]),
 
   // Só áudio nesta resposta ([SEM TEXTO]): não manda balão, só libera a trava
   ifNode('Tem texto pra enviar?', [0, 0], [
@@ -721,7 +721,7 @@ const lerCrmId = () => (fs.existsSync(crmIdFile) ? fs.readFileSync(crmIdFile, 'u
 const { crmWorkflow } = require('./crm-workflows.js')({ env, node, str, main, D, toolSub, workflow, agendaWorkflow, pausaWorkflow, lerCrmId });
 
 // Supabase (banco do CRM): mensagens, pausa e agenda passam a ser gravadas lá (ver supabase-workflows.js)
-require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow });
+require('./supabase-workflows.js')({ node, main, D, workflow, agendaWorkflow, pausaWorkflow, crmWorkflow, REDIS });
 // Fotos na conversa do app: a foto da cliente (e da dona) vai para o Storage e o app mostra (ver fotos-workflows.js)
 require('./fotos-workflows.js')({ node, main, ifNode, cond, D, workflow });
 // A cliente ligou: a IA responde uma vez, com contexto, e a ligação nunca pausa a IA (ver ligacao.js)
@@ -858,7 +858,7 @@ const todos = [agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramenta
 const aplicarRespostas = () => {
   // prompt próprio de loja sem o registro do que a assistente já fez: entra aqui (assistente-workflows.js)
   assistente.garantirContexto();
-  require('./respostas-aprendidas.js')({ node, main, GEMINI, workflow,
+  require('./respostas-aprendidas.js')({ node, main, GEMINI, REDIS, workflow,
     assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow,
     dicaPreco: !!(LOJA && LOJA.preco_livre) }).promptAssistente();
 };
@@ -866,6 +866,9 @@ const aplicarRespostas = () => {
 // os relatórios contam só venda confirmada por ela. Fase 2 do portão, 21/11/2026. Antes do pendencias-loja (que troca a função das pendências).
 if (!LOJA) require('./conferencia-vendas.js')({ assistenteWorkflow: assistente.assistenteWorkflow, pendenciasWorkflow: assistente.pendenciasWorkflow });
 if (!LOJA) aplicarRespostas();
+// a assistente da Gleide lê as conversas das clientes das últimas 3 h, como a da Caroline (assistente-conversas.js): para explicar
+// um aviso e responder "ela respondeu?" com o que a cliente disse de verdade (24/11/2026: "Esse link" sem resposta)
+if (!LOJA) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
 // a cliente mandou vídeo: a IA assiste e responde, nunca fica em silêncio (video.js); pedido do Victor em 16/11
 if (!LOJA) require('./video.js')({ workflow, D });
 // a cliente volta depois de dias: a IA recebe a conversa antiga do banco e não pergunta tudo de novo (conversa-antiga.js); pedido do Victor em 16/11

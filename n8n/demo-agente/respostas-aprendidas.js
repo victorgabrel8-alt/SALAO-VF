@@ -18,7 +18,7 @@ const SUPA_H = { parameters: [
   { name: 'Authorization', value: '=Bearer {{ $env.SUPABASE_SERVICE_KEY }}' },
 ] };
 
-module.exports = ({ node, main, GEMINI, workflow, assistenteWorkflow, ferramentasWorkflow, dicaPreco = false }) => {
+module.exports = ({ node, main, GEMINI, REDIS, workflow, assistenteWorkflow, ferramentasWorkflow, dicaPreco = false }) => {
   const achar = (wf, nome) => { const n = wf.nodes.find((x) => x.name === nome); if (!n) throw new Error(`respostas-aprendidas: não achei "${nome}"`); return n; };
   const rpc = (nome, funcao, corpo, extra = {}) => node(nome, 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
     method: 'POST', url: `={{ $env.SUPABASE_URL }}/rest/v1/rpc/${funcao}`, sendHeaders: true, headerParameters: SUPA_H,
@@ -91,6 +91,12 @@ return [{ json: { guardar, temPreco, pergunta, resposta } }];
       jsonBody: `={{ JSON.stringify({ number: ${E}.jid, text: '📌 Guardei essa resposta para responder sozinha da próxima vez:\\n' + $('Aprender: preparar').first().json.pergunta + '\\n→ ' + $('Aprender: preparar').first().json.resposta + '\\n\\nSe não é para valer sempre, me escreve (sem citar esta mensagem): esquece a resposta sobre…' }) }}`,
       options: { timeout: 30000 },
     }, { onError: 'continueRegularOutput', executeOnce: true }),
+    // o 📌 também vai para a memória da assistente (24/11/2026): ela sabe explicar o aviso e tirar a resposta se a Gleide pedir
+    node('Aprender: memória da assistente', 'n8n-nodes-base.redis', 1, [0, 0], {
+      operation: 'push', tail: false,
+      list: `=assistente:{{ (() => { const ns = ($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map((s) => s.trim()).filter(Boolean); const t = String(${E}.telefone || ''); return ns.find((n) => n === t || n.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2') === t) || t || 'sem-numero'; })() }}`,
+      messageData: "={{ JSON.stringify({ type: 'ai', data: { content: '[' + (() => { const d = new Date(Date.now() - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); })() + '] 📌 Guardei essa resposta para responder sozinha da próxima vez: ' + ($('Aprender: preparar').first().json.pergunta || '') + ' → ' + ($('Aprender: preparar').first().json.resposta || ''), additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) }}",
+    }, REDIS ? { credentials: REDIS, onError: 'continueRegularOutput', executeOnce: true } : { onError: 'continueRegularOutput', executeOnce: true }),
   );
   workflow.connections[fim] = main('Aprender: é pergunta?');
   workflow.connections['Aprender: é pergunta?'] = ramos('Aprender: avaliar (Gemini)', null);
@@ -98,6 +104,7 @@ return [{ json: { guardar, temPreco, pergunta, resposta } }];
   workflow.connections['Aprender: preparar'] = main('Aprender: guardar?');
   workflow.connections['Aprender: guardar'] = main('Aprender: guardou?');
   workflow.connections['Aprender: guardou?'] = ramos('Aprender: avisar a Gleide', null);
+  workflow.connections['Aprender: avisar a Gleide'] = main('Aprender: memória da assistente');
   if (dicaPreco) {
     // loja que fala preço: a resposta com valor não é guardada, mas a dona fica sabendo como resolver de vez
     workflow.nodes.push(
