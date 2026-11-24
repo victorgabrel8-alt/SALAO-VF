@@ -143,6 +143,9 @@ const pausaWorkflow = {
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
 const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
 // Várias mensagens seguidas chegam numeradas; a IA marca com --- onde quer outra mensagem e o Quebrar mensagens manda até 3 balões
+// Modelo reserva do agente de atendimento (24/11/2026): entra só quando o gemini-3-flash-preview falha. O 2.5 Flash
+// e o gemini-3-flash não respondem mais nesta chave; o gemini-flash-latest cai junto com o principal na sobrecarga.
+const MODELO_RESERVA = 'models/gemini-3.5-flash';
 const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
@@ -379,6 +382,9 @@ const nodes = [
     promptType: 'define',
     text: "={{ $('Montar entrada').first().json.texto_cliente }}",
     // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
+    // needsFallback: se o Gemini Flash falhar (24/11 00:02: erro 503 "high demand" do Google), o agente tenta o
+    // "Gemini reserva" antes de cair no pedido de desculpas. Testado num fluxo temporário com o principal quebrado.
+    needsFallback: true,
     options: { systemMessage: '=' + prompt + REGRA_CITAR, returnIntermediateSteps: true },
   // Gemini falhou (sobrecarga, erro de ferramenta): tenta de novo; se ainda falhar, segue sem resposta e o
   // Quebrar mensagens manda o pedido de desculpas. Antes a execução morria com a trava presa (2 min) e a
@@ -388,6 +394,11 @@ const nodes = [
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
     // 0.6 (era 0.4 até 22/11): o Victor achou a conversa fria e repetitiva; um pouco mais de variação na escrita
     modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.6 },
+  }, GEMINI ? { credentials: GEMINI } : {}),
+
+  // Reserva: outro modelo (a sobrecarga é por modelo), mesma chave e mesma temperatura. Só roda quando o principal falha.
+  node('Gemini reserva', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2640, 200], {
+    modelName: MODELO_RESERVA, options: { temperature: 0.6 },
   }, GEMINI ? { credentials: GEMINI } : {}),
 
   node('Memória (Redis)', '@n8n/n8n-nodes-langchain.memoryRedisChat', 1.5, [2720, 200], {
@@ -686,6 +697,7 @@ const connections = {
   'Digitando...': main('Enviar mensagem'),
   'Enviar mensagem': main('Um balão por vez'),
   'Gemini Flash': { ai_languageModel: [[{ node: 'Agente IA', type: 'ai_languageModel', index: 0 }]] },
+  'Gemini reserva': { ai_languageModel: [[{ node: 'Agente IA', type: 'ai_languageModel', index: 1 }]] },
   'Memória (Redis)': { ai_memory: [[{ node: 'Agente IA', type: 'ai_memory', index: 0 }]] },
   'consultar_horarios_livres': { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] },
   'criar_agendamento': { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] },
