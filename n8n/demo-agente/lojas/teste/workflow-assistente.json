@@ -2121,7 +2121,8 @@
             "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
             "status": "={{ $fromAI('status', `realizado, faltou ou cancelado`, 'string') }}",
-            "valor": "={{ $fromAI('valor', `Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)`, 'string') }}"
+            "valor": "={{ $fromAI('valor', `Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)`, 'string') }}",
+            "citadas": "={{ (() => { let t = ''; try { t += String($('Juntar mensagens').first().json.texto || ''); } catch (e) {} try { for (const s of [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12)) { try { const m = JSON.parse(s); t += ' ' + String((m.data && m.data.content) || ''); } catch (e) {} } } catch (e) {} return t.slice(-8000); })() }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -2478,6 +2479,16 @@
             {
               "id": "cliente_nome",
               "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "citadas",
+              "displayName": "citadas",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -2912,7 +2923,8 @@
             "pode_forcar": "={{ $('Contexto').first().json.podeForcar }}",
             "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
-            "texto": "={{ $fromAI('texto', `A anotação, curta`, 'string') }}"
+            "texto": "={{ $fromAI('texto', `A anotação, curta`, 'string') }}",
+            "citadas": "={{ (() => { let t = ''; try { t += String($('Juntar mensagens').first().json.texto || ''); } catch (e) {} try { for (const s of [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12)) { try { const m = JSON.parse(s); t += ' ' + String((m.data && m.data.content) || ''); } catch (e) {} } } catch (e) {} return t.slice(-8000); })() }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -3269,6 +3281,16 @@
             {
               "id": "cliente_nome",
               "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "citadas",
+              "displayName": "citadas",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -5786,7 +5808,8 @@
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
             "servico": "={{ $fromAI('servico', `O serviço principal que ela fez, com o nome da lista, se ela disse (o que tem manutenção: alongamento, banho de gel, esmaltação em gel; senão o primeiro). Vazio se ela não disse`, 'string') }}",
             "extras": "={{ $fromAI('extras', `Os outros serviços que ela fez, com os nomes da lista, separados por vírgula (ex.: Pedicure, Francesinha); senão vazio`, 'string') }}",
-            "valor": "={{ $fromAI('valor', `Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)`, 'string') }}"
+            "valor": "={{ $fromAI('valor', `Valor cobrado em reais, só o número, SÓ se ela disse; senão vazio (nunca 0)`, 'string') }}",
+            "citadas": "={{ (() => { let t = ''; try { t += String($('Juntar mensagens').first().json.texto || ''); } catch (e) {} try { for (const s of [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12)) { try { const m = JSON.parse(s); t += ' ' + String((m.data && m.data.content) || ''); } catch (e) {} } } catch (e) {} return t.slice(-8000); })() }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -6143,6 +6166,16 @@
             {
               "id": "cliente_nome",
               "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "citadas",
+              "displayName": "citadas",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -6180,7 +6213,8 @@
             "pode_forcar": "={{ $('Contexto').first().json.podeForcar }}",
             "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
-            "desfazer": "={{ $fromAI('desfazer', `\"sim\" para desfazer um \"chegou\" marcado por engano; senão vazio`, 'string') }}"
+            "desfazer": "={{ $fromAI('desfazer', `\"sim\" para desfazer um \"chegou\" marcado por engano; senão vazio`, 'string') }}",
+            "citadas": "={{ (() => { let t = ''; try { t += String($('Juntar mensagens').first().json.texto || ''); } catch (e) {} try { for (const s of [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12)) { try { const m = JSON.parse(s); t += ' ' + String((m.data && m.data.content) || ''); } catch (e) {} } } catch (e) {} return t.slice(-8000); })() }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -6537,6 +6571,16 @@
             {
               "id": "cliente_nome",
               "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "citadas",
+              "displayName": "citadas",
               "required": false,
               "defaultMatch": false,
               "display": true,

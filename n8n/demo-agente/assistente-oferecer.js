@@ -134,6 +134,44 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     a.value = a.value.replace(de, () => "if (!r || !r.key?.id) { const em = String((r && r.error && (r.error.message || JSON.stringify(r.error))) || ''); return /exists.{0,4}false/.test(em) ? 'ERRO: esse número não tem WhatsApp. Nada foi enviado. Diga em uma frase que o número da cliente não tem WhatsApp e peça para conferir o número.' : 'ERRO: o WhatsApp não conseguiu mandar agora. Nada foi enviado. Diga em uma frase que não deu para mandar agora e que ela pode pedir de novo em alguns minutos.'; }");
   }
 
+  // g. só grava na ficha de quem a dona citou (24/11, teste com o áudio real da Jaque: "acabei de finalizar, ela chegou...",
+  // sem nome, e a assistente concluiu e anotou a Helena, a primeira cliente do dia). concluir, anotar, chegou e
+  // status_atendimento levam "citadas" = o pedido atual + as últimas 12 mensagens da conversa com a dona (as dela e as da
+  // assistente: aviso "⏰ fulana não chegou", pendências, "Qual o serviço da fulana?"). Se o nome da cliente não aparece
+  // ali (com tolerância de áudio: Sirlei = Shirley, Jaque = Jackelined, Stella = Stela), nada é gravado e a assistente
+  // recebe PERGUNTE (não ERRO): pergunta "De quem você fala?".
+  const PRECISA_CITAR = ['concluir', 'anotar', 'chegou', 'status_atendimento'];
+  const CITADAS = "={{ (() => { let t = ''; try { t += String($('Juntar mensagens').first().json.texto || ''); } catch (e) {} " +
+    "try { for (const s of [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12)) { try { const m = JSON.parse(s); t += ' ' + String((m.data && m.data.content) || ''); } catch (e) {} } } catch (e) {} " +
+    'return t.slice(-8000); })() }}';
+  const gatilho = achar(F, 'Recebe pedido da assistente').parameters.workflowInputs.values;
+  if (!gatilho.some((x) => x.name === 'citadas')) gatilho.push({ name: 'citadas' });
+  for (const nome of PRECISA_CITAR) {
+    const t = achar(A, nome);
+    if (!('cliente_nome' in t.parameters.workflowInputs.value)) throw new Error('assistente-oferecer: ' + nome + ' sem cliente_nome');
+    t.parameters.workflowInputs.value.citadas = CITADAS;
+    const sc = t.parameters.workflowInputs.schema;
+    if (Array.isArray(sc) && !sc.some((s) => s.id === 'citadas')) sc.push({ ...sc[0], id: 'citadas', displayName: 'citadas' });
+  }
+  trocarUma(achar(F, 'Montar chamada'), 'jsCode', '// Antes de gravar ou enviar: o id é mesmo da cliente', [
+    '// assistente-oferecer.js (g): só grava na ficha de quem a dona citou nas mensagens recentes',
+    "if (" + JSON.stringify(PRECISA_CITAR) + ".includes(v('acao')) && v('citadas') && v('cliente_nome')) {",
+    "  const normNome = (s) => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/sh/g, 's').replace(/th/g, 't').replace(/ph/g, 'f').replace(/qu/g, 'k').replace(/c(?=[aou])/g, 'k').replace(/ck/g, 'k').replace(/y/g, 'i').replace(/w/g, 'v').replace(/z/g, 's').replace(/(.)\\1+/g, '$1');",
+    "  const palavras = (s) => normNome(s).split(/[^a-z]+/).filter((w) => w.length >= 3);",
+    "  const textoCitado = palavras(v('citadas'));",
+    "  const citou = palavras(v('cliente_nome')).some((n) => { const k = Math.min(4, n.length); return textoCitado.some((w) => w.length >= k && w.slice(0, k) === n.slice(0, k)); });",
+    "  if (!citou) return [{ json: { pergunte: 'nada foi gravado: a Caroline não disse o nome \"' + v('cliente_nome') + '\" nas mensagens recentes, e cliente não se escolhe pela agenda do dia. Pergunte em uma linha \"De quem você fala?\" e, quando ela disser o nome, faça. Não diga que deu erro.' } }];",
+    '}',
+    '// Antes de gravar ou enviar: o id é mesmo da cliente',
+  ].join('\n'));
+  {
+    const resp = achar(F, 'Resposta');
+    const a = (resp.parameters.assignments?.assignments || []).find((x) => x.name === 'resposta');
+    const de = "if (m.erro) return 'ERRO: ' + m.erro;";
+    if (!a || String(a.value).split(de).length !== 2) throw new Error('assistente-oferecer: a Resposta das ferramentas mudou (erro)');
+    a.value = a.value.replace(de, () => "if (m.pergunte) return 'PERGUNTE: ' + m.pergunte;\n  " + de);
+  }
+
   // e. "mandei" quando todo envio desta resposta foi recusado
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode',
     'if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {',

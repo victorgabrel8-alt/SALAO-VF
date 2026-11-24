@@ -105,9 +105,10 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
   liga(P, 'Pedido nº: guardar índice', memoria.name);
   // o envio vinha logo depois do "número de alerta" ($json); agora vem depois do contador
   trocar(enviar, 'jsonBody', 'number: $json.alerta,', "number: $('Supabase: número de alerta').first().json.alerta,");
-  trocar(enviar, 'jsonBody', "'❓ Pergunta da cliente '", `'❓ Pergunta ' + (${NUM} ? '#' + ${NUM} + ' ' : '') + 'da cliente '`);
-  trocar(enviar, 'jsonBody', "'\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.'",
-    `(${NUM} ? '\\n\\nResponda: ' + ${NUM} + ' sim / ' + ${NUM} + ' não / ' + ${NUM} + ' + o que digo a ela\\n(ou toque em Responder nesta mensagem)' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')`);
+  // 24/11 (Victor: "olha o tanto de texto"): a pergunta à dona fica curta, sem "Pergunta da cliente" e sem
+  // "Responda: 27 sim / 27 não / 27 + o que digo a ela / (ou toque em Responder...)". Ela responde do jeito dela.
+  trocar(enviar, 'jsonBody', "'❓ Pergunta da cliente '", `'❓ ' + (${NUM} ? '#' + ${NUM} + ' ' : '')`);
+  trocar(enviar, 'jsonBody', "'\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.'", "''");
   trocar(guardar, 'value', 'empresa: $env.EMPRESA_ID }) }}', `empresa: $env.EMPRESA_ID, num: ${NUM} || null, criado: $now.toMillis() }) }}`);
   trocar(memoria, 'messageData', "'Perguntei à Gleide sobre '", `'Perguntei à Gleide ' + (${NUM} ? '(pedido #' + ${NUM} + ') ' : '') + 'sobre '`);
 
@@ -197,8 +198,8 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
     ].join('\n'));
     trocar(msg, 'jsCode', "const texto = ps.length === 1 ? linha(ps[0]).replace(/^• /, '') : ps.map(linha).join('\\n'); // pendencias-loja.js: só a pergunta", [
       "const nomeP = (p) => String(p.nome || 'cliente').split(' ').filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2).join(' ');",
-      "const linhaPedido = (p) => '• ' + (p.num ? '*#' + p.num + '* ' : '') + '*' + nomeP(p) + '* ainda espera sua resposta: ' + p.pergunta + (p.num ? ' (responda ' + p.num + ' + o que digo a ela)' : '');",
-      'const LINHAS = ps.map(linha).concat(PEDIDOS.map(linhaPedido));',
+      "const linhaPedido = (p) => '• ' + (p.num ? '*#' + p.num + '* ' : '') + '*' + nomeP(p) + '* ainda espera sua resposta: ' + p.pergunta;",
+      "const LINHAS = ps.map(linha).concat(PEDIDOS.filter((p) => !/^AVISO/i.test(String(p.pergunta || ''))).map(linhaPedido));", // AVISO não espera resposta (24/11)
       "const texto = LINHAS.length === 1 ? LINHAS[0].replace(/^• /, '') : LINHAS.join('\\n'); // pendencias-loja.js: só a pergunta; pedido-numerado.js: e os pedidos",
     ].join('\n'));
   }
@@ -221,8 +222,8 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
     trocar(montar, 'jsCode', 'if (googleFalhou) faltas.push(', [
       '// pedido-numerado.js: pergunta da IA à dona ainda sem resposta (há mais de 30 min), com o número',
       'try {',
-      `  for (const p of ${PEDIDOS_DE(`$('${LER_RES}').first().json`)}.filter((p) => !p.criado || Date.now() - p.criado > 30 * 60e3).sort((a, b) => (a.num || 0) - (b.num || 0)))`,
-      "    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta + (p.num ? ' (responda ' + p.num + ' + o que digo a ela)' : ''));",
+      `  for (const p of ${PEDIDOS_DE(`$('${LER_RES}').first().json`)}.filter((p) => (!p.criado || Date.now() - p.criado > 30 * 60e3) && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.num || 0) - (b.num || 0)))`,
+      "    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta);",
       '} catch (e) {}',
       'if (googleFalhou) faltas.push(',
     ].join('\n'));
