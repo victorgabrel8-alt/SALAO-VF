@@ -124,5 +124,6 @@
   "pix_sistema": true,
   "pedido_numerado": true,
   "assistente_oferecer": true,
-  "copia_victor": "556699270860"
+  "copia_victor": "556699270860",
+  "bloqueio_por_profissional": true
 }

@@ -219,5 +219,6 @@
   "assistente_oferecer": true,
   "gemini_teste": true,
   "assistente_modelo": "models/gemini-3.5-flash",
-  "assistente_espera": 5
+  "assistente_espera": 5,
+  "bloqueio_por_profissional": true
 }
