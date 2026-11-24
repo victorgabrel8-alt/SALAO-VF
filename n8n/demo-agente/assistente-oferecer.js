@@ -172,12 +172,15 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     a.value = a.value.replace(de, () => "if (m.pergunte) return 'PERGUNTE: ' + m.pergunte;\n  " + de);
   }
 
-  // e. "mandei" quando todo envio desta resposta foi recusado
+  // e. "mandei" quando todo envio desta resposta foi recusado. As linhas do que deu certo ficam (24/11, Maila: "concluída ✅"
+  // sumiu e a Caroline só recebeu "Não mandei"), e a nota da memória não diz "nada foi gravado" quando algo foi.
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode',
     'if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {',
     "const recusados = novos.filter((f) => ENVIO.includes(f.t) && !ok(f.r) && !/^GUARDEI COMO RECADO/i.test(f.r));\n" +
-    "if (afirma && !enviou && recusados.length && !passado) { texto = '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
+    "const fica = gravou ? original.split('\\n').filter((l) => l.trim() && !/\\b(avisei|mandei|enviei|perguntei|chamei)\\b|mensagem (foi )?enviada/i.test(l)).join('\\n').trim() : '';\n" +
+    "if (afirma && !enviou && recusados.length && !passado) { texto = (fica ? fica + '\\n\\n' : '') + '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
     'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {');
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', 'Nada foi gravado nem enviado.', "' + (gravou ? 'O que voltou OK ficou gravado; nenhuma mensagem foi enviada.' : 'Nada foi gravado nem enviado.') + '");
 };
 
 module.exports.ID_AGENDA = ID_AGENDA;
