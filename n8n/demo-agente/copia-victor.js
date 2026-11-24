@@ -76,6 +76,8 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pausaWorkflow: Z, assisten
       "if (!String(ag.output || '').trim()) motivo = 'a assistente não conseguiu responder (Gemini fora ou erro); ela recebeu: «' + String(c.texto || '').slice(0, 120) + '»';",
       "else if (c.corrigida) motivo = 'ia dizer que fez sem ter feito: «' + String(c.original || '').slice(0, 200) + '». Ela recebeu: «' + String(c.texto || '').slice(0, 160) + '»';",
       "else if (falhas.length) motivo = falhas.map((f) => f.t + ': ' + String(f.r).replace(/\\s+/g, ' ').slice(0, 180)).join(' | ') + '\\nResposta à dona: «' + String(c.texto || '').slice(0, 200) + '»';",
+      "const regras = passos.filter((s) => ['guardar_regra', 'regra_da_agenda', 'tirar_regra'].includes(s.action && s.action.tool) && /^\s*OK/i.test(ler(s.observation)));",
+      "if (!motivo && regras.length) motivo = '📝 regra nova da dona (levar para a IA de atendimento): ' + regras.map((s) => s.action.tool + ' ' + JSON.stringify(s.action.toolInput || {}).slice(0, 200)).join(' | ');",
       "if (!motivo) return [];",
       "return [{ json: { texto: '👀 Assistente da loja · pedido de ' + num.slice(-4) + ': «' + pedido.replace(/\\s+/g, ' ').slice(0, 300) + '»\\n⚠️ ' + motivo } }];",
     ].join('\n') },

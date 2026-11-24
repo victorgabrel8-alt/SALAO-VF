@@ -1305,7 +1305,7 @@
         "description": "Consulta a agenda do salão e devolve 2 horários para oferecer (um de manhã e um de tarde, quando há) e o QUADRO DO DIA (manhã, almoço e tarde), só para você tirar 1 ou 2 inícios novos se a cliente pedir outros horários. Use SEMPRE antes de oferecer horários. Se o dia pedido estiver fechado ou lotado, ela já devolve o próximo dia com vaga.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_AGENDA",
+          "value": "izV0x9PmxdiCJrDl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1449,7 +1449,7 @@
         "description": "Lista os horários futuros desta cliente (marcados pela IA ou pela Caroline). SEMPRE use quando ela perguntar o horário dela (\"que horas é meu horário?\", \"que dia marquei?\"), mesmo se a ficha já mostrar um: a ficha pode estar desatualizada. Use também antes de remarcar/cancelar se você não souber o data_hora_inicio do agendamento atual.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_AGENDA",
+          "value": "izV0x9PmxdiCJrDl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1579,7 +1579,7 @@
         "description": "MUDA o horário de um agendamento que a cliente JÁ TEM (o mesmo agendamento passa para o novo horário). Use sempre que ela quiser remarcar/trocar/mudar/adiantar/atrasar o horário. NUNCA use criar_agendamento para remarcar. Só diga que remarcou se a resposta começar com REMARCADO.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_AGENDA",
+          "value": "izV0x9PmxdiCJrDl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1722,7 +1722,7 @@
         "description": "Cancela (remove da agenda) um agendamento que a cliente já tem. Use só depois que ela confirmar que quer cancelar. Só diga que cancelou se a resposta começar com CANCELADO. O sistema só cancela se a cliente pediu para cancelar ou desmarcar; nunca use para marcar de novo o mesmo horário.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_AGENDA",
+          "value": "izV0x9PmxdiCJrDl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -1854,7 +1854,7 @@
         "description": "Cria um agendamento NOVO na agenda do studio. Use depois que a cliente escolheu um dos horários de consultar_horarios_livres e você sabe o serviço. Para mudar um horário que existe, a ferramenta é remarcar_agendamento. Horário novo com sinal só é gravado depois que a foto do comprovante chegou (o sistema confere). Se a resposta não começar com AGENDADO, o horário não foi marcado e a resposta diz o motivo.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_AGENDA",
+          "value": "izV0x9PmxdiCJrDl",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2000,7 +2000,7 @@
         "description": "Passa a conversa para a Caroline e PAUSA você para esta cliente por 12 horas. A Caroline recebe no WhatsApp o resumo e o link da conversa. Use só nos casos em que o roteiro manda: dor, machucado, inflamação, alergia, reclamação de atendimento ou de cobrança, a cliente pede para falar com a Caroline, a agenda deu ERRO ou não há horário para um reparo. Dúvida simples é perguntar_para_gleide, que não pausa.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_PAUSA",
+          "value": "AzpaLfJVT0DqOBeb",
           "mode": "id"
         },
         "workflowInputs": {
@@ -2237,7 +2237,7 @@
         "description": "Anota na ficha da cliente um fato útil para os próximos atendimentos (preferência, quando ela pode vir, que pediu para não receber mensagens). Não avisa a cliente. Quando ela combinar de voltar a falar numa data (\"semana que vem te falo\", \"depois do dia 10 eu vejo\"), preencha data_retorno e assunto_retorno; sem dia ou prazo dito por ela, deixe os dois vazios. A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_CRM",
+          "value": "dKAfwIsdgNKiYrdi",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3489,7 +3489,7 @@
         "description": "Manda para a cliente um ÁUDIO pronto (voz de terceiro, não diga que é a Caroline) explicando um assunto (temas em ÁUDIOS PRONTOS, no fim das instruções). Use quando a pergunta dela for exatamente sobre um desses temas. A resposta diz se o áudio foi enviado e o que ele fala.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_AUDIOS",
+          "value": "Q1Q4ap9q0O1F6yHE",
           "mode": "id"
         },
         "workflowInputs": {
@@ -3706,7 +3706,7 @@
         "description": "Manda uma pergunta curta para a Caroline SEM pausar o atendimento; a resposta dela chega à cliente sozinha. Use só nos casos em que o roteiro manda: algo que o sistema não mostra e a cliente afirma; decisão que é só da Caroline (encaixe, serviço que muda o tempo de um horário marcado, decoração por foto); pergunta prática que não está cadastrada, como levar criança, acompanhante ou estacionamento; aviso de reparo; código de voucher que não aparece. Preço é só o da lista SERVIÇOS E PREÇOS. Se a resposta não começar com PERGUNTADO, a pergunta não foi enviada.",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_PERGUNTA",
+          "value": "JVbtUDbLy5XfzNeT",
           "mode": "id"
         },
         "workflowInputs": {
@@ -4824,7 +4824,7 @@
         "description": "Manda para a cliente o link do catálogo do studio no WhatsApp, com os serviços e fotos dos trabalhos. Use quando ela pedir o catálogo, fotos de trabalhos ou a lista de serviços. Preço você responde em texto. A resposta diz se foi enviado (FOTOS ENVIADAS / CATÁLOGO NÃO ENVIADO).",
         "workflowId": {
           "__rl": true,
-          "value": "ID_DO_WORKFLOW_CATALOGO",
+          "value": "hUAeg9DtpYx92pBJ",
           "mode": "id"
         },
         "workflowInputs": {

@@ -3,11 +3,14 @@
   "nome": "Loja Teste",
   "nicho": "manicure",
   "empresa_id": "ff4b7937-1abb-4803-83c8-e0896d94fc9f",
-  "instancia": "loja-teste",
+  "instancia": "oi-studio-ngcx",
   "dona": "Caroline",
   "cidade": "Sinop",
+  "equipe": true,
+  "regras_agenda": true,
+  "prompt_inteiro": true,
   "assistente_numeros": [
-    "5500000000001"
+    "5566999270860"
   ],
   "permitidos": [
     "556699270860",
@@ -100,7 +103,8 @@
     "5566900000096",
     "5566900000097",
     "5566900000098",
-    "5566900000099"
+    "5566900000099",
+    "5566999270860"
   ],
   "catalogo_link": "https://wa.me/c/556696380737",
   "prompt_assistente": "prompt-assistente.txt",
@@ -126,24 +130,8 @@
       "Ex.: \"pé e mão, primeira vez\", \"gel nude pra casamento sábado\", \"manutenção do alongamento feito há 3 semanas\", \"tirar o gel e esmaltar\""
     ],
     [
-      "(ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"selagem\")",
-      "(ex.: \"alongamento em gel, formato amendoado\", \"pé e mão\")"
-    ],
-    [
-      "dela (serviço, tipo de cabelo, química, orçamento)",
-      "dela (serviço, mão ou pé, gel ou alongamento, cor, ocasião)"
-    ],
-    [
-      "valores de SERVIÇOS/MÃO DE OBRA e durações, nunca preço dos FIOS; se houver divergência",
-      "valores e durações; se houver divergência"
-    ],
-    [
       "(sem lista atualizada: não invente preço; use seção 04 apenas para base geral da mão de obra e durações)",
       "(sem lista atualizada: não informe preço nem duração; diga que a Gleide confirma)"
-    ],
-    [
-      "mas NÃO libera preço de cabelo humano vendido por gramas/comprimento, nem permite calcular o TOTAL da primeira aplicação",
-      "mas NÃO permite somar valores, montar pacote nem dar desconto"
     ],
     [
       "puxando o assunto do salão de mega hair sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair.",
@@ -178,72 +166,12 @@
       "const COMUNS = new Set('unha unhas mao maos pe pes quero"
     ],
     [
-      "“A manutenção fica a partir de R$ 150 por tela.”",
-      "“O pé e mão fica R$ [preço fixo confirmado na lista].” (ou “a partir de R$ ...” apenas se a lista marcar preço inicial)."
-    ],
-    [
-      "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.",
-      "use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à Gleide, sem prometer valor."
-    ],
-    [
-      "(ex.: Pode levar cachorro de porte grande na avaliação?; Pode passar aí sem marcar horário?)",
-      "(ex.: Pode trazer a filha de 5 anos junto?; Pode passar aí sem marcar horário?)"
-    ],
-    [
-      "(ex.: trabalha em hospital, sem horário fixo)",
-      "(ex.: casamento no sábado, quer gel nude)"
-    ],
-    [
-      "(ex.: quer avaliação à distância, mora longe)",
-      "(ex.: unha inchada depois do alongamento)"
-    ],
-    [
-      "(ex.: Ver reação no couro cabeludo depois da aplicação)",
-      "(ex.: Ver a foto da unha e dizer se precisa voltar)"
-    ],
-    [
-      "use a seção 04 apenas para durações e base geral de mão de obra autorizada, nunca para inventar preço específico",
-      "não informe preço nem duração que não estejam na lista"
-    ],
-    [
-      "Químicas e tratamentos com preço positivo válido são sempre apresentados com “a partir de”; demais serviços",
-      "Os serviços"
-    ],
-    [
       "não indique técnica, quantidade nem tipo de cabelo;",
       "não indique técnica, formato nem cor;"
     ],
     [
-      "(ex.: quer cabelo vietnamita)",
-      "(ex.: quer alongamento em gel)"
-    ],
-    [
       "como ficou o cabelo com a amiga",
       "como ficou a cor da unha com a amiga"
-    ],
-    [
-      "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. ",
-      ""
-    ],
-    [
-      "Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático).",
-      "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
-    ],
-    [
-      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.",
-      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Se há pedido em outra linha, atenda a esse pedido e não acrescente pergunta genérica. Se TODAS as linhas forem apenas cumprimentos sem pedido, conduza com uma única pergunta de descoberta (seção 02). Não escreva os números [1], [2] na resposta."
-    ],
-    [
-      "Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp.",
-      "Para uma REAÇÃO ISOLADA DE ENCERRAMENTO sem nova demanda (como \"ok\", \"obrigada\", \"blz\"), depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. EXCEÇÃO OBRIGATÓRIA: \"oi\", \"olá\", \"boa tarde\", \"bom dia\", \"boa noite\" e cumprimentos semelhantes SEM outro pedido, quando usados para iniciar ou retomar contato, NÃO são reações de encerramento e NÃO recebem [[NAO_ENVIAR]]; responda e conduza com uma única pergunta de descoberta (seção 02)."
-    ],
-    [
-      "(nome, se já tem mega hair, qual serviço fez)",
-      "(nome, qual serviço fez)"
-    ],
-    [
-      "manutenção do seu mega hair, quer que eu veja um horário?",
-      "manutenção do seu alongamento, quer que eu veja um horário?"
     ],
     [
       "Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.",
@@ -254,15 +182,39 @@
   "conversa_antiga": true,
   "sinal_pix": true,
   "google_agenda": true,
+  "lembrete_confere_google": true,
   "almoco_flexivel": true,
   "preco_livre": true,
   "bloco_minutos": 150,
   "contexto_saidas": true,
   "oferta_sem_sinal": true,
+  "reparo_do_studio": true,
+  "foto_endereco": true,
+  "vaga_da_propria_cliente": true,
+  "saida_limpa": true,
+  "ignorar_lid_sem_numero": true,
+  "envio_cuidadoso": true,
+  "assistente_cuidados": true,
   "assistente_conversas": true,
   "assistente_fotos": true,
   "assistente_marcar": true,
   "lembrete_duplo": true,
-  "pendencias_horas": [12, 18],
-  "resumo_noite": "19:00"
+  "pendencias_horas": [
+    12,
+    18
+  ],
+  "resumo_noite": "19:00",
+  "conferente": "ligado",
+  "assistente_consertos": true,
+  "confirmou_presenca": true,
+  "segunda_profissional": {
+    "id": "7583f2c4-1977-427e-b383-4bc36cef8973",
+    "nome": "Duda",
+    "telefone": "5566900000096",
+    "principal_id": "7729e88f-c85a-4993-9935-09b096c1bc96"
+  },
+  "voucher_gel": true,
+  "pix_sistema": true,
+  "pedido_numerado": true,
+  "assistente_oferecer": true
 }
