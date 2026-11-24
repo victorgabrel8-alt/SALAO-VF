@@ -117,6 +117,20 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     "  const resto = v.filter((x) => +x !== +w[0]);",
     "  const outro = resto.find((x) => (x.hour < 12) !== (w[0].hour < 12)) || resto.find((x) => Math.abs(x.diff(w[0], 'minutes').minutes) >= 120) || resto[0];",
     '  return [w[0], outro].sort((m, n) => m - n); };',
+    '// A cliente já é atendida por uma profissional (DELA) e o que a consulta achou é com outra: a IA diz isso e dá as duas',
+    '// opções (outro horário com a dela, ou o horário achado com a outra). Sem isso a cliente da Duda ia para a Caroline calada.',
+    'const livresDela = (dia) => { for (let i = 0; i < DIAS_BUSCA; i++) { const d = dia.plus({ days: i }), v = [];',
+    '  for (const [a, b] of intervalos(d)) for (let h = a; h.plus({ minutes: p.dur }) <= b; h = h.plus({ minutes: PASSO_MIN })) {',
+    '    if (h < agora.plus({ minutes: ANTECEDENCIA_MIN }) || noAlmocoFlex(h, h.plus({ minutes: p.dur }))) continue;',
+    '    if (livreDe(DELA.ocupados, h, h.plus({ minutes: p.dur }))) v.push(h); }',
+    '  if (v.length) return v; } return []; };',
+    'const notaDela = (dia, horarios) => { if (!DELA || PEDIDA || !horarios.length) return \'\';',
+    '  if (horarios.some((h) => livreDe(DELA.ocupados, h, h.plus({ minutes: p.dur })))) return \'\';',
+    '  const v = livresDela(dia.startOf(\'day\'));',
+    '  const dois = v.length ? [v[0], v.find((x) => (x.hour < 12) !== (v[0].hour < 12)) || v[1]].filter(Boolean) : [];',
+    "  return ' ATENÇÃO: esta cliente é atendida pela ' + DELA.nome + ', e a ' + DELA.nome + ' não tem o horário acima. Diga isso a ela e dê as duas opções, sem escolher por ela: ' +",
+    "    (dois.length ? 'com a ' + DELA.nome + ', ' + dois.map((x) => fmt(x) + ' (data_hora_inicio: ' + iso(x) + ')').join(' ou ') : 'esperar a ' + DELA.nome + ', que não tem horário nos próximos ' + DIAS_BUSCA + ' dias') +",
+    "    '; ou o horário acima com a outra profissional.'; };",
     '// o quadro do dia: "já tem cliente" só quando todas estão ocupadas (ou a que a cliente pediu)',
     'const ocupadosQuadro = () => ORDEM.slice(1).reduce((r, x) => { const s = [];',
     '  for (const [a, b] of r) for (const [c, d] of x.ocupados) { const i = a > c ? a : c, f = b < d ? b : d; if (i < f) s.push([i, f]); }',
@@ -165,6 +179,10 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     "    ' Próximo dia com vaga' + (PEDIDA ? ' com a ' + PEDIDA.nome : '') + ': ' + quadro(diaAlternativo, opcoes);",
   ].join('\n'));
   t("resposta: 'LIVRE: ' + fmt(t) + ' está disponível para '", "resposta: 'LIVRE: ' + fmt(t) + ' com ' + comQuem(t, f) + ' está disponível para '");
+  t("'). Pode oferecer à cliente.' } }];", "'). Pode oferecer à cliente.' + notaDela(t, [t]) } }];");
+  // dia inteiro: os horários achados são todos de outra profissional
+  t("  return [{ json: { acao: 'consultar', ok: true, resposta } }];",
+    "  return [{ json: { acao: 'consultar', ok: true, resposta: resposta + (opcoes.length ? notaDela(diaAlternativo || pedido, opcoes) : '') } }];");
   // criar: grava com a primeira da ordem que está livre
   t("return [{ json: {\n  acao: 'criar', ok: true,\n  quando: fmt(ini),", [
     'const escolhida = quem(ini, fim)[0];',

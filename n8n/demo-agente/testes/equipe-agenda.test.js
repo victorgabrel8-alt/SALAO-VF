@@ -239,3 +239,28 @@ test('pediu a Duda e ela está cheia no dia: diz que a Caroline tem horário e m
   // sem pedido de nome, o texto é o de sempre
   assert.match(consultar({}, { ocupados: [ag(D, 8, 18), ag(C, 8, 18)] }).resposta, /Próximo dia com vaga: /);
 });
+
+test('cliente da Duda pede um horário que só a Caroline tem: a consulta avisa e traz os horários da Duda', () => {
+  const r = rodar({ acao: 'consultar', data: isoH(9), duracao_minutos: 150 }, { dela: D, ocupados: [ag(D, 8, 12)] });
+  assert.match(r.resposta, /^LIVRE: .* com a Caroline está disponível/);
+  assert.match(r.resposta, /ATENÇÃO: esta cliente é atendida pela Duda, e a Duda não tem o horário acima/);
+  assert.match(r.resposta, /com a Duda, .* às 12:00 \(data_hora_inicio: /);
+});
+
+test('cliente da Duda e a Duda cheia no dia: oferece a Caroline, avisa e mostra o próximo dia da Duda', () => {
+  const r = consultar({}, { dela: D, ocupados: [ag(D, 8, 18)] });
+  assert.match(oferta(r), /^8h com a Caroline/);
+  assert.match(r.resposta, /ATENÇÃO: esta cliente é atendida pela Duda/);
+  assert.match(r.resposta, /com a Duda, [^;]*às 08:00/);
+});
+
+test('sem aviso quando a profissional dela tem o horário, quando ela pediu outra pelo nome e para cliente nova', () => {
+  assert.doesNotMatch(consultar({}, { dela: D }).resposta, /ATENÇÃO: esta cliente/);
+  assert.doesNotMatch(rodar({ acao: 'consultar', data: isoH(9), duracao_minutos: 150 }, { dela: D }).resposta, /ATENÇÃO: esta cliente/);
+  assert.doesNotMatch(consultar({ profissional: 'Caroline' }, { dela: D, ocupados: [ag(D, 8, 18)] }).resposta, /ATENÇÃO: esta cliente/);
+  assert.doesNotMatch(consultar({}, { ocupados: [ag(D, 8, 18)] }).resposta, /ATENÇÃO: esta cliente/);
+});
+
+test('cliente da Caroline com a Caroline cheia: mesmo aviso, com o nome dela', () => {
+  assert.match(consultar({}, { dela: C, ocupados: [ag(C, 8, 18)] }).resposta, /ATENÇÃO: esta cliente é atendida pela Caroline/);
+});
