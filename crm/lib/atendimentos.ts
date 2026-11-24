@@ -376,14 +376,17 @@ const CORES_PROFISSIONAL = [
 const SEM_PROFISSIONAL = { borda: "border-l-borda", ponto: "bg-borda", capsula: "bg-borda text-texto-2" };
 
 // Dias da semana que têm horário (para os pontinhos da faixa da semana)
-export async function buscarDiasComHorario(empresaId: string, de: string, ate: string) {
-  const { data } = await supabase()
+// soDela: login de profissional que não é a dona (supabase/070): só os dias com horário dela
+export async function buscarDiasComHorario(empresaId: string, de: string, ate: string, soDela?: string) {
+  let q = supabase()
     .from("agendamentos")
     .select("inicio, clientes (etiquetas)")
     .eq("empresa_id", empresaId)
     .neq("status", "cancelado")
     .gte("inicio", inicioDoDia(de))
     .lt("inicio", inicioDoDia(somarDias(ate, 1)));
+  if (soDela) q = q.eq("profissional_id", soDela);
+  const { data } = await q;
   const dias = new Set<string>();
   for (const a of (data ?? []) as unknown as { inicio: string; clientes: { etiquetas: string[] } | null }[]) {
     if (!estaExcluida(a.clientes?.etiquetas)) dias.add(dataNoSalao(a.inicio));
