@@ -36,6 +36,8 @@ test('cada bloco de dados aparece uma vez só', () => {
 test('o texto ficou do tamanho do prompt da loja (nada colado por cima)', () => {
   const md = fs.readFileSync(path.join(PASTA, 'prompt-agente.md'), 'utf8').replace(/\r\n/g, '\n').match(/```text\n([\s\S]*?)```/)[1].trim();
   assert.ok(Math.abs(semDados.length - md.length) < 600, `prompt da loja ${md.length}, texto sem os dados ${semDados.length}`);
+  // cada linha de regra do prompt da loja está no texto gerado (arquivo gerado velho falha aqui: gere de novo com montar-workflow.js --loja carol)
+  for (const linha of md.split('\n').filter((l) => l.trim() && !l.includes('{{') && !l.includes('@@'))) assert.ok(sistema.includes(linha), 'o arquivo gerado não tem esta linha do prompt: ' + linha.slice(0, 80));
 });
 
 test('reparo vale para a Caroline e para a Duda', () => {
@@ -56,7 +58,11 @@ test('as ferramentas dizem o mesmo que o prompt (ferramentas.json da loja)', () 
 });
 
 test('quem cumprimenta de novo recebe o cumprimento de volta (o filtro não apaga)', () => {
-  assert.ok(no('Quebrar mensagens').parameters.jsCode.includes('if (jaFalou && !elaCumprimentou) {'));
+  const codigo = no('Quebrar mensagens').parameters.jsCode;
+  assert.ok(codigo.includes('if (jaFalou && !elaCumprimentou) {'));
+  const re = new RegExp(codigo.match(/const elaCumprimentou = \/(.*)\/i\.test/)[1], 'i');
+  for (const sim of ['oi', 'Olá', 'olá tudo bem', 'Oii boa noite', '[1] oi', 'boa tarde, quanto é a manicure?', 'opa']) assert.ok(re.test(sim), sim);
+  for (const nao of ['oitenta reais?', 'quanto é a manicure?', 'obrigada', 'olaria']) assert.ok(!re.test(nao), nao);
 });
 
 test('a consulta de horários leva o telefone (cliente antiga continua com quem a atende)', () => {

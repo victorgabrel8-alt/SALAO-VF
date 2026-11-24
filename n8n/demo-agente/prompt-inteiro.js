@@ -26,7 +26,7 @@ const DADOS = {
 // o que não pode aparecer no texto que a IA lê
 const PROIBIDO = [
   [/vale (mais|acima)/i, '"vale mais que / vale acima de": regra empilhada; apague a regra antiga e escreva a certa no lugar'],
-  [/\bEXCEÇÃO\b/, '"EXCEÇÃO": regra com remendo; reescreva a regra inteira'],
+  [/\bEXCEÇÃO\b|exceção (à|a esta|a essa|desta|dessa) regra|acima d[ao]s? (seç|regra|bloco|anterior)|ignore a (regra|seção|instrução)/i, 'regra com remendo ("exceção", "acima da regra", "ignore a regra"); reescreva a regra inteira'],
   [/pedido do Victor/i, 'histórico de quem pediu a regra não é para a IA'],
   [/\(\d\d\/\d\d\/20\d\d[:)]/, 'data de conserto não é para a IA'],
   [/se[cç][aã]o \d+/i, 'referência a seção numerada de versão antiga'],
@@ -67,7 +67,8 @@ module.exports = ({ workflow, loja }) => {
   const dadosNo = (valor.DADOS_DO_SALAO || '').match(/\$\('([^']+)'\)\.first\(\)\.json\.config/);
   if (dadosNo) valor.SINAL = "{{ (() => { const s = ((($('" + dadosNo[1] + "').first().json.config || {}).loja || {}).sinal_pix) || {}; " +
     "if (!s.ativo || !(Number(s.valor) > 0)) return 'O studio não pede sinal: não fale em sinal nem em Pix para reservar.'; " +
-    "return 'Sinal de todo horário novo: R$ ' + String(Number(s.valor)).replace('.', ',') + ', por Pix, descontado do valor do serviço no dia.' + (s.regra ? ' ' + String(s.regra).trim() : ''); })() }}";
+    "const v = Number(s.valor); const reais = 'R$ ' + (Number.isInteger(v) ? String(v) : v.toFixed(2).replace('.', ',')); " +
+    "return (s.so_para_quem_faltou ? 'Sinal só para quem já faltou a um horário (a ficha diz): ' + reais : 'Sinal de todo horário novo: ' + reais) + ', por Pix, descontado do valor do serviço no dia.' + (s.regra ? ' ' + String(s.regra).trim() : ''); })() }}";
 
   // ---------- 2. o prompt da loja com os dados no lugar ----------
   for (const nome of Object.keys(valor)) {
@@ -115,7 +116,7 @@ module.exports = ({ workflow, loja }) => {
   const DE = 'if (jaFalou) {';
   if (!quebrar || quebrar.parameters.jsCode.split(DE).length !== 2) throw new Error('prompt-inteiro: o filtro do cumprimento em "Quebrar mensagens" mudou');
   quebrar.parameters.jsCode = quebrar.parameters.jsCode.replace(DE,
-    "const elaCumprimentou = /^\\s*(\\[\\d+\\]\\s*)?(oi+e*|ol[áa]|opa|bom dia|boa tarde|boa noite)\\b/i.test(String($('Montar entrada').first().json.texto_cliente || ''));\nif (jaFalou && !elaCumprimentou) {");
+    "const elaCumprimentou = /^\\s*(\\[\\d+\\]\\s*)?(oi+e*|ol[áa]|opa|bom dia|boa tarde|boa noite)(?![a-zà-ú])/i.test(String($('Montar entrada').first().json.texto_cliente || ''));\nif (jaFalou && !elaCumprimentou) {");
 };
 
 module.exports.expressoes = expressoes;

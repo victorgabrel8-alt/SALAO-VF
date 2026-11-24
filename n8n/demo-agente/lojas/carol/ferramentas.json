@@ -1,13 +1,13 @@
 {
   "perguntar_para_gleide": {
-    "descricao": "Manda uma pergunta curta para a Caroline SEM pausar o atendimento; a resposta dela chega à cliente sozinha. Use só nos casos do item 7 do roteiro (algo que o sistema não mostra e a cliente afirma; decisão que é só da Caroline; pergunta prática que não está cadastrada, como levar criança, acompanhante ou estacionamento; aviso de reparo; código de voucher que não aparece). Preço é só o da lista SERVIÇOS E PREÇOS. Se a resposta não começar com PERGUNTADO, a pergunta não foi enviada.",
+    "descricao": "Manda uma pergunta curta para a Caroline SEM pausar o atendimento; a resposta dela chega à cliente sozinha. Use só nos casos em que o roteiro manda: algo que o sistema não mostra e a cliente afirma; decisão que é só da Caroline (encaixe, serviço que muda o tempo de um horário marcado, decoração por foto); pergunta prática que não está cadastrada, como levar criança, acompanhante ou estacionamento; aviso de reparo; código de voucher que não aparece. Preço é só o da lista SERVIÇOS E PREÇOS. Se a resposta não começar com PERGUNTADO, a pergunta não foi enviada.",
     "campos": {
       "pergunta": "O que a cliente quer saber, em palavras simples, até 12 palavras, sem o nome dela (ex.: Pode trazer a filha de 5 anos junto?; Tem encaixe sábado depois das 18h?). No aviso de reparo e no caso de material de outra profissional depois de marcada, pode passar desse limite",
       "contexto": "O motivo, se ajudar a Caroline a decidir, até 8 palavras, sem o nome da cliente (ex.: casamento no sábado, quer gel nude). Pode ficar vazio."
     }
   },
   "transferir_para_humano": {
-    "descricao": "Passa a conversa para a Caroline e PAUSA você para esta cliente por 12 horas. A Caroline recebe no WhatsApp o resumo e o link da conversa. Use só nos casos do item 7 do roteiro: dor, machucado, inflamação, alergia, reclamação de atendimento ou de cobrança, a cliente pede para falar com a Caroline, ou a agenda deu ERRO. Dúvida simples é perguntar_para_gleide, que não pausa.",
+    "descricao": "Passa a conversa para a Caroline e PAUSA você para esta cliente por 12 horas. A Caroline recebe no WhatsApp o resumo e o link da conversa. Use só nos casos em que o roteiro manda: dor, machucado, inflamação, alergia, reclamação de atendimento ou de cobrança, a cliente pede para falar com a Caroline, a agenda deu ERRO ou não há horário para um reparo. Dúvida simples é perguntar_para_gleide, que não pausa.",
     "campos": {
       "motivo": "Motivo curto, até 12 palavras (ex.: unha inchada depois do alongamento)",
       "resumo": "Uma frase curta para a ficha da cliente, até 20 palavras: nova ou já cliente, horário marcado, o que você já explicou. Não vai no aviso da Caroline.",
