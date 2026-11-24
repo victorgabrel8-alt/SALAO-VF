@@ -959,6 +959,8 @@ if (LOJA) {
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js').assistente({ assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
+  // loja de teste (loja.json: "gemini_teste": true): todo nó do Gemini usa a chave de teste, com teto próprio (24/11)
+  if (LOJA.gemini_teste) for (const wf of todos) for (const nd of wf.nodes) if (nd.credentials && nd.credentials.googlePalmApi) nd.credentials.googlePalmApi = { id: '1dUDElLglPj5J1iG', name: 'Google Gemini(PaLM) Api teste' };
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
   // (pausa, pergunta, assistente) e o alerta (número fixo). Workflow novo que manda mensagem entra numa das duas listas.

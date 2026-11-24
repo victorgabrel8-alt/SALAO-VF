@@ -242,8 +242,8 @@
       },
       "credentials": {
         "googlePalmApi": {
-          "id": "MjEGxdJcHhSejzG7",
-          "name": "Google Gemini(PaLM) Api account"
+          "id": "1dUDElLglPj5J1iG",
+          "name": "Google Gemini(PaLM) Api teste"
         }
       },
       "onError": "continueRegularOutput"
@@ -880,8 +880,8 @@
       },
       "credentials": {
         "googlePalmApi": {
-          "id": "MjEGxdJcHhSejzG7",
-          "name": "Google Gemini(PaLM) Api account"
+          "id": "1dUDElLglPj5J1iG",
+          "name": "Google Gemini(PaLM) Api teste"
         }
       }
     },

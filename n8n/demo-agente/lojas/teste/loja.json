@@ -216,5 +216,6 @@
   "voucher_gel": true,
   "pix_sistema": true,
   "pedido_numerado": true,
-  "assistente_oferecer": true
+  "assistente_oferecer": true,
+  "gemini_teste": true
 }
