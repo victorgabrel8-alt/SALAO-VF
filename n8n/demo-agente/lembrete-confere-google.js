@@ -23,6 +23,7 @@ const lida = respostas.length > 0 && respostas.every((r) => typeof r.data === 's
 if (!lembretes.length || !lida) return [{ json: { segurar: [], avisos: [], google: lida } }];
 const eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([a, , , todo]) => !todo);
 const doApp = (() => { try { return $('Lembrete: agenda do app').all().map((i) => i.json).filter((x) => x && x.cliente_id && x.inicio); } catch (e) { return []; } })();
+const nomeDoApp = (x) => (x.clientes && x.clientes.nome) || '';
 // "Polly" = "Poly", "Lorrany" = "Lorranny": sem acento, sem letra dobrada, só palavras
 const palavras = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ')
   .replace(/([a-z])\1+/g, '$1').trim().split(' ').filter((w) => w.length >= 2 && !['de', 'da', 'do', 'das', 'dos'].includes(w));
@@ -37,14 +38,15 @@ for (const l of lembretes) {
   const meus = doApp.filter((x) => x.cliente_id === l.cliente_id).map((x) => DateTime.fromISO(x.inicio).setZone(TZ));
   const daGoogle = eventos.filter(([a, , titulo]) => mesmoNome(l.nome, titulo) && a >= ini.startOf('day').minus({ days: 2 }) && a < ini.startOf('day').plus({ days: 3 }));
   if (!daGoogle.length || daGoogle.some(([a]) => perto(a, ini))) continue;
-  // evento da Google que é outro horário dela no app: já está certo
-  const sobra = daGoogle.filter(([a]) => !meus.some((m) => perto(a, m)));
+  // evento da Google que é outro horário dela no app, ou horário de outra cliente do app com esse nome: já está explicado
+  const sobra = daGoogle.filter(([a, , titulo]) => !meus.some((m) => perto(a, m)) &&
+    !doApp.some((x) => x.cliente_id !== l.cliente_id && mesmoNome(nomeDoApp(x), titulo) && perto(a, DateTime.fromISO(x.inicio).setZone(TZ))));
   if (!sobra.length) continue;
   segurar.push(l.agendamento_id);
   const nome = String(l.nome || 'cliente').trim().split(/\s+/).slice(0, 2).join(' ');
   const texto = '⚠️ Não mandei a confirmação da *' + nome + '*: no app ela está ' + dia(ini) + (l.servico ? ' (' + String(l.servico).toLowerCase() + ')' : '') +
     ', e na sua Google Agenda está ' + sobra.map(([a, , t]) => dia(a) + ' ("' + String(t).trim() + '")').join(' e ') + '.\n' +
-    'Qual é o certo? Acerte o que estiver errado (no app eu acerto se você me disser) e a confirmação sai sozinha.';
+    'Qual é o certo? Acerte o que estiver errado (no app eu acerto se você me disser). Se os dois estão certos (são dois horários), ponha este do app também na Google. Com os dois iguais, a confirmação sai sozinha.';
   const memoria = JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } });
   for (const tel of numeros) avisos.push({ tel, texto, memoria, chave: 'lembrete_segurado:' + l.agendamento_id + ':' + ini.toFormat("yyyyLLdd'T'HHmm") + ':' + tel });
 }
@@ -84,7 +86,7 @@ module.exports = ({ node, faltasWorkflow: wf, NUMEROS, REDIS }) => {
     }, { onError: 'continueRegularOutput', alwaysOutputData: true, retryOnFail: true, maxTries: 2, waitBetweenTries: 1000 }),
     node('Lembrete: agenda do app', 'n8n-nodes-base.httpRequest', 4.2, [x + 600, y + 260], {
       method: 'GET',
-      url: "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=cliente_id,inicio&empresa_id=eq.{{ $env.EMPRESA_ID }}&status=eq.agendado&inicio=gte.{{ $now.minus({ days: 4 }).toUTC().toISO() }}&inicio=lt.{{ $now.plus({ days: 8 }).toUTC().toISO() }}",
+      url: "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=cliente_id,inicio,clientes(nome)&empresa_id=eq.{{ $env.EMPRESA_ID }}&status=eq.agendado&inicio=gte.{{ $now.minus({ days: 4 }).toUTC().toISO() }}&inicio=lt.{{ $now.plus({ days: 8 }).toUTC().toISO() }}",
       sendHeaders: true, headerParameters: { parameters: SUPA }, options: { timeout: 15000 },
     }, { executeOnce: true, alwaysOutputData: true, onError: 'continueRegularOutput' }),
     node('Lembrete: confere a Google', 'n8n-nodes-base.code', 2, [x + 820, y + 260], { jsCode: CONFERE.split('${NUMEROS}').join(NUMEROS) }, { executeOnce: true }),

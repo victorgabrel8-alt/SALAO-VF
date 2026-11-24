@@ -222,6 +222,7 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
   if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
   if (!podeComecar(novo)) return saida({ resposta: 'NÃO REMARCADO: o novo horário ' + motivoRegra(novo) + '. Consulte os horários livres e ofereça outro.' });
+  if (periodoFechado(novo)) return saida({ resposta: 'NÃO REMARCADO: o novo horário ' + motivoPeriodo(novo) + '.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
   // mesma anotação do CRM ("Reagendado de 20/10 às 13:00"): o app mostra o horário antigo
   const observacoes = [alvo.obs, 'Reagendado de ' + alvo.ini.toFormat('dd/LL') + ' às ' + alvo.ini.toFormat('HH:mm')].filter(Boolean).join('\\n');
@@ -284,6 +285,8 @@ if (p.acao === 'consultar') {
         // hoje: o que já passou (ou está a menos de 1 h) não conta
         if (y <= inicioHoje) return;
         if (x < inicioHoje) { x = inicioHoje; const m = x.minute % PASSO_MIN; if (m || x.second) x = x.plus({ minutes: PASSO_MIN - m }).startOf('minute'); }
+        // regras da dona (supabase/071): o trecho livre começa no primeiro início que a regra deixa
+        while (x < y && (!podeComecar(x) || periodoFechado(x))) x = x.plus({ minutes: PASSO_MIN });
         if (x >= y) return;
         const cabe = y.diff(x, 'minutes').minutes >= p.dur;
         partes.push((cabe ? 'livre das ' : 'vago das ') + hm(x) + ' às ' + hm(y) + (cabe ? '' : ' (não cabe o serviço de ' + p.dur + ' min)'));

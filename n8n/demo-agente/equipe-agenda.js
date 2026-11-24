@@ -182,6 +182,7 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     "    (() => { if (!PEDIDA || fechado) return '';",
     '      for (const [a, b] of intervalos(pedido)) for (let h = a; h.plus({ minutes: p.dur }) <= b; h = h.plus({ minutes: PASSO_MIN })) {',
     "        if (h < agora.plus({ minutes: ANTECEDENCIA_MIN }) || (p.periodo.startsWith('manh') && h.hour >= 12) || (p.periodo.startsWith('tard') && h.hour < 12) || noAlmocoFlex(h, h.plus({ minutes: p.dur }))) continue;",
+    '        if (periodoFechado(h)) continue;',
     '        const o = outraLivre(h, h.plus({ minutes: p.dur }));',
     "        if (o) return ' Isso vale para a ' + PEDIDA.nome + ', que ela pediu. Nesse dia a ' + o.nome + ' tem horário (ex.: ' + hm(h) + ', data_hora_inicio: ' + iso(h) + '): diga isso de um jeito positivo e deixe a cliente escolher entre esse horário com a ' + o.nome + ' ou esperar a ' + PEDIDA.nome + '.';",
     "      } return ''; })() +",

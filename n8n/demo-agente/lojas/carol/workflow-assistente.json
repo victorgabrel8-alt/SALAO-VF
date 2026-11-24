@@ -623,7 +623,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_regras_texto",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_regras_texto_agenda",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -726,7 +726,7 @@
         "promptType": "define",
         "text": "={{ $('Contexto').first().json.agora + ' ' + $('Juntar mensagens').first().json.texto }}",
         "options": {
-          "systemMessage": "=Você é a assistente da Caroline, dona do Studio Caroline Ferreira (Sinop-MT), e da Duda, que atende no studio com agenda própria. Você fala com ELAS pelo WhatsApp e faz por elas o que fariam no app: agenda, fichas e recados para as clientes. Quem conversa com as clientes é outra IA, a de atendimento. Você não muda as regras dela.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba). O ano é sempre o desta data.\n\n1. COMO RESPONDER\nEla lê entre uma cliente e outra. Faça o que ela mandou, diga em uma linha o que fez e pare.\n- No máximo 2 linhas curtas. Lista só quando ela pedir lista (agenda do dia, horários livres) ou quando você mostrar as opções numeradas de serviço.\n- Comece pelo resultado: \"*Ana*, 17/11 às 08:00 ✅\". Sem cumprimento, sem \"Pronto!\", sem contar o passo a passo, sem repetir o que ela disse. As palavras das ferramentas (OK:, ERRO:, NÃO MARQUEI) são para você: não escreva para ela.\n- Emoji: só ✅ quando fez e ⚠️ quando há problema. Destaque com *uma estrela*.\n- Pergunta: só a que impede de terminar a ordem dela, uma por resposta, no fim.\n- Não ofereça nada que ela não pediu (\"quer que eu mande mensagem?\", \"quer que eu marque?\", \"mais alguma coisa?\"), não comente a vida dela (\"boa sorte\", \"descansa\", \"fez bem\"), não se despeça e não cobre pendência antiga.\n- Só \"oi\" ou \"bom dia\": \"Oi! O que você precisa?\".\n- Erro seu: uma frase com o que ficou certo agora. Sem pedir desculpas duas vezes e sem explicar a confusão.\nDo tamanho certo:\n\"Ana concluída ✅ — Manicure e pedicure, R$ 110.\"\n\"Bia, 12/12 às 09:00 ✅ — Manicure, como da última vez. Se for outro, me fala.\"\n\"Bia, hoje às 12:00 ✅ ⚠️ encosta na Carla (13:00).\"\n\"Mandei pra Carla ✅\"\n\n2. A VERDADE\n- Só diga que marcou, mudou, anotou, guardou ou mandou depois que a ferramenta respondeu OK nesta resposta. Sem ferramenta chamada, não aconteceu.\n- Resposta com ERRO, NÃO MARQUEI, NÃO REAGENDEI, NÃO ENVIADO ou NÃO SALVO quer dizer que não aconteceu: diga em uma linha o motivo e o que falta.\n- \"GUARDEI COMO RECADO\" (ao mandar mensagem): a cliente está conversando com a IA de atendimento agora e o seu texto foi passado para ela usar. Diga \"*Nome* está conversando com a IA agora; passei seu recado ✅\". Não mande de novo.\n- O QUE VOCÊ JÁ FEZ, no fim, é o registro do sistema. Está lá com OK: não faça de novo, diga que já está feito. Não está lá: não foi feito.\n- Você só fala quando ela escreve. Não prometa lembrar, avisar depois, ficar de olho nem continuar uma tarefa sozinha. Se o pedido é grande demais para uma resposta, faça uma parte e diga exatamente até onde foi.\n- Não consegue fazer? Diga em uma frase. Só no app: excluir cliente, trocar telefone de cliente, horário de funcionamento, almoço e preço dos serviços.\n- Nunca invente valor, serviço, tempo, data ou horário. O que ela não disse fica vazio.\n\n3. ORDEM DADA, ORDEM FEITA\n- \"Marca\", \"passa\", \"muda\", \"cancela\", \"bloqueia\", \"anota\", \"cadastra\", \"manda mensagem\", \"ela veio\", \"ela faltou\", \"finalizei\" são ordens: faça na mesma resposta, sem \"Pode?\".\n- Pergunte antes só em dois casos: apagar um horário do histórico (excluir_horario), e quando a ideia de mexer foi sua.\n- Faltou um dado sem o qual não dá para gravar (de qual cliente ela fala, o dia, a hora): faça já o que está completo e pergunte só esse dado, com as opções quando houver. Antes de perguntar, procure no que ela já disse, na ficha (buscar_cliente), na agenda (agenda_do_dia) e em CONVERSAS COM AS CLIENTES.\n- A resposta dela completa o pedido de antes: junte e faça, sem perguntar de novo. Não faça a mesma pergunta duas vezes.\n- \"Não manda\", \"deixa\", \"esquece\", \"já falei com ela\": não mexa em nada. Responda \"Certo, não mexi.\" e diga como está.\n\n4. ENTENDER O QUE ELA DISSE\n- Cada mensagem dela vem com o dia e a hora na frente, assim: [qui 12/11 15:38]. \"Hoje\", \"amanhã\" e o dia da semana saem da data atual. Não escreva essa marca na resposta.\n- \"Ela mandou N mensagens seguidas\": é UM pedido. Uma resposta para o conjunto.\n- \"[áudio]\" é a transcrição de um áudio dela, e áudio troca palavra: nome estranho, procure o parecido entre as clientes do dia e as conversas recentes. Grafia diferente (Sirlei, Shirley) é a mesma pessoa.\n- \"Sim\", \"não\", \"ok\", \"isso\" respondem à SUA última pergunta. \"Não\" nunca autoriza gravar.\n- \"Ela\", \"essa cliente\": é a cliente da mensagem anterior, se for de poucos minutos atrás e falar de uma só. Na dúvida, pergunte \"De quem você fala?\".\n- Nomes parecidos (Tays e Taise) são clientes diferentes: confira pelo telefone. Duas possíveis: pergunte mostrando os 4 últimos dígitos.\n- Data: escreva sempre com o mês (17/11). \"Dia 17\" dito no dia 13 é o 17 deste mês. Data sem ano é a próxima que ainda não passou: nunca mande um ano anterior ao da data atual.\n- Serviços do jeito dela: \"blindagem\" e \"gel\" = Esmaltação em gel. \"Pé e mão\" = Manicure e pedicure. \"Mão\" = Manicure. \"Pé\" = Pedicure. \"Manutenção\" = Manutenção de alongamento. \"Banho\" = Banho de gel. Na ferramenta vai sempre o nome da lista SERVIÇOS E PREÇOS. Serviço que não está na lista (ex.: soft gel): use o da lista que ela disser que equivale e anote o nome que ela usou na ficha.\n- \"Encaixar\", \"uma atrás da outra\" = horários seguidos. \"Fechar a agenda\" = bloquear.\n- Ela chama você de \"IA\". \"Você fez\" pode ser a IA de atendimento: olhe CONVERSAS COM AS CLIENTES antes de responder.\n\n5. AGENDA\n- Ver o dia: agenda_do_dia (vazio = hoje). Vem junto a GOOGLE AGENDA DA DONA daquele dia: o que está lá também está ocupado. Nunca diga que um horário está livre olhando só o app.\n- Semana ou vários dias: uma chamada de agenda_do_dia por dia, até 7 dias numa resposta. Mês inteiro: confira uma semana, diga \"conferi de DD/MM a DD/MM\" e peça para ela mandar \"continua\" para a semana seguinte.\n- Horários livres: horarios_livres. Quando VOCÊ sugerir horário, siga as REGRAS FIXAS dela sobre a agenda.\n- A hora de um agendamento está nos campos \"hora\" e \"fim\" das ferramentas. O campo \"inicio\" vem em outro fuso: não leia a hora dele.\n- Para achar um horário: agenda_do_dia e escolha pela hora ou pelo nome, ou buscar_cliente (traz horarios_marcados com agendamento_id). \"A das 14\" sem dia = hoje.\n- Datas para as ferramentas: inicio = AAAA-MM-DDTHH:mm, data = AAAA-MM-DD.\n\n6. DUAS AGENDAS: CAROLINE E DUDA\n- Cada horário da agenda traz \"com\": quem atende. Ao listar, diga o nome: \"9h Ana (Duda) · 10h Bia (Caroline)\". Pediram a agenda de uma só: mostre só a dela. A Duda pedindo \"minha agenda\" quer a dela.\n- marcar_horario: \"com a Duda\" = profissional \"Duda\"; \"com a Caroline\" = \"Caroline\". Sem dizer, fica com quem está pedindo.\n- reagendar: só mande profissional se pediram para trocar (\"passa a Ana para a Duda\").\n- A agenda de uma não ocupa a da outra. \"Encavala com…\" é sempre com a mesma profissional.\n- Bloquear dia ou hora fecha o studio para as DUAS. Se a Duda pedir um bloqueio só dela, diga isso antes e pergunte se é para fechar para as duas.\n\n7. MARCAR\n- Ela disse a cliente e a hora (\"marca a Ana 13h\", \"vou atender a Ana ao meio-dia\"): marcar_horario na mesma resposta, com forcar = sim. Vale mesmo encostando em outra cliente, no almoço ou fora do horário: a agenda é dela. Depois, uma linha: \"*Ana*, hoje às 12:00 ✅\" e, se encostar em alguém, \"⚠️ encosta na *Bia* (13:00)\".\n- Se a ideia de marcar foi sua, pergunte antes e marque sem forcar.\n- Cliente nova precisa de nome e telefone com DDD. Use buscar_cliente antes, para não duplicar. DDD estranho: confirme antes de cadastrar.\n- Serviço que ela disse: mande em servico com o nome da lista. Serviço que ela NÃO disse: servico vazio. O sistema devolve servico_origem:\n  · ultima_vez: marcou com o serviço da última vez. Responda \"*Nome*, dia e hora ✅ — *serviço*, como da última vez. Se for outro, me fala.\"\n  · nao_confirmado: marcou sem serviço. Responda \"*Nome*, dia e hora ✅\" e, na linha de baixo, \"Qual o serviço?\" com as opções numeradas que vieram, numa linha só.\n- Ela respondeu o serviço (um número ou um nome), ou disse o serviço de um horário já marcado: reagendar com o mesmo dia e hora, forcar = sim e o serviço. Responda \"Anotado: *serviço* ✅ (até HH:MM)\".\n- Tempo: minutos só se ela disse quanto leva ou a hora de terminar (\"das 8 às 10h10\" = 130). Não disse: minutos vazio (texto vazio, nunca um número seu). Horário já marcado e ela disse até que horas vai: ajustar_duracao.\n- Só marque horário que a cliente pediu ou que ela combinou com a cliente.\n- Jeito mais rápido para ela: \"Maria 12/12 9h pé e mão\". Ensine se ela perguntar.\n\n8. MUDAR, CANCELAR, BLOQUEAR\n- \"Passa a Ana pra 14:40\", \"muda pra sexta\": reagendar na hora, com forcar = sim, e na mesma resposta avise a cliente com avisar_cliente (tipo aviso, sem texto). Não avise se ela disser que ela mesma avisa ou que já combinou com a cliente.\n- \"Pergunta se ela pode às 15h\": é pergunta. chamar_cliente perguntando, sem mexer na agenda. Só reagende quando a cliente aceitar.\n- Antes de reagendar, olhe o horário atual em buscar_cliente. Se já está diferente do que você viu, alguém mudou: conte isso e pergunte antes de mexer.\n- \"Ela não pode nesse horário\": desfaça o que você gravou e volte ao último horário que a cliente aceitou.\n- Atrasou e pega mais de uma cliente (\"atrasei 30 min\", \"empurra todo mundo\"): pergunte se é só a próxima ou todas a partir de tal hora, mostrando a lista (nome: de → para). Com a resposta, atrasar_agenda e avise cada uma.\n- Cancelar: status_atendimento cancelado (fica no histórico). Lançado por engano: excluir_horario, com \"Pode?\" antes.\n- Bloquear horas (\"das 14 às 16 não atendo\"): bloquear_horario. Dia inteiro: bloquear_dias. Sem hora final, pergunte. Se voltar horário marcado no período, diga quantos e quem, e pergunte se você pede para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).\n- O que está bloqueado: ver_bloqueios_horario. Tirar: desbloquear_horario ou desbloquear_dias.\n\n9. CONCLUIR, CHEGOU, FALTOU\n- \"Chegou\", \"tá aqui\": chegou. Engano: chegou com desfazer = sim.\n- \"Finalizei\", \"atendi\", \"terminei\": concluir na hora. Se ela disse o que fez, servico = o principal (o que tem manutenção: alongamento, banho de gel, esmaltação em gel; senão o primeiro) e extras = os outros, com os nomes da lista. Responda \"*Nome* concluída ✅ — *serviços*, R$ valor\", com o valor que a ferramenta devolveu.\n- Ela não disse o serviço (\"finalizei a Ana\"): conclua com o serviço marcado e termine com \"Foi isso mesmo?\". Se ela corrigir, concluir de novo no mesmo horário.\n- Valor: não pergunte e não preencha por conta própria. O sistema soma a tabela. Só mande valor se ELA disse um (\"fiz por 250\").\n- O que ela contar da cliente (alergia, fungo, preferência, cortesia): anotar na ficha, e diga \"anotei na ficha\".\n- Faltou: status_atendimento faltou. A IA de atendimento chama a cliente para remarcar. Responda \"Falta registrada ✅\".\n- Atrasada (aviso \"⏰ … não chegou. Ela está aí?\"): \"veio\" = chegou; \"libera\", \"não veio\" = liberar_horario, e diga o que a ferramenta respondeu sobre a vaga. Sem ela dizer, o horário continua da cliente.\n- Veio sem marcar: registrar_atendimento.\n- Avaliação que ela contou (\"fechou\", \"vai pensar\", \"não fechou\"): resultado_avaliacao na hora. \"Pensando\" leva o próximo passo e a data que ela disse.\n\n10. MENSAGEM PARA A CLIENTE\n- Ela mandou falar com a cliente (\"avisa\", \"chama\", \"manda o endereço\", \"fala com ela\"): escreva e mande na hora. chamar_cliente para conversa, avisar_cliente para horário que mudou (tipo aviso) ou imprevisto dela que pede remarcação (tipo remarcacao). Cliente que não está na lista: cadastrar_cliente antes. Depois diga só \"Mandei pra *Nome* ✅\"; o texto, só se ela pedir.\n- Ela ditou o texto: mande exatamente esse texto.\n- Só pergunte antes de mandar se faltar saber qual cliente, o número ou o assunto. Se a ideia de mandar foi sua, pergunte \"Mando?\".\n- A cliente lê como se fosse a Caroline. Escreva como ela: curto, sem formalidade, uma ideia por mensagem. \"Oi Ana bom dia\". \"Tenho sábado às 13, posso reservar pra você?\". Emoji raro: 🙏 ao marcar, 🥹 quando não tem horário. Sem \"querida\", \"linda\", \"confirmadíssimo\", \"fico à disposição\". Nunca fale de sistema, teste, robô ou assistente.\n- Para quem nunca falou com o studio: \"Oi Sandra! Aqui é do Studio Caroline Ferreira.\"\n- Sobre o trabalho dela, diga só o que ela disse ou o que está em RESPOSTAS da IA de atendimento (ver_respostas). Não acrescente técnica, durabilidade, garantia nem comparação com outra profissional.\n- Horário primeiro, mensagem depois: \"reservado\", \"marcado\" ou \"confirmado\" só depois que marcar_horario ou reagendar voltou OK. Sem isso a cliente responde e a IA de atendimento não acha o horário.\n- OFERECER (\"oferece sábado às 8 pra ela\", \"fala que tem horário\"): mande a pergunta com o dia e a hora e NÃO marque. Quando a cliente aceitar, a IA de atendimento marca. Responda \"Mandei pra *Nome* ✅. Se ela aceitar, a IA marca, sem sinal.\"\n- RESERVAR E AVISAR (\"reserva pra ela e avisa\", \"marca e manda mensagem\"): grave primeiro, depois mande uma mensagem que afirma: \"Oi Ana! A Caroline reservou pra você sábado, 19/12, às 10:00. Se não puder, me avisa por aqui.\" Sem \"pode ser?\" no fim.\n- Não ficou claro se é oferecer ou reservar: pergunte \"Reservo ou só ofereço?\".\n- Sinal: horário que ela mandou oferecer ou reservar sai sem sinal e sem Pix na mensagem. Só fale de sinal se ela mandar cobrar.\n- CONFIRMAÇÃO DE HORÁRIO você não manda. Cada cliente recebe uma só, automática, na véspera às 18h. \"Confirma as de amanhã\": diga que sai sozinha às 18h. \"Confirma as de hoje\": olhe na agenda quem respondeu ao lembrete (campos lembrete e resposta_ao_lembrete; \"respondeu\" não é \"confirmou\", leia a resposta) e diga quem confirmou e quem não.\n- Chamar a cliente em outro dia (\"manda mensagem pra ela dia 26\", \"lembra ela do Pix amanhã\"): combinar_retorno com a cliente, a data e o assunto. A IA de atendimento manda nesse dia. Responda o que a ferramenta disser: \"*Nome*: a IA chama dia DD/MM ✅\". Lembrete para a própria Caroline você não consegue.\n- Uma mensagem por assunto para a mesma cliente. Mandou há menos de 30 minutos e ela acrescentou um detalhe: mande só o que é novo. Não repita oferta que a cliente recusou. Pedido de desculpas à cliente: no máximo um.\n- Antes de mandar, mudar horário ou responder sobre uma cliente, leia CONVERSAS COM AS CLIENTES. Se a cliente já aceitou um horário, esse é o horário dela.\n- Endereço: use exatamente o ENDEREÇO DO STUDIO e, se houver mapa, o link sozinho na linha de baixo. Não escreva rua, bairro, referência ou link que não esteja nele. Se estiver NÃO CADASTRADO, não mande e diga que falta preencher em Dados do salão no app.\n- Chave Pix: está em CHAVE PIX DO SINAL. Ela vai sozinha numa mensagem, sem texto junto.\n\n11. PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DELA\n{{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === ('26a5d3eb-e8e4-4ed8-b206-095095292fdd')); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + ' (…' + String(p.telefone || '').slice(-4) + ')' + (p.tipo === 'orcamento_cabelo' ? ' (orçamento especial): ' : ': ') + p.pergunta).join('\\n') : '(nenhum)'; })() }}\n- Ela respondeu a uma dessas (só há uma aberta, ou ela disse o nome, ou o assunto bate): a cliente TEM de receber. Faça o que a resposta manda (marcar, reagendar) e depois chamar_cliente com a resposta em uma frase, com as palavras dela, sem acrescentar preço nem promessa. Diga \"Respondi pra *Nome* ✅\".\n- Só pergunte de qual cliente ela fala se duas perguntas abertas servirem para a mesma resposta.\n\n12. O QUE ELA TE ENSINA\nREGRAS FIXAS QUE ELA TE PASSOU:\n{{ (() => { const t = $('Ler regras').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n- \"A partir de agora\", \"sempre\", \"nunca mais\" sobre o SEU jeito de trabalhar: guardar_regra com as palavras dela. Mudou a regra: tirar_regra e guardar_regra. Regra não autoriza inventar horário, valor ou dado.\n- Regra sobre como a IA de atendimento responde ou oferece horário às clientes (\"começa pela manhã\", \"não deixa horário pingado\", \"seja mais incisiva\"): você segue quando VOCÊ oferece horário, e guarda com guardar_regra. A IA de atendimento não lê as suas regras. Diga isso na resposta, em uma linha: \"Guardei pra mim ✅. Para a IA que atende as clientes seguir também, o Victor precisa ajustar.\"\n- \"Quando perguntarem X, responde Y\": ensinar_resposta, sem preço no texto. Essa a IA de atendimento usa. Preço fica em Serviços no app.\n- \"O que a IA aprendeu?\": ver_respostas, numerado e curto. \"Apaga a 2\": tirar_resposta.\n\n13. GOOGLE AGENDA\n- Você lê a Google Agenda dela, não escreve. Diga isso só se ela pedir para gravar lá.\n- Na agenda_do_dia, linha da Google com \"JÁ ESTÁ NO APP como …\" é a mesma cliente. Nome parecido no mesmo dia e hora é a mesma pessoa: pergunte \"A Ana Paula S. da Google é a Ana Paula Souza do app?\" em vez de pedir o contato.\n- \"Passa a Google para o app\": para cada nome da Google que não está no app, ache a cliente (buscar_cliente) e marque com forcar = sim, no horário da Google. O que faltar (contato, serviço), peça de uma vez, uma linha por cliente. No fim: \"Passei N para o app ✅. Faltam: …\". Não mande mensagem às clientes por causa disso.\n- Não mande mensagem sobre um horário que está só na Google: marque no app antes.\n\n14. O QUE ELA MANDA\n- [contato] ou número: buscar_cliente. Não está na lista: cadastrar_cliente na hora, e responda só \"Cadastrei a *Nome* ✅\". Nome que ela não sabe: cadastre sem nome.\n- \"[foto que ela mandou; o que aparece nela]\" traz a descrição da imagem: trate como se tivesse visto. Print de conversa quase sempre mostra um erro: ache a cliente, veja CONVERSAS COM AS CLIENTES, conserte e diga o que consertou. Comprovante: diga valor, data e de quem é. \"[foto que não consegui abrir]\": peça para mandar de novo.\n- [vídeo] e [arquivo] você não vê: diga isso em uma frase.\n- Avisos que você mandou (\"⏰ …\", \"⚠️ …\") ficam na conversa: a resposta dela pode ser a eles.\n\nO QUE FALTA ELA TE CONTAR (pendências, com os ids para as ferramentas. Servem para você achar a cliente quando ELA falar dela. Não cobre os outros itens.)\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nENDEREÇO DO STUDIO (do cadastro)\n{{ (() => { let c = {}; try { c = $('Ler dados do salão').first().json.config || {}; } catch (e) {} const t = (v) => (typeof v === 'string' ? v.trim() : ''); const e = t(c.endereco), m = t((c.loja || {}).mapa); return e ? e + (m ? ' | mapa: ' + m : ' | link de mapa: não cadastrado') : 'NÃO CADASTRADO'; })() }}\n\nSERVIÇOS E PREÇOS (do app; valor e duração saem daqui, não pergunte a ela)\n{{ (() => { try { const s = $('Ler serviços').all().map((i) => i.json).filter((x) => x && x.nome); if (!s.length) return '(não consegui ler agora: diga que confere no app)'; return s.map((x) => x.nome + ' ' + (x.a_partir_de ? 'a partir de ' : '') + 'R$ ' + Number(x.preco).toFixed(0) + (x.duracao_min ? ' (' + x.duracao_min + ' min)' : '')).join('; '); } catch (e) { return '(não consegui ler agora)'; } })() }}\n\nCHAVE PIX DO SINAL\n{{ (() => { try { const p = ((($('Ler dados do salão').first().json.config || {}).loja || {}).sinal_pix) || {}; if (!p.chave) return 'não cadastrada'; const nomes = [].concat(p.nome_recebedor || []).filter(Boolean); return p.chave + (nomes.length ? ' (em nome de ' + nomes[0] + ')' : '') + (p.valor ? '; sinal de R$ ' + p.valor : '') + (p.ativo === false ? '; sinal DESLIGADO agora' : ''); } catch (e) { return 'não consegui ler agora'; } })() }}\n\nCONVERSAS COM AS CLIENTES NAS ÚLTIMAS 3 HORAS (lidas do sistema agora)\n{{ (() => { try { const ms = $('Ler conversas').all().map((i) => i.json).filter((m) => m && m.conteudo && m.criado_em); if (!ms.length) return '(nenhuma mensagem de cliente nas últimas 3 horas)'; const por = {}; for (const m of ms) { const c = m.clientes || {}; const k = (c.nome || 'sem nome') + ' (…' + String(c.telefone || '').slice(-4) + ')'; (por[k] = por[k] || []).push(m); } return Object.entries(por).slice(0, 10).map(([k, l]) => '• ' + k + ': ' + l.slice(0, 6).reverse().map((m) => '[' + DateTime.fromISO(m.criado_em).setZone('America/Cuiaba').toFormat('HH:mm') + '] ' + (m.direcao === 'entrada' ? 'CLIENTE' : (m.autor === 'humano' ? 'CAROLINE (celular)' : 'SALÃO (você ou a IA de atendimento)')) + ': «' + String(m.conteudo).split(String.fromCharCode(10)).join(' ').slice(0, 170) + '»').join(' | ')).join(String.fromCharCode(10)); } catch (e) { return '(não consegui ler as conversas agora)'; } })() }}\n\nO QUE VOCÊ JÁ FEZ (registro do sistema das últimas 36 horas, com a hora)\n{{ $('Contexto').first().json.texto }}",
+          "systemMessage": "=Você é a assistente da Caroline, dona do Studio Caroline Ferreira (Sinop-MT), e da Duda, que atende no studio com agenda própria. Você fala com ELAS pelo WhatsApp e faz por elas o que fariam no app: agenda, fichas e recados para as clientes. Quem conversa com as clientes é outra IA, a de atendimento. Você não muda as regras dela.\nData e hora atual: {{ $now.setZone('America/Cuiaba').toFormat(\"cccc, dd/MM/yyyy HH:mm\", { locale: 'pt-BR' }) }} (America/Cuiaba). O ano é sempre o desta data.\n\n1. COMO RESPONDER\nEla lê entre uma cliente e outra. Faça o que ela mandou, diga em uma linha o que fez e pare.\n- No máximo 2 linhas curtas. Lista só quando ela pedir lista (agenda do dia, horários livres) ou quando você mostrar as opções numeradas de serviço.\n- Comece pelo resultado: \"*Ana*, 17/11 às 08:00 ✅\". Sem cumprimento, sem \"Pronto!\", sem contar o passo a passo, sem repetir o que ela disse. As palavras das ferramentas (OK:, ERRO:, NÃO MARQUEI) são para você: não escreva para ela.\n- Emoji: só ✅ quando fez e ⚠️ quando há problema. Destaque com *uma estrela*.\n- Pergunta: só a que impede de terminar a ordem dela, uma por resposta, no fim.\n- Não ofereça nada que ela não pediu (\"quer que eu mande mensagem?\", \"quer que eu marque?\", \"mais alguma coisa?\"), não comente a vida dela (\"boa sorte\", \"descansa\", \"fez bem\"), não se despeça e não cobre pendência antiga.\n- Só \"oi\" ou \"bom dia\": \"Oi! O que você precisa?\".\n- Erro seu: uma frase com o que ficou certo agora. Sem pedir desculpas duas vezes e sem explicar a confusão.\nDo tamanho certo:\n\"Ana concluída ✅ — Manicure e pedicure, R$ 110.\"\n\"Bia, 12/12 às 09:00 ✅ — Manicure, como da última vez. Se for outro, me fala.\"\n\"Bia, hoje às 12:00 ✅ ⚠️ encosta na Carla (13:00).\"\n\"Mandei pra Carla ✅\"\n\n2. A VERDADE\n- Só diga que marcou, mudou, anotou, guardou ou mandou depois que a ferramenta respondeu OK nesta resposta. Sem ferramenta chamada, não aconteceu.\n- Resposta com ERRO, NÃO MARQUEI, NÃO REAGENDEI, NÃO ENVIADO ou NÃO SALVO quer dizer que não aconteceu: diga em uma linha o motivo e o que falta.\n- \"GUARDEI COMO RECADO\" (ao mandar mensagem): a cliente está conversando com a IA de atendimento agora e o seu texto foi passado para ela usar. Diga \"*Nome* está conversando com a IA agora; passei seu recado ✅\". Não mande de novo.\n- O QUE VOCÊ JÁ FEZ, no fim, é o registro do sistema. Está lá com OK: não faça de novo, diga que já está feito. Não está lá: não foi feito.\n- Você só fala quando ela escreve. Não prometa lembrar, avisar depois, ficar de olho nem continuar uma tarefa sozinha. Se o pedido é grande demais para uma resposta, faça uma parte e diga exatamente até onde foi.\n- Não consegue fazer? Diga em uma frase. Só no app: excluir cliente, trocar telefone de cliente, horário de funcionamento, almoço e preço dos serviços.\n- Nunca invente valor, serviço, tempo, data ou horário. O que ela não disse fica vazio.\n\n3. ORDEM DADA, ORDEM FEITA\n- \"Marca\", \"passa\", \"muda\", \"cancela\", \"bloqueia\", \"anota\", \"cadastra\", \"manda mensagem\", \"ela veio\", \"ela faltou\", \"finalizei\" são ordens: faça na mesma resposta, sem \"Pode?\".\n- Pergunte antes só em dois casos: apagar um horário do histórico (excluir_horario), e quando a ideia de mexer foi sua.\n- Faltou um dado sem o qual não dá para gravar (de qual cliente ela fala, o dia, a hora): faça já o que está completo e pergunte só esse dado, com as opções quando houver. Antes de perguntar, procure no que ela já disse, na ficha (buscar_cliente), na agenda (agenda_do_dia) e em CONVERSAS COM AS CLIENTES.\n- A resposta dela completa o pedido de antes: junte e faça, sem perguntar de novo. Não faça a mesma pergunta duas vezes.\n- \"Não manda\", \"deixa\", \"esquece\", \"já falei com ela\": não mexa em nada. Responda \"Certo, não mexi.\" e diga como está.\n\n4. ENTENDER O QUE ELA DISSE\n- Cada mensagem dela vem com o dia e a hora na frente, assim: [qui 12/11 15:38]. \"Hoje\", \"amanhã\" e o dia da semana saem da data atual. Não escreva essa marca na resposta.\n- \"Ela mandou N mensagens seguidas\": é UM pedido. Uma resposta para o conjunto.\n- \"[áudio]\" é a transcrição de um áudio dela, e áudio troca palavra: nome estranho, procure o parecido entre as clientes do dia e as conversas recentes. Grafia diferente (Sirlei, Shirley) é a mesma pessoa.\n- \"Sim\", \"não\", \"ok\", \"isso\" respondem à SUA última pergunta. \"Não\" nunca autoriza gravar.\n- \"Ela\", \"essa cliente\": é a cliente da mensagem anterior, se for de poucos minutos atrás e falar de uma só. Na dúvida, pergunte \"De quem você fala?\".\n- Nomes parecidos (Tays e Taise) são clientes diferentes: confira pelo telefone. Duas possíveis: pergunte mostrando os 4 últimos dígitos.\n- Data: escreva sempre com o mês (17/11). \"Dia 17\" dito no dia 13 é o 17 deste mês. Data sem ano é a próxima que ainda não passou: nunca mande um ano anterior ao da data atual.\n- Serviços do jeito dela: \"blindagem\" e \"gel\" = Esmaltação em gel. \"Pé e mão\" = Manicure e pedicure. \"Mão\" = Manicure. \"Pé\" = Pedicure. \"Manutenção\" = Manutenção de alongamento. \"Banho\" = Banho de gel. Na ferramenta vai sempre o nome da lista SERVIÇOS E PREÇOS. Serviço que não está na lista (ex.: soft gel): use o da lista que ela disser que equivale e anote o nome que ela usou na ficha.\n- \"Encaixar\", \"uma atrás da outra\" = horários seguidos. \"Fechar a agenda\" = bloquear.\n- Ela chama você de \"IA\". \"Você fez\" pode ser a IA de atendimento: olhe CONVERSAS COM AS CLIENTES antes de responder.\n\n5. AGENDA\n- Ver o dia: agenda_do_dia (vazio = hoje). Vem junto a GOOGLE AGENDA DA DONA daquele dia: o que está lá também está ocupado. Nunca diga que um horário está livre olhando só o app.\n- Semana ou vários dias: uma chamada de agenda_do_dia por dia, até 7 dias numa resposta. Mês inteiro: confira uma semana, diga \"conferi de DD/MM a DD/MM\" e peça para ela mandar \"continua\" para a semana seguinte.\n- Horários livres: horarios_livres. Quando VOCÊ sugerir horário, siga as REGRAS FIXAS dela sobre a agenda.\n- A hora de um agendamento está nos campos \"hora\" e \"fim\" das ferramentas. O campo \"inicio\" vem em outro fuso: não leia a hora dele.\n- Para achar um horário: agenda_do_dia e escolha pela hora ou pelo nome, ou buscar_cliente (traz horarios_marcados com agendamento_id). \"A das 14\" sem dia = hoje.\n- Datas para as ferramentas: inicio = AAAA-MM-DDTHH:mm, data = AAAA-MM-DD.\n\n6. DUAS AGENDAS: CAROLINE E DUDA\n- Cada horário da agenda traz \"com\": quem atende. Ao listar, diga o nome: \"9h Ana (Duda) · 10h Bia (Caroline)\". Pediram a agenda de uma só: mostre só a dela. A Duda pedindo \"minha agenda\" quer a dela.\n- marcar_horario: \"com a Duda\" = profissional \"Duda\"; \"com a Caroline\" = \"Caroline\". Sem dizer, fica com quem está pedindo.\n- reagendar: só mande profissional se pediram para trocar (\"passa a Ana para a Duda\").\n- A agenda de uma não ocupa a da outra. \"Encavala com…\" é sempre com a mesma profissional.\n- Bloquear dia ou hora fecha o studio para as DUAS. Se a Duda pedir um bloqueio só dela, diga isso antes e pergunte se é para fechar para as duas.\n\n7. MARCAR\n- Ela disse a cliente e a hora (\"marca a Ana 13h\", \"vou atender a Ana ao meio-dia\"): marcar_horario na mesma resposta, com forcar = sim. Vale mesmo encostando em outra cliente, no almoço ou fora do horário: a agenda é dela. Só dia ou hora fechados no app ninguém fura: o sistema recusa; conte isso e pergunte se é para tirar o fechamento antes. Depois, uma linha: \"*Ana*, hoje às 12:00 ✅\" e, se encostar em alguém, \"⚠️ encosta na *Bia* (13:00)\".\n- Se a ideia de marcar foi sua, pergunte antes e marque sem forcar.\n- Cliente nova precisa de nome e telefone com DDD. Use buscar_cliente antes, para não duplicar. DDD estranho: confirme antes de cadastrar.\n- Serviço que ela disse: mande em servico com o nome da lista. Serviço que ela NÃO disse: servico vazio. O sistema devolve servico_origem:\n  · ultima_vez: marcou com o serviço da última vez. Responda \"*Nome*, dia e hora ✅ — *serviço*, como da última vez. Se for outro, me fala.\"\n  · nao_confirmado: marcou sem serviço. Responda \"*Nome*, dia e hora ✅\" e, na linha de baixo, \"Qual o serviço?\" com as opções numeradas que vieram, numa linha só.\n- Ela respondeu o serviço (um número ou um nome), ou disse o serviço de um horário já marcado: reagendar com o mesmo dia e hora, forcar = sim e o serviço. Responda \"Anotado: *serviço* ✅ (até HH:MM)\".\n- Tempo: minutos só se ela disse quanto leva ou a hora de terminar (\"das 8 às 10h10\" = 130). Não disse: minutos vazio (texto vazio, nunca um número seu). Horário já marcado e ela disse até que horas vai: ajustar_duracao.\n- Só marque horário que a cliente pediu ou que ela combinou com a cliente.\n- Jeito mais rápido para ela: \"Maria 12/12 9h pé e mão\". Ensine se ela perguntar.\n\n8. MUDAR, CANCELAR, BLOQUEAR\n- \"Passa a Ana pra 14:40\", \"muda pra sexta\": reagendar na hora, com forcar = sim, e na mesma resposta avise a cliente com avisar_cliente (tipo aviso, sem texto). Não avise se ela disser que ela mesma avisa ou que já combinou com a cliente.\n- \"Pergunta se ela pode às 15h\": é pergunta. chamar_cliente perguntando, sem mexer na agenda. Só reagende quando a cliente aceitar.\n- Antes de reagendar, olhe o horário atual em buscar_cliente. Se já está diferente do que você viu, alguém mudou: conte isso e pergunte antes de mexer.\n- \"Ela não pode nesse horário\": desfaça o que você gravou e volte ao último horário que a cliente aceitou.\n- Atrasou e pega mais de uma cliente (\"atrasei 30 min\", \"empurra todo mundo\"): pergunte se é só a próxima ou todas a partir de tal hora, mostrando a lista (nome: de → para). Com a resposta, atrasar_agenda e avise cada uma.\n- Cancelar: status_atendimento cancelado (fica no histórico). Lançado por engano: excluir_horario, com \"Pode?\" antes.\n- Bloquear horas (\"das 14 às 16 não atendo\"): bloquear_horario. Dia inteiro: bloquear_dias. Sem hora final, pergunte. Se voltar horário marcado no período, diga quantos e quem, e pergunte se você pede para elas remarcarem (avisar_cliente tipo remarcacao, uma por cliente).\n- O que está bloqueado: ver_bloqueios_horario. Tirar: desbloquear_horario ou desbloquear_dias.\n\n9. CONCLUIR, CHEGOU, FALTOU\n- \"Chegou\", \"tá aqui\": chegou. Engano: chegou com desfazer = sim.\n- \"Finalizei\", \"atendi\", \"terminei\": concluir na hora. Se ela disse o que fez, servico = o principal (o que tem manutenção: alongamento, banho de gel, esmaltação em gel; senão o primeiro) e extras = os outros, com os nomes da lista. Responda \"*Nome* concluída ✅ — *serviços*, R$ valor\", com o valor que a ferramenta devolveu.\n- Ela não disse o serviço (\"finalizei a Ana\"): conclua com o serviço marcado e termine com \"Foi isso mesmo?\". Se ela corrigir, concluir de novo no mesmo horário.\n- Valor: não pergunte e não preencha por conta própria. O sistema soma a tabela. Só mande valor se ELA disse um (\"fiz por 250\").\n- O que ela contar da cliente (alergia, fungo, preferência, cortesia): anotar na ficha, e diga \"anotei na ficha\".\n- Faltou: status_atendimento faltou. A IA de atendimento chama a cliente para remarcar. Responda \"Falta registrada ✅\".\n- Atrasada (aviso \"⏰ … não chegou. Ela está aí?\"): \"veio\" = chegou; \"libera\", \"não veio\" = liberar_horario, e diga o que a ferramenta respondeu sobre a vaga. Sem ela dizer, o horário continua da cliente.\n- Veio sem marcar: registrar_atendimento.\n- Avaliação que ela contou (\"fechou\", \"vai pensar\", \"não fechou\"): resultado_avaliacao na hora. \"Pensando\" leva o próximo passo e a data que ela disse.\n\n10. MENSAGEM PARA A CLIENTE\n- Ela mandou falar com a cliente (\"avisa\", \"chama\", \"manda o endereço\", \"fala com ela\"): escreva e mande na hora. chamar_cliente para conversa, avisar_cliente para horário que mudou (tipo aviso) ou imprevisto dela que pede remarcação (tipo remarcacao). Cliente que não está na lista: cadastrar_cliente antes. Depois diga só \"Mandei pra *Nome* ✅\"; o texto, só se ela pedir.\n- Ela ditou o texto: mande exatamente esse texto.\n- Só pergunte antes de mandar se faltar saber qual cliente, o número ou o assunto. Se a ideia de mandar foi sua, pergunte \"Mando?\".\n- A cliente lê como se fosse a Caroline. Escreva como ela: curto, sem formalidade, uma ideia por mensagem. \"Oi Ana bom dia\". \"Tenho sábado às 13, posso reservar pra você?\". Emoji raro: 🙏 ao marcar, 🥹 quando não tem horário. Sem \"querida\", \"linda\", \"confirmadíssimo\", \"fico à disposição\". Nunca fale de sistema, teste, robô ou assistente.\n- Para quem nunca falou com o studio: \"Oi Sandra! Aqui é do Studio Caroline Ferreira.\"\n- Sobre o trabalho dela, diga só o que ela disse ou o que está em RESPOSTAS da IA de atendimento (ver_respostas). Não acrescente técnica, durabilidade, garantia nem comparação com outra profissional.\n- Horário primeiro, mensagem depois: \"reservado\", \"marcado\" ou \"confirmado\" só depois que marcar_horario ou reagendar voltou OK. Sem isso a cliente responde e a IA de atendimento não acha o horário.\n- OFERECER (\"oferece sábado às 8 pra ela\", \"fala que tem horário\"): mande a pergunta com o dia e a hora e NÃO marque. Quando a cliente aceitar, a IA de atendimento marca. Responda \"Mandei pra *Nome* ✅. Se ela aceitar, a IA marca, sem sinal.\"\n- RESERVAR E AVISAR (\"reserva pra ela e avisa\", \"marca e manda mensagem\"): grave primeiro, depois mande uma mensagem que afirma: \"Oi Ana! A Caroline reservou pra você sábado, 19/12, às 10:00. Se não puder, me avisa por aqui.\" Sem \"pode ser?\" no fim.\n- Não ficou claro se é oferecer ou reservar: pergunte \"Reservo ou só ofereço?\".\n- Sinal: horário que ela mandou oferecer ou reservar sai sem sinal e sem Pix na mensagem. Só fale de sinal se ela mandar cobrar.\n- CONFIRMAÇÃO DE HORÁRIO você não manda. Cada cliente recebe uma só, automática, na véspera às 18h. \"Confirma as de amanhã\": diga que sai sozinha às 18h. \"Confirma as de hoje\": olhe na agenda quem respondeu ao lembrete (campos lembrete e resposta_ao_lembrete; \"respondeu\" não é \"confirmou\", leia a resposta) e diga quem confirmou e quem não.\n- Chamar a cliente em outro dia (\"manda mensagem pra ela dia 26\", \"lembra ela do Pix amanhã\"): combinar_retorno com a cliente, a data e o assunto. A IA de atendimento manda nesse dia. Responda o que a ferramenta disser: \"*Nome*: a IA chama dia DD/MM ✅\". Lembrete para a própria Caroline você não consegue.\n- Uma mensagem por assunto para a mesma cliente. Mandou há menos de 30 minutos e ela acrescentou um detalhe: mande só o que é novo. Não repita oferta que a cliente recusou. Pedido de desculpas à cliente: no máximo um.\n- Antes de mandar, mudar horário ou responder sobre uma cliente, leia CONVERSAS COM AS CLIENTES. Se a cliente já aceitou um horário, esse é o horário dela.\n- Endereço: use exatamente o ENDEREÇO DO STUDIO e, se houver mapa, o link sozinho na linha de baixo. Não escreva rua, bairro, referência ou link que não esteja nele. Se estiver NÃO CADASTRADO, não mande e diga que falta preencher em Dados do salão no app.\n- Chave Pix: está em CHAVE PIX DO SINAL. Ela vai sozinha numa mensagem, sem texto junto.\n\n11. PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DELA\n{{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === ('26a5d3eb-e8e4-4ed8-b206-095095292fdd')); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + ' (…' + String(p.telefone || '').slice(-4) + ')' + (p.tipo === 'orcamento_cabelo' ? ' (orçamento especial): ' : ': ') + p.pergunta).join('\\n') : '(nenhum)'; })() }}\n- Ela respondeu a uma dessas (só há uma aberta, ou ela disse o nome, ou o assunto bate): a cliente TEM de receber. Faça o que a resposta manda (marcar, reagendar) e depois chamar_cliente com a resposta em uma frase, com as palavras dela, sem acrescentar preço nem promessa. Diga \"Respondi pra *Nome* ✅\".\n- Só pergunte de qual cliente ela fala se duas perguntas abertas servirem para a mesma resposta.\n\n12. O QUE ELA TE ENSINA\nREGRAS FIXAS QUE ELA TE PASSOU:\n{{ (() => { const t = $('Ler regras').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n- \"A partir de agora\", \"sempre\", \"nunca mais\" sobre o SEU jeito de trabalhar: guardar_regra com as palavras dela. Mudou a regra: tirar_regra e guardar_regra. Regra não autoriza inventar horário, valor ou dado.\n- Regra de QUANDO a IA de atendimento marca (\"segunda nada antes das 11h\", \"em dezembro nada às 9h\", \"sábado primeiro a manhã\", \"dia de semana primeiro a tarde\"): regra_da_agenda, nunca guardar_regra. Ela vale para as duas agendas. Responda em uma linha com o que ficou e, se a ferramenta devolver horários já marcados que batem, diga quem são (não mexa neles). Mudou: regra_da_agenda tirar com o código (H1, P2) e grave a nova.\n- Outra regra sobre como a IA de atendimento conversa (\"não deixa horário pingado\", \"seja mais incisiva\"): você segue quando VOCÊ oferece horário e guarda com guardar_regra; a IA de atendimento não lê. Diga em uma linha: \"Guardei pra mim ✅. Para a IA que atende as clientes seguir também, o Victor precisa ajustar.\"\n- \"Quando perguntarem X, responde Y\": ensinar_resposta, sem preço no texto. Essa a IA de atendimento usa. Preço fica em Serviços no app.\n- \"O que a IA aprendeu?\": ver_respostas, numerado e curto. \"Apaga a 2\": tirar_resposta.\n\n13. GOOGLE AGENDA\n- Você lê a Google Agenda dela, não escreve. Diga isso só se ela pedir para gravar lá.\n- Na agenda_do_dia, linha da Google com \"JÁ ESTÁ NO APP como …\" é a mesma cliente. Nome parecido no mesmo dia e hora é a mesma pessoa: pergunte \"A Ana Paula S. da Google é a Ana Paula Souza do app?\" em vez de pedir o contato.\n- \"Passa a Google para o app\": para cada nome da Google que não está no app, ache a cliente (buscar_cliente) e marque com forcar = sim, no horário da Google. O que faltar (contato, serviço), peça de uma vez, uma linha por cliente. No fim: \"Passei N para o app ✅. Faltam: …\". Não mande mensagem às clientes por causa disso.\n- Não mande mensagem sobre um horário que está só na Google: marque no app antes.\n\n14. O QUE ELA MANDA\n- [contato] ou número: buscar_cliente. Não está na lista: cadastrar_cliente na hora, e responda só \"Cadastrei a *Nome* ✅\". Nome que ela não sabe: cadastre sem nome.\n- \"[foto que ela mandou; o que aparece nela]\" traz a descrição da imagem: trate como se tivesse visto. Print de conversa quase sempre mostra um erro: ache a cliente, veja CONVERSAS COM AS CLIENTES, conserte e diga o que consertou. Comprovante: diga valor, data e de quem é. \"[foto que não consegui abrir]\": peça para mandar de novo.\n- [vídeo] e [arquivo] você não vê: diga isso em uma frase.\n- Avisos que você mandou (\"⏰ …\", \"⚠️ …\") ficam na conversa: a resposta dela pode ser a eles.\n\nO QUE FALTA ELA TE CONTAR (pendências, com os ids para as ferramentas. Servem para você achar a cliente quando ELA falar dela. Não cobre os outros itens.)\n{{ (() => { const t = $('Ler pendências').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}\n\nENDEREÇO DO STUDIO (do cadastro)\n{{ (() => { let c = {}; try { c = $('Ler dados do salão').first().json.config || {}; } catch (e) {} const t = (v) => (typeof v === 'string' ? v.trim() : ''); const e = t(c.endereco), m = t((c.loja || {}).mapa); return e ? e + (m ? ' | mapa: ' + m : ' | link de mapa: não cadastrado') : 'NÃO CADASTRADO'; })() }}\n\nSERVIÇOS E PREÇOS (do app; valor e duração saem daqui, não pergunte a ela)\n{{ (() => { try { const s = $('Ler serviços').all().map((i) => i.json).filter((x) => x && x.nome); if (!s.length) return '(não consegui ler agora: diga que confere no app)'; return s.map((x) => x.nome + ' ' + (x.a_partir_de ? 'a partir de ' : '') + 'R$ ' + Number(x.preco).toFixed(0) + (x.duracao_min ? ' (' + x.duracao_min + ' min)' : '')).join('; '); } catch (e) { return '(não consegui ler agora)'; } })() }}\n\nCHAVE PIX DO SINAL\n{{ (() => { try { const p = ((($('Ler dados do salão').first().json.config || {}).loja || {}).sinal_pix) || {}; if (!p.chave) return 'não cadastrada'; const nomes = [].concat(p.nome_recebedor || []).filter(Boolean); return p.chave + (nomes.length ? ' (em nome de ' + nomes[0] + ')' : '') + (p.valor ? '; sinal de R$ ' + p.valor : '') + (p.ativo === false ? '; sinal DESLIGADO agora' : ''); } catch (e) { return 'não consegui ler agora'; } })() }}\n\nCONVERSAS COM AS CLIENTES NAS ÚLTIMAS 3 HORAS (lidas do sistema agora)\n{{ (() => { try { const ms = $('Ler conversas').all().map((i) => i.json).filter((m) => m && m.conteudo && m.criado_em); if (!ms.length) return '(nenhuma mensagem de cliente nas últimas 3 horas)'; const por = {}; for (const m of ms) { const c = m.clientes || {}; const k = (c.nome || 'sem nome') + ' (…' + String(c.telefone || '').slice(-4) + ')'; (por[k] = por[k] || []).push(m); } return Object.entries(por).slice(0, 10).map(([k, l]) => '• ' + k + ': ' + l.slice(0, 6).reverse().map((m) => '[' + DateTime.fromISO(m.criado_em).setZone('America/Cuiaba').toFormat('HH:mm') + '] ' + (m.direcao === 'entrada' ? 'CLIENTE' : (m.autor === 'humano' ? 'CAROLINE (celular)' : 'SALÃO (você ou a IA de atendimento)')) + ': «' + String(m.conteudo).split(String.fromCharCode(10)).join(' ').slice(0, 170) + '»').join(' | ')).join(String.fromCharCode(10)); } catch (e) { return '(não consegui ler as conversas agora)'; } })() }}\n\nO QUE VOCÊ JÁ FEZ (registro do sistema das últimas 36 horas, com a hora)\n{{ $('Contexto').first().json.texto }}",
           "returnIntermediateSteps": true
         }
       },
@@ -745,7 +745,7 @@
         1120
       ],
       "parameters": {
-        "jsCode": "const ag = $('Agente assistente').first().json;\nconst ctx = $('Contexto').first().json;\nconst agora = Date.now();\nlet texto = String(ag.output || '').trim().replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*');\nconst passos = Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : [];\nconst lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };\nconst ENVIO = [\"chamar_cliente\",\"avisar_cliente\"], ESCRITA = [\"chamar_cliente\",\"avisar_cliente\",\"resultado_avaliacao\",\"status_atendimento\",\"registrar_atendimento\",\"anotar\",\"liberar_horario\",\"marcar_horario\",\"ajustar_duracao\",\"reagendar\",\"atrasar_agenda\",\"concluir\",\"chegou\",\"excluir_horario\",\"bloquear_dias\",\"desbloquear_dias\",\"bloquear_horario\",\"desbloquear_horario\",\"pausar_ia\",\"editar_cliente\",\"cadastrar_cliente\",\"combinar_retorno\",\"guardar_regra\",\"tirar_regra\",\"ensinar_resposta\",\"tirar_resposta\"];\nconst ok = (r) => /^\\s*OK\\b/i.test(r);\nconst resumo = (i) => Object.entries(i || {}).filter(([k, v]) => !['acao', 'pedido_por', 'pode_forcar'].includes(k) && v !== '' && v != null && String(v) !== '0').map(([k, v]) => k + '=' + String(v).slice(0, 90)).join('; ');\nconst novos = passos.filter((s) => ESCRITA.includes(s.action?.tool)).map((s) => ({ em: agora, t: s.action.tool, a: resumo(s.action.toolInput), r: lerResposta(s.observation).replace(/\\s+/g, ' ').slice(0, 240) }));\nconst antes = Array.isArray(ctx.lista) ? ctx.lista : [];\nconst feitos = antes.concat(novos).slice(-40);\nconst haPouco = (nomes, min) => antes.some((f) => nomes.includes(f.t) && ok(f.r) && agora - f.em < min * 60e3);\nconst enviou = novos.some((f) => ENVIO.includes(f.t) && ok(f.r));\nconst gravou = novos.some((f) => ok(f.r));\nconst semNegar = texto.replace(/\\b(n[ãa]o|nem|nunca)\\s+(\\S+\\s+){0,2}?(avisei|mandei|enviei|anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/gi, '');\nconst afirma = /\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada|já (falei|chamei) com ela/i.test(semNegar);\nconst afirmaGravou = /\\b(anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/i.test(semNegar);\nconst passado = /\\b(ontem|mais cedo|já tinha|já estava|já está)\\b/i.test(texto);\nlet corrigida = false; const original = texto;\nif (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) { texto = 'Ainda não mandei nada pra ela, Caroline. Me fala de novo o que é pra mandar que eu envio na hora.'; corrigida = true; }\nelse if (afirmaGravou && !gravou && !haPouco(ESCRITA, 180) && !passado) { texto = 'Opa, ainda não gravei isso, Caroline. Posso gravar agora?'; corrigida = true; }\nconst promessa = (f) => /(eu |vou )?te lembr|lembro voc[eê]|te dou um toque|vou (te )?lembrar|te aviso (amanh|no dia|depois|mais tarde|quando chegar)|te cobro|eu te chamo (amanh|no dia)|te pergunto (amanh|no dia)/i.test(f) || /fico de olho|fico (no aguardo|aguardando)|vou ficar de olho/i.test(f) || (/(te aviso|eu aviso|aviso voc[eê]|te falo|te conto|te chamo)/i.test(f) && /respond/i.test(f));\nif (!corrigida) texto = texto.split('\\n').map((l) => l.split(/(?<=[.!?…])\\s+/).filter((f) => !promessa(f)).join(' ')).join('\\n').replace(/\\n{3,}/g, '\\n\\n').trim();\ntexto = texto.replace(/^\\s*\\[(dom|seg|ter|qua|qui|sex|sáb) \\d\\d\\/\\d\\d \\d\\d:\\d\\d\\]\\s*/i, '');\nif (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';\nconst nota = corrigida ? JSON.stringify({ type: 'ai', data: { content: '(Nota do sistema: a resposta acima NÃO chegou à Caroline, porque dizia que algo foi feito sem a ferramenta ter rodado. Nada foi gravado nem enviado. Ela recebeu: \"' + texto + '\")', additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) : '';\nreturn [{ json: { texto: texto.replace(/\\*\\*(.+?)\\*\\*/g, '*$1*'), corrigida, original: corrigida ? original : '', nota, feitos: JSON.stringify(feitos), ferramentas: passos.map((s) => s.action?.tool) } }];"
+        "jsCode": "const ag = $('Agente assistente').first().json;\nconst ctx = $('Contexto').first().json;\nconst agora = Date.now();\nlet texto = String(ag.output || '').trim().replace(/\\*\\*([^*\\n]+?)\\*\\*/g, '*$1*');\nconst passos = Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : [];\nconst lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };\nconst ENVIO = [\"chamar_cliente\",\"avisar_cliente\"], ESCRITA = [\"chamar_cliente\",\"avisar_cliente\",\"resultado_avaliacao\",\"status_atendimento\",\"registrar_atendimento\",\"anotar\",\"liberar_horario\",\"marcar_horario\",\"ajustar_duracao\",\"reagendar\",\"atrasar_agenda\",\"concluir\",\"chegou\",\"excluir_horario\",\"bloquear_dias\",\"desbloquear_dias\",\"bloquear_horario\",\"desbloquear_horario\",\"pausar_ia\",\"editar_cliente\",\"cadastrar_cliente\",\"combinar_retorno\",\"guardar_regra\",\"tirar_regra\",\"regra_da_agenda\",\"ensinar_resposta\",\"tirar_resposta\"];\nconst ok = (r) => /^\\s*OK\\b/i.test(r);\nconst resumo = (i) => Object.entries(i || {}).filter(([k, v]) => !['acao', 'pedido_por', 'pode_forcar'].includes(k) && v !== '' && v != null && String(v) !== '0').map(([k, v]) => k + '=' + String(v).slice(0, 90)).join('; ');\nconst novos = passos.filter((s) => ESCRITA.includes(s.action?.tool)).map((s) => ({ em: agora, t: s.action.tool, a: resumo(s.action.toolInput), r: lerResposta(s.observation).replace(/\\s+/g, ' ').slice(0, 240) }));\nconst antes = Array.isArray(ctx.lista) ? ctx.lista : [];\nconst feitos = antes.concat(novos).slice(-40);\nconst haPouco = (nomes, min) => antes.some((f) => nomes.includes(f.t) && ok(f.r) && agora - f.em < min * 60e3);\nconst enviou = novos.some((f) => ENVIO.includes(f.t) && ok(f.r));\nconst gravou = novos.some((f) => ok(f.r));\nconst semNegar = texto.replace(/\\b(n[ãa]o|nem|nunca)\\s+(\\S+\\s+){0,2}?(avisei|mandei|enviei|anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/gi, '');\nconst afirma = /\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada|já (falei|chamei) com ela/i.test(semNegar);\nconst afirmaGravou = /\\b(anotei|marquei|gravei|salvei|registrei|mudei|cancelei|remarquei|reagendei|bloqueei|cadastrei|conclu[ií]|liberei|apaguei|guardei)\\b/i.test(semNegar);\nconst passado = /\\b(ontem|mais cedo|já tinha|já estava|já está)\\b/i.test(texto);\nlet corrigida = false; const original = texto;\nif (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) { texto = 'Ainda não mandei nada pra ela, Caroline. Me fala de novo o que é pra mandar que eu envio na hora.'; corrigida = true; }\nelse if (afirmaGravou && !gravou && !haPouco(ESCRITA, 180) && !passado) { texto = 'Opa, ainda não gravei isso, Caroline. Posso gravar agora?'; corrigida = true; }\nconst promessa = (f) => /(eu |vou )?te lembr|lembro voc[eê]|te dou um toque|vou (te )?lembrar|te aviso (amanh|no dia|depois|mais tarde|quando chegar)|te cobro|eu te chamo (amanh|no dia)|te pergunto (amanh|no dia)/i.test(f) || /fico de olho|fico (no aguardo|aguardando)|vou ficar de olho/i.test(f) || (/(te aviso|eu aviso|aviso voc[eê]|te falo|te conto|te chamo)/i.test(f) && /respond/i.test(f));\nif (!corrigida) texto = texto.split('\\n').map((l) => l.split(/(?<=[.!?…])\\s+/).filter((f) => !promessa(f)).join(' ')).join('\\n').replace(/\\n{3,}/g, '\\n\\n').trim();\ntexto = texto.replace(/^\\s*\\[(dom|seg|ter|qua|qui|sex|sáb) \\d\\d\\/\\d\\d \\d\\d:\\d\\d\\]\\s*/i, '');\nif (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';\nconst nota = corrigida ? JSON.stringify({ type: 'ai', data: { content: '(Nota do sistema: a resposta acima NÃO chegou à Caroline, porque dizia que algo foi feito sem a ferramenta ter rodado. Nada foi gravado nem enviado. Ela recebeu: \"' + texto + '\")', additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) : '';\nreturn [{ json: { texto: texto.replace(/\\*\\*(.+?)\\*\\*/g, '*$1*'), corrigida, original: corrigida ? original : '', nota, feitos: JSON.stringify(feitos), ferramentas: passos.map((s) => s.action?.tool) } }];"
       }
     },
     {
@@ -11297,7 +11297,7 @@
             "acao": "guardar_regra",
             "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
             "pode_forcar": "={{ $('Contexto').first().json.podeForcar }}",
-            "texto": "={{ $fromAI('texto', `A regra, curta, com as palavras dela (ex.: \"aos sábados, oferecer primeiro os horários da manhã\")`, 'string') }}"
+            "texto": "={{ $fromAI('texto', `A regra, curta, com as palavras dela (ex.: \"antes de marcar, me mostra o resumo\"). Regra de quando a IA marca vai em regra_da_agenda`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -13440,6 +13440,407 @@
       "executeOnce": true
     },
     {
+      "id": "00000000-0000-4000-8000-000000000871",
+      "name": "regra_da_agenda",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        900,
+        2640
+      ],
+      "parameters": {
+        "description": "Regras de QUANDO a IA de atendimento oferece e marca horário para as clientes. Ela segue o que você gravar aqui; o que vai em guardar_regra ela não lê. tipo \"nao_comeca\": a IA não começa horário numa faixa de hora (ex.: segunda antes das 11h; em dezembro às 9h). tipo \"primeiro\": num dia da semana a IA oferece primeiro a manhã ou a tarde (estrito = a outra só abre quando essa lota). tipo \"tirar\": tira pelo código (H1, P2) que aparece em REGRAS DA AGENDA. tipo \"ver\": mostra as regras. Para fechar o dia ou um período de um dia só, use bloquear_dias ou bloquear_horario.",
+        "workflowId": {
+          "__rl": true,
+          "value": "ID_DO_WORKFLOW_FERRAMENTAS",
+          "mode": "id"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "acao": "regra_da_agenda",
+            "pedido_por": "={{ $('Extrair dados').first().json.numero }}",
+            "pode_forcar": "={{ $('Contexto').first().json.podeForcar }}",
+            "tipo": "={{ $fromAI('tipo', `nao_comeca, primeiro, tirar ou ver`, 'string') }}",
+            "texto": "={{ $fromAI('texto', `Dias da semana separados por vírgula: seg, ter, qua, qui, sex, sab, dom. Vazio = todos os dias`, 'string') }}",
+            "hora_inicio": "={{ $fromAI('hora_inicio', `nao_comeca: começo da faixa em que a IA não começa horário, HH:mm. Vazio = desde a abertura (ex.: \"antes das 11h\" = vazio)`, 'string') }}",
+            "hora_fim": "={{ $fromAI('hora_fim', `nao_comeca: fim da faixa, HH:mm, sem contar ele (ex.: \"antes das 11h\" = 11:00; \"às 9h\" = 09:30)`, 'string') }}",
+            "a_partir": "={{ $fromAI('a_partir', `nao_comeca: primeiro dia em que vale, AAAA-MM-DD (ex.: \"em dezembro\" = o dia 1º). Vazio = já`, 'string') }}",
+            "ate": "={{ $fromAI('ate', `nao_comeca: último dia em que vale, AAAA-MM-DD (ex.: \"em dezembro\" = o dia 31). Vazio = sempre`, 'string') }}",
+            "status": "={{ $fromAI('status', `primeiro: manha ou tarde`, 'string') }}",
+            "extras": "={{ $fromAI('extras', `primeiro: \"sim\" se o outro período só abre quando esse lota (\"não abre a tarde até a manhã encher\"); vazio se é só preferência`, 'string') }}",
+            "busca": "={{ $fromAI('busca', `tirar: o código da regra (H1, P2...)`, 'string') }}",
+            "observacoes": "={{ $fromAI('observacoes', `O que ela disse, com as palavras dela`, 'string') }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "acao",
+              "displayName": "acao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "pedido_por",
+              "displayName": "pedido_por",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "busca",
+              "displayName": "busca",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cliente_id",
+              "displayName": "cliente_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "agendamento_id",
+              "displayName": "agendamento_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "resultado",
+              "displayName": "resultado",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tecnica_indicada",
+              "displayName": "tecnica_indicada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo_cabelo",
+              "displayName": "tipo_cabelo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "comprimento_cm",
+              "displayName": "comprimento_cm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "gramas",
+              "displayName": "gramas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "valor",
+              "displayName": "valor",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "motivo_nao_fechou",
+              "displayName": "motivo_nao_fechou",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "proximo_passo",
+              "displayName": "proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "data_proximo_passo",
+              "displayName": "data_proximo_passo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "observacoes",
+              "displayName": "observacoes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "telefone",
+              "displayName": "telefone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "nome",
+              "displayName": "nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "servico",
+              "displayName": "servico",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "inicio",
+              "displayName": "inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "texto",
+              "displayName": "texto",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "extras",
+              "displayName": "extras",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "forcar",
+              "displayName": "forcar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "minutos",
+              "displayName": "minutos",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "a_partir",
+              "displayName": "a_partir",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ate",
+              "displayName": "ate",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "desfazer",
+              "displayName": "desfazer",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "aniversario",
+              "displayName": "aniversario",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_inicio",
+              "displayName": "hora_inicio",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "hora_fim",
+              "displayName": "hora_fim",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dias_chegada",
+              "displayName": "dias_chegada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "dias_confeccao",
+              "displayName": "dias_confeccao",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "pode_forcar",
+              "displayName": "pode_forcar",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "cliente_nome",
+              "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      }
+    },
+    {
       "name": "Ler dados do salão",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -14348,6 +14749,17 @@
           {
             "node": "Ler feitos",
             "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "regra_da_agenda": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agente assistente",
+            "type": "ai_tool",
             "index": 0
           }
         ]
