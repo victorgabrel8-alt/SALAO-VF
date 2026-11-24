@@ -41,18 +41,27 @@ type Resultado = { conversas: Conversa[]; total: number; cortada: boolean } | { 
 
 const maisRecente = (a: Conversa, b: Conversa) => Date.parse(b.ultima_mensagem_em) - Date.parse(a.ultima_mensagem_em);
 
-// Conversas do salão sem as clientes excluídas (o filtro vai para o banco, para não gastar o limite)
-async function consultaConversas(empresaId: string) {
+// Conversas do salão sem as clientes excluídas (o filtro vai para o banco, para não gastar o limite).
+// soDela: login de profissional que não é a dona (supabase/070): só as clientes que têm ou tiveram horário com ela.
+async function consultaConversas(empresaId: string, soDela?: string) {
   const { excluidas } = await buscarExcluidas(empresaId);
   const ids = excluidas.map((c) => c.id);
+  let delas: string[] | null = null;
+  if (soDela) {
+    const { data } = await supabase().from("agendamentos").select("cliente_id").eq("empresa_id", empresaId).eq("profissional_id", soDela);
+    delas = [...new Set(((data ?? []) as { cliente_id: string }[]).map((a) => a.cliente_id))];
+  }
   return (select: string, opcoes?: { count: "exact"; head: true }) => {
-    const q = supabase().from("conversas").select(select, opcoes).eq("empresa_id", empresaId);
-    return ids.length ? q.not("cliente_id", "in", `(${ids.join(",")})`) : q;
+    let q = supabase().from("conversas").select(select, opcoes).eq("empresa_id", empresaId);
+    if (ids.length) q = q.not("cliente_id", "in", `(${ids.join(",")})`);
+    // sem nenhuma cliente dela ainda: lista vazia (um id que não existe)
+    if (delas) q = q.in("cliente_id", delas.length ? delas : ["00000000-0000-0000-0000-000000000000"]);
+    return q;
   };
 }
 
-async function buscarConversas(empresaId: string): Promise<Resultado> {
-  const conversas = await consultaConversas(empresaId);
+async function buscarConversas(empresaId: string, soDela?: string): Promise<Resultado> {
+  const conversas = await consultaConversas(empresaId, soDela);
   const [recentes, pausadas, contagem] = await Promise.all([
     conversas(CAMPOS).order("ultima_mensagem_em", { ascending: false }).limit(LIMITE),
     conversas(CAMPOS).eq("ia_pausada", true),
@@ -68,13 +77,13 @@ async function buscarConversas(empresaId: string): Promise<Resultado> {
 }
 
 // Busca no banco pelo nome ou pelo telefone (com 3 dígitos ou mais), em todas as conversas
-async function procurarConversas(empresaId: string, texto: string): Promise<Conversa[] | { erro: string }> {
+async function procurarConversas(empresaId: string, texto: string, soDela?: string): Promise<Conversa[] | { erro: string }> {
   // vírgula, parênteses e curingas quebram o filtro "or" do Supabase
   const termo = texto.replace(/[,()*%\\]/g, " ").trim();
   const digitos = texto.replace(/\D/g, "");
   const ou = [termo && `nome.ilike.*${termo}*`, digitos.length >= 3 && `telefone.like.*${digitos}*`].filter(Boolean).join(",");
   if (!ou) return [];
-  const conversas = await consultaConversas(empresaId);
+  const conversas = await consultaConversas(empresaId, soDela);
   const { data, error } = await conversas(CAMPOS).or(ou).order("ultima_mensagem_em", { ascending: false }).limit(LIMITE_BUSCA);
   return error ? { erro: error.message } : (data as unknown as Conversa[]);
 }
@@ -215,8 +224,9 @@ export default function ConversasPage() {
 
 function ConversasPageConteudo() {
   const empresa = useEmpresa();
+  const soDela = empresa.soDela ? empresa.profissional?.id : undefined;
   // Volta para a aba já com a lista que tinha (a busca nova atualiza por trás)
-  const chave = `conversas:${empresa.id}`;
+  const chave = `conversas:${empresa.id}${soDela ? ':' + soDela : ''}`;
   const [resultado, setResultado] = useState<Resultado | null>(() => lembrar(chave));
   const [veioDaMemoria] = useState(() => lembrar(chave) !== null);
   const [versao, setVersao] = useState(0);
@@ -229,14 +239,14 @@ function ConversasPageConteudo() {
 
   useEffect(() => {
     let ativo = true;
-    buscarConversas(empresa.id).then((r) => {
+    buscarConversas(empresa.id, soDela).then((r) => {
       guardar(chave, r);
       if (ativo) setResultado(r);
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, versao, chave]);
+  }, [empresa.id, versao, chave, soDela]);
 
   // Mensagem nova ou IA pausada/reativada: a lista se atualiza sozinha
   useTempoReal(["mensagens", "clientes"], empresa.id, () => setVersao((v) => v + 1));
@@ -247,7 +257,7 @@ function ConversasPageConteudo() {
     if (!texto) return;
     let ativo = true;
     const espera = setTimeout(() => {
-      procurarConversas(empresa.id, texto).then((r) => {
+      procurarConversas(empresa.id, texto, soDela).then((r) => {
         if (ativo && !("erro" in r)) setAchadas({ texto, conversas: r });
       });
     }, 300);
@@ -255,7 +265,7 @@ function ConversasPageConteudo() {
       ativo = false;
       clearTimeout(espera);
     };
-  }, [empresa.id, texto, versao]);
+  }, [empresa.id, texto, versao, soDela]);
 
   const conversas = useMemo(() => (resultado && "conversas" in resultado ? resultado.conversas : []), [resultado]);
   const precisam = conversas.filter((c) => situacaoIa(c.ia_pausada, c.motivo_pausa) === "precisa");

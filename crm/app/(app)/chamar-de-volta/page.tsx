@@ -11,7 +11,7 @@ import {
   textoPassou,
   type ParaChamar,
 } from "@/lib/chamarDeVolta";
-import { useEmpresa } from "@/lib/empresa";
+import { SoDaDona, useEmpresa } from "@/lib/empresa";
 import { formatarData, formatarTelefone, primeiroNome } from "@/lib/formato";
 import { useTempoReal } from "@/lib/tempoReal";
 import { abrirWhatsApp } from "@/lib/whatsapp";
@@ -25,7 +25,16 @@ function nomeDe(c: ParaChamar): string {
   return c.nome ?? formatarTelefone(c.telefone);
 }
 
+// login de profissional que não é a dona não mexe aqui (supabase/070)
 export default function ChamarDeVoltaPage() {
+  return (
+    <SoDaDona>
+      <ChamarDeVoltaPageConteudo />
+    </SoDaDona>
+  );
+}
+
+function ChamarDeVoltaPageConteudo() {
   const empresa = useEmpresa();
   const [resultado, setResultado] = useState<{ clientes: ParaChamar[] } | { erro: string } | null>(null);
   const [variasProfissionais, setVariasProfissionais] = useState(false);

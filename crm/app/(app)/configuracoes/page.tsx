@@ -12,6 +12,19 @@ import { formatarTelefone, normalizarTelefone, telefoneValido } from "@/lib/form
 import { supabase } from "@/lib/supabase/client";
 
 export default function ConfiguracoesPage() {
+  const empresa = useEmpresa();
+  // login de profissional que não é a dona (supabase/070): os ajustes do salão ficam com a dona
+  if (empresa.soDela) {
+    return (
+      <>
+        <Cabecalho titulo="Configurações" acao={<Voltar para="/" className="flex h-11 items-center px-2 text-lg font-semibold text-[var(--cor-principal)]">Voltar</Voltar>} />
+        <div className="space-y-4 px-4">
+          <p className="text-lg text-texto-2">Você entra como {empresa.profissional?.nome}. Os ajustes do salão ficam com a dona.</p>
+          <BotaoSair />
+        </div>
+      </>
+    );
+  }
   return (
     <>
       <Cabecalho

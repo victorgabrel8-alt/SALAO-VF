@@ -6,13 +6,22 @@ import { Cabecalho } from "@/components/Cabecalho";
 import { useDialogo } from "@/components/Dialogo";
 import { Voltar } from "@/components/Voltar";
 import { buscarRepetidos, juntarCadastros, type LadoDoPar, type ParRepetido } from "@/lib/cadastrosRepetidos";
-import { useEmpresa } from "@/lib/empresa";
+import { useEmpresa, SoDaDona } from "@/lib/empresa";
 import { formatarData, formatarTelefone, haQuantoTempo } from "@/lib/formato";
 
 // Cadastros repetidos: a mesma cliente com o número com e sem o 9. A IA acha um cadastro e o horário
 // ou a conversa estão no outro. A dona confere cada par, escolhe qual fica (padrão: o com o 9, que é o
 // que chega do WhatsApp) e toca em "Juntar". Nada é juntado sozinho (supabase/062).
+// login de profissional que não é a dona não mexe aqui (supabase/070)
 export default function CadastrosRepetidosPage() {
+  return (
+    <SoDaDona>
+      <CadastrosRepetidosPageConteudo />
+    </SoDaDona>
+  );
+}
+
+function CadastrosRepetidosPageConteudo() {
   const empresa = useEmpresa();
   const [pares, setPares] = useState<ParRepetido[] | null>(null);
   const [erro, setErro] = useState("");

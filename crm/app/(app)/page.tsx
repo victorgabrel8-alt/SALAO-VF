@@ -76,7 +76,8 @@ function aniversariantesDaSemana(clientes: { id: string; nome: string | null; te
     .map(({ id, nome, telefone, dia }) => ({ id, nome, telefone, dia }));
 }
 
-async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string }> {
+// soDela: id da profissional do login que vê só o que é dela (supabase/070); vazio = o salão inteiro
+async function buscarResumo(empresaId: string, soDela?: string): Promise<Resumo | { erro: string }> {
   const db = supabase();
   const hoje = hojeNoSalao();
   const desde = inicioDoDia(hoje);
@@ -106,14 +107,16 @@ async function buscarResumo(empresaId: string): Promise<Resumo | { erro: string 
   if (deAmanha.erro) return { erro: deAmanha.erro };
   if (anteriores.erro) return { erro: anteriores.erro };
 
+  // profissional que não é a dona: só os horários dela; quem precisa da dona e os aniversários ficam com a dona
+  const dela = (a: Atendimento) => !soDela || a.profissional_id === soDela;
   return {
-    precisam: (clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas)) as Precisa[],
-    hoje: atendimentos.atendimentos.filter((a) => a.status !== "cancelado"),
-    amanha: deAmanha.atendimentos.filter((a) => a.status !== "cancelado"),
-    pendentes: anteriores.atendimentos,
+    precisam: soDela ? [] : ((clientes.data ?? []).filter((c) => !estaExcluida(c.etiquetas)) as Precisa[]),
+    hoje: atendimentos.atendimentos.filter((a) => a.status !== "cancelado" && dela(a)),
+    amanha: deAmanha.atendimentos.filter((a) => a.status !== "cancelado" && dela(a)),
+    pendentes: anteriores.atendimentos.filter(dela),
     iaConversou: new Set((mensagensIa.data ?? []).map((m) => m.cliente_id)).size,
     iaMarcou: marcadosIa.count ?? 0,
-    aniversariantes: aniversariantesDaSemana((comAniversario.data ?? []).filter((c) => !estaExcluida(c.etiquetas))),
+    aniversariantes: soDela ? [] : aniversariantesDaSemana((comAniversario.data ?? []).filter((c) => !estaExcluida(c.etiquetas))),
   };
 }
 
@@ -175,7 +178,8 @@ export default function InicioPage() {
 function InicioPageConteudo() {
   const empresa = useEmpresa();
   // Volta para a aba já com o que tinha (a busca nova atualiza por trás)
-  const chave = `inicio:${empresa.id}`;
+  const soDela = empresa.soDela ? empresa.profissional?.id : undefined;
+  const chave = `inicio:${empresa.id}${soDela ? ':' + soDela : ''}`;
   const [resumo, setResumo] = useState<Resumo | { erro: string } | null>(() => lembrar(chave));
   // A lista só "acende" quando chega depois de abrir a tela; vinda da memória, aparece direto
   const [veioDaMemoria] = useState(() => lembrar(chave) !== null);
@@ -187,8 +191,8 @@ function InicioPageConteudo() {
   const [confirmando, setConfirmando] = useState<Atendimento | null>(null);
   const [servicos, setServicos] = useState<ServicoAtivo[]>([]);
   const { puxado, atualizando } = usePuxarParaAtualizar(async () => {
-    const r = await buscarResumo(empresa.id);
-    guardar(`inicio:${empresa.id}`, r);
+    const r = await buscarResumo(empresa.id, soDela);
+    guardar(chave, r);
     setResumo(r);
   });
   // O relógio anda a cada minuto; quando vira o dia (app aberto de um dia para o outro), o
@@ -209,27 +213,29 @@ function InicioPageConteudo() {
 
   useEffect(() => {
     let ativo = true;
-    buscarResumo(empresa.id).then((r) => {
+    buscarResumo(empresa.id, soDela).then((r) => {
       guardar(chave, r);
       if (ativo) setResumo(r);
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, versao, diaAtual, chave]);
+  }, [empresa.id, versao, diaAtual, chave, soDela]);
 
   // Quantas passaram do tempo de voltar (lista "Chamar de volta"). Fora do resumo de propósito:
   // a conta passa por todas as clientes, então só refaz ao abrir a tela e quando vira o dia
   const [paraChamar, setParaChamar] = useState(0);
   useEffect(() => {
     let ativo = true;
+    // a lista "Chamar de volta" é trabalho da dona
+    if (soDela) return;
     contarParaChamar(empresa.id).then((n) => {
       if (ativo) setParaChamar(n);
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, diaAtual]);
+  }, [empresa.id, diaAtual, soDela]);
 
   // A IA grava sozinha: quando chega mensagem ou horário novo, a tela se atualiza
   useTempoReal(["agendamentos", "clientes", "mensagens"], empresa.id, recarregar);

@@ -131,9 +131,11 @@ export function FormAtendimento({
       .then(({ data }) => {
         const lista = (data ?? []) as { id: string; nome: string }[];
         setProfissionais(lista);
-        setComQuem((atual) => atual ?? lista[0]?.id ?? null);
+        // login ligado a uma profissional (supabase/070): o horário novo vem marcado com ela
+        const minha = empresa.profissional && lista.some((p) => p.id === empresa.profissional?.id) ? empresa.profissional.id : null;
+        setComQuem((atual) => atual ?? minha ?? lista[0]?.id ?? null);
       });
-  }, [empresa.id]);
+  }, [empresa.id, empresa.profissional]);
 
   // Busca por nome ou telefone enquanto a dona digita
   useEffect(() => {

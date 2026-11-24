@@ -60,13 +60,13 @@ function inicioDaSemana(dia: string): string {
   return somarDias(dia, -((semana + 6) % 7));
 }
 
-async function buscarDia(empresaId: string, dia: string): Promise<Dia> {
+async function buscarDia(empresaId: string, dia: string, soDela?: string): Promise<Dia> {
   const segunda = inicioDaSemana(dia);
   const [atendimentos, profissionais, comHorario] = await Promise.all([
     buscarAtendimentosDoDia(empresaId, dia),
     // pela ordem do cadastro: a primeira é a dona (horário sem profissional é dela)
     supabase().from("profissionais").select("id, nome").eq("empresa_id", empresaId).eq("ativo", true).order("criado_em"),
-    buscarDiasComHorario(empresaId, segunda, somarDias(segunda, 6)),
+    buscarDiasComHorario(empresaId, segunda, somarDias(segunda, 6), soDela),
   ]);
   if (atendimentos.erro) return { erro: atendimentos.erro };
   if (profissionais.error) return { erro: profissionais.error.message };
@@ -124,14 +124,14 @@ function AgendaPageConteudo() {
 
   useEffect(() => {
     let ativo = true;
-    buscarDia(empresa.id, dia).then((dados) => {
+    buscarDia(empresa.id, dia, empresa.soDela ? empresa.profissional?.id : undefined).then((dados) => {
       guardar(`agenda:${empresa.id}:${dia}`, dados);
       if (ativo) setResultado({ dia, dados });
     });
     return () => {
       ativo = false;
     };
-  }, [empresa.id, dia, versao]);
+  }, [empresa.id, empresa.soDela, empresa.profissional, dia, versao]);
 
   useTempoReal(["agendamentos"], empresa.id, recarregar);
 
@@ -156,8 +156,9 @@ function AgendaPageConteudo() {
   const [ano, mes] = dia.split("-").map(Number);
 
   // Loja com mais de uma profissional: Todas (com a etiqueta de quem é) ou só a agenda de uma delas.
-  // Horário sem profissional é da dona (a primeira cadastrada).
-  const [filtro, setFiltro] = useState<string>("todas");
+  // Horário sem profissional é da dona (a primeira cadastrada). Login ligado a uma profissional (supabase/070) abre na
+  // agenda dela; a profissional que não é a dona fica só na dela (sem os botões).
+  const [filtro, setFiltro] = useState<string>(() => empresa.profissional?.id ?? "todas");
   const deQuem = (a: Atendimento) => a.profissional_id ?? ordem[0] ?? null;
   const filtrando = variasProfissionais && filtro !== "todas" && ordem.includes(filtro);
   const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado" && (!filtrando || deQuem(a) === filtro)) ?? [];
@@ -218,7 +219,7 @@ function AgendaPageConteudo() {
     }
     const provisorio = somarDias(dia, delta);
     setDia(provisorio);
-    const comHorario = await buscarDiasComHorario(empresa.id, novaSegunda, somarDias(novaSegunda, 6));
+    const comHorario = await buscarDiasComHorario(empresa.id, novaSegunda, somarDias(novaSegunda, 6), empresa.soDela ? empresa.profissional?.id : undefined);
     if (comHorario.has(provisorio)) return;
     const primeiro = dias.find((d) => comHorario.has(d));
     if (primeiro) setDia((atual) => (atual === provisorio ? primeiro : atual));
@@ -406,7 +407,7 @@ function AgendaPageConteudo() {
           </p>
         ))}
         {/* Loja com mais de uma profissional: ver todas (com etiqueta) ou só a agenda de uma */}
-        {ok && variasProfissionais && (
+        {ok && variasProfissionais && !empresa.soDela && (
           <div className="mb-3 flex flex-wrap gap-2">
             {[{ id: "todas", nome: "Todas" }, ...ok.profissionais].map((p) => (
               <button
