@@ -8,7 +8,8 @@
 //   que esta resposta começou (buffer_ultima mudou). Se chegou, os balões que faltam não saem, a memória
 //   da IA fica só com o que ela recebeu de fato e, se nada saiu, as mensagens desta leva voltam para a fila:
 //   a próxima resposta (a da mensagem nova, que estava esperando a trava) responde tudo junto.
-//   Proteção: depois de 2 descartes seguidos (descartes:<tel>, 10 min) a resposta sai assim mesmo.
+//   Proteção: depois de 2 descartes seguidos (descartes:<tel>, 10 min) a resposta sai assim mesmo. Resposta em
+//   que a IA já marcou, remarcou, cancelou, trocou modalidade ou pediu algo à Gleide também sai sempre (24/11).
 //
 // Chamado pelo montar-workflow.js depois de montar o fluxo principal (as chaves do Redis seguem o padrão
 // dele e o lojas.js põe o prefixo da loja em "descartes:").
@@ -64,8 +65,11 @@ module.exports = ({ node, main, ifNode, cond, REDIS, D }) => (wf) => {
       operation: 'get', key: `=descartes:${TEL}`, propertyName: 'descartes', keyType: 'string', options: {},
     }, { credentials: REDIS, executeOnce: true, onError: 'continueRegularOutput' }),
     ifNode('Resposta velha?', [0, 0], [
-      // o get do Redis devolve só a chave lida (não soma ao item anterior): a última vem do nó que a leu
-      cond('rv1', `={{ (() => { const u = $('Resposta velha: ler fila').first().json.ultimaAgora; return !!u && u !== ${D}.msgId && Number($json.descartes || 0) < 2; })() }}`,
+      // o get do Redis devolve só a chave lida (não soma ao item anterior): a última vem do nó que a leu.
+      // Resposta que já FEZ algo (marcou, remarcou, cancelou, trocou modalidade, pediu à Gleide) sai sempre: descartada,
+      // a memória perdia a ação e a IA tentava de novo (Edilaine, 24/11: marcou 17h, esqueceu, achou o horário
+      // "ocupado" por ela mesma e disse que alguém tinha acabado de pegar; Alice: remarcou duas vezes).
+      cond('rv1', `={{ (() => { const u = $('Resposta velha: ler fila').first().json.ultimaAgora; let fez = false; try { fez = [].concat($('Agente IA').first().json.intermediateSteps || []).some((p) => /AGENDADO com sucesso|REMARCADO com sucesso|CANCELADO com sucesso|MUDADO com sucesso|ORÇAMENTO PEDIDO:|PERGUNTADO:/.test(String(p.observation || ''))); } catch (e) {} return !!u && u !== ${D}.msgId && Number($json.descartes || 0) < 2 && !fez; })() }}`,
         { type: 'boolean', operation: 'true', singleValue: true }),
     ]),
     node('Descarte: contar', 'n8n-nodes-base.redis', 1, [0, 0], {
