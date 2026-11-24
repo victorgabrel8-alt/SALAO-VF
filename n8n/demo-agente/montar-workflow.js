@@ -1040,6 +1040,8 @@ if (LOJA) {
     fs.writeFileSync(saida('workflow-rotinas.json'), JSON.stringify(rotinasWorkflow, null, 2));
   }
 }
+// foto, áudio e vídeo com modelo reserva quando o principal falha (24/11/2026); por último, depois de quem mexe no pedido
+require('./midia-reserva.js')({ workflow, ifNode, cond, modelo: MODELO_RESERVA });
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 const alertaIdFile = saida(alerta.idFile);
 if (fs.existsSync(alertaIdFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,

@@ -19,8 +19,10 @@ const REGRA = `
 VÍDEO DA CLIENTE
 - "[vídeo da cliente] …" é a descrição de um vídeo que ela mandou (o que aparece e o que ela fala). Trate como trata uma foto:
   responda ao que ela mostrou e siga a conversa. Não diga que não consegue ver vídeo.
-- "[vídeo da cliente que não consegui abrir]": o vídeo não abriu por aqui. Diga isso com naturalidade, em uma frase, e peça uma
-  foto ou que ela conte por mensagem ou áudio. Nunca deixe sem resposta e não finja que viu.`;
+- "[vídeo da cliente que não consegui abrir]": ela mandou para mostrar algo dela, então isso ganha atenção na resposta. Agradeça,
+  diga com leveza que o vídeo não abriu aqui e peça uma foto ou que ela conte o que queria mostrar, ligando ao que ela quer
+  ("Obrigada por mandar! O vídeo não abriu aqui pra mim. Consegue me mandar uma foto ou me contar o que queria mostrar?").
+  Não finja que viu e não deixe para "a ligação" ou "o dia".`;
 
 module.exports = ({ workflow, D }) => {
   const achar = (nome) => { const n = workflow.nodes.find((x) => x.name === nome); if (!n) throw new Error(`video: não achei "${nome}"`); return n; };
