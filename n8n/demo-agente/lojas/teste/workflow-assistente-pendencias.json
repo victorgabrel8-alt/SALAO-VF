@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000235",
+      "id": "00000000-0000-4000-8000-000000000250",
       "name": "A cada 1 h",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -39,7 +39,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000236",
+      "id": "00000000-0000-4000-8000-000000000251",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -73,7 +73,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000237",
+      "id": "00000000-0000-4000-8000-000000000252",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -97,7 +97,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000238",
+      "id": "00000000-0000-4000-8000-000000000253",
       "name": "Pendências novas",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -126,10 +126,11 @@
         "jsonBody": "={{ JSON.stringify({ p_horas: [12,18], p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}",
         "options": {}
       },
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000239",
+      "id": "00000000-0000-4000-8000-000000000254",
       "name": "Montar mensagem",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -138,11 +139,11 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\nif (!ps.length) return [];\n// \"Roseli de Souza\" vira \"Roseli Souza\" (antes saía \"Roseli de\")\nconst nome = (p) => (p.nome || 'cliente').split(' ').filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  // supabase/038: fechou e a aplicação ainda não está na agenda\n  if (p.tipo === 'fechou_sem_data') return p.proximo_passo\n    ? '• *' + nome(p) + '* fechou — ' + p.proximo_passo + '. O cabelo já chegou? Já dá pra marcar a aplicação?'\n    : '• *' + nome(p) + '* fechou. O que ficou combinado e quando ela volta? Se depende do cabelo: chega em quantos dias e precisa confeccionar?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst texto = ps.length === 1 ? linha(ps[0]).replace(/^• /, '') : ps.map(linha).join('\\n'); // pendencias-loja.js: só a pergunta\nconst quandoFoi = (ms) => { const d = new Date(ms - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); };\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: '[' + quandoFoi(Date.now()) + '] ' + texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst ps = $input.all().map((i) => i.json).filter((p) => p.tipo);\n// pedido-numerado.js: pergunta da IA sem resposta entra UMA vez, no 1º horário da lista (12h, 18h) que passa 30 min depois dela\nconst PEDIDOS = (() => { try {\n  const HS = [12,18];\n  const agora = Date.now(); const h = new Date(agora - 4 * 3600e3).getUTCHours();\n  if (!HS.includes(h)) return [];\n  const slot = Math.floor(agora / 3600e3) * 3600e3;\n  const antes = HS.filter((x) => x < h);\n  const anterior = antes.length ? slot - (h - antes[antes.length - 1]) * 3600e3 : slot - (h + 24 - HS[HS.length - 1]) * 3600e3;\n  return Object.values($('Pedido nº: abertos (pendências)').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => p.criado && p.criado < slot - 30 * 60e3 && p.criado >= anterior - 30 * 60e3).sort((a, b) => (a.num || 0) - (b.num || 0));\n} catch (e) { return []; } })();\nif (!ps.length && !PEDIDOS.length) return [];\n// \"Roseli de Souza\" vira \"Roseli Souza\" (antes saía \"Roseli de\")\nconst nome = (p) => (p.nome || 'cliente').split(' ').filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2).join(' ');\n// \"hoje às 18:27\", \"ontem às 18:27\" ou \"20/10 às 18:27\": sem o dia, um horário de ontem confunde\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: 'America/Cuiaba' });\nconst hora = (p) => {\n  if (!p.inicio) return '';\n  const d = new Date(p.inicio);\n  const h = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Cuiaba' });\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), dia = diaDe(d);\n  return (dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia.slice(8) + '/' + dia.slice(5, 7)) + ' às ' + h;\n};\nconst brl = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 });\nconst linha = (p) => {\n  if (p.tipo === 'avaliacao_sem_resultado') return '• Como foi a avaliação de *' + nome(p) + '* (' + hora(p) + ')? Fechou?';\n  if (p.tipo === 'atraso_confirmar') return '• *' + nome(p) + '* (' + hora(p) + ') não chegou nem respondeu. Ela está aí? *veio* ou *libera*';\n  if (p.tipo === 'atendimento_sem_status') return '• *' + nome(p) + '* (' + hora(p) + (p.servico ? ', ' + p.servico.toLowerCase() : '') + ') veio?';\n  // supabase/038: fechou e a aplicação ainda não está na agenda\n  if (p.tipo === 'fechou_sem_data') return p.proximo_passo\n    ? '• *' + nome(p) + '* fechou — ' + p.proximo_passo + '. O cabelo já chegou? Já dá pra marcar a aplicação?'\n    : '• *' + nome(p) + '* fechou. O que ficou combinado e quando ela volta? Se depende do cabelo: chega em quantos dias e precisa confeccionar?';\n  return '• *' + nome(p) + '* ficou de pensar' + (p.valor_orcado ? ' (' + brl(p.valor_orcado) + ')' : '') + '. Alguma novidade?';\n};\nconst nomeP = (p) => String(p.nome || 'cliente').split(' ').filter((w) => w && !/^(de|da|do|das|dos|e)$/i.test(w)).slice(0, 2).join(' ');\nconst linhaPedido = (p) => '• ' + (p.num ? '*#' + p.num + '* ' : '') + '*' + nomeP(p) + '* ainda espera sua resposta: ' + p.pergunta;\nconst LINHAS = ps.map(linha).concat(PEDIDOS.filter((p) => !/^AVISO/i.test(String(p.pergunta || ''))).map(linhaPedido));\nconst texto = LINHAS.length === 1 ? LINHAS[0].replace(/^• /, '') : LINHAS.join('\\n'); // pendencias-loja.js: só a pergunta; pedido-numerado.js: e os pedidos\nconst quandoFoi = (ms) => { const d = new Date(ms - 4 * 3600e3); const p = (n) => String(n).padStart(2, '0'); return ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'][d.getUTCDay()] + ' ' + p(d.getUTCDate()) + '/' + p(d.getUTCMonth() + 1) + ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); };\nconst ids = ps.map((p) => p.pendencia_id);\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  // mesma estrutura que o nó de memória do n8n grava, para o agente saber o que perguntou\n  memoria: JSON.stringify({ type: 'ai', data: { content: '[' + quandoFoi(Date.now()) + '] ' + texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000240",
+      "id": "00000000-0000-4000-8000-000000000255",
       "name": "Mandar para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -152,7 +153,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -172,7 +173,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000241",
+      "id": "00000000-0000-4000-8000-000000000256",
       "name": "Guardar na memória do agente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -194,7 +195,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000242",
+      "id": "00000000-0000-4000-8000-000000000257",
       "name": "Marcar como perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -225,6 +226,30 @@
       }
     },
     {
+      "id": "fd0d2755-af5d-4601-8549-048bd145231e",
+      "name": "Pedido nº: abertos (pendências)",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        490,
+        200
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:pedido:*",
+        "getValues": true
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
       "id": "d318fe90-80ec-4cfb-838a-af1583c635a8",
       "name": "Trava de teste: Mandar para a Caroline",
       "type": "n8n-nodes-base.if",
@@ -244,7 +269,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -275,7 +300,7 @@
       "main": [
         [
           {
-            "node": "Pendências novas",
+            "node": "Pedido nº: abertos (pendências)",
             "type": "main",
             "index": 0
           }
@@ -286,7 +311,7 @@
       "main": [
         [
           {
-            "node": "Pendências novas",
+            "node": "Pedido nº: abertos (pendências)",
             "type": "main",
             "index": 0
           }
@@ -331,6 +356,17 @@
         [
           {
             "node": "Marcar como perguntado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido nº: abertos (pendências)": {
+      "main": [
+        [
+          {
+            "node": "Pendências novas",
             "type": "main",
             "index": 0
           }

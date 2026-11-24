@@ -64,30 +64,42 @@ module.exports = ({ node, str, toolSub, main, workflow, enviarWorkflow, idFile, 
     'Registrar no CRM': main('Resposta (enviado)'),
   };
   if (link) {
-    // link do catálogo do WhatsApp: uma mensagem de texto (o WhatsApp mostra o cartão do catálogo)
+    // link do catálogo do WhatsApp: uma mensagem de texto (o WhatsApp mostra o cartão do catálogo).
+    // 20/11 (Caroline): a ferramenta mandava o link na hora, no meio da resposta, e ele chegava ANTES do "Oi Patricia,
+    // boa noite". Agora a ferramenta só avisa; o link sai pelo "Quebrar mensagens" como último balão, depois do texto
+    // da IA (e fica registrado no app como todo balão, pelo "Supabase: registrar saída").
     const texto = 'Aqui está o catálogo do studio:\n' + link;
     enviarWorkflow.name = 'Catálogo - Enviar link';
-    enviarWorkflow.nodes = enviarWorkflow.nodes.filter((n) => !['URL assinada', 'Gerou URL?', 'Enviar PDF'].includes(n.name));
-    enviarWorkflow.nodes.splice(1, 0, node('Enviar link', 'n8n-nodes-base.httpRequest', 4.2, [0, 0], {
-      method: 'POST', url: '={{ $env.EVOLUTION_URL }}/message/sendText/{{ $env.EVOLUTION_INSTANCE }}',
-      sendHeaders: true, headerParameters: { parameters: [{ name: 'apikey', value: '={{ $env.EVOLUTION_API_KEY }}' }] },
-      sendBody: true, specifyBody: 'json',
-      jsonBody: `={{ JSON.stringify({ number: ${E}.jid, text: ${JSON.stringify(texto)}, linkPreview: true, delay: 1500 }) }}`,
-      options: { timeout: 60000 },
-    }, { onError: 'continueRegularOutput', alwaysOutputData: true, retryOnFail: true, maxTries: 2, waitBetweenTries: 2000 }));
-    const reg = enviarWorkflow.nodes.find((n) => n.name === 'Registrar no CRM');
-    reg.parameters.jsonBody = reg.parameters.jsonBody.replace("p_conteudo: '📄 Catálogo em PDF enviado'", `p_conteudo: ${JSON.stringify(texto).replace(/"/g, "'")}`);
-    if (!reg.parameters.jsonBody.includes(link)) throw new Error('catalogo_link: o registro no CRM mudou');
+    enviarWorkflow.nodes = enviarWorkflow.nodes.filter((n) => ['Recebe pedido da IA', 'Resposta (enviado)'].includes(n.name));
     const ok = enviarWorkflow.nodes.find((n) => n.name === 'Resposta (enviado)').parameters.assignments.assignments[0];
-    ok.value = 'FOTOS ENVIADAS: a cliente acabou de receber o link do catálogo do studio no WhatsApp, com os serviços e fotos. NÃO repita o link nem resuma o catálogo e NÃO pergunte automaticamente de agendamento. Se a mensagem dela tiver outras perguntas, responda só essas; se não tiver, não escreva nada (resposta vazia).';
-    const falhou = enviarWorkflow.nodes.find((n) => n.name === 'Resposta (falhou)').parameters.assignments.assignments[0];
-    falhou.value = falhou.value.replace('mandar o arquivo', 'mandar o catálogo');
-    enviarWorkflow.connections = {
-      'Recebe pedido da IA': main('Enviar link'),
-      'Enviar link': main('Enviou?'),
-      'Enviou?': ramos('Registrar no CRM', 'Resposta (falhou)'),
-      'Registrar no CRM': main('Resposta (enviado)'),
-    };
+    ok.value = 'FOTOS ENVIADAS: o link do catálogo do studio vai numa mensagem logo DEPOIS da sua resposta (o sistema manda). Responda normalmente: se é o primeiro contato, cumprimente primeiro. NÃO escreva o link, NÃO resuma o catálogo e NÃO pergunte automaticamente de agendamento. Se a mensagem dela tiver outras perguntas, responda essas; se não tiver nada além do pedido do catálogo, pode não escrever nada (resposta vazia).';
+    enviarWorkflow.connections = { 'Recebe pedido da IA': main('Resposta (enviado)') };
+
+    // "Quebrar mensagens": o link sai como último balão quando a IA chamou enviar_catalogo nesta resposta
+    const q = workflow.nodes.find((n) => n.name === 'Quebrar mensagens');
+    const pedido = "passos.some(p => p.action?.tool === 'enviar_catalogo' && /FOTOS ENVIADAS/.test(JSON.stringify(p.observation || '')))";
+    const VAZIO = 'if ((audioEnviado || semTexto) && !t.replace(';
+    const FIM = '// Responder citando só quando a mensagem chegou';
+    let js = q.parameters.jsCode;
+    if (js.split(VAZIO).length !== 2 || js.split(FIM).length !== 2) throw new Error('catalogo_link: o "Quebrar mensagens" mudou');
+    js = js.replace(VAZIO, () => [
+      '// catálogo pedido e a IA não escreveu nada: sai só o link (catalogo-pdf.js)',
+      'const catalogoTexto = ' + JSON.stringify(texto) + ';',
+      'const catalogoPedido = ' + pedido + ';',
+      String.raw`if (catalogoPedido && !t.replace(/\[\d{1,2}\]/g, '').replace(/[\s😊😉.!]/gu, '')) return [{ json: { jid, texto: catalogoTexto, falhou: false, citar: '', pausa: 1.5, delay: 2500 } }];`,
+      VAZIO,
+    ].join('\n'));
+    js = js.replace(FIM, () => [
+      '// catálogo: o link vai por último, depois do cumprimento e da resposta (20/11); se a IA escreveu o link, ele sai do texto dela',
+      'if (catalogoPedido) {',
+      // o link com ou sem https/www e a frase que o apresenta logo antes ("Segue o catálogo:", "Aqui está:") saem
+      '  const reLk = new RegExp(' + JSON.stringify(String.raw`(?:[^.!?\n]*(?:cat[áa]logo|segue|aqui|link|olha)[^.!?\n:]*:[ \t]*)?(?:https?:\/\/)?(?:www\.)?wa\.me\/c\/` + link.replace(/\D/g, '') + String.raw`[.,;!]?`) + ", 'gi');",
+      String.raw`  baloes = baloes.map(b => { const s = b.t.replace(reLk, ' ').replace(/[ \t]{2,}/g, ' ').replace(/[ \t]+\n|\n[ \t]+/g, '\n').trim(); return { ...b, t: s && s !== b.t ? s.charAt(0).toUpperCase() + s.slice(1) : s }; }).filter(b => b.t);`,
+      '  baloes.push({ t: catalogoTexto, ref: 0 });',
+      '}',
+      FIM,
+    ].join('\n'));
+    q.parameters.jsCode = js;
   }
   organizar(enviarWorkflow, enviarWorkflow.name, link ? 'Chamado pelo agente (enviar_catalogo) quando a cliente pede o catálogo: manda o link do catálogo do WhatsApp do studio.'
     : 'Chamado pelo agente (enviar_catalogo) quando a cliente pede o catálogo: gera uma URL assinada do PDF no Storage e manda pela Evolution como documento.', 1);

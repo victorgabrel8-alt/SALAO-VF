@@ -69,6 +69,16 @@ module.exports = ({ node, workflow: W, assistenteWorkflow: A, ferramentasWorkflo
   trocarUma("funcao = 'n8n_assistente_ajustar_duracao';", "funcao = 'n8n_assistente_ajustar_duracao_prof';");
   // agenda do dia: cada horário diz com quem é (campo "com")
   trocarUma("funcao = 'n8n_assistente_agenda_do_dia';", "funcao = 'n8n_assistente_agenda_do_dia_prof';");
+  // 23/11/2026: os nós que decidem pelo NOME da função (ler a Google Agenda da dona; avisar que a cliente ainda não sabe da
+  // remarcação) só conheciam os nomes de antes. Desde 20/11 a assistente da Caroline não via a Google ao ver o dia, marcar
+  // ou remarcar. Aqui esses nós passam a comparar com o nome de antes.
+  const ANTES = "({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', " +
+    "n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })";
+  const nomeDeAntes = (expr) => '(' + ANTES + '[' + expr + '] || ' + expr + ')';
+  const M = "$('Montar chamada').first().json.funcao";
+  trocarNo(F, 'Precisa da Google?', '.includes(' + M + ')', '.includes(' + nomeDeAntes(M) + ')');
+  trocarNo(F, 'Resposta', M + " === 'n8n_assistente_agenda_do_dia'", nomeDeAntes(M) + " === 'n8n_assistente_agenda_do_dia'");
+  trocarNo(F, 'Resposta', M + " === 'n8n_assistente_reagendar_confirma'", nomeDeAntes(M) + " === 'n8n_assistente_reagendar_confirma'");
   // campo "profissional" chega às ferramentas: gatilho das ferramentas + ferramentas marcar_horario e reagendar
   const gat = F.nodes.find((x) => x.type.includes('executeWorkflowTrigger'));
   if (!gat || !gat.parameters.workflowInputs?.values) throw new Error('segunda-profissional-whatsapp: sem o gatilho das ferramentas');

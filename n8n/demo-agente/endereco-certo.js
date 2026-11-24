@@ -56,9 +56,12 @@ module.exports = ({ node, main, ifNode, cond, assistenteWorkflow, ferramentasWor
   assistenteWorkflow.connections['Ler feitos'] = main('Ler dados do salão');
   assistenteWorkflow.connections['Ler dados do salão'] = main('Contexto');
   const prompt = achar(assistenteWorkflow, 'Agente assistente').parameters.options;
-  const DE = 'Se perguntarem o endereço, ele está nos Dados do salão do app.';
+  // prompt inteiro (prompt-inteiro.js): a regra do endereço já está no prompt da loja; aqui entra só o dado, no lugar da marca
+  const SO_DADO = prompt.systemMessage.includes('@@ENDERECO@@');
+  const DE = SO_DADO ? '@@ENDERECO@@' : 'Se perguntarem o endereço, ele está nos Dados do salão do app.';
   if (!prompt.systemMessage.includes(DE)) throw new Error('endereco-certo: a frase do endereço no prompt da assistente mudou');
-  prompt.systemMessage = prompt.systemMessage.replace(DE, () =>
+  if (SO_DADO) prompt.systemMessage = prompt.systemMessage.replace(DE, () => "{{ (() => { let c = {}; try { c = $('Ler dados do salão').first().json.config || {}; } catch (e) {} const t = (v) => (typeof v === 'string' ? v.trim() : ''); const e = t(c.endereco), m = t((c.loja || {}).mapa); return e ? e + (m ? ' | mapa: ' + m : ' | link de mapa: não cadastrado') : 'NÃO CADASTRADO'; })() }}");
+  else prompt.systemMessage = prompt.systemMessage.replace(DE, () =>
     "ENDEREÇO DO SALÃO (do cadastro, o único que vale): {{ (() => { let c = {}; try { c = $('Ler dados do salão').first().json.config || {}; } catch (e) {} const t = (v) => (typeof v === 'string' ? v.trim() : ''); const e = t(c.endereco), m = t((c.loja || {}).mapa); return e ? e + (m ? ' | mapa: ' + m : ' | link de mapa: não cadastrado') : 'NÃO CADASTRADO'; })() }}. " +
     'Quando mandar endereço ou localização para uma cliente, use EXATAMENTE esse endereço e, se houver, o link do mapa sozinho na linha de baixo (sem escrever "| mapa:"). Nunca escreva rua, número, bairro, ponto de referência ou link de mapa que não esteja nela, nem "[link]" de enfeite: endereço inventado manda a cliente para o lugar errado. ' +
     'Sem link de mapa cadastrado, mande só o endereço escrito. Se estiver NÃO CADASTRADO, não mande endereço e diga à dona que falta preencher em Dados do salão no app.');

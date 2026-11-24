@@ -104,7 +104,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: (((() => { try { return $('Pergunta: cliente da Duda?').first().json.profissional_id; } catch (e) { return null; } })() === '195862b8-efdc-4087-a653-083fdf7e0c35') ? '5566992617636' : $('Supabase: número de alerta').first().json.alerta), text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ Pergunta ' + ((() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() ? '#' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ' ' : '') + 'da cliente ') + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor (ou o que precisa saber dela). Eu passo para ela.' : ((() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() ? '\\n\\nResponda: ' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ' sim / ' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ' não / ' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ' + o que digo a ela\\n(ou toque em Responder nesta mensagem)' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.')) }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: (((() => { try { return $('Pergunta: cliente da Duda?').first().json.profissional_id; } catch (e) { return null; } })() === '195862b8-efdc-4087-a653-083fdf7e0c35') ? '5566992617636' : $('Supabase: número de alerta').first().json.alerta), text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ ' + ((() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() ? '#' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ' ' : '')) + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor (ou o que precisa saber dela). Eu passo para ela.' : '') }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -324,7 +324,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000447",
+      "id": "00000000-0000-4000-8000-000000000458",
       "name": "Pergunta: cliente da Duda?",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -353,6 +353,34 @@
         }
       },
       "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000a91",
+      "name": "Cópia ao Victor (pergunta)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '👀 Cópia: a IA perguntou à dona\\n\\n' + ((() => { const m = ($('Enviar pergunta à Caroline').first().json || {}).message || {}; return m.conversation || (m.extendedTextMessage || {}).text || ''; })() || JSON.stringify($('Recebe pergunta da IA').first().json).slice(0, 500)) }) }}",
+        "options": {}
+      },
       "onError": "continueRegularOutput"
     }
   ],
@@ -384,6 +412,11 @@
         [
           {
             "node": "Guardar pedido",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cópia ao Victor (pergunta)",
             "type": "main",
             "index": 0
           }

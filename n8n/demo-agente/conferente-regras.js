@@ -138,7 +138,14 @@ function conferir(ctx) {
   };
 
   // ---------- 2. "reservei / agendado / remarquei / cancelei" só com a ferramenta confirmando agora ----------
-  const confirmou = (palavra) => resultados.some((r) => new RegExp('^\\s*' + palavra, 'i').test(r));
+  const textosDe = (r) => {
+    const out = [r];
+    const abrir = (v) => { if (typeof v === 'string') out.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(abrir); };
+    try { abrir(JSON.parse(r)); } catch (e) { /* texto comum */ }
+    return out;
+  };
+  // o resultado da ferramenta pode vir em JSON ('[{"resposta":"AGENDADO com sucesso..."}]', 20/11): confere cada texto de dentro
+  const confirmou = (palavra) => resultados.some((r) => textosDe(r).some((t) => new RegExp('^\\s*' + palavra, 'i').test(t)));
   // (21/11) "Reservei seu pé e mão pra amanhã, sábado, às 8h" um minuto DEPOIS de agendar: a ferramenta não rodou nesta
   // resposta, mas o horário já está na ficha ("Horário marcado: sábado, 21/11 às 08:00 — …"). Repetir o que já está
   // marcado não é promessa. Regra fechada (Conferente ligado: um "reservei" falso é pior que uma pergunta a mais): só vale
@@ -348,7 +355,14 @@ function versaoSegura(ctx, falhas) {
 
   // 2. promessa sem a ferramenta confirmar: a frase vira oferta
   if (tipos.has('promessa')) {
-    const naoFez = resultados.find((r) => /^\s*N[ÃA]O (AGENDADO|REMARCADO|CANCELADO)/i.test(r));
+    // o resultado pode vir em JSON ('[{"resposta":"NÃO AGENDADO: ..."}]'): olha cada texto de dentro
+    const textos = resultados.flatMap((r) => {
+      const out = [r];
+      const abrir = (v) => { if (typeof v === 'string') out.push(v); else if (v && typeof v === 'object') Object.values(v).forEach(abrir); };
+      try { abrir(JSON.parse(r)); } catch (e) { /* texto comum */ }
+      return out;
+    });
+    const naoFez = textos.find((r) => /^\s*N[ÃA]O (AGENDADO|REMARCADO|CANCELADO)/i.test(r));
     const acoes = falhas.filter((f) => f.tipo === 'promessa').map((f) => f.acao || 'marcar');
     const oferta = naoFez
       ? 'Esse horário ainda não ficou reservado' + (/comprovante/i.test(naoFez) ? '. Pra reservar eu preciso do print do comprovante do Pix do sinal' : '')

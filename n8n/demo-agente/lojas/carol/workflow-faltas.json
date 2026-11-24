@@ -421,7 +421,7 @@
         400
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n\nconst LOJA = \"Studio Caroline Ferreira\", DONA = \"Caroline\";\nconst DA2 = new Set($('Lembretes: horários da Duda').all().map((i) => i.json && i.json.id).filter(Boolean));\nreturn $('Lembretes para mandar').all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const comQuem = DA2.has(l.agendamento_id) ? \"Duda\" : DONA;\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\n  const texto = l.momento === 'horas_antes'\n    ? oi + ' Lembrando do seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. A agenda dela está cheia e ela não consegue esperar atraso, tá bom? Te esperamos!'\n    : oi + ' Aqui é do ' + LOJA + '. Passando para confirmar o seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. Posso confirmar a sua presença?';\n  return { json: { ...l, texto } };\n});\n"
+        "jsCode": "// lembrete-confere-google.js: horário diferente no app e na Google: a confirmação espera a dona acertar\nconst SEGURAR = new Set((() => { try { return $('Lembrete: confere a Google').first().json.segurar || []; } catch (e) { return []; } })());\n\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n\nconst LOJA = \"Studio Caroline Ferreira\", DONA = \"Caroline\";\nconst COM = new Map($('Lembretes: com quem').all().map((i) => i.json).filter((x) => x && x.id && x.profissionais && x.profissionais.nome).map((x) => [x.id, primeiro(x.profissionais.nome)]));\nreturn $('Lembretes para mandar').all().map((i) => i.json).filter((l) => l.agendamento_id && !SEGURAR.has(l.agendamento_id)).map((l) => {\n  const comQuem = COM.get(l.agendamento_id) || DONA;\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\n  const texto = l.momento === 'horas_antes'\n    ? oi + ' Lembrando do seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. A agenda dela está cheia e ela não consegue esperar atraso, tá bom? Te esperamos!'\n    : oi + ' Aqui é do ' + LOJA + '. Passando para confirmar o seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. Posso confirmar a sua presença?';\n  return { json: { ...l, texto } };\n});\n"
       }
     },
     {
@@ -1406,7 +1406,7 @@
         2600
       ],
       "parameters": {
-        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\nif (!doApp.length && !soGoogleUnicos.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*'];\nfor (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\nif (soGoogleUnicos.length) {\n  linhas.push('', 'Só na Google (ainda não estão no app):');\n  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\n// pedido-numerado.js: pergunta da IA à dona ainda sem resposta (há mais de 30 min), com o número\ntry {\n  for (const p of Object.values($('Resumo: pedidos abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === '26a5d3eb-e8e4-4ed8-b206-095095292fdd' && p.telefone && p.pergunta).filter((p) => !p.criado || Date.now() - p.criado > 30 * 60e3).sort((a, b) => (a.num || 0) - (b.num || 0)))\n    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta + (p.num ? ' (responda ' + p.num + ' + o que digo a ela)' : ''));\n} catch (e) {}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5593991144926' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\nif (!doApp.length && !soGoogleUnicos.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*'];\nfor (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\nif (soGoogleUnicos.length) {\n  linhas.push('', 'Só na Google (ainda não estão no app):');\n  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\n// pedido-numerado.js: pergunta da IA à dona ainda sem resposta (há mais de 30 min), com o número\ntry {\n  for (const p of Object.values($('Resumo: pedidos abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === '26a5d3eb-e8e4-4ed8-b206-095095292fdd' && p.telefone && p.pergunta).filter((p) => (!p.criado || Date.now() - p.criado > 30 * 60e3) && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.num || 0) - (b.num || 0)))\n    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta);\n} catch (e) {}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5593991144926' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
@@ -1465,7 +1465,7 @@
     },
     {
       "id": "00000000-0000-4000-8000-000000000446",
-      "name": "Lembretes: horários da Duda",
+      "name": "Lembretes: com quem",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
@@ -1474,7 +1474,7 @@
       ],
       "parameters": {
         "method": "GET",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id&empresa_id=eq.26a5d3eb-e8e4-4ed8-b206-095095292fdd&profissional_id=eq.195862b8-efdc-4087-a653-083fdf7e0c35&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id,profissionais(nome)&empresa_id=eq.26a5d3eb-e8e4-4ed8-b206-095095292fdd&profissional_id=not.is.null&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1650,6 +1650,275 @@
       "onError": "continueRegularOutput"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000447",
+      "name": "Lembrete: config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        660
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000448",
+      "name": "Lembrete: links",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        660
+      ],
+      "parameters": {
+        "jsCode": "const links = [].concat($input.first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nreturn links.length ? links.map((url) => ({ json: { url } })) : [{ json: { url: '' } }];"
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000449",
+      "name": "Lembrete: ler Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        660
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url || 'https://calendar.google.com/sem-agenda' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000450",
+      "name": "Lembrete: agenda do app",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        660
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=cliente_id,inicio,clientes(nome)&empresa_id=eq.{{ '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }}&status=eq.agendado&inicio=gte.{{ $now.minus({ days: 4 }).toUTC().toISO() }}&inicio=lt.{{ $now.plus({ days: 8 }).toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000451",
+      "name": "Lembrete: confere a Google",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        660
+      ],
+      "parameters": {
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst lembretes = $('Lembretes para mandar').all().map((i) => i.json).filter((l) => l && l.agendamento_id);\nconst respostas = (() => { try { return $('Lembrete: ler Google').all().map((i) => i.json); } catch (e) { return []; } })();\nconst lida = respostas.length > 0 && respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'));\nif (!lembretes.length || !lida) return [{ json: { segurar: [], avisos: [], google: lida } }];\nconst eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([a, , , todo]) => !todo);\nconst doApp = (() => { try { return $('Lembrete: agenda do app').all().map((i) => i.json).filter((x) => x && x.cliente_id && x.inicio); } catch (e) { return []; } })();\nconst nomeDoApp = (x) => (x.clientes && x.clientes.nome) || '';\n// \"Polly\" = \"Poly\", \"Lorrany\" = \"Lorranny\": sem acento, sem letra dobrada, só palavras\nconst palavras = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ')\n  .replace(/([a-z])\\1+/g, '$1').trim().split(' ').filter((w) => w.length >= 2 && !['de', 'da', 'do', 'das', 'dos'].includes(w));\nconst mesmoNome = (cliente, titulo) => { const c = palavras(cliente), t = palavras(titulo); if (!c.length || c[0].length < 3) return false;\n  const i = t.indexOf(c[0]); if (i < 0) return false; return !(c[1] && t[i + 1] && t[i + 1].slice(0, 3) !== c[1].slice(0, 3)); };\nconst perto = (a, b) => Math.abs(a.diff(b, 'minutes').minutes) <= 30;\nconst dia = (d) => ['', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'][d.weekday] + ' ' + d.toFormat(\"dd/LL 'às' HH:mm\");\nconst numeros = ('5593991144926' || '5593991144926').split(',').map(s => s.trim()).filter(Boolean);\nconst segurar = [], avisos = [];\nfor (const l of lembretes) {\n  const ini = DateTime.fromISO(l.inicio).setZone(TZ);\n  const meus = doApp.filter((x) => x.cliente_id === l.cliente_id).map((x) => DateTime.fromISO(x.inicio).setZone(TZ));\n  const daGoogle = eventos.filter(([a, , titulo]) => mesmoNome(l.nome, titulo) && a >= ini.startOf('day').minus({ days: 2 }) && a < ini.startOf('day').plus({ days: 3 }));\n  if (!daGoogle.length || daGoogle.some(([a]) => perto(a, ini))) continue;\n  // evento da Google que é outro horário dela no app, ou horário de outra cliente do app com esse nome: já está explicado\n  const sobra = daGoogle.filter(([a, , titulo]) => !meus.some((m) => perto(a, m)) &&\n    !doApp.some((x) => x.cliente_id !== l.cliente_id && mesmoNome(nomeDoApp(x), titulo) && perto(a, DateTime.fromISO(x.inicio).setZone(TZ))));\n  if (!sobra.length) continue;\n  segurar.push(l.agendamento_id);\n  const nome = String(l.nome || 'cliente').trim().split(/\\s+/).slice(0, 2).join(' ');\n  const texto = '⚠️ Não mandei a confirmação da *' + nome + '*: no app ela está ' + dia(ini) + (l.servico ? ' (' + String(l.servico).toLowerCase() + ')' : '') +\n    ', e na sua Google Agenda está ' + sobra.map(([a, , t]) => dia(a) + ' (\"' + String(t).trim() + '\")').join(' e ') + '.\\n' +\n    'Qual é o certo? Acerte o que estiver errado (no app eu acerto se você me disser). Se os dois estão certos (são dois horários), ponha este do app também na Google. Com os dois iguais, a confirmação sai sozinha.';\n  const memoria = JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } });\n  for (const tel of numeros) avisos.push({ tel, texto, memoria, chave: 'lembrete_segurado:' + l.agendamento_id + ':' + ini.toFormat(\"yyyyLLdd'T'HHmm\") + ':' + tel });\n}\nreturn [{ json: { segurar, avisos, google: true } }];\n"
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000452",
+      "name": "Lembrete segurado: avisos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1940,
+        880
+      ],
+      "parameters": {
+        "jsCode": "return ($input.first().json.avisos || []).map((a) => ({ json: a }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000453",
+      "name": "Lembrete segurado: já avisei?",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        880
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $json.chave }}",
+        "propertyName": "avisado",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000454",
+      "name": "Lembrete segurado: novo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2380,
+        880
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ls1",
+              "leftValue": "={{ !$json.error && !$json.avisado && !!$json.tel }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000455",
+      "name": "Avisar a Caroline (lembrete segurado)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        880
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Lembrete segurado: avisos').item.json.tel, text: $('Lembrete segurado: avisos').item.json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000456",
+      "name": "Lembrete segurado: anotar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2820,
+        880
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $('Lembrete segurado: avisos').item.json.chave }}",
+        "value": "1",
+        "expire": true,
+        "ttl": 86400
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000457",
+      "name": "Lembrete segurado: memória",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        880
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=carol:assistente:{{ $('Lembrete segurado: avisos').item.json.tel }}",
+        "messageData": "={{ $('Lembrete segurado: avisos').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
       "id": "e16bd1fe-6d3a-405e-8e1a-3248586f6a0c",
       "name": "Resumo: pedidos abertos",
       "type": "n8n-nodes-base.redis",
@@ -1792,7 +2061,7 @@
       "main": [
         [
           {
-            "node": "Lembretes: horários da Duda",
+            "node": "Lembretes: com quem",
             "type": "main",
             "index": 0
           }
@@ -2244,11 +2513,11 @@
         ]
       ]
     },
-    "Lembretes: horários da Duda": {
+    "Lembretes: com quem": {
       "main": [
         [
           {
-            "node": "Mensagem do lembrete",
+            "node": "Lembrete: config",
             "type": "main",
             "index": 0
           }
@@ -2293,6 +2562,122 @@
         [
           {
             "node": "Registrar voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: config": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: links": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: ler Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: ler Google": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: agenda do app",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: agenda do app": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: confere a Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: confere a Google": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do lembrete",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lembrete segurado: avisos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: avisos": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: já avisei?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: já avisei?": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: novo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: novo?": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Caroline (lembrete segurado)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Avisar a Caroline (lembrete segurado)": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: anotar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: anotar": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: memória",
             "type": "main",
             "index": 0
           }

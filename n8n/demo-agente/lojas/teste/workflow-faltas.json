@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000243",
+      "id": "00000000-0000-4000-8000-000000000258",
       "name": "A cada 5 min",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
@@ -38,7 +38,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000244",
+      "id": "00000000-0000-4000-8000-000000000259",
       "name": "Horário do salão?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -72,7 +72,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000245",
+      "id": "00000000-0000-4000-8000-000000000260",
       "name": "Disparar agora (teste)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -96,7 +96,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000246",
+      "id": "00000000-0000-4000-8000-000000000261",
       "name": "Faltas para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -128,7 +128,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000247",
+      "id": "00000000-0000-4000-8000-000000000262",
       "name": "Mensagem da falta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -141,7 +141,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000248",
+      "id": "00000000-0000-4000-8000-000000000263",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -151,7 +151,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -172,7 +172,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000249",
+      "id": "00000000-0000-4000-8000-000000000264",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -206,7 +206,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000250",
+      "id": "00000000-0000-4000-8000-000000000265",
       "name": "Registrar chamada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -238,7 +238,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000251",
+      "id": "00000000-0000-4000-8000-000000000266",
       "name": "Atrasos para chamar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -270,7 +270,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000252",
+      "id": "00000000-0000-4000-8000-000000000267",
       "name": "Mensagem do atraso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -283,7 +283,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000253",
+      "id": "00000000-0000-4000-8000-000000000268",
       "name": "Chamar a atrasada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -293,7 +293,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -314,7 +314,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000254",
+      "id": "00000000-0000-4000-8000-000000000269",
       "name": "Chamou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -348,7 +348,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000255",
+      "id": "00000000-0000-4000-8000-000000000270",
       "name": "Registrar chamada do atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -380,7 +380,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000256",
+      "id": "00000000-0000-4000-8000-000000000271",
       "name": "Lembretes para mandar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -412,7 +412,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000257",
+      "id": "00000000-0000-4000-8000-000000000272",
       "name": "Mensagem do lembrete",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -421,11 +421,11 @@
         400
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n\nconst LOJA = \"Loja Teste\", DONA = \"Caroline\";\nreturn $input.all().map((i) => i.json).filter((l) => l.agendamento_id).map((l) => {\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\n  const texto = l.momento === 'horas_antes'\n    ? oi + ' Lembrando do seu horário com a ' + DONA + ' ' + quando(l.inicio) + '. A agenda dela está cheia e ela não consegue esperar atraso, tá bom? Te esperamos!'\n    : oi + ' Aqui é do ' + LOJA + '. Passando para confirmar o seu horário com a ' + DONA + ' ' + quando(l.inicio) + '. Posso confirmar a sua presença?';\n  return { json: { ...l, texto } };\n});\n"
+        "jsCode": "// lembrete-confere-google.js: horário diferente no app e na Google: a confirmação espera a dona acertar\nconst SEGURAR = new Set((() => { try { return $('Lembrete: confere a Google').first().json.segurar || []; } catch (e) { return []; } })());\n\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n\nconst LOJA = \"Loja Teste\", DONA = \"Caroline\";\nconst COM = new Map($('Lembretes: com quem').all().map((i) => i.json).filter((x) => x && x.id && x.profissionais && x.profissionais.nome).map((x) => [x.id, primeiro(x.profissionais.nome)]));\nreturn $('Lembretes para mandar').all().map((i) => i.json).filter((l) => l.agendamento_id && !SEGURAR.has(l.agendamento_id)).map((l) => {\n  const comQuem = COM.get(l.agendamento_id) || DONA;\n  const nome = primeiro(l.nome);\n  const oi = 'Oi' + (nome ? ', ' + nome : '') + '!';\n  const texto = l.momento === 'horas_antes'\n    ? oi + ' Lembrando do seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. A agenda dela está cheia e ela não consegue esperar atraso, tá bom? Te esperamos!'\n    : oi + ' Aqui é do ' + LOJA + '. Passando para confirmar o seu horário com a ' + comQuem + ' ' + quando(l.inicio) + '. Posso confirmar a sua presença?';\n  return { json: { ...l, texto } };\n});\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000258",
+      "id": "00000000-0000-4000-8000-000000000273",
       "name": "Lembrar a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -435,7 +435,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -463,7 +463,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000259",
+      "id": "00000000-0000-4000-8000-000000000274",
       "name": "Lembrou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -497,7 +497,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000260",
+      "id": "00000000-0000-4000-8000-000000000275",
       "name": "Registrar lembrete",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -529,7 +529,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000261",
+      "id": "00000000-0000-4000-8000-000000000276",
       "name": "Atrasos para confirmar",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -561,7 +561,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000262",
+      "id": "00000000-0000-4000-8000-000000000277",
       "name": "Mensagem veio ou libera",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -570,11 +570,11 @@
         600
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000263",
+      "id": "00000000-0000-4000-8000-000000000278",
       "name": "Perguntar à Caroline (atraso)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -584,7 +584,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -604,7 +604,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000264",
+      "id": "00000000-0000-4000-8000-000000000279",
       "name": "Guardar pergunta do atraso",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -626,7 +626,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000265",
+      "id": "00000000-0000-4000-8000-000000000280",
       "name": "Marcar atraso perguntado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -658,7 +658,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000266",
+      "id": "00000000-0000-4000-8000-000000000281",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -690,7 +690,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000267",
+      "id": "00000000-0000-4000-8000-000000000282",
       "name": "Mensagem do conflito",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -699,11 +699,11 @@
         800
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst cs = $input.all().map((i) => i.json).filter((c) => c.contato_id);\nif (!cs.length) return [];\nconst n = (s) => '*' + (s || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\nconst texto = cs.map((c) => '⚠️ ' + n(c.nome_atrasada) + ' (' + quando(c.horario_atrasada) + ') apareceu, mas ' + n(c.nome_adiantou) +\n  ' já adiantou para ' + quando(c.novo_horario) + '. As duas estão no mesmo horário: como quer resolver?').join('\\n');\nconst itens = cs.map((c) => ({ id: c.contato_id, situacao: 'conflito' }));\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst cs = $input.all().map((i) => i.json).filter((c) => c.contato_id);\nif (!cs.length) return [];\nconst n = (s) => '*' + (s || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\nconst texto = cs.map((c) => '⚠️ ' + n(c.nome_atrasada) + ' (' + quando(c.horario_atrasada) + ') apareceu, mas ' + n(c.nome_adiantou) +\n  ' já adiantou para ' + quando(c.novo_horario) + '. As duas estão no mesmo horário: como quer resolver?').join('\\n');\nconst itens = cs.map((c) => ({ id: c.contato_id, situacao: 'conflito' }));\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000268",
+      "id": "00000000-0000-4000-8000-000000000283",
       "name": "Avisar a Caroline (conflito)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -713,7 +713,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -733,7 +733,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000269",
+      "id": "00000000-0000-4000-8000-000000000284",
       "name": "Guardar aviso do conflito",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -755,7 +755,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000270",
+      "id": "00000000-0000-4000-8000-000000000285",
       "name": "Marcar conflito avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -788,7 +788,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000271",
+      "id": "00000000-0000-4000-8000-000000000286",
       "name": "Vagas para oferecer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -820,7 +820,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000272",
+      "id": "00000000-0000-4000-8000-000000000287",
       "name": "Mensagem da vaga",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -833,7 +833,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000273",
+      "id": "00000000-0000-4000-8000-000000000288",
       "name": "Oferecer para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -843,7 +843,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -864,7 +864,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000274",
+      "id": "00000000-0000-4000-8000-000000000289",
       "name": "Ofereceu?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -898,7 +898,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000275",
+      "id": "00000000-0000-4000-8000-000000000290",
       "name": "Registrar oferta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -930,7 +930,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000276",
+      "id": "00000000-0000-4000-8000-000000000291",
       "name": "Mudanças da IA",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -962,7 +962,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000277",
+      "id": "00000000-0000-4000-8000-000000000292",
       "name": "Mensagem da mudança",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -971,11 +971,11 @@
         1200
       ],
       "parameters": {
-        "jsCode": "\nconst ms = $input.all().map((i) => i.json).filter((m) => m.mudanca_id);\nif (!ms.length) return [];\nconst linha = (m) => {\n  const n = '*' + (m.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  const serv = m.servico ? ' (' + m.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '';\n  if (m.tipo === 'mudou_modalidade') return '🔁 ' + n + ' mudou a avaliação de ' + m.de_texto + ' para *' + m.para_texto + '*.';\n  return m.tipo === 'cancelou'\n    ? '❌ ' + n + ' cancelou o horário de ' + m.de_texto + serv + '.'\n    : '📅 ' + n + ' mudou o horário de ' + m.de_texto + ' para *' + m.para_texto + '*' + serv + '.';\n};\nconst texto = ms.map(linha).join('\\n');\nconst ids = ms.map((m) => m.mudanca_id);\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst ms = $input.all().map((i) => i.json).filter((m) => m.mudanca_id);\nif (!ms.length) return [];\nconst linha = (m) => {\n  const n = '*' + (m.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  const serv = m.servico ? ' (' + m.servico.toLowerCase().replace(/\\s*[–-]\\s*mão de obra$/, '') + ')' : '';\n  if (m.tipo === 'mudou_modalidade') return '🔁 ' + n + ' mudou a avaliação de ' + m.de_texto + ' para *' + m.para_texto + '*.';\n  return m.tipo === 'cancelou'\n    ? '❌ ' + n + ' cancelou o horário de ' + m.de_texto + serv + '.'\n    : '📅 ' + n + ' mudou o horário de ' + m.de_texto + ' para *' + m.para_texto + '*' + serv + '.';\n};\nconst texto = ms.map(linha).join('\\n');\nconst ids = ms.map((m) => m.mudanca_id);\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000278",
+      "id": "00000000-0000-4000-8000-000000000293",
       "name": "Avisar a mudança",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -985,7 +985,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1006,7 +1006,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000279",
+      "id": "00000000-0000-4000-8000-000000000294",
       "name": "Avisou a mudança?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -1040,7 +1040,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000280",
+      "id": "00000000-0000-4000-8000-000000000295",
       "name": "Guardar a mudança na memória",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1063,7 +1063,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000281",
+      "id": "00000000-0000-4000-8000-000000000296",
       "name": "Marcar mudança avisada",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1096,7 +1096,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000282",
+      "id": "00000000-0000-4000-8000-000000000297",
       "name": "Avisos para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1128,7 +1128,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000283",
+      "id": "00000000-0000-4000-8000-000000000298",
       "name": "Mensagem do aviso",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1137,11 +1137,11 @@
         1400
       ],
       "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n// Falta sem resposta não vai para a Caroline (pedido do Victor, 14/11/2026): chamar a cliente é papel da IA.\n// Ela fica só anotada (nó \"Faltas sem resposta\") para a campanha de trazer clientes de volta.\nconst as = $input.all().map((i) => i.json).filter((a) => a.contato_id && !(a.tipo === 'falta' && a.situacao === 'sem_resposta'));\nif (!as.length) return [];\nconst linha = (a) => {\n  const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  if (a.situacao === 'remarcou') {\n    const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';\n    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';\n    return a.tipo === 'falta'\n      ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'\n      : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';\n  }\n  return '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + ').'; // sem \"Quer chamar você mesma?\" (Victor, 14/11/2026): chamar cliente é papel da IA\n};\nconst texto = as.map(linha).join('\\n');\nconst itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));\nconst numeros = ('5500000000001' || '5500000000001').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens,\n  // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a Caroline responder\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\n// Falta sem resposta não vai para a Caroline (pedido do Victor, 14/11/2026): chamar a cliente é papel da IA.\n// Ela fica só anotada (nó \"Faltas sem resposta\") para a campanha de trazer clientes de volta.\nconst as = $input.all().map((i) => i.json).filter((a) => a.contato_id && !(a.tipo === 'falta' && a.situacao === 'sem_resposta'));\nif (!as.length) return [];\nconst linha = (a) => {\n  const n = '*' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '*';\n  if (a.situacao === 'remarcou') {\n    const novo = a.novo_horario ? ' para *' + quando(a.novo_horario) + '*' : '';\n    if (a.tipo === 'vaga') return '⏩ ' + n + ' adiantou: saiu de ' + quando(a.horario_original) + novo + ' (vaga que abriu).';\n    return a.tipo === 'falta'\n      ? '✅ Remarquei ' + n + ' (faltou ' + quando(a.horario_original) + ')' + novo + '.'\n      : '✅ ' + n + ' remarcou o horário de ' + quando(a.horario_original) + novo + '.';\n  }\n  return '⚠️ ' + n + ' não respondeu ao pedido de remarcação (' + quando(a.horario_original) + ').'; // sem \"Quer chamar você mesma?\" (Victor, 14/11/2026): chamar cliente é papel da IA\n};\nconst texto = as.map(linha).join('\\n');\nconst itens = as.map((a) => ({ id: a.contato_id, situacao: a.situacao }));\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, itens,\n  // mesma estrutura que o nó de memória do n8n grava: a assistente sabe o que avisou se a Caroline responder\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000284",
+      "id": "00000000-0000-4000-8000-000000000299",
       "name": "Mandar para a Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1151,7 +1151,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1171,7 +1171,7 @@
       "waitBetweenTries": 3000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000285",
+      "id": "00000000-0000-4000-8000-000000000300",
       "name": "Guardar na memória da assistente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -1193,7 +1193,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000286",
+      "id": "00000000-0000-4000-8000-000000000301",
       "name": "Marcar avisado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1226,7 +1226,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000287",
+      "id": "00000000-0000-4000-8000-000000000302",
       "name": "Faltas sem resposta",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -1239,7 +1239,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000288",
+      "id": "00000000-0000-4000-8000-000000000303",
       "name": "Anotar falta sem resposta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -1406,7 +1406,7 @@
         2600
       ],
       "parameters": {
-        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\nif (!doApp.length && !soGoogleUnicos.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*'];\nfor (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\nif (soGoogleUnicos.length) {\n  linhas.push('', 'Só na Google (ainda não estão no app):');\n  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5500000000001' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst NL = String.fromCharCode(10);\nconst dia = DateTime.now().setZone(TZ).plus({ days: 1 }).startOf('day'), fimDia = dia.plus({ days: 1 });\nconst hh = (d) => d.toFormat('HH:mm');\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, '');\nconst parecido = (a, b) => { a = primeiro(a); b = primeiro(b); return !!a && !!b && (a === b || a.slice(0, 4) === b.slice(0, 4)); };\n\n// app\nconst doApp = $('Resumo: agenda de amanhã').all().map((i) => i.json).filter((a) => a && a.inicio)\n  .map((a) => ({ ini: DateTime.fromISO(a.inicio).setZone(TZ), fim: a.fim ? DateTime.fromISO(a.fim).setZone(TZ) : null,\n    nome: (a.clientes && a.clientes.nome) || 'sem nome', servico: (a.servicos && a.servicos.nome) || '',\n    semServico: !(a.servicos && a.servicos.nome) || /não confirmado/i.test(a.observacoes || '') }))\n  .sort((x, y) => x.ini - y.ini);\n\n// Google Agenda da dona (se a loja tiver o link)\nlet google = [], googleFalhou = false;\ntry {\n  const links = [].concat($('Resumo: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\n  if (links.length) {\n    const respostas = $('Resumo: ler Google').all().map((i) => i.json);\n    if (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'))) googleFalhou = true;\n    else google = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y, t, todo]) => !todo && x >= dia && x < fimDia).sort((p, q) => p[0] - q[0]).map(([x, y, t]) => ({ ini: x, titulo: t }));\n  }\n} catch (e) { googleFalhou = true; }\n// só na Google = não há ninguém no app na mesma hora com nome parecido\nconst soGoogle = google.filter((g) => !doApp.some((a) => Math.abs(a.ini.diff(g.ini, 'minutes').minutes) < 31 && parecido(a.nome, g.titulo)));\n// evento repetido na Google (mesmo nome e hora) conta uma vez\nconst vistos = new Set();\nconst soGoogleUnicos = soGoogle.filter((g) => { const k = hh(g.ini) + primeiro(g.titulo); if (vistos.has(k)) return false; vistos.add(k); return true; });\n\nif (!doApp.length && !soGoogleUnicos.length) return [];\n\nconst curto = (n) => { const p = String(n).trim().split(/\\s+/); return p.slice(0, /^(d[aeo]s?|e)$/i.test(p[1] || '') ? 3 : 2).join(' '); };\nconst linhas = ['📋 *Agenda de amanhã, ' + dia.setLocale('pt-BR').toFormat(\"cccc dd/LL\") + '*'];\nfor (const a of doApp) linhas.push(hh(a.ini) + (a.fim ? '–' + hh(a.fim) : '') + '  ' + curto(a.nome) + ' — ' + (a.servico || 'serviço?') + (a.semServico && a.servico ? ' (não confirmado)' : ''));\nif (soGoogleUnicos.length) {\n  linhas.push('', 'Só na Google (ainda não estão no app):');\n  for (const g of soGoogleUnicos) linhas.push(hh(g.ini) + '  ' + g.titulo);\n}\nconst faltas = [];\nconst semServ = doApp.filter((a) => a.semServico);\nif (semServ.length) faltas.push('• Qual o serviço de: ' + semServ.map((a) => curto(a.nome) + ' (' + hh(a.ini) + ')').join(', ') + '?');\nif (soGoogleUnicos.length) faltas.push('• Das que estão só na Google, me manda o contato e o serviço que eu passo pro app.');\nfor (let i = 1; i < doApp.length; i++) {\n  const antes = doApp[i - 1], a = doApp[i];\n  // até 15 min de encaixe é o jeito dela trabalhar (uma atrás da outra): só avisa acima disso\n  if (antes.fim && antes.fim.diff(a.ini, 'minutes').minutes > 15) faltas.push('• ⚠️ ' + curto(a.nome) + ' começa às ' + hh(a.ini) + ' e ' + curto(antes.nome) + ' só termina às ' + hh(antes.fim) + '. É isso mesmo?');\n}\n// pedido-numerado.js: pergunta da IA à dona ainda sem resposta (há mais de 30 min), com o número\ntry {\n  for (const p of Object.values($('Resumo: pedidos abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => (!p.criado || Date.now() - p.criado > 30 * 60e3) && !/^AVISO/i.test(String(p.pergunta || ''))).sort((a, b) => (a.num || 0) - (b.num || 0)))\n    faltas.push('• ' + (p.num ? '#' + p.num + ' ' : '') + curto(p.nome || 'cliente') + ' ainda espera sua resposta: ' + p.pergunta);\n} catch (e) {}\nif (googleFalhou) faltas.push('• Não consegui ler a sua Google Agenda agora: pode ter cliente lá que não está nesta lista.');\nif (faltas.length) linhas.push('', '*Falta acertar:*', ...faltas, '', 'Me responde por aqui que eu acerto.');\nelse linhas.push('', 'Está tudo completo. Se mudar algo, me fala.');\nconst texto = linhas.join(NL);\nconst numeros = ('5566999270860' || '').split(',').map((s) => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto,\n  memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
       }
     },
     {
@@ -1420,7 +1420,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -1464,6 +1464,485 @@
       "onError": "continueRegularOutput"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000446",
+      "name": "Lembretes: com quem",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        600
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id,profissionais(nome)&empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&profissional_id=not.is.null&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "334d144f-7551-4db7-8b52-87078c92222d",
+      "name": "Vouchers para mandar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_vouchers_para_mandar",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "c59c75e8-e3f7-41a1-8740-6ae5bfa8a7b6",
+      "name": "Mensagem do voucher",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        820,
+        180
+      ],
+      "parameters": {
+        "jsCode": "\nconst primeiro = (n) => { const p = String(n || '').trim().split(/\\s+/)[0] || ''; return /^\\p{L}[\\p{L}'-]*$/u.test(p) ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : ''; };\nconst ddmm = (d) => { const m = String(d || '').match(/^(\\d{4})-(\\d{2})-(\\d{2})/); return m ? m[3] + '/' + m[2] : ''; };\nconst reais = (v) => 'R$ ' + Number(v || 20).toLocaleString('pt-BR', { maximumFractionDigits: 2 });\nreturn $input.all().map((i) => i.json).filter((v) => v.voucher_id && v.codigo && v.telefone).map((v) => {\n  const nome = primeiro(v.nome);\n  const ate = ddmm(v.valido_ate);\n  const texto = 'Oi' + (nome ? ' ' + nome : '') + ', obrigada pela visita 🙏 Você ganhou um voucher de ' + reais(v.valor) +\n    ' pro seu próximo serviço aqui, é só mostrar o código ' + v.codigo + '.' + (ate ? ' Vale até ' + ate + '.' : '');\n  return { json: { ...v, texto } };\n});\n"
+      }
+    },
+    {
+      "id": "d1b45fa1-f7d5-4800-84d2-7301d2acad7e",
+      "name": "Mandar o voucher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1040,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $json.telefone, text: $json.texto, delay: 2000 + Math.floor(Math.random() * 2000) }) }}",
+        "options": {
+          "batching": {
+            "batch": {
+              "batchSize": 1,
+              "batchInterval": 8000
+            }
+          }
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "0b3f6671-e7ad-4dae-855a-c7f16c67ccf4",
+      "name": "Mandou o voucher?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1260,
+        180
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vg1",
+              "leftValue": "={{ !!$json.key?.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e22486ae-ba2f-40b6-8fa5-7f642922b494",
+      "name": "Registrar voucher",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1480,
+        180
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_voucher_enviado",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_voucher_id: $('Mensagem do voucher').item.json.voucher_id, p_mensagem: $('Mensagem do voucher').item.json.texto, p_wa_message_id: $json.key.id }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000447",
+      "name": "Lembrete: config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        660
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000448",
+      "name": "Lembrete: links",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1060,
+        660
+      ],
+      "parameters": {
+        "jsCode": "const links = [].concat($input.first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nreturn links.length ? links.map((url) => ({ json: { url } })) : [{ json: { url: '' } }];"
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000449",
+      "name": "Lembrete: ler Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1280,
+        660
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $json.url || 'https://calendar.google.com/sem-agenda' }}",
+        "options": {
+          "timeout": 15000,
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "outputPropertyName": "data"
+            }
+          }
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000450",
+      "name": "Lembrete: agenda do app",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        660
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=cliente_id,inicio,clientes(nome)&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&status=eq.agendado&inicio=gte.{{ $now.minus({ days: 4 }).toUTC().toISO() }}&inicio=lt.{{ $now.plus({ days: 8 }).toUTC().toISO() }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "executeOnce": true,
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000451",
+      "name": "Lembrete: confere a Google",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1720,
+        660
+      ],
+      "parameters": {
+        "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro && b < a.plus({ minutes: 90 })) b = a.plus({ minutes: 90 });\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst TZ = 'America/Cuiaba';\nconst lembretes = $('Lembretes para mandar').all().map((i) => i.json).filter((l) => l && l.agendamento_id);\nconst respostas = (() => { try { return $('Lembrete: ler Google').all().map((i) => i.json); } catch (e) { return []; } })();\nconst lida = respostas.length > 0 && respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR'));\nif (!lembretes.length || !lida) return [{ json: { segurar: [], avisos: [], google: lida } }];\nconst eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([a, , , todo]) => !todo);\nconst doApp = (() => { try { return $('Lembrete: agenda do app').all().map((i) => i.json).filter((x) => x && x.cliente_id && x.inicio); } catch (e) { return []; } })();\nconst nomeDoApp = (x) => (x.clientes && x.clientes.nome) || '';\n// \"Polly\" = \"Poly\", \"Lorrany\" = \"Lorranny\": sem acento, sem letra dobrada, só palavras\nconst palavras = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z]+/g, ' ')\n  .replace(/([a-z])\\1+/g, '$1').trim().split(' ').filter((w) => w.length >= 2 && !['de', 'da', 'do', 'das', 'dos'].includes(w));\nconst mesmoNome = (cliente, titulo) => { const c = palavras(cliente), t = palavras(titulo); if (!c.length || c[0].length < 3) return false;\n  const i = t.indexOf(c[0]); if (i < 0) return false; return !(c[1] && t[i + 1] && t[i + 1].slice(0, 3) !== c[1].slice(0, 3)); };\nconst perto = (a, b) => Math.abs(a.diff(b, 'minutes').minutes) <= 30;\nconst dia = (d) => ['', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb', 'dom'][d.weekday] + ' ' + d.toFormat(\"dd/LL 'às' HH:mm\");\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nconst segurar = [], avisos = [];\nfor (const l of lembretes) {\n  const ini = DateTime.fromISO(l.inicio).setZone(TZ);\n  const meus = doApp.filter((x) => x.cliente_id === l.cliente_id).map((x) => DateTime.fromISO(x.inicio).setZone(TZ));\n  const daGoogle = eventos.filter(([a, , titulo]) => mesmoNome(l.nome, titulo) && a >= ini.startOf('day').minus({ days: 2 }) && a < ini.startOf('day').plus({ days: 3 }));\n  if (!daGoogle.length || daGoogle.some(([a]) => perto(a, ini))) continue;\n  // evento da Google que é outro horário dela no app, ou horário de outra cliente do app com esse nome: já está explicado\n  const sobra = daGoogle.filter(([a, , titulo]) => !meus.some((m) => perto(a, m)) &&\n    !doApp.some((x) => x.cliente_id !== l.cliente_id && mesmoNome(nomeDoApp(x), titulo) && perto(a, DateTime.fromISO(x.inicio).setZone(TZ))));\n  if (!sobra.length) continue;\n  segurar.push(l.agendamento_id);\n  const nome = String(l.nome || 'cliente').trim().split(/\\s+/).slice(0, 2).join(' ');\n  const texto = '⚠️ Não mandei a confirmação da *' + nome + '*: no app ela está ' + dia(ini) + (l.servico ? ' (' + String(l.servico).toLowerCase() + ')' : '') +\n    ', e na sua Google Agenda está ' + sobra.map(([a, , t]) => dia(a) + ' (\"' + String(t).trim() + '\")').join(' e ') + '.\\n' +\n    'Qual é o certo? Acerte o que estiver errado (no app eu acerto se você me disser). Se os dois estão certos (são dois horários), ponha este do app também na Google. Com os dois iguais, a confirmação sai sozinha.';\n  const memoria = JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } });\n  for (const tel of numeros) avisos.push({ tel, texto, memoria, chave: 'lembrete_segurado:' + l.agendamento_id + ':' + ini.toFormat(\"yyyyLLdd'T'HHmm\") + ':' + tel });\n}\nreturn [{ json: { segurar, avisos, google: true } }];\n"
+      },
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000452",
+      "name": "Lembrete segurado: avisos",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1940,
+        880
+      ],
+      "parameters": {
+        "jsCode": "return ($input.first().json.avisos || []).map((a) => ({ json: a }));"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000453",
+      "name": "Lembrete segurado: já avisei?",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        880
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "={{ $json.chave }}",
+        "propertyName": "avisado",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000454",
+      "name": "Lembrete segurado: novo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2380,
+        880
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ls1",
+              "leftValue": "={{ !$json.error && !$json.avisado && !!$json.tel }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000455",
+      "name": "Avisar a Caroline (lembrete segurado)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2600,
+        880
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: $('Lembrete segurado: avisos').item.json.tel, text: $('Lembrete segurado: avisos').item.json.texto }) }}",
+        "options": {}
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 3000,
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000456",
+      "name": "Lembrete segurado: anotar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2820,
+        880
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $('Lembrete segurado: avisos').item.json.chave }}",
+        "value": "1",
+        "expire": true,
+        "ttl": 86400
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000457",
+      "name": "Lembrete segurado: memória",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        3040,
+        880
+      ],
+      "parameters": {
+        "operation": "push",
+        "list": "=teste:assistente:{{ $('Lembrete segurado: avisos').item.json.tel }}",
+        "messageData": "={{ $('Lembrete segurado: avisos').item.json.memoria }}",
+        "tail": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      }
+    },
+    {
+      "id": "e16bd1fe-6d3a-405e-8e1a-3248586f6a0c",
+      "name": "Resumo: pedidos abertos",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1070,
+        2800
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:pedido:*",
+        "getValues": true
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
       "id": "c3d42bb0-f464-4cd8-8b92-f9c62bcd1624",
       "name": "Trava de teste: Mandar para a cliente",
       "type": "n8n-nodes-base.if",
@@ -1483,7 +1962,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1517,7 +1996,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1551,7 +2030,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1585,7 +2064,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1619,7 +2098,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1653,7 +2132,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1687,7 +2166,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1721,7 +2200,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1755,7 +2234,75 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "54edae80-a096-4d39-8b64-7fc14e49cf9d",
+      "name": "Trava de teste: Mandar o voucher",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        60
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "1e51e947-31cc-4a36-89c1-e60af050a702",
+      "name": "Trava de teste: Avisar a Caroline (lembrete segurado)",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2600,
+        760
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "trava1",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($('Lembrete segurado: avisos').item.json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -1824,6 +2371,11 @@
             "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Vouchers para mandar",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1870,6 +2422,11 @@
             "node": "Avisos para a Caroline",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Vouchers para mandar",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -1878,7 +2435,7 @@
       "main": [
         [
           {
-            "node": "Mensagem do lembrete",
+            "node": "Lembretes: com quem",
             "type": "main",
             "index": 0
           }
@@ -2301,7 +2858,7 @@
       "main": [
         [
           {
-            "node": "Resumo: montar",
+            "node": "Resumo: pedidos abertos",
             "type": "main",
             "index": 0
           }
@@ -2324,6 +2881,188 @@
         [
           {
             "node": "Resumo: guardar na memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembretes: com quem": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vouchers para mandar": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mensagem do voucher": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Mandar o voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandar o voucher": {
+      "main": [
+        [
+          {
+            "node": "Mandou o voucher?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mandou o voucher?": {
+      "main": [
+        [
+          {
+            "node": "Registrar voucher",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: config": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: links",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: links": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: ler Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: ler Google": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: agenda do app",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: agenda do app": {
+      "main": [
+        [
+          {
+            "node": "Lembrete: confere a Google",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete: confere a Google": {
+      "main": [
+        [
+          {
+            "node": "Mensagem do lembrete",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Lembrete segurado: avisos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: avisos": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: já avisei?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: já avisei?": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: novo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: novo?": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Avisar a Caroline (lembrete segurado)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Avisar a Caroline (lembrete segurado)": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: anotar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lembrete segurado: anotar": {
+      "main": [
+        [
+          {
+            "node": "Lembrete segurado: memória",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Resumo: pedidos abertos": {
+      "main": [
+        [
+          {
+            "node": "Resumo: montar",
             "type": "main",
             "index": 0
           }
@@ -2431,6 +3170,30 @@
         [
           {
             "node": "Resumo: mandar para a dona",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Mandar o voucher": {
+      "main": [
+        [
+          {
+            "node": "Mandar o voucher",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Trava de teste: Avisar a Caroline (lembrete segurado)": {
+      "main": [
+        [
+          {
+            "node": "Avisar a Caroline (lembrete segurado)",
             "type": "main",
             "index": 0
           }
