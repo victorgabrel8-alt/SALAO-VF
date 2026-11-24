@@ -54,6 +54,18 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     telefone: ia('telefone', 'Telefone COMPLETO da cliente, o campo telefone de buscar_cliente (ex.: 5566996990777), nunca só o final'),
   };
   A.nodes.push(oferecer);
+
+  // tempo do marcar_horario e do ajustar_duracao: a descrição antiga proibia número escolhido por ela, o que barrava a soma
+  // de dois serviços; e o campo é texto (24/11, teste: 120 em número derrubou a ferramenta). Troca a descrição inteira.
+  const tempo = (nome, de, para) => {
+    const n = achar(A, nome); const val = String(n.parameters.workflowInputs.value.minutos || '');
+    if (!val.includes(de)) throw new Error('assistente-oferecer: o campo minutos do ' + nome + ' mudou');
+    n.parameters.workflowInputs.value.minutos = ia('minutos', para);
+  };
+  tempo('marcar_horario', 'Nunca escolha um número por conta própria',
+    'Quanto tempo vai levar, em minutos, ESCRITO COMO TEXTO (ex.: "90"): o que a Caroline disse ("uma hora e meia" = "90") ou, em dois serviços na mesma cliente, a soma da lista ("120" no gel pé e mão). Um serviço só e nada dito: vazio (vale o tempo do serviço)');
+  tempo('ajustar_duracao', 'Quanto tempo vai levar, em minutos',
+    'Quanto tempo vai levar, em minutos, ESCRITO COMO TEXTO (ex.: "90")');
   A.connections[ID_AGENDA] = JSON.parse(JSON.stringify(A.connections['horarios_livres']));
 
   // b. sem_sinal: ferramenta (molde: anotar) + chamada ao banco

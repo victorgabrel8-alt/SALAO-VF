@@ -4182,7 +4182,7 @@
             "servico": "={{ $fromAI('servico', `Serviço com o nome da lista SERVIÇOS E PREÇOS, só se ela disse; senão vazio (o sistema usa o da última vez ou pergunta)`, 'string') }}",
             "inicio": "={{ $fromAI('inicio', `Dia e hora AAAA-MM-DDTHH:mm`, 'string') }}",
             "observacoes": "={{ $fromAI('observacoes', `Observação do horário (se ela disse)`, 'string') }}",
-            "minutos": "={{ $fromAI('minutos', `Quanto tempo vai levar, em minutos, SÓ se a Caroline disse (ex.: \"uma hora e meia\" = 90); senão deixe VAZIO (vale o tempo do serviço). Nunca escolha um número por conta própria`, 'string') }}",
+            "minutos": "={{ $fromAI('minutos', `Quanto tempo vai levar, em minutos, ESCRITO COMO TEXTO (ex.: \"90\"): o que a Caroline disse (\"uma hora e meia\" = \"90\") ou, em dois serviços na mesma cliente, a soma da lista (\"120\" no gel pé e mão). Um serviço só e nada dito: vazio (vale o tempo do serviço)`, 'string') }}",
             "forcar": "={{ $fromAI('forcar', `\"sim\" quando ela ditou a cliente e a hora (vale mesmo encostando em outra cliente, no almoço ou fora do horário). Vazio só quando a ideia de marcar foi sua`, 'string') }}",
             "profissional": "={{ $fromAI('profissional', `Com quem: \"Caroline\" ou \"Duda\", se quem pediu disse (ex.: \"marca a Ana com a Duda\"). Vazio: fica com quem está pedindo`, 'string') }}"
           },
@@ -4588,7 +4588,7 @@
             "pode_forcar": "={{ $('Contexto').first().json.podeForcar }}",
             "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
-            "minutos": "={{ $fromAI('minutos', `Quanto tempo vai levar, em minutos (ex.: 90)`, 'string') }}",
+            "minutos": "={{ $fromAI('minutos', `Quanto tempo vai levar, em minutos, ESCRITO COMO TEXTO (ex.: \"90\")`, 'string') }}",
             "forcar": "={{ $fromAI('forcar', `\"sim\" quando ela disse o tempo ou a hora de terminar. Vazio só quando a ideia foi sua`, 'string') }}"
           },
           "matchingColumns": [],
