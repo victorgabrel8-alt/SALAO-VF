@@ -28,7 +28,7 @@ import {
   type Atendimento,
 } from "@/lib/atendimentos";
 import { lerAlmoco } from "@/lib/almoco";
-import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
+import { confirmarAvaliacao, ehAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
 import { bloqueioDoDia, bloqueioParaProfissional, bloqueiosDeProfissionalNoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import { guardar, lembrar } from "@/lib/memoriaTela";
@@ -230,7 +230,8 @@ function AgendaPageConteudo() {
   // Deslizar a faixa da semana para o lado troca de semana
   const toque = useRef<{ x: number; y: number } | null>(null);
 
-  // Concluído ou faltou -> desfaz (pergunta antes quando algo vai sumir: os serviços feitos junto)
+  // Concluído ou faltou -> desfaz. Sempre pergunta antes: um toque sem querer desfazia o ✓ calado e a cliente
+  // atendida aparecia como sem baixa (caso da Rosemeire, 12/11/2026)
   async function desfazer(a: Atendimento) {
     let erro: string | undefined;
     if (a.status === "faltou") {
@@ -243,7 +244,14 @@ function AgendaPageConteudo() {
       const extras = feitosJunto(a);
       // Só os que entraram no ✓: os escolhidos junto ao marcar o horário ficam
       const nomes = (a.extrasDaConfirmacao ?? []).join(", ");
-      if (nomes && !(await perguntar(`Voltar para "a atender"? O que foi feito junto (${nomes}) sai deste horário.`, { confirmar: "Desfazer" }))) return;
+      const quem = a.clientes?.nome ?? "a cliente";
+      // começa com o verbo do botão de confirmar: o de cancelar se chama "Voltar" no app todo
+      const pergunta = nomes
+        ? `Desfazer o ✓ de ${quem}? O horário volta para "a atender" e o que foi feito junto (${nomes}) sai dele.`
+        : ehAvaliacao(a.servicos?.nome)
+          ? `Desfazer o ✓ de ${quem}? O horário volta para "a atender" e o resultado da avaliação também sai.`
+          : `Desfazer o ✓ de ${quem}? O horário volta para "a atender".`;
+      if (!(await perguntar(pergunta, { confirmar: "Desfazer" }))) return;
       erro = await desfazerConfirmacao(empresa.id, a, extras);
     }
     if (erro) await avisar(`Não deu certo: ${erro}`);
