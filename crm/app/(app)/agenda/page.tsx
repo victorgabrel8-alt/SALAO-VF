@@ -29,7 +29,7 @@ import {
 } from "@/lib/atendimentos";
 import { lerAlmoco } from "@/lib/almoco";
 import { confirmarAvaliacao, useIntencoes, type Avaliacao, type ResultadoAvaliacao } from "@/lib/avaliacoes";
-import { bloqueioDoDia, bloqueiosDeProfissionalNoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
+import { bloqueioDoDia, bloqueioParaProfissional, bloqueiosDeProfissionalNoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { useEmpresa } from "@/lib/empresa";
 import { guardar, lembrar } from "@/lib/memoriaTela";
 import {
@@ -159,6 +159,8 @@ function AgendaPageConteudo() {
   // Horário sem profissional é da dona (a primeira cadastrada). Login ligado a uma profissional (supabase/070) abre na
   // agenda dela; a profissional que não é a dona fica só na dela (sem os botões).
   const [filtro, setFiltro] = useState<string>(() => empresa.profissional?.id ?? "todas");
+  // Login da profissional que não é a dona: vê só os bloqueios do studio e os dela (os da dona ficam com a dona)
+  const minha = empresa.soDela ? empresa.profissional?.id : undefined;
   const deQuem = (a: Atendimento) => a.profissional_id ?? ordem[0] ?? null;
   const filtrando = variasProfissionais && filtro !== "todas" && ordem.includes(filtro);
   const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado" && (!filtrando || deQuem(a) === filtro)) ?? [];
@@ -356,7 +358,8 @@ function AgendaPageConteudo() {
         >
           {semana.map((d, i) => {
             const escolhido = d === dia;
-            const bloqueado = Boolean(bloqueioDoDia(empresa.config, d));
+            // riscado = studio fechado; no login da profissional, também o dia em que só ela não atende
+            const bloqueado = Boolean(minha ? bloqueioParaProfissional(empresa.config, d, minha) : bloqueioDoDia(empresa.config, d));
             return (
               <button
                 key={d}
@@ -399,7 +402,9 @@ function AgendaPageConteudo() {
         )}
         {/* Dia sem atender de UMA profissional (supabase/076): o studio abre, só a agenda dela fecha */}
         {!bloqueioDoDia(empresa.config, dia) &&
-          bloqueiosDeProfissionalNoDia(empresa.config, dia).map((b) => (
+          bloqueiosDeProfissionalNoDia(empresa.config, dia)
+            .filter((b) => !minha || b.profissional_id === minha)
+            .map((b) => (
             <Link
               key={`dia-${b.profissional_id}`}
               href="/agenda/bloqueios"
@@ -414,7 +419,7 @@ function AgendaPageConteudo() {
             </Link>
           ))}
         {/* Horas sem atender, que a dona pede à assistente (com o nome quando são de uma profissional só) */}
-        {bloqueiosHorarioDoDia(empresa.config, dia).map((b) => (
+        {bloqueiosHorarioDoDia(empresa.config, dia, minha).map((b) => (
           <p key={`${b.inicio}-${b.fim}-${b.profissional_id ?? "studio"}`} className="mb-3 rounded-[14px] bg-rose px-4 py-3 text-[15px] text-rose-texto">
             <b>
               {b.profissional ? `${b.profissional} sem atender` : "Sem atender"} das {b.inicio} às {b.fim}
