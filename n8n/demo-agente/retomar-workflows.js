@@ -31,6 +31,10 @@ return $('Quem retomar').all().map((i) => i.json).filter((c) => c.cliente_id).fi
     c.resumo_ia ? 'Resumo do que se sabe dela: ' + c.resumo_ia : '',
     '', 'CONVERSA (mais antiga primeiro):', conversa, '',
     'O QUE ELA FALOU POR ÚLTIMO: ' + (c.historico || []).filter((m) => m.autor === 'cliente').slice(-3).map((m) => '"' + m.texto + '"').join(' / '), '',
+    // 24/11 (Grazi): a IA falhou de madrugada e a pergunta dela ficou sem resposta; o alô agora responde a pergunta
+    /^Desculpa, tive um probleminha/.test(String(((c.historico || []).filter((m) => m.autor === 'ia').slice(-1)[0] || {}).texto || ''))
+      ? 'ATENÇÃO: sua última mensagem foi um pedido de desculpas por uma falha sua ("Desculpa, tive um probleminha..."): a pergunta dela ficou SEM resposta. Não pule. Peça desculpa pela demora em meia frase e responda agora o que ela perguntou; depois, UMA pergunta curta sobre o caso dela. Fatos que você pode usar: a Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez; coloca em queratina, fita adesiva, tela costurada e ponto americano, e indica a que combina com o fio de cada cliente; a avaliação é gratuita. O que não estiver aqui (valor, prazo, estoque), diga que a Gleide responde.'
+      : '',
     'Primeiro decida se faz sentido retomar. Responda exatamente "PULAR: <motivo curto>" se:',
     '- a conversa terminou de forma natural (ela agradeceu, se despediu ou disse "ok, obrigada" sem nada pendente);',
     '- ela disse que não quer, não tem interesse, vai procurar outro lugar ou pediu para não mandar mensagem;',
@@ -122,7 +126,7 @@ module.exports = ({ env, node, main, GEMINI }) => {
         // mesma senha do webhook do WhatsApp (header x-webhook-token): sem ela, ninguém dispara de fora
         { webhookId: '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e', credentials: { httpHeaderAuth: { id: env.N8N_WEBHOOK_CRED_ID || 'tV8sJuiNWidQ4Dnn', name: 'Webhook WhatsApp (senha da Evolution)' } } }),
       // o banco já confere salão aberto, prazo de cada tentativa e o resto (supabase/019)
-      rpc('Quem retomar', [220, 0], 'n8n_retomadas_para_chamar', `{ p_empresa_id: ${EMPRESA} }`),
+      rpc('Quem retomar', [220, 0], 'n8n_retomadas_para_chamar_v2', `{ p_empresa_id: ${EMPRESA} }`),
       // Gleide assumiu a conversa pelo celular (pausa no Redis, 12 h): não retoma
       node('Pausas', 'n8n-nodes-base.redis', 1, [440, 0], { operation: 'keys', keyPattern: 'pausa:*', getValues: false },
         { credentials: REDIS, executeOnce: true, alwaysOutputData: true }),
