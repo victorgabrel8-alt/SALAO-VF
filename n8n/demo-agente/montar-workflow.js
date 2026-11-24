@@ -156,7 +156,7 @@ Padrão: 1 parágrafo de 1 ou 2 frases curtas; no máximo 2 parágrafos; 3 só q
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 150 por tela.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático). Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de compra de cabelo da parte 7. Pergunta de ENDEREÇO segue a parte 12 (endereço + mapa; sem convite automático). Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
@@ -437,6 +437,9 @@ const nodes = [
       "}",
       "// sem negrito/markdown: mensagem de gente não tem *asterisco*",
       "t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');",
+      "// pedido de concordância no fim da frase ('..., né?', '..., tá bom?'): o prompt proíbe e o modelo escreve mesmo assim (23/11).",
+      "// Vira ponto final. Só pega a muleta depois de VÍRGULA ('Como ele tá?' é pergunta de verdade e não muda).",
+      "t = t.replace(/,[ \\t]*(?:n[ée]|t[áa](?: bom)?)(?:,[ \\t]*[A-ZÀ-Ú][A-Za-zÀ-ú]+)?\\?/g, '.');",
       "// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)",
       "const semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Toda Bonita Mega Hair/gi, '').trim();",
       "if (semRobo) t = semRobo;",

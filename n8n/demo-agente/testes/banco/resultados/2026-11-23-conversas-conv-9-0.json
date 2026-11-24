@@ -1,0 +1,462 @@
+{
+ "rotulo": "conv-9-0",
+ "prompt": "no ar",
+ "conversas": [
+  {
+   "id": "anuncio-fala-pouco",
+   "nome": "Carla",
+   "persona": "Chegou por anúncio. Nunca usou. Responde com poucas palavras ('os dois', 'no ombro', 'sim'). Só se abre se a pergunta for boa: cortou o cabelo chanel há dois meses, se arrependeu e tem um aniversário de 15 anos da filha em janeiro. Mora em Sinop. Tem medo de ficar artificial. Se a conversa virar formulário ou se receber preço e promoção sem ter perguntado, some. Se sentir que foi ouvida, aceita um horário à tarde.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Olá! Gostaria de saber mais sobre mega hair!"
+    },
+    {
+     "de": "ia",
+     "texto": "Boa noite, Carla! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez, com todo carinho. O que você gostaria de mudar no seu cabelo hoje?"
+    },
+    {
+     "de": "cliente",
+     "texto": "queria aumentar o comprimento"
+    },
+    {
+     "de": "cliente",
+     "texto": "ta mto curto"
+    },
+    {
+     "de": "ia",
+     "texto": "Entendo, Carla. Cabelo curto às vezes cansa quando a gente quer ver ele longo, né?"
+    },
+    {
+     "de": "ia",
+     "texto": "Faz tempo que ele parou nesse comprimento ou você fez algum corte que se arrependeu?"
+    },
+    {
+     "de": "cliente",
+     "texto": "cortei chanel faz uns 2 meses"
+    },
+    {
+     "de": "cliente",
+     "texto": "me arrependi mt"
+    },
+    {
+     "de": "cliente",
+     "texto": "agora ta no ombro"
+    },
+    {
+     "de": "ia",
+     "texto": "Bate aquele arrependimento mesmo quando a gente corta e não acostuma, mas o mega ajuda muito a devolver o comprimento enquanto o seu cresce. Em cabelos mais curtos, o segredo é a distribuição das mechas pra elas ficarem bem escondidinhas e naturais."
+    },
+    {
+     "de": "ia",
+     "texto": "O próximo passo é a avaliação: a Gleide olha seu fio, te mostra as opções de cabelo e já te passa o valor fechado. É gratuita, leva uns 30 minutinhos e você não precisa decidir nada na hora. Você é aqui de Sinop? 😊"
+    },
+    {
+     "de": "cliente",
+     "texto": "sim sou daqui"
+    },
+    {
+     "de": "cliente",
+     "texto": "tenho medo de ficar mto falso"
+    },
+    {
+     "de": "ia",
+     "texto": "É super normal ter esse receio, Carla. O que deixa o mega bem natural é escolher o cabelo que combina certinho com o seu em cor e textura, além da forma como a Gleide distribui as mechas."
+    },
+    {
+     "de": "ia",
+     "texto": "Na avaliação ela te mostra como isso funciona e você já sai com o valor do seu caso. Tenho amanhã às 09h ou às 14h, qual fica melhor pra você? 😊"
+    },
+    {
+     "de": "cliente",
+     "texto": "pode ser as 14h"
+    },
+    {
+     "de": "cliente",
+     "texto": "é q tenho o niver de 15 anos da minha filha em janeiro"
+    },
+    {
+     "de": "cliente",
+     "texto": "tenho medo de ficar estranho nas fotos"
+    },
+    {
+     "de": "ia",
+     "texto": "Que ocasião especial, Carla! O aniversário de 15 anos é um momento único e as fotos ficam pra sempre, então a gente vai cuidar pra você se sentir maravilhosa e bem natural."
+    },
+    {
+     "de": "ia",
+     "texto": "Marcado! Sua avaliação ficou pra amanhã, às 14h, na Rua das Papoulas, 443, Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 🥰\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você. Se surgir algum imprevisto, me avisa antes que a gente vê outro horário sem custo ✨"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Boa noite, Carla! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez, com todo carinho. O que você gostaria de mudar no seu cabelo hoje?"
+     ],
+     "usadas": [],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Entendo, Carla. Cabelo curto às vezes cansa quando a gente quer ver ele longo, né?",
+      "Faz tempo que ele parou nesse comprimento ou você fez algum corte que se arrependeu?"
+     ],
+     "usadas": [],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Bate aquele arrependimento mesmo quando a gente corta e não acostuma, mas o mega ajuda muito a devolver o comprimento enquanto o seu cresce. Em cabelos mais curtos, o segredo é a distribuição das mechas pra elas ficarem bem escondidinhas e naturais.",
+      "O próximo passo é a avaliação: a Gleide olha seu fio, te mostra as opções de cabelo e já te passa o valor fechado. É gratuita, leva uns 30 minutinhos e você não precisa decidir nada na hora. Você é aqui de Sinop? 😊"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "É super normal ter esse receio, Carla. O que deixa o mega bem natural é escolher o cabelo que combina certinho com o seu em cor e textura, além da forma como a Gleide distribui as mechas.",
+      "Na avaliação ela te mostra como isso funciona e você já sai com o valor do seu caso. Tenho amanhã às 09h ou às 14h, qual fica melhor pra você? 😊"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Que ocasião especial, Carla! O aniversário de 15 anos é um momento único e as fotos ficam pra sempre, então a gente vai cuidar pra você se sentir maravilhosa e bem natural.",
+      "Marcado! Sua avaliação ficou pra amanhã, às 14h, na Rua das Papoulas, 443, Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 🥰\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você. Se surgir algum imprevisto, me avisa antes que a gente vê outro horário sem custo ✨"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "criar_agendamento"
+     ],
+     "situacoes": null
+    }
+   ]
+  },
+  {
+   "id": "ja-usa-manutencao",
+   "nome": "Sandra",
+   "persona": "Usa 3 telas há dois anos, colocadas em outro salão que fechou. A última manutenção foi há uns 70 dias e as telas estão soltando. Mora em Sinop. Quer saber o preço e um horário esta semana. Objetiva, não quer conversa longa. Pergunta se a promoção de 10x do anúncio vale para ela. Marca se oferecerem horário logo.",
+   "fim": "marcou horário",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Boa tarde, vcs fazem manutenção de mega de tela?"
+    },
+    {
+     "de": "ia",
+     "texto": "Boa tarde, Sandra! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Fazemos sim!\n\nFaz quanto tempo que você fez a última manutenção?"
+    },
+    {
+     "de": "cliente",
+     "texto": "faz uns 70 dias"
+    },
+    {
+     "de": "cliente",
+     "texto": "ta soltando ja... vcs cobram quanto?"
+    },
+    {
+     "de": "cliente",
+     "texto": "aquela promo de 10x do anuncio vale pra mim?"
+    },
+    {
+     "de": "ia",
+     "texto": "A manutenção fica a partir de R$ 150 por tela, e a Gleide confirma o valor certinho olhando o tamanho delas. Essa condição dos 10x sem juros é pra quem vai colocar o mega; na manutenção você paga no Pix ou no cartão 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Como já passou dos 60 dias, é natural sentir soltando um pouquinho mesmo. Quantas telas você usa hoje?"
+    },
+    {
+     "de": "cliente",
+     "texto": "uso 3 telas"
+    },
+    {
+     "de": "cliente",
+     "texto": "entao fica 450 tudo?"
+    },
+    {
+     "de": "cliente",
+     "texto": "consegue me atender essa semana ainda?"
+    },
+    {
+     "de": "ia",
+     "texto": "Conseguimos te atender amanhã, terça-feira! Tenho horário às 09h ou às 14h. Qual fica melhor pra você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "pode ser as 14h entao"
+    },
+    {
+     "de": "cliente",
+     "texto": "é 450 fechado ne?"
+    },
+    {
+     "de": "cliente",
+     "texto": "me manda o endereço certinho pfvr"
+    },
+    {
+     "de": "ia",
+     "texto": "Marcado, Sandra! Sua manutenção ficou pra amanhã, terça-feira, às 14h 🥰"
+    },
+    {
+     "de": "ia",
+     "texto": "O endereço é Rua das Papoulas, 443, Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você. Se surgir algum imprevisto, me avisa antes que a gente vê outro horário sem custo 💛"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Boa tarde, Sandra! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "Fazemos sim!\n\nFaz quanto tempo que você fez a última manutenção?"
+     ],
+     "usadas": [],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "A manutenção fica a partir de R$ 150 por tela, e a Gleide confirma o valor certinho olhando o tamanho delas. Essa condição dos 10x sem juros é pra quem vai colocar o mega; na manutenção você paga no Pix ou no cartão 😊",
+      "Como já passou dos 60 dias, é natural sentir soltando um pouquinho mesmo. Quantas telas você usa hoje?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Conseguimos te atender amanhã, terça-feira! Tenho horário às 09h ou às 14h. Qual fica melhor pra você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Marcado, Sandra! Sua manutenção ficou pra amanhã, terça-feira, às 14h 🥰",
+      "O endereço é Rua das Papoulas, 443, Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nA Gleide atende uma cliente por vez, então esse horário fica reservado só pra você. Se surgir algum imprevisto, me avisa antes que a gente vê outro horário sem custo 💛"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "criar_agendamento",
+      "anotar_no_crm"
+     ],
+     "situacoes": null
+    }
+   ]
+  },
+  {
+   "id": "outro-servico",
+   "nome": "Mara",
+   "persona": "Chegou pelo anúncio, mas NÃO quer mega hair: quer só alisar o cabelo (retocar a raiz, está com mais de 6 dedos de raiz). Mudou há pouco para Sinop e está procurando uma cabeleireira. Está pesquisando preço e quer saber o valor antes de marcar. Durante a semana só pode sexta às 17h; no sábado, qualquer horário. Responde curto e educada. Se oferecerem mega hair ou promoção de mega, diz que só quer fazer o cabelo dela.",
+   "fim": "acabaram os turnos",
+   "historico": [
+    {
+     "de": "cliente",
+     "texto": "Olá! Posso ter mais informações sobre isso?"
+    },
+    {
+     "de": "ia",
+     "texto": "Boa noite, Mara! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez, cuidando de cada detalhe.\n\nO que você gostaria de mudar no seu cabelo hoje?"
+    },
+    {
+     "de": "cliente",
+     "texto": "Oi boa noite"
+    },
+    {
+     "de": "cliente",
+     "texto": "Queria ver pra alisar meu cabelo"
+    },
+    {
+     "de": "cliente",
+     "texto": "Mudei pra ca agora e to procurando uma cabeleireira que faca raiz"
+    },
+    {
+     "de": "ia",
+     "texto": "Seja bem-vinda a Sinop, Mara! A Gleide faz selagem e botox capilar, sim, e cuida dessa parte da raiz com todo carinho."
+    },
+    {
+     "de": "ia",
+     "texto": "Como seu cabelo está hoje?"
+    },
+    {
+     "de": "cliente",
+     "texto": "Ta com uns 6 dedos de raiz ja"
+    },
+    {
+     "de": "cliente",
+     "texto": "Queria saber o valor pra fazer o retoque do alisamento"
+    },
+    {
+     "de": "cliente",
+     "texto": "Vcs cobram quanto?"
+    },
+    {
+     "de": "ia",
+     "texto": "A selagem aqui no salão fica a partir de R$ 160 e o botox a partir de R$ 200 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Vou confirmar com a Gleide o valor certinho do retoque de alisamento e te aviso por aqui assim que ela me responder. Você costuma usar algum produto específico no seu cabelo?"
+    },
+    {
+     "de": "cliente",
+     "texto": "Uso nada de diferente nao"
+    },
+    {
+     "de": "cliente",
+     "texto": "Sempre fiz progressiva normal"
+    },
+    {
+     "de": "cliente",
+     "texto": "Ve o valor certinho entao pq a raiz ta bem grande"
+    },
+    {
+     "de": "ia",
+     "texto": "Combinei com a Gleide e ela já vai ver o valor certinho desse retoque pra você, considerando que a raiz está com 6 dedos."
+    },
+    {
+     "de": "ia",
+     "texto": "Assim que ela me responder, eu te mando um alô por aqui 😊"
+    },
+    {
+     "de": "cliente",
+     "texto": "ta bom fico no aguardo do valor"
+    },
+    {
+     "de": "cliente",
+     "texto": "aproveita e ve se tem horario pra sexta as 17h"
+    },
+    {
+     "de": "cliente",
+     "texto": "ou sabado qualquer hora por favor"
+    },
+    {
+     "de": "ia",
+     "texto": "Pode deixar, já pedi para a Gleide ver esse valor para você 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Para sexta e sábado agora os horários já estão preenchidos. O próximo dia que eu tenho disponível para a selagem é amanhã, terça-feira, às 09h ou às 14h. Algum desses horários daria para você?"
+    },
+    {
+     "de": "cliente",
+     "texto": "amanha nao consigo nao"
+    },
+    {
+     "de": "cliente",
+     "texto": "so posso naqueles horarios msm"
+    },
+    {
+     "de": "cliente",
+     "texto": "ve se tem pra outra semana entao e me fala o valor certinho pfvr"
+    },
+    {
+     "de": "ia",
+     "texto": "Já mandei sua dúvida do valor para a Gleide e te aviso assim que ela me responder, Mara! 😊"
+    },
+    {
+     "de": "ia",
+     "texto": "Sobre os horários, na sexta às 17h fica um pouco apertado porque a selagem leva umas 3 horas e o salão fecha às 18h. No sábado, a Gleide atende até as 14h.\n\nPara a outra semana, você teria disponibilidade na parte da manhã ou um pouco mais cedo à tarde?"
+    },
+    {
+     "de": "cliente",
+     "texto": "entao sabado de manha pra mim da certo"
+    },
+    {
+     "de": "cliente",
+     "texto": "consegue ver o valor certinho?"
+    },
+    {
+     "de": "cliente",
+     "texto": "preciso saber quanto fica antes de marcar pfvr"
+    }
+   ],
+   "passos": [
+    {
+     "baloes": [
+      "Boa noite, Mara! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez, cuidando de cada detalhe.\n\nO que você gostaria de mudar no seu cabelo hoje?"
+     ],
+     "usadas": [],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Seja bem-vinda a Sinop, Mara! A Gleide faz selagem e botox capilar, sim, e cuida dessa parte da raiz com todo carinho.",
+      "Como seu cabelo está hoje?"
+     ],
+     "usadas": [],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "A selagem aqui no salão fica a partir de R$ 160 e o botox a partir de R$ 200 😊",
+      "Vou confirmar com a Gleide o valor certinho do retoque de alisamento e te aviso por aqui assim que ela me responder. Você costuma usar algum produto específico no seu cabelo?"
+     ],
+     "usadas": [
+      "anotar_no_crm",
+      "perguntar_para_gleide"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Combinei com a Gleide e ela já vai ver o valor certinho desse retoque pra você, considerando que a raiz está com 6 dedos.",
+      "Assim que ela me responder, eu te mando um alô por aqui 😊"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "anotar_no_crm"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Pode deixar, já pedi para a Gleide ver esse valor para você 😊",
+      "Para sexta e sábado agora os horários já estão preenchidos. O próximo dia que eu tenho disponível para a selagem é amanhã, terça-feira, às 09h ou às 14h. Algum desses horários daria para você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "consultar_horarios_livres"
+     ],
+     "situacoes": null
+    },
+    {
+     "baloes": [
+      "Já mandei sua dúvida do valor para a Gleide e te aviso assim que ela me responder, Mara! 😊",
+      "Sobre os horários, na sexta às 17h fica um pouco apertado porque a selagem leva umas 3 horas e o salão fecha às 18h. No sábado, a Gleide atende até as 14h.\n\nPara a outra semana, você teria disponibilidade na parte da manhã ou um pouco mais cedo à tarde?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "consultar_horarios_livres",
+      "consultar_horarios_livres",
+      "anotar_no_crm",
+      "consultar_horarios_livres",
+      "consultar_horarios_livres"
+     ],
+     "situacoes": null
+    }
+   ]
+  }
+ ]
+}
