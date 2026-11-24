@@ -98,6 +98,17 @@ test('pendências: "fulana veio?" não sai mais; avaliação sem resultado conti
   } finally { volta(); }
 });
 
+test('"veio ou libera" não sai mais: nem nas pendências, nem pelo fluxo de faltas; a IA continua chamando a atrasada', () => {
+  const js = codigo('workflow-assistente-pendencias.json', 'Montar mensagem');
+  assert.match(js, /\["atendimento_sem_status","atraso_confirmar"\]\.includes\(p\.tipo\)/);
+  const F = ler('workflow-faltas.json');
+  const nomes = F.nodes.map((n) => n.name);
+  for (const n of ['Atrasos para confirmar', 'Mensagem veio ou libera', 'Perguntar à Caroline (atraso)']) assert.ok(!nomes.includes(n), n + ' ainda existe');
+  assert.ok(nomes.includes('Atrasos para chamar') && nomes.includes('Chamar a atrasada'));
+  const dosGatilhos = (F.connections['Horário do salão?'].main[0] || []).map((l) => l.node);
+  assert.ok(!dosGatilhos.includes('Atrasos para confirmar') && dosGatilhos.includes('Atrasos para chamar'));
+});
+
 test('pergunta à dona: AVISO repetido não sai, AVISO não segura pergunta, pergunta repetida continua segurada', () => {
   const js = codigo('workflow-pergunta.json', 'Pedido nº: já tem aberto?');
   const emp = '26a5d3eb-e8e4-4ed8-b206-095095292fdd';

@@ -959,6 +959,8 @@ if (LOJA) {
   // 24/11: a assistente não pergunta "fulana veio?" (loja.json "pendencias_sem"); o sem baixa vai no resumo da noite.
   // Depois do pedido-numerado, que procura a linha da lista sem mudança (pendencias-loja.js).
   if (LOJA.pendencias_sem) require('./pendencias-loja.js').semTipos({ pendenciasWorkflow: assistente.pendenciasWorkflow, tipos: LOJA.pendencias_sem });
+  // e o "veio ou libera" que sai na hora pelo fluxo de faltas (pendencias-loja.js)
+  if ([].concat(LOJA.pendencias_sem || []).includes('atraso_confirmar')) require('./pendencias-loja.js').semVeioOuLibera({ faltasWorkflow: faltas.faltasWorkflow });
   // 24/11: a cliente diz que não vem -> aviso à dona na hora, sem depender da IA (nao-vem.js, supabase/078)
   if (LOJA.aviso_nao_vem) require('./nao-vem.js')({ node, workflow, loja: LOJA, REDIS });
   // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado

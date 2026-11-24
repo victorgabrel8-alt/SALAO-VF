@@ -32,6 +32,25 @@ module.exports = ({ pendenciasWorkflow: wf, horas }) => {
 // Tipos que a assistente não pergunta (loja.json "pendencias_sem"). Roda DEPOIS do pedido-numerado.js, que procura a
 // linha "const ps = …" sem mudança. Fora da lista também não é marcado como perguntado (os ids saem de ps): o horário
 // continua sem baixa no banco e no app.
+// "Não chegou, veio ou libera?" (atraso_confirmar) também sai na hora pelo fluxo de faltas, fora das pendências. Com
+// "atraso_confirmar" em pendencias_sem, esse ramo sai do fluxo (24/11/2026, Victor: "pode tirar o veio ou libera
+// também"). A IA continua chamando a cliente atrasada ("Atrasos para chamar"); só a pergunta à dona deixa de existir.
+module.exports.semVeioOuLibera = ({ faltasWorkflow: wf }) => {
+  const RAMO = ['Atrasos para confirmar', 'Mensagem veio ou libera', 'Perguntar à Gleide (atraso)', 'Guardar pergunta do atraso', 'Marcar atraso perguntado'];
+  for (const n of RAMO) if (!wf.nodes.some((x) => x.name === n)) throw new Error('pendencias_sem: o ramo "veio ou libera" mudou (sem ' + n + ')');
+  // ninguém mais pode apontar para o ramo (só os gatilhos do fluxo apontam para o começo dele)
+  for (const [de, c] of Object.entries(wf.connections)) {
+    if (RAMO.includes(de)) continue;
+    for (const saida of c.main || []) {
+      const resto = (saida || []).filter((l) => !RAMO.includes(l.node));
+      if (resto.length !== (saida || []).length && !['Horário do salão?', 'Disparar agora (teste)'].includes(de)) throw new Error('pendencias_sem: "' + de + '" também liga no ramo "veio ou libera"');
+      if (saida) saida.splice(0, saida.length, ...resto);
+    }
+  }
+  for (const n of RAMO) delete wf.connections[n];
+  wf.nodes = wf.nodes.filter((x) => !RAMO.includes(x.name));
+};
+
 module.exports.semTipos = ({ pendenciasWorkflow: wf, tipos }) => {
   const sem = [].concat(tipos || []);
   const TIPOS = ['avaliacao_sem_resultado', 'atendimento_sem_status', 'atraso_confirmar', 'pensando_vencido', 'fechou_sem_data'];

@@ -221,7 +221,8 @@
   "assistente_espera": 5,
   "bloqueio_por_profissional": true,
   "pendencias_sem": [
-    "atendimento_sem_status"
+    "atendimento_sem_status",
+    "atraso_confirmar"
   ],
   "aviso_nao_vem": true
 }

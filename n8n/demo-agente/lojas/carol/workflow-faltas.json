@@ -529,135 +529,6 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000276",
-      "name": "Atrasos para confirmar",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        600,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_confirmar",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd' }) }}",
-        "options": {}
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000277",
-      "name": "Mensagem veio ou libera",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        900,
-        600
-      ],
-      "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ('5593991144926' || '5593991144926').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000278",
-      "name": "Perguntar à Caroline (atraso)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1200,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.EVOLUTION_API_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000279",
-      "name": "Guardar pergunta do atraso",
-      "type": "n8n-nodes-base.redis",
-      "typeVersion": 1,
-      "position": [
-        1500,
-        600
-      ],
-      "parameters": {
-        "operation": "push",
-        "list": "=carol:assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
-        "messageData": "={{ $('Mensagem veio ou libera').item.json.memoria }}",
-        "tail": false
-      },
-      "credentials": {
-        "redis": {
-          "id": "bSZHOsNCSsDVJpK7",
-          "name": "Redis local"
-        }
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000280",
-      "name": "Marcar atraso perguntado",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1800,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: '26a5d3eb-e8e4-4ed8-b206-095095292fdd', p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }) }}",
-        "options": {}
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
       "id": "00000000-0000-4000-8000-000000000281",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
@@ -2007,11 +1878,6 @@
             "index": 0
           },
           {
-            "node": "Atrasos para confirmar",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Conflitos de atraso",
             "type": "main",
             "index": 0
@@ -2054,11 +1920,6 @@
           },
           {
             "node": "Atrasos para chamar",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Atrasos para confirmar",
             "type": "main",
             "index": 0
           },
@@ -2172,50 +2033,6 @@
         [
           {
             "node": "Registrar chamada do atraso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Atrasos para confirmar": {
-      "main": [
-        [
-          {
-            "node": "Mensagem veio ou libera",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mensagem veio ou libera": {
-      "main": [
-        [
-          {
-            "node": "Perguntar à Caroline (atraso)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Perguntar à Caroline (atraso)": {
-      "main": [
-        [
-          {
-            "node": "Guardar pergunta do atraso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guardar pergunta do atraso": {
-      "main": [
-        [
-          {
-            "node": "Marcar atraso perguntado",
             "type": "main",
             "index": 0
           }

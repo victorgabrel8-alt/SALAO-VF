@@ -529,135 +529,6 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000276",
-      "name": "Atrasos para confirmar",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        600,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_atrasos_para_confirmar",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}",
-        "options": {}
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000277",
-      "name": "Mensagem veio ou libera",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        900,
-        600
-      ],
-      "parameters": {
-        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst diaDe = (d) => d.toLocaleDateString('en-CA', { timeZone: TZ });\nconst hora = (d) => d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: TZ });\nconst quando = (s) => {\n  if (!s) return '';\n  const d = new Date(s), dia = diaDe(d);\n  const hoje = diaDe(new Date()), ontem = diaDe(new Date(Date.now() - 86400000)), amanha = diaDe(new Date(Date.now() + 86400000));\n  const nome = dia === hoje ? 'hoje' : dia === ontem ? 'ontem' : dia === amanha ? 'amanhã'\n    : d.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: TZ }).replace('.', '') + ', ' + dia.slice(8) + '/' + dia.slice(5, 7);\n  return nome + ' às ' + hora(d);\n};\nconst primeiro = (n) => String(n || '').trim().split(/\\s+/)[0] || '';\n\nconst as = $input.all().map((i) => i.json).filter((a) => a.agendamento_id);\nif (!as.length) return [];\nconst linha = (a) => '⏰ *' + (a.nome || 'cliente').split(' ').slice(0, 2).join(' ') + '* (' + quando(a.inicio) +\n  (a.servico ? ', ' + a.servico.toLowerCase() : '') + ') não chegou nem respondeu às 2 mensagens. Ela está aí?';\nconst texto = as.map(linha).join('\\n') + '\\nResponda *veio* ou *libera* (aí ofereço o horário pra quem vem depois). Sem resposta, eu não mexo em nada.';\nconst ids = as.map((a) => a.pendencia_id);\nconst numeros = ('5566999270860' || '5566999270860').split(',').map(s => s.trim()).filter(Boolean);\nreturn numeros.map((tel) => ({ json: { tel, texto, ids, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) } }));\n"
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000278",
-      "name": "Perguntar à Caroline (atraso)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1200,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.EVOLUTION_API_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.tel, text: $json.texto }) }}",
-        "options": {}
-      },
-      "retryOnFail": true,
-      "maxTries": 3,
-      "waitBetweenTries": 3000
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000279",
-      "name": "Guardar pergunta do atraso",
-      "type": "n8n-nodes-base.redis",
-      "typeVersion": 1,
-      "position": [
-        1500,
-        600
-      ],
-      "parameters": {
-        "operation": "push",
-        "list": "=teste:assistente:{{ $('Mensagem veio ou libera').item.json.tel }}",
-        "messageData": "={{ $('Mensagem veio ou libera').item.json.memoria }}",
-        "tail": false
-      },
-      "credentials": {
-        "redis": {
-          "id": "bSZHOsNCSsDVJpK7",
-          "name": "Redis local"
-        }
-      }
-    },
-    {
-      "id": "00000000-0000-4000-8000-000000000280",
-      "name": "Marcar atraso perguntado",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        1800,
-        600
-      ],
-      "parameters": {
-        "method": "POST",
-        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_marcar_perguntado",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_pedido_a: $('Mensagem veio ou libera').item.json.tel, p_ids: $('Mensagem veio ou libera').item.json.ids }) }}",
-        "options": {}
-      },
-      "onError": "continueRegularOutput"
-    },
-    {
       "id": "00000000-0000-4000-8000-000000000281",
       "name": "Conflitos de atraso",
       "type": "n8n-nodes-base.httpRequest",
@@ -2078,40 +1949,6 @@
       }
     },
     {
-      "id": "59b9a357-a8f0-4552-8127-d5a2898d74df",
-      "name": "Trava de teste: Perguntar à Caroline (atraso)",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [
-        1200,
-        480
-      ],
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "loose",
-            "version": 2
-          },
-          "conditions": [
-            {
-              "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String($json.tel || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      }
-    },
-    {
       "id": "4354dea4-261a-4fb9-88cd-744bac43e6f2",
       "name": "Trava de teste: Avisar a Caroline (conflito)",
       "type": "n8n-nodes-base.if",
@@ -2381,11 +2218,6 @@
             "index": 0
           },
           {
-            "node": "Atrasos para confirmar",
-            "type": "main",
-            "index": 0
-          },
-          {
             "node": "Conflitos de atraso",
             "type": "main",
             "index": 0
@@ -2428,11 +2260,6 @@
           },
           {
             "node": "Atrasos para chamar",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Atrasos para confirmar",
             "type": "main",
             "index": 0
           },
@@ -2546,50 +2373,6 @@
         [
           {
             "node": "Registrar chamada do atraso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Atrasos para confirmar": {
-      "main": [
-        [
-          {
-            "node": "Mensagem veio ou libera",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Mensagem veio ou libera": {
-      "main": [
-        [
-          {
-            "node": "Trava de teste: Perguntar à Caroline (atraso)",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Perguntar à Caroline (atraso)": {
-      "main": [
-        [
-          {
-            "node": "Guardar pergunta do atraso",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Guardar pergunta do atraso": {
-      "main": [
-        [
-          {
-            "node": "Marcar atraso perguntado",
             "type": "main",
             "index": 0
           }
@@ -3142,18 +2925,6 @@
         [
           {
             "node": "Lembrar a cliente",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        []
-      ]
-    },
-    "Trava de teste: Perguntar à Caroline (atraso)": {
-      "main": [
-        [
-          {
-            "node": "Perguntar à Caroline (atraso)",
             "type": "main",
             "index": 0
           }
