@@ -157,6 +157,10 @@
     [
       "Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.",
       "Use transferir_para_humano se a cliente precisar resolver já."
+    ],
+    [
+      "Não inclua “quer ver horários?” quando ela apenas pediu preço. ",
+      ""
     ]
   ],
   "memoria_horas": 12,
@@ -179,12 +183,20 @@
   "assistente_fotos": true,
   "assistente_marcar": true,
   "lembrete_duplo": true,
-  "pendencias_horas": [12, 18],
+  "pendencias_horas": [
+    12,
+    18
+  ],
   "resumo_noite": "19:00",
   "conferente": "ligado",
   "assistente_consertos": true,
   "confirmou_presenca": true,
-  "segunda_profissional": { "id": "195862b8-efdc-4087-a653-083fdf7e0c35", "nome": "Duda", "telefone": "5566992617636", "principal_id": "bcc300c7-a83f-4c8c-81a7-0f50c65bf5dc" },
+  "segunda_profissional": {
+    "id": "195862b8-efdc-4087-a653-083fdf7e0c35",
+    "nome": "Duda",
+    "telefone": "5566992617636",
+    "principal_id": "bcc300c7-a83f-4c8c-81a7-0f50c65bf5dc"
+  },
   "voucher_gel": true,
   "pix_sistema": true,
   "pedido_numerado": true
