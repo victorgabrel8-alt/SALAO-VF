@@ -1,6 +1,6 @@
 // O aviso que a dona recebe quando a IA passa uma cliente para ela (transferir_para_humano).
 //
-// 24/11/2026, Gleide: chegou "🔔 joana · (66) 99999-0011 / Gerar e enviar link de pagamento para a Joana /
+// 24/11/2026, Gleide: chegou "joana · (66) 99999-0011 / Gerar e enviar link de pagamento para a Joana /
 // https://app.oistudio.com.br/conversas/…". Ela não entendeu o que era aquele link e perguntou à assistente ("Oi / Esse
 // link"). A assistente não sabia do aviso (ele não entrava na memória dela) e respondeu que não tinha aparecido nada.
 //
@@ -8,7 +8,7 @@
 // customer-support/customer-escalation: o que a cliente pediu, o que já foi dito a ela, o que é preciso fazer e o link
 // com nome; composio-community/support-skills, handoff-notes: "Last action / What's needed"; SortedEA/skills,
 // sound-human: começar pelo assunto, sem frase feita):
-//   🔔 *Joana* precisa de você: gerar e enviar o link de pagamento.
+//   *Joana* precisa de você: gerar e enviar o link de pagamento.
 //   Ela escreveu: «Queria saber se ela consegue me mandar um link de pagamento» «Amanhã vou viajar…»
 //   A IA disse a ela que você responde e não vai mais responder ela por 12 h.
 //   Pode falar com ela pelo WhatsApp do salão (o número dela é (66) 99999-0011) ou me dizer aqui o que mandar.
@@ -45,7 +45,7 @@ function avisoTransferencia(ctx) {
   // começa minúsculo depois dos dois-pontos, a não ser sigla ou o nome da própria cliente
   const primeiraPalavra = semAcento(precisa.split(' ')[0] || '');
   if (precisa && !/^[A-ZÁÉÍÓÚÂÊÔÃÕÇ]{2,}\b/.test(precisa) && !(nome && semAcento(nome).split(' ').includes(primeiraPalavra))) precisa = precisa[0].toLowerCase() + precisa.slice(1);
-  const linhas = ['🔔 ' + quem + ' precisa de você' + (precisa ? ': ' + precisa + (pergunta ? '?' : '.') : '.')];
+  const linhas = [quem + ' precisa de você' + (precisa ? ': ' + precisa + (pergunta ? '?' : '.') : '.')];
   // o que ela mandou desde a última resposta do salão (a mais antiga primeiro), sem cumprimento e sem "ok"
   const SOLTAS = ['oi', 'oie', 'oii', 'ola', 'e', 'ai', 'bom', 'boa', 'dia', 'tarde', 'noite', 'tudo', 'bem', 'td', 'tb', 'sim', 'nao', 'ok', 'okay', 'ta', 'to', 'tah',
     'certo', 'beleza', 'blz', 'obrigada', 'obrigado', 'obrigadaa', 'obg', 'brigada', 'valeu', 'aham', 'uhum', 'otimo', 'joia', 'show', 'combinado', 'entendi', 'perfeito', 'ah', 'vc', 'voce'];

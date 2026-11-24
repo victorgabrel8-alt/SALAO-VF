@@ -1,5 +1,5 @@
 // Testes dos avisos à dona que a assistente sabe explicar (24/11/2026). Rodar: node --test n8n/demo-agente/testes/*.test.js
-// Caso real: chegou "🔔 joana · telefone / Gerar e enviar link de pagamento… / link" e a Gleide perguntou "Esse link"; a
+// Caso real: chegou "joana · telefone / Gerar e enviar link de pagamento… / link" e a Gleide perguntou "Esse link"; a
 // assistente não sabia do aviso. Os nós são os GERADOS de verdade (pasta temporária, sem enviar nada).
 const test = require('node:test');
 const assert = require('node:assert');
@@ -23,7 +23,7 @@ const AGORA = Date.parse('2026-11-24T21:21:00Z');
 test('o caso da Joana: quem, o que fazer, o que ela escreveu, o número e para que serve o link', () => {
   const r = avisoTransferencia({ nome: 'joana', telefone: '5566999990011', cliente_id: ID, o_que_precisa: 'Gerar e enviar link de pagamento para a Joana', mensagens: JOANA, agora: AGORA });
   assert.strictEqual(r.texto, [
-    '🔔 *Joana* precisa de você: gerar e enviar link de pagamento.',
+    '*Joana* precisa de você: gerar e enviar link de pagamento.',
     'Ela escreveu: «Queria saber se ela consegue me mandar um link de pagamento» «Amanhã vou viajar e não consigo passar aí»',
     'A IA disse a ela que você responde e não vai mais responder ela por 12 h.',
     'Pode falar com ela pelo WhatsApp do salão (o número dela é (66) 99999-0011) ou me dizer aqui o que mandar.',
@@ -32,7 +32,7 @@ test('o caso da Joana: quem, o que fazer, o que ela escreveu, o número e para q
   // a memória da assistente: o mesmo texto, com a hora e os dados para ela agir
   const m = JSON.parse(r.memoria);
   assert.strictEqual(m.type, 'ai');
-  assert.ok(m.data.content.startsWith('[ter 24/11 17:21] 🔔 *Joana*'), m.data.content);
+  assert.ok(m.data.content.startsWith('[ter 24/11 17:21] *Joana* precisa de você'), m.data.content);
   assert.ok(m.data.content.includes(r.texto));
   assert.ok(m.data.content.endsWith('(cliente_id: ' + ID + ', telefone: 5566999990011, nome no cadastro: joana)'));
   for (const k of ['additional_kwargs', 'response_metadata', 'tool_calls', 'invalid_tool_calls']) assert.ok(k in m.data, k);
@@ -40,18 +40,18 @@ test('o caso da Joana: quem, o que fazer, o que ela escreveu, o número e para q
 
 test('aviso sem nome, sem mensagens, sem o que fazer, com link do app de outro endereço e nome no "o que fazer" com acento', () => {
   const r = avisoTransferencia({ nome: '', telefone: '5566999990000', cliente_id: 'x', o_que_precisa: '', motivo: 'Quer falar com a dona', mensagens: [], app: 'https://outro.app/' });
-  assert.match(r.texto, /^🔔 A cliente do \(66\) 99999-0000 precisa de você: quer falar com a dona\.\n/);
+  assert.match(r.texto, /^A cliente do \(66\) 99999-0000 precisa de você: quer falar com a dona\.\n/);
   assert.doesNotMatch(r.texto, /Ela escreveu/);
   assert.match(r.texto, /Conversa dela no app: https:\/\/outro\.app\/conversas\/x$/);
   const vazio = avisoTransferencia({});
-  assert.match(vazio.texto, /^🔔 Uma cliente precisa de você\.\n/);
+  assert.match(vazio.texto, /^Uma cliente precisa de você\.\n/);
   assert.doesNotMatch(vazio.texto, /Conversa dela no app|, no \(/);
   assert.match(avisoTransferencia({ nome: 'Joana Souza', o_que_precisa: 'Mandar o Pix para a Joana.' }).texto, /precisa de você: mandar o Pix\.\n/);
   // sigla no começo fica como está; mensagem enorme é cortada; só "oi" e "ok" não entram
   assert.match(avisoTransferencia({ nome: 'Ana', o_que_precisa: 'PIX do sinal' }).texto, /precisa de você: PIX do sinal\./);
   const longa = avisoTransferencia({ nome: 'Ana', mensagens: [{ direcao: 'entrada', conteudo: 'x'.repeat(900) }, { direcao: 'entrada', conteudo: 'ok' }, { direcao: 'entrada', conteudo: 'oi' }] });
   assert.ok(longa.texto.split('\n')[1].length < 200, longa.texto);
-  assert.ok(avisoTransferencia({ nome: 'Ana', mensagens: [null, 3, { direcao: 'entrada' }] }).texto.startsWith('🔔 *Ana*'));
+  assert.ok(avisoTransferencia({ nome: 'Ana', mensagens: [null, 3, { direcao: 'entrada' }] }).texto.startsWith('*Ana*'));
 });
 
 // ---------- fluxos gerados ----------
@@ -95,15 +95,15 @@ test('transferir_para_humano: monta o aviso, manda à Gleide e guarda na memóri
   const sem9 = rodar({ 'Supabase: pausar IA': {}, 'Recebe pedido do agente': {}, 'Supabase: mensagens da cliente': [{}], 'Supabase: número de alerta': { alerta: '556699596740' } },
     { ASSISTENTE_NUMEROS: '5566999270860, 5566999596740' });
   assert.strictEqual(sem9.chave, '5566999596740');
-  assert.match(out.texto, /^🔔 \*Joana\* precisa de você: gerar e enviar link de pagamento\.\nEla escreveu: «Queria saber/);
+  assert.match(out.texto, /^\*Joana\* precisa de você: gerar e enviar link de pagamento\.\nEla escreveu: «Queria saber/);
   assert.ok(JSON.parse(out.memoria).data.content.includes(out.texto));
   // consulta vazia (alwaysOutputData devolve {}), sem número de alerta, ou com erro no meio: o aviso sai mesmo assim e a memória é JSON
   const semNada = rodar({ 'Supabase: pausar IA': {}, 'Recebe pedido do agente': { motivo: 'reclamação' }, 'Supabase: mensagens da cliente': [{}], 'Supabase: número de alerta': {} });
   assert.strictEqual(semNada.numero, '');
-  assert.match(semNada.texto, /^🔔 Uma cliente precisa de você: reclamação\./);
+  assert.match(semNada.texto, /^Uma cliente precisa de você: reclamação\./);
   JSON.parse(semNada.memoria);
   const comErro = new Function('$', '$env', no(pausa, 'Montar aviso à Gleide').parameters.jsCode)(() => { throw new Error('x'); }, {})[0].json;
-  assert.ok(comErro.texto.startsWith('🔔 '));
+  assert.match(comErro.texto, / precisa de você/);
   assert.strictEqual(JSON.parse(comErro.memoria).type, 'ai');
 });
 
@@ -113,7 +113,7 @@ test('a IA escreve o que a Gleide precisa fazer começando por verbo (descriçã
   assert.doesNotMatch(v, /única frase do aviso/);
 });
 
-test('o 📌 e o "Avisei a … ✓" também vão para a memória da assistente', () => {
+test('o "Guardei essa resposta" e o "Avisei a …" também vão para a memória da assistente', () => {
   assert.deepStrictEqual(caminho(principal, 'Pedido: memória (mensagem enviada)').slice(0, 4),
     ['Pedido: memória (mensagem enviada)', 'Pedido: memória da assistente', 'Pedido: apagar', 'Pedido: confirmar à Gleide']);
   assert.strictEqual(principal.connections['Aprender: avisar a Gleide'].main[0][0].node, 'Aprender: memória da assistente');
@@ -130,14 +130,14 @@ test('o 📌 e o "Avisei a … ✓" também vão para a memória da assistente',
   }
   const md = no(principal, 'Pedido: memória da assistente').parameters.messageData.replace(/^=\{\{ /, '').replace(/ \}\}$/, '');
   const conteudo = JSON.parse(new Function('$', 'return ' + md)(dolar({ 'Pedido: preparar': { nome: 'Bia', pergunta: '2 telas, 65 cm', resposta: '2800' }, 'Pedido: texto': { texto: 'Oi Bia!' } }))).data.content;
-  assert.match(conteudo, /^\[\w{3} \d\d\/\d\d \d\d:\d\d\] Avisei a \*Bia\* ✓ \(você respondeu ao pedido dela «2 telas, 65 cm» com «2800»\)\. Mandei para ela: «Oi Bia!»$/);
+  assert.match(conteudo, /^\[\w{3} \d\d\/\d\d \d\d:\d\d\] Avisei a \*Bia\* \(você respondeu ao pedido dela «2 telas, 65 cm» com «2800»\)\. Mandei para ela: «Oi Bia!»$/);
   const ap = no(principal, 'Aprender: memória da assistente').parameters.messageData.replace(/^=\{\{ /, '').replace(/ \}\}$/, '');
   assert.match(JSON.parse(new Function('$', 'return ' + ap)(dolar({ 'Aprender: preparar': { pergunta: 'Pode levar criança?', resposta: 'Pode sim' } }))).data.content,
-    /^\[\S+ \d\d\/\d\d \d\d:\d\d\] 📌 Guardei essa resposta para responder sozinha da próxima vez: Pode levar criança\? → Pode sim$/);
+    /^\[\S+ \d\d\/\d\d \d\d:\d\d\] Guardei essa resposta para responder sozinha da próxima vez: Pode levar criança\? → Pode sim$/);
   // nome no meio da frase fica; mídia vira o que ela mandou; número sem o 9 sai com o 9
   const carla = avisoTransferencia({ nome: 'Carla Souza', telefone: '556699990000', o_que_precisa: 'Conferir se a Carla tem horário dia 12/12 às 10h.',
     mensagens: [{ direcao: 'entrada', conteudo: '[foto da cliente] Foto caseira de costas' }, { direcao: 'entrada', conteudo: '[áudio] três tela quanto ela cobra' }] }).texto;
-  assert.match(carla, /^🔔 \*Carla Souza\* precisa de você: conferir se a Carla tem horário dia 12\/12 às 10h\.\nEla escreveu: «três tela quanto ela cobra» \(mandou uma foto\)\n/);
+  assert.match(carla, /^\*Carla Souza\* precisa de você: conferir se a Carla tem horário dia 12\/12 às 10h\.\nEla escreveu: «três tela quanto ela cobra» \(mandou uma foto\)\n/);
   assert.match(carla, /\(o número dela é \(66\) 99999-0000\)/);
 });
 
@@ -149,11 +149,16 @@ test('assistente: lê as conversas das clientes e sabe explicar um aviso; as reg
   assert.match(s, /abre a conversa daquela cliente no app\. É só para a Gleide ler; não é link de pagamento/);
   assert.match(s, /Nunca responda a um aviso com "não apareceu nada aqui"/);
   assert.match(s, /Pediu o número \("qual o WhatsApp dela\?"/);
-  assert.match(s, /do aviso 🔔\n  daquela cliente na conversa/);
+  assert.match(s, /do aviso "precisa de você"\n  daquela cliente na conversa/);
   assert.match(s, /"Oi" junto com outra mensagem: responda à outra\./);
-  assert.match(s, /Os avisos automáticos da conversa \(🔔/);
+  assert.match(s, /Os avisos automáticos da conversa \(AVISOS QUE CHEGAM PARA ELA/);
   // trocado no lugar, não somado
   assert.ok(!s.includes('Avisos que você mandou ("✅ Remarquei…"'));
   assert.ok(!s.includes('O que chega para ela sozinho: remarcação'));
   assert.ok(!s.includes('Um "Oi" dela pede só'));
+  // personalidade nova e sem emoji (24/11/2026): o único é o 👍 que descreve a mensagem DELA
+  assert.match(s, /\nQUEM VOCÊ É\nVocê é a secretária que a Gleide sempre quis/);
+  assert.match(s, /Sem emoji, nunca\./);
+  assert.deepStrictEqual((s.match(/\p{Extended_Pictographic}|✓/gu) || []), ['👍']);
+  assert.ok(!s.includes('Emoji só de vez em quando'));
 });

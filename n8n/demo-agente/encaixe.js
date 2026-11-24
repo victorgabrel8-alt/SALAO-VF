@@ -71,12 +71,12 @@ Pergunta de encaixe esperando a resposta da Gleide agora:
 {{ (() => { const t = $('Encaixe: esperando resposta').first().json.data; try { return JSON.parse(t) || '(nenhuma)'; } catch (e) { return t || '(nenhuma)'; } })() }}
 - Quando você grava uma falta (liberar_horario, ou status_atendimento faltou) e a resposta da ferramenta traz "encaixe" com
   "perguntar": true, termine a SUA resposta com a pergunta que veio em "pergunta" (aqui vale terminar com pergunta).
-  Ex.: "Anotei a falta da Maria ✅ A IA chama ela pra remarcar. Quer que eu veja com a Ana (das 15h) se ela consegue vir antes?"
+  Ex.: "Anotei a falta da Maria. A IA chama ela pra remarcar. Quer que eu veja com a Ana (das 15h) se ela consegue vir antes?"
   Só essa pergunta, do jeito de sempre: sem número, sem "responda sim ou não", sem explicar como funciona.
 - Sem "encaixe" na resposta, ou com "perguntar": false: não pergunte nada sobre encaixe e não comente o motivo.
 - Ela autorizou ("pode", "vê sim", "chama", "manda", "tenta"): chamar_para_encaixe NA HORA, com o agendamento_id e o nome que
   estão acima. A mensagem para a cliente sai pronta, você não escreve o texto. Depois responda curto:
-  "Mandei pra Ana ✅ Se ela conseguir vir antes, você recebe o aviso do horário novo; se não, fica tudo como está."
+  "Mandei pra Ana. Se ela conseguir vir antes, você recebe o aviso do horário novo; se não, fica tudo como está."
 - Ela disse que não ("não precisa", "deixa", "melhor não"): chamar_para_encaixe com desfazer = sim (ninguém recebe mensagem)
   e responda só "Beleza, fica como está."
 - Ela não respondeu a isso, mudou de assunto, ou a resposta não deixa claro se é sobre o encaixe: NÃO chame ninguém. Se
@@ -176,8 +176,8 @@ module.exports = ({ workflow, agendaWorkflow, assistenteWorkflow: ag, ferramenta
     'const enviou = novos.some((f) => ENVIO.includes(f.t) && ok(f.r) && !/"chamou"\\s*:\\s*false/.test(f.r));', 'o "enviou" do "Conferir resposta"');
   // a pergunta que a ferramenta da falta devolveu TEM de chegar à Gleide (o banco já conta como perguntado): se a resposta não
   // trouxe, entra no fim. Só a última (uma pergunta pendente por vez).
-  trocar(conferir, 'jsCode', "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';", [
-    "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';",
+  trocar(conferir, 'jsCode', "if (!texto) texto = ag.output ? 'Certo.' : 'Desculpa, deu um erro aqui. Pode repetir?';", [
+    "if (!texto) texto = ag.output ? 'Certo.' : 'Desculpa, deu um erro aqui. Pode repetir?';",
     "const pergEncaixe = passos.filter((s) => ['liberar_horario', 'status_atendimento'].includes(s.action?.tool)).map((s) => lerResposta(s.observation))",
     "  .map((r) => (/\"perguntar\"\\s*:\\s*true/.test(r) ? (r.match(/\"pergunta\"\\s*:\\s*\"((?:[^\"\\\\]|\\\\.)*)\"/) || [])[1] : '')).filter(Boolean).pop();",
     "if (pergEncaixe && !/vir antes/i.test(texto)) texto = texto + '\\n' + pergEncaixe.replace(/\\\\\"/g, '\"');",

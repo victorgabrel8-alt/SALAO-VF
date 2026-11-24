@@ -78,7 +78,7 @@ test('entrada estranha não quebra', () => {
 
 test('aviso para a dona: conversa normal, com quem é e o que ela escreveu', () => {
   const t = avisoDaDona({ nome: 'dienne souza de lima', telefone: '556696736156', mensagem: 'Oi cheguei' });
-  assert.strictEqual(t, '⚠️ Estou com um problema aqui no sistema e não consegui responder a *Dienne Souza*, que escreveu agora: «Oi cheguei». ' +
+  assert.strictEqual(t, 'Estou com um problema aqui no sistema e não consegui responder a *Dienne Souza*, que escreveu agora: «Oi cheguei». ' +
     'Eu só disse a ela que você responde assim que puder.\nConsegue responder ela pelo WhatsApp do salão? O número dela é (66) 99673-6156.\nO Victor já foi avisado do problema.');
   // 24/11/2026: com o link da conversa no app (a Gleide perguntou "Qual o WhatsApp dela?")
   assert.ok(avisoDaDona({ nome: 'Lia', telefone: '5566999990022', mensagem: 'oi', link: 'https://app.oistudio.com.br/conversas/abc' })

@@ -739,7 +739,7 @@ const catalogo = require('./catalogo-workflows.js')({ node, str, main, toolSub, 
 const assistente = require('./assistente-workflows.js')({ env, node, str, main, toolSub, workflow, megaHair: !LOJA || /mega/i.test(String(LOJA.nicho || '')) });
 
 // Faltas: a IA chama quem faltou e avisa a Gleide do que remarcou (ver faltas-workflows.js e supabase/007)
-const faltas = require('./faltas-workflows.js')({ env, node, main });
+const faltas = require('./faltas-workflows.js')({ env, node, main, semEmoji: !LOJA });
 // Retomar conversa: a cliente sumiu depois da resposta da IA (ver retomar-workflows.js e supabase/019)
 const retomar = require('./retomar-workflows.js')({ env, node, main, GEMINI });
 // Retorno combinado: alô na data que a cliente combinou (ver retorno-workflows.js e supabase/028)

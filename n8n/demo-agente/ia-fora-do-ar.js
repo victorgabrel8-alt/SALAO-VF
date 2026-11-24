@@ -60,7 +60,7 @@ function avisoDaDona(ctx) {
   // "[1] oi\n[2] cheguei" é a numeração do buffer: sai
   const msg = String(ctx.mensagem || '').replace(/(^|\n)\s*\[\d+\]\s*/g, '$1').replace(/\s+/g, ' ').trim();
   const corta = msg.length > 200 ? msg.slice(0, 200) + '…' : msg;
-  return '⚠️ Estou com um problema aqui no sistema e não consegui responder ' + quem + (corta ? ', que escreveu agora: «' + corta + '».' : '.') +
+  return 'Estou com um problema aqui no sistema e não consegui responder ' + quem + (corta ? ', que escreveu agora: «' + corta + '».' : '.') +
     ' Eu só disse a ela que você responde assim que puder.\nConsegue responder ela pelo WhatsApp do salão?' + (temNome && tel ? ' O número dela é ' + tel + '.' : '') +
     (ctx.link ? '\nConversa dela no app: ' + ctx.link : '') + '\nO Victor já foi avisado do problema.';
 }
@@ -122,7 +122,7 @@ module.exports = ({ node, main, ifNode, cond, workflow, EVO, apikeyHeader, REDIS
       "const nome = pega(() => $('Supabase: ficha da cliente').first().json.nome) || pega(() => $('Extrair dados').first().json.nome) || '';",
       "const mensagem = pega(() => $('Montar entrada').first().json.texto_cliente) || '';",
       "const texto = avisos.length === 4",
-      "  ? 'Tem mais clientes escrevendo e eu continuo sem conseguir responder. Dá uma olhada no WhatsApp do salão quando puder 🙏 O Victor já foi avisado.'",
+      "  ? 'Tem mais clientes escrevendo e eu continuo sem conseguir responder. Dá uma olhada no WhatsApp do salão quando puder. O Victor já foi avisado.'",
       "  : avisoDaDona({ nome, telefone, mensagem, link: (() => { const id = pega(() => $('Supabase: ficha da cliente').first().json.id);",
       "      return id ? String(pega(() => $env.APP_URL) || 'https://app.oistudio.com.br').replace(/\\/$/, '') + '/conversas/' + id : ''; })() });",
       "const memoria = JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } });",

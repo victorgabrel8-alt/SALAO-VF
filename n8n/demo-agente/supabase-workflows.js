@@ -322,7 +322,7 @@ Use a ficha como quem já conhece a cliente:
     "try { r = avisoTransferencia({ nome: cli.nome, telefone: cli.telefone || pedido.telefone, cliente_id: cli.id, o_que_precisa: pedido.o_que_precisa,",
     "  motivo: pedido.motivo, mensagens, app: pega(() => $env.APP_URL) || 'https://app.oistudio.com.br', agora: Date.now() }); }",
     'catch (e) {',
-    "  const texto = '🔔 ' + (cli.nome || 'Uma cliente') + ' precisa de você: ' + (pedido.o_que_precisa || pedido.motivo || 'quer falar com você') + '. A IA parou de responder ela por 12 h.';",
+    "  const texto = (cli.nome || 'Uma cliente') + ' precisa de você: ' + (pedido.o_que_precisa || pedido.motivo || 'quer falar com você') + '. A IA parou de responder ela por 12 h.';",
     "  r = { texto, memoria: JSON.stringify({ type: 'ai', data: { content: texto, additional_kwargs: {}, response_metadata: {}, tool_calls: [], invalid_tool_calls: [] } }) };",
     '}',
     'return [{ json: { numero, chave, texto: r.texto, memoria: r.memoria } }];',
