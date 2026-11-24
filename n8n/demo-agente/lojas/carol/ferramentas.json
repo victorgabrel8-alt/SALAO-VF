@@ -1,0 +1,27 @@
+{
+  "perguntar_para_gleide": {
+    "descricao": "Manda uma pergunta curta para a Caroline SEM pausar o atendimento; a resposta dela chega à cliente sozinha. Use só nos casos do item 7 do roteiro (algo que o sistema não mostra e a cliente afirma; decisão que é só da Caroline; pergunta prática que não está cadastrada, como levar criança, acompanhante ou estacionamento; aviso de reparo; código de voucher que não aparece). Preço é só o da lista SERVIÇOS E PREÇOS. Se a resposta não começar com PERGUNTADO, a pergunta não foi enviada.",
+    "campos": {
+      "pergunta": "O que a cliente quer saber, em palavras simples, até 12 palavras, sem o nome dela (ex.: Pode trazer a filha de 5 anos junto?; Tem encaixe sábado depois das 18h?). No aviso de reparo e no caso de material de outra profissional depois de marcada, pode passar desse limite",
+      "contexto": "O motivo, se ajudar a Caroline a decidir, até 8 palavras, sem o nome da cliente (ex.: casamento no sábado, quer gel nude). Pode ficar vazio."
+    }
+  },
+  "transferir_para_humano": {
+    "descricao": "Passa a conversa para a Caroline e PAUSA você para esta cliente por 12 horas. A Caroline recebe no WhatsApp o resumo e o link da conversa. Use só nos casos do item 7 do roteiro: dor, machucado, inflamação, alergia, reclamação de atendimento ou de cobrança, a cliente pede para falar com a Caroline, ou a agenda deu ERRO. Dúvida simples é perguntar_para_gleide, que não pausa.",
+    "campos": {
+      "motivo": "Motivo curto, até 12 palavras (ex.: unha inchada depois do alongamento)",
+      "resumo": "Uma frase curta para a ficha da cliente, até 20 palavras: nova ou já cliente, horário marcado, o que você já explicou. Não vai no aviso da Caroline.",
+      "o_que_precisa": "A única frase do aviso no WhatsApp da Caroline: o que ela precisa fazer e o motivo, até 10 palavras, sem o nome da cliente (ex.: Ver a foto da unha e dizer se precisa voltar)"
+    }
+  },
+  "anotar_no_crm": {
+    "descricao": "Anota na ficha da cliente um fato útil para os próximos atendimentos (preferência, quando ela pode vir, que pediu para não receber mensagens). Não avisa a cliente. Quando ela combinar de voltar a falar numa data (\"semana que vem te falo\", \"depois do dia 10 eu vejo\"), preencha data_retorno e assunto_retorno; sem dia ou prazo dito por ela, deixe os dois vazios. A resposta da ferramenta diz se você pode dizer a ela que chama nesse dia.",
+    "campos": {
+      "interesse": "O que ela quer, curto (ex.: \"alongamento no molde F1\", \"pé e mão\")",
+      "resumo": "O fato a guardar, em 1 ou 2 frases (ex.: \"Só pode depois das 17h30. Prefere a Duda.\")"
+    }
+  },
+  "criar_agendamento": {
+    "descricao": "Cria um agendamento NOVO na agenda do studio. Use depois que a cliente escolheu um dos horários de consultar_horarios_livres e você sabe o serviço. Para mudar um horário que existe, a ferramenta é remarcar_agendamento. Horário novo com sinal só é gravado depois que a foto do comprovante chegou (o sistema confere). Se a resposta não começar com AGENDADO, o horário não foi marcado e a resposta diz o motivo."
+  }
+}

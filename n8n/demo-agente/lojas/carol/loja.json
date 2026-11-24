@@ -7,6 +7,7 @@
   "dona": "Caroline",
   "cidade": "Sinop",
   "equipe": true,
+  "prompt_inteiro": true,
   "assistente_numeros": [
     "5593991144926"
   ],
@@ -35,24 +36,8 @@
       "Ex.: \"pé e mão, primeira vez\", \"gel nude pra casamento sábado\", \"manutenção do alongamento feito há 3 semanas\", \"tirar o gel e esmaltar\""
     ],
     [
-      "(ex.: \"mega hair queratina, cabelo vietnamita 60 cm\", \"selagem\")",
-      "(ex.: \"alongamento em gel, formato amendoado\", \"pé e mão\")"
-    ],
-    [
-      "dela (serviço, tipo de cabelo, química, orçamento)",
-      "dela (serviço, mão ou pé, gel ou alongamento, cor, ocasião)"
-    ],
-    [
-      "valores de SERVIÇOS/MÃO DE OBRA e durações, nunca preço dos FIOS; se houver divergência",
-      "valores e durações; se houver divergência"
-    ],
-    [
       "(sem lista atualizada: não invente preço; use seção 04 apenas para base geral da mão de obra e durações)",
       "(sem lista atualizada: não informe preço nem duração; diga que a Gleide confirma)"
-    ],
-    [
-      "mas NÃO libera preço de cabelo humano vendido por gramas/comprimento, nem permite calcular o TOTAL da primeira aplicação",
-      "e PODE SOMAR (pedido do Victor, 18/11/2026): quando a cliente quer dois ou mais serviços da lista no mesmo atendimento, ou pergunta quanto ficam juntos, diga o preço de cada um e o total somado, na hora, e some também as durações para ver o horário. NÃO use perguntar_para_gleide para saber se os valores somam nem diga que vai confirmar o valor: os dois preços estão na lista, a conta é sua. O sinal continua um só por horário. Só pergunte à dona quando um dos serviços não estiver na lista. NÃO permite montar pacote com valor menor nem dar desconto"
     ],
     [
       "puxando o assunto do salão de mega hair sem listar serviços: pergunte de um jeito simples o que ela está procurando ou se quer saber sobre mega hair.",
@@ -87,38 +72,6 @@
       "const COMUNS = new Set('unha unhas mao maos pe pes quero"
     ],
     [
-      "“A manutenção fica a partir de R$ 150 por tela.”",
-      "“O pé e mão fica R$ [preço fixo confirmado na lista].” (ou “a partir de R$ ...” apenas se a lista marcar preço inicial)."
-    ],
-    [
-      "use transferir_para_humano (pergunta de preço ou desconto não é transferência; avaliação à distância é a avaliação online da agenda). NUNCA use para preço, orçamento, valor de cabelo ou estimativa: orçamento de cabelo de cliente decidida é pedir_orcamento_cabelo.",
-      "use transferir_para_humano (pergunta de preço ou desconto não é transferência). Preço: só o da lista SERVIÇOS E PREÇOS; serviço sem preço na lista ou desenho/nail art de referência pode ser perguntado à Gleide, sem prometer valor."
-    ],
-    [
-      "(ex.: Pode levar cachorro de porte grande na avaliação?; Pode passar aí sem marcar horário?)",
-      "(ex.: Pode trazer a filha de 5 anos junto?; Pode passar aí sem marcar horário?)"
-    ],
-    [
-      "(ex.: trabalha em hospital, sem horário fixo)",
-      "(ex.: casamento no sábado, quer gel nude)"
-    ],
-    [
-      "(ex.: quer avaliação à distância, mora longe)",
-      "(ex.: unha inchada depois do alongamento)"
-    ],
-    [
-      "(ex.: Ver reação no couro cabeludo depois da aplicação)",
-      "(ex.: Ver a foto da unha e dizer se precisa voltar)"
-    ],
-    [
-      "use a seção 04 apenas para durações e base geral de mão de obra autorizada, nunca para inventar preço específico",
-      "não informe preço nem duração que não estejam na lista"
-    ],
-    [
-      "Químicas e tratamentos com preço positivo válido são sempre apresentados com “a partir de”; demais serviços",
-      "Os serviços"
-    ],
-    [
       "não indique técnica, quantidade nem tipo de cabelo;",
       "não indique técnica, formato nem cor;"
     ],
@@ -131,36 +84,8 @@
       "como ficou a cor da unha com a amiga"
     ],
     [
-      "Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. ",
-      ""
-    ],
-    [
-      "Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático).",
-      "Para pedido de endereço, responda usando DADOS DO SALÃO, sem consultar agenda até a pessoa pedir."
-    ],
-    [
-      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Não escreva os números [1], [2] na resposta.",
-      "Cumprimento (\"oi\", \"tudo bem?\") se responde junto, numa frase só. Se há pedido em outra linha, atenda a esse pedido e não acrescente pergunta genérica. Se TODAS as linhas forem apenas cumprimentos sem pedido, cumprimente de volta e pergunte o que ela quer fazer. Não escreva os números [1], [2] na resposta."
-    ],
-    [
-      "Para uma reação isolada sem nova demanda, depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp.",
-      "Para uma REAÇÃO ISOLADA DE ENCERRAMENTO sem nova demanda (como \"ok\", \"obrigada\", \"blz\"), depois de uma mensagem sua que NÃO terminou em pergunta, produza EXATAMENTE [[NAO_ENVIAR]] para o n8n impedir a mensagem; NUNCA envie o marcador ao WhatsApp. EXCEÇÃO OBRIGATÓRIA: \"oi\", \"olá\", \"boa tarde\", \"bom dia\", \"boa noite\" e cumprimentos semelhantes SEM outro pedido, quando usados para iniciar ou retomar contato, NÃO são reações de encerramento e NÃO recebem [[NAO_ENVIAR]]; responda e cumprimente de volta e pergunte o que ela quer fazer."
-    ],
-    [
-      "(nome, se já tem mega hair, qual serviço fez)",
-      "(nome, qual serviço fez)"
-    ],
-    [
-      "manutenção do seu mega hair, quer que eu veja um horário?",
-      "manutenção do seu alongamento, quer que eu veja um horário?"
-    ],
-    [
       "Use transferir_para_humano se for orçamento de cabelo ou se a cliente precisar resolver já.",
       "Use transferir_para_humano se a cliente precisar resolver já."
-    ],
-    [
-      "Não inclua “quer ver horários?” quando ela apenas pediu preço. ",
-      ""
     ]
   ],
   "memoria_horas": 12,

@@ -944,6 +944,9 @@ if (LOJA) {
   // 20/11: WhatsApp da segunda profissional (Duda) na assistente: ela usa a assistente e recebe só o que é dela (segunda-profissional-whatsapp.js).
   // Depois do pedido-numerado (troca nós dele) e antes do paraLoja.
   if (LOJA.segunda_profissional && LOJA.segunda_profissional.telefone) require('./segunda-profissional-whatsapp.js')({ node, ifNode, cond, workflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, perguntaWorkflow: pedidos.perguntaWorkflow, loja: LOJA });
+  // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado
+  // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
+  if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona

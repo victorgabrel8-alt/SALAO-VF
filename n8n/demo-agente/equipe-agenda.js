@@ -191,6 +191,12 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     n.value.profissional = "={{ $fromAI('profissional', `" + desc + "`, 'string') }}";
     if (!n.schema.some((s) => s.id === 'profissional')) n.schema.push({ id: 'profissional', displayName: 'profissional', required: false, defaultMatch: false, display: true, canBeUsedToMatch: true, type: 'string', removed: false });
   }
+  // a consulta também leva o telefone: é por ele que a agenda sabe com quem a cliente já tem horário (sem isso a
+  // cliente antiga era tratada como nova na hora de oferecer; achado no teste de conversa de 23/11)
+  const consulta = achar(workflow, 'consultar_horarios_livres').parameters.workflowInputs;
+  if (!consulta.schema.some((s) => s.id === 'telefone')) throw new Error('equipe-agenda: consultar_horarios_livres sem o campo telefone');
+  consulta.value.telefone = achar(workflow, 'criar_agendamento').parameters.workflowInputs.value.telefone;
+  if (!consulta.value.telefone) throw new Error('equipe-agenda: criar_agendamento sem telefone para copiar');
 
   // ---------- lembrete: "com a <nome>" de quem atende ----------
   if (FW && FW.nodes.some((x) => x.name === 'Mensagem do lembrete')) {
