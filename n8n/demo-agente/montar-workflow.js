@@ -969,6 +969,8 @@ if (LOJA) {
   if (LOJA.assistente_conversas) require('./assistente-conversas.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
   // a assistente da dona lê foto e print (assistente-fotos.js)
   if (LOJA.assistente_fotos) require('./assistente-fotos.js')({ assistenteWorkflow: assistente.assistenteWorkflow });
+  // 24/11: regras de quando a IA de atendimento marca, gravadas pela assistente (regras-da-agenda.js, supabase/071)
+  if (LOJA.regras_agenda) require('./regras-da-agenda.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
   // a assistente marca sem inventar tempo e tira o "serviço não confirmado" quando a dona diz o serviço (assistente-marcar.js)
   if (LOJA.assistente_marcar) require('./assistente-marcar.js')({ assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, minutos: LOJA.bloco_minutos });
   // resumo da agenda de amanhã, toda noite, para a dona (resumo-noite.js)
@@ -1006,18 +1008,51 @@ if (LOJA) {
   if (LOJA.assistente_consertos && LOJA.envio_cuidadoso) require('./assistente-consertos.js')({ node, ifNode, cond, ferramentasWorkflow: assistente.ferramentasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, empresaId: LOJA.empresa_id });
   // Lote 2 de 20/11: "confirmo" ao lembrete grava confirmado_em e o app mostra "Confirmou" (confirmou-presenca.js, supabase/055)
   if (LOJA.confirmou_presenca) require('./confirmou-presenca.js')({ node, workflow, empresaId: LOJA.empresa_id });
-  // 20/11: segunda profissional (Duda) na mesma agenda, separada; a IA oferece o horário livre de quem for (duas-profissionais.js).
+  // 23/11: equipe na agenda (loja.json: "equipe": true): cada profissional com a sua agenda, lida do cadastro na hora, e a
+  // preferência de quem a IA oferece primeiro (equipe-agenda.js, supabase/069). Entrou no lugar do duas-profissionais.js (20/11).
   // Fica no fim: troca textos que os módulos da agenda e do lembrete já puseram.
-  if (LOJA.segunda_profissional) require('./duas-profissionais.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
+  if (LOJA.equipe) require('./equipe-agenda.js')({ node, workflow, agendaWorkflow, faltasWorkflow: faltas.faltasWorkflow, loja: LOJA });
   // 20/11: voucher de R$ 20 da esmaltação em gel; manda o código sozinho e mostra na ficha (voucher-gel.js, supabase/057)
   if (LOJA.voucher_gel) require('./voucher-gel.js')({ faltasWorkflow: faltas.faltasWorkflow, workflow, loja: LOJA });
+  // 24/11: a confirmação da véspera confere a Google da dona; horário diferente no app e na Google espera a dona acertar (lembrete-confere-google.js)
+  if (LOJA.lembrete_confere_google && LOJA.google_agenda) require('./lembrete-confere-google.js')({ node, faltasWorkflow: faltas.faltasWorkflow,
+    NUMEROS: "($env.ASSISTENTE_NUMEROS || '5566999596740').split(',').map(s => s.trim()).filter(Boolean)", REDIS: { redis: { id: env.N8N_REDIS_CRED_ID || '', name: 'Redis local' } } });
   // 20/11: pergunta à dona com número (#27): ela responde '27 sim' sem citar; pedido aberto vai nas pendências, no resumo da noite e na ficha da cliente (pedido-numerado.js)
   // Tem que ser o último antes do paraLoja: encaixa nós ao lado de outros que os módulos acima já puseram.
   if (LOJA.pedido_numerado) require('./pedido-numerado.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pendenciasWorkflow: assistente.pendenciasWorkflow, faltasWorkflow: faltas.faltasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA });
   // 20/11: WhatsApp da segunda profissional (Duda) na assistente: ela usa a assistente e recebe só o que é dela (segunda-profissional-whatsapp.js).
   // Depois do pedido-numerado (troca nós dele) e antes do paraLoja.
   if (LOJA.segunda_profissional && LOJA.segunda_profissional.telefone) require('./segunda-profissional-whatsapp.js')({ node, ifNode, cond, workflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, perguntaWorkflow: pedidos.perguntaWorkflow, loja: LOJA });
+  // 24/11: a assistente oferece horário pela agenda da IA, cliente sem sinal, reserva sem "pode ser?", "mandei" só se mandou
+  // (assistente-oferecer.js, supabase/075). Depois dos módulos que mexem no "Envio: conferir" e no "Conferir resposta".
+  if (LOJA.assistente_oferecer) require('./assistente-oferecer.js')({ workflow, agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, agendaId: lerAgendaId() });
+  // 24/11: bloqueio de uma profissional só; a assistente pergunta se a outra continua (bloqueio-por-profissional.js, supabase/076 e 077)
+  if (LOJA.bloqueio_por_profissional && LOJA.equipe) require('./bloqueio-por-profissional.js')({ agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
+  // 24/11: cópia ao Victor de cada dúvida e erro da IA e da assistente (copia-victor.js). Depois do Conferente e do pedido-numerado.
+  if (LOJA.copia_victor) require('./copia-victor.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pausaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, numero: LOJA.copia_victor });
+  // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado
+  // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
+  if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });
+  if (LOJA.prompt_inteiro) require('./prompt-inteiro.js').assistente({ assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA });
+  // 24/11: assistente mais rápida (medido na Loja Teste): com as 34 ferramentas, o gemini-3-flash-preview levou 19 a 24 s por
+  // passo e o gemini-3.5-flash 3 a 4 s, com a mesma escolha de ferramenta. loja.json: "assistente_modelo" troca o modelo da
+  // assistente; "assistente_espera" (segundos) troca a espera que junta mensagens seguidas (era 10 s).
+  if (LOJA.assistente_modelo || LOJA.assistente_espera) {
+    const A = assistente.assistenteWorkflow;
+    if (LOJA.assistente_modelo) {
+      const g = A.nodes.find((n) => n.name === 'Gemini Flash');
+      if (!g || !/gemini/.test(String(g.parameters.modelName))) throw new Error('assistente_modelo: sem o nó Gemini Flash da assistente');
+      g.parameters.modelName = LOJA.assistente_modelo;
+    }
+    if (LOJA.assistente_espera) {
+      const w = A.nodes.find((n) => n.name === 'Aguardar (juntar mensagens)');
+      if (!w || w.parameters.unit !== 'seconds') throw new Error('assistente_espera: a espera da assistente mudou');
+      w.parameters.amount = Number(LOJA.assistente_espera);
+    }
+  }
   for (const wf of todos) lojas.paraLoja(wf, LOJA, ids);
+  // loja de teste (loja.json: "gemini_teste": true): todo nó do Gemini usa a chave de teste, com teto próprio (24/11)
+  if (LOJA.gemini_teste) for (const wf of todos) for (const nd of wf.nodes) if (nd.credentials && nd.credentials.googlePalmApi) nd.credentials.googlePalmApi = { id: '1dUDElLglPj5J1iG', name: 'Google Gemini(PaLM) Api teste' };
   lojas.travarEnvios([faltas.faltasWorkflow, retomar.retomarWorkflow, retorno.retornoWorkflow, assistente.ferramentasWorkflow, assistente.pendenciasWorkflow], LOJA);
   // sem trava própria: o agente (Filtro na entrada) e o que só ele chama (áudio, catálogo); o que vai só para a dona
   // (pausa, pergunta, assistente) e o alerta (número fixo). Workflow novo que manda mensagem entra numa das duas listas.
@@ -1139,7 +1174,8 @@ if (process.argv.includes('--enviar')) {
     // assistente: ferramentas primeiro (as tools do agente apontam para ele)
     const ferramentasId = await upsert(assistente.ferramentasWorkflow, assistente.ferramentasIdFile);
     if (process.argv.includes('--ativar')) await ativar(ferramentasId);
-    for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = ferramentasId;
+    // horarios_para_oferecer (assistente-oferecer.js) chama a agenda da IA; as outras, o subworkflow de ferramentas
+    for (const nd of assistente.assistenteWorkflow.nodes) if (nd.type.endsWith('toolWorkflow')) nd.parameters.workflowId.value = nd.name === 'horarios_para_oferecer' ? agendaId : ferramentasId;
     fs.writeFileSync(saida('workflow-assistente.json'), JSON.stringify(assistente.assistenteWorkflow, null, 2));
     const pendenciasId = await upsert(assistente.pendenciasWorkflow, path.join(dir, '.workflow-assistente-pendencias-id'));
     if (process.argv.includes('--ativar')) await ativar(pendenciasId);

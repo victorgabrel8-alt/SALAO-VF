@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000321",
+      "id": "00000000-0000-4000-8000-000000000336",
       "name": "Recebe pergunta da IA",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -52,7 +52,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000322",
+      "id": "00000000-0000-4000-8000-000000000337",
       "name": "Supabase: número de alerta",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -82,7 +82,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000323",
+      "id": "00000000-0000-4000-8000-000000000338",
       "name": "Enviar pergunta à Caroline",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -92,7 +92,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -104,7 +104,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: $json.alerta, text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ Pergunta da cliente ') + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor. Eu passo para ela.' : '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o que digo a ela.') }) }}",
+        "jsonBody": "={{ JSON.stringify({ number: (((() => { try { return $('Pergunta: cliente da Duda?').first().json.profissional_id; } catch (e) { return null; } })() === '7583f2c4-1977-427e-b383-4bc36cef8973') ? '5566900000096' : $('Supabase: número de alerta').first().json.alerta), text: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '💰 Orçamento de cabelo: ' : '❓ ' + ((() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() ? '#' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ' ' : '')) + ($('Recebe pergunta da IA').first().json.nome || 'sem nome') + ' · ' + String((() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); return /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; })()).replace(/^55(\\d{2})(\\d{4,5})(\\d{4})$/, '($1) $2-$3') + '\\n' + $('Recebe pergunta da IA').first().json.pergunta + ($('Recebe pergunta da IA').first().json.contexto ? '\\n' + $('Recebe pergunta da IA').first().json.contexto : '') +\n        ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? '\\n\\n↩️ Toque em Responder nesta mensagem e escreva o valor (ou o que precisa saber dela). Eu passo para ela.' : '') }) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -114,7 +114,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000324",
+      "id": "00000000-0000-4000-8000-000000000339",
       "name": "Guardar pedido",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -127,7 +127,7 @@
         "key": "=teste:pedido:{{ $json.key?.id || 'falhou' }}",
         "expire": true,
         "ttl": 259200,
-        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta, tipo: $('Recebe pergunta da IA').first().json.tipo || 'pergunta', empresa: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }) }}"
+        "value": "={{ JSON.stringify({ telefone: $('Recebe pergunta da IA').first().json.telefone, jid: $('Recebe pergunta da IA').first().json.jid, nome: $('Recebe pergunta da IA').first().json.nome, pergunta: $('Recebe pergunta da IA').first().json.pergunta, tipo: $('Recebe pergunta da IA').first().json.tipo || 'pergunta', empresa: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', num: (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() || null, criado: $now.toMillis() }) }}"
       },
       "credentials": {
         "redis": {
@@ -138,7 +138,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000325",
+      "id": "00000000-0000-4000-8000-000000000340",
       "name": "Memória da assistente",
       "type": "n8n-nodes-base.redis",
       "typeVersion": 1,
@@ -150,7 +150,7 @@
         "operation": "push",
         "list": "=teste:assistente:{{ $('Supabase: número de alerta').first().json.alerta }}",
         "tail": false,
-        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'Pedi à Caroline o orçamento de cabelo de ' : 'Perguntei à Caroline sobre ') + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'Pedi à Caroline o orçamento de cabelo de ' : 'Perguntei à Caroline ' + ((() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() ? '(pedido #' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() + ') ' : '') + 'sobre ') + ($('Recebe pergunta da IA').first().json.nome || 'uma cliente') + ': ' + $('Recebe pergunta da IA').first().json.pergunta, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
       },
       "credentials": {
         "redis": {
@@ -161,7 +161,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000326",
+      "id": "00000000-0000-4000-8000-000000000341",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -175,13 +175,185 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ $('Enviar pergunta à Caroline').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'ORÇAMENTO PEDIDO: a Caroline recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Caroline chega à cliente automaticamente.' : 'PERGUNTADO: a Caroline recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a Caroline e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Caroline responder, a resposta chega à cliente automaticamente.') : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se a cliente precisar resolver já.' }}",
+              "value": "={{ $('Enviar pergunta à Caroline').first().json.key?.id ? ($('Recebe pergunta da IA').first().json.tipo === 'orcamento_cabelo' ? 'ORÇAMENTO PEDIDO: a Caroline recebeu o pedido. Diga em uma frase o que você pediu e que avisa por aqui assim que ela passar o valor. Não invente valor nem prazo: a resposta da Caroline chega à cliente automaticamente.' : 'PERGUNTADO: a ' + ((() => { try { return $('Pergunta: cliente da Duda?').first().json.profissional_id; } catch (e) { return null; } })() === '7583f2c4-1977-427e-b383-4bc36cef8973' ? 'Duda' : 'Caroline') + ' recebeu a pergunta. Diga à cliente, numa frase gentil, que vai confirmar isso com a ' + ((() => { try { return $('Pergunta: cliente da Duda?').first().json.profissional_id; } catch (e) { return null; } })() === '7583f2c4-1977-427e-b383-4bc36cef8973' ? 'Duda' : 'Caroline') + ' e avisa por aqui assim que ela responder. Continue o atendimento normalmente nos outros assuntos. Não invente a resposta: quando a Caroline responder, a resposta chega à cliente automaticamente.') : 'NÃO PERGUNTADO: não consegui mandar agora. Não diga que pediu e não invente nada. Use transferir_para_humano se a cliente precisar resolver já.' }}",
               "type": "string"
             }
           ]
         },
         "options": {}
       }
+    },
+    {
+      "id": "335ed1e7-7386-4f2c-8bca-e64336e08728",
+      "name": "Pedido nº: abertos",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        110,
+        220
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "teste:pedido:*",
+        "getValues": true
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "45e325c4-7161-46c2-8d70-057af323b9da",
+      "name": "Pedido nº: já tem aberto?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        330,
+        220
+      ],
+      "parameters": {
+        "jsCode": "// pedido-numerado.js: esta cliente já tem pergunta à dona sem resposta? Então não manda outra (a dona reclama de pergunta demais)\nconst r = $('Recebe pergunta da IA').first().json;\nconst fim8 = (t) => String(t || '').replace(/\\D/g, '').slice(-8);\nconst meus = Object.values($('Pedido nº: abertos').first().json || {}).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && typeof p === 'object' && p.empresa === 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' && p.telefone && p.pergunta).filter((p) => fim8(p.telefone) === fim8(r.telefone) && (p.tipo || 'pergunta') === (r.tipo || 'pergunta'));\nreturn [{ json: { aberto: meus.sort((a, b) => (b.criado || 0) - (a.criado || 0))[0] || null } }];"
+      }
+    },
+    {
+      "id": "6b77ebd8-d764-4ce3-829a-1eb2e7897560",
+      "name": "Pedido nº: perguntar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        550,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "pn1",
+              "leftValue": "={{ !$json.aberto }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "10bc9c70-10fa-431a-8bcf-66552a78a2b9",
+      "name": "Pedido nº: já perguntado",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        770,
+        400
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a-resposta",
+              "name": "resposta",
+              "type": "string",
+              "value": "={{ (() => { const p = $('Pedido nº: já tem aberto?').first().json.aberto || {}; return 'JÁ PERGUNTADO: esta cliente já tem uma pergunta com a Caroline' + (p.num ? ' (pedido #' + p.num + ')' : '') + ', ainda sem resposta: \"' + p.pergunta + '\". NÃO mandei outra pergunta. Diga à cliente, numa frase, que ainda está vendo isso com a Caroline e que avisa por aqui assim que ela responder. Não invente a resposta. Se for um problema novo e sério com o atendimento, use transferir_para_humano.'; })() }}"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d6d1d4e3-6265-4c91-8e19-48d33ddca6bd",
+      "name": "Pedido nº: contador",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        410,
+        220
+      ],
+      "parameters": {
+        "operation": "incr",
+        "key": "=teste:pedido:{{ 'contador' }}",
+        "expire": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "d48c5134-0907-466f-8739-060eb2f8ea24",
+      "name": "Pedido nº: guardar índice",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1010,
+        220
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:pedido:{{ $('Enviar pergunta à Caroline').first().json.key?.id && (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() ? 'n' + (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })() : 'sem-numero' }}",
+        "expire": true,
+        "ttl": 259200,
+        "value": "={{ JSON.stringify({ msg: $('Enviar pergunta à Caroline').first().json.key?.id || '', num: (() => { try { const v = Number(Object.values($('Pedido nº: contador').first().json || {})[0]); return v > 0 ? v + 10 : 0; } catch (e) { return 0; } })(), para: [...new Set([$('Supabase: número de alerta').first().json.alerta, ...String('5566999270860,5566900000096' || '').split(',')].map(((n) => { const d = String(n || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })).filter(Boolean))] }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000458",
+      "name": "Pergunta: cliente da Duda?",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        410,
+        -220
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=profissional_id,clientes!inner(telefone)&empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}&clientes.telefone=in.({{ (() => { const d = String($('Recebe pergunta da IA').first().json.telefone || '').replace(/\\D/g, ''); const com9 = /^55\\d{2}[6-9]\\d{7}$/.test(d) ? d.slice(0, 4) + '9' + d.slice(4) : d; const sem9 = com9.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2'); return com9 + ',' + sem9; })() }})&order=inicio&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -189,7 +361,7 @@
       "main": [
         [
           {
-            "node": "Supabase: número de alerta",
+            "node": "Pedido nº: abertos",
             "type": "main",
             "index": 0
           }
@@ -200,7 +372,7 @@
       "main": [
         [
           {
-            "node": "Enviar pergunta à Caroline",
+            "node": "Pergunta: cliente da Duda?",
             "type": "main",
             "index": 0
           }
@@ -222,7 +394,7 @@
       "main": [
         [
           {
-            "node": "Memória da assistente",
+            "node": "Pedido nº: guardar índice",
             "type": "main",
             "index": 0
           }
@@ -234,6 +406,79 @@
         [
           {
             "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido nº: abertos": {
+      "main": [
+        [
+          {
+            "node": "Pedido nº: já tem aberto?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido nº: já tem aberto?": {
+      "main": [
+        [
+          {
+            "node": "Pedido nº: perguntar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido nº: perguntar?": {
+      "main": [
+        [
+          {
+            "node": "Supabase: número de alerta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Pedido nº: já perguntado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido nº: contador": {
+      "main": [
+        [
+          {
+            "node": "Enviar pergunta à Caroline",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pedido nº: guardar índice": {
+      "main": [
+        [
+          {
+            "node": "Memória da assistente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pergunta: cliente da Duda?": {
+      "main": [
+        [
+          {
+            "node": "Pedido nº: contador",
             "type": "main",
             "index": 0
           }

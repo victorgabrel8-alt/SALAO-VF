@@ -6,13 +6,15 @@
 // sem entender. Causa: a IA decide como escreve a chave e o "Quebrar mensagens" junta tudo em no máximo 2 balões.
 //
 // Agora a IA não escreve mais a chave. Quando for pedir o sinal ela escreve só a marca [[PIX: serviço; dia e hora]]
-// e o sistema troca a marca por 3 mensagens, sempre iguais, montadas com o cadastro:
+// e o sistema troca a marca por 4 mensagens, sempre iguais, montadas com o cadastro:
 //   1. "A manicure fica R$ 50. Pra garantir sábado às 8h é um sinal de R$ 20 no Pix, que fica descontado. No dia você
 //      paga R$ 30." (preço da tabela servicos; sinal de config.loja.sinal_pix.valor). Serviço que não bate com a lista
 //      ou horário que não apareceu na conversa ficam de fora: sai a versão curta, sem inventar.
-//   2. a chave sozinha (config.loja.sinal_pix.chave), para copiar no celular;
-//   3. "Chave aleatória em nome de Caroline. Me manda o print do comprovante por aqui 🙏" (tipo da chave e nome da
-//      recebedora do cadastro; config.loja.sinal_pix.tipo_chave, se existir, vale mais que o tipo adivinhado).
+//   2. "Chave Pix aleatória em nome de Caroline:" (tipo da chave e nome da recebedora do cadastro;
+//      config.loja.sinal_pix.tipo_chave, se existir, vale mais que o tipo adivinhado). Pedido do Victor (20/11): a
+//      cliente precisa saber o que é antes de ver a chave;
+//   3. a chave sozinha (config.loja.sinal_pix.chave), para copiar no celular;
+//   4. "Me manda o print do comprovante por aqui 🙏".
 // A chave nunca sai de novo se o salão já mandou ela a esta cliente nas últimas horas (config.loja.sinal_pix.
 // chave_repetir_horas, padrão 12, o mesmo prazo das "últimas mensagens"): sai só "É a mesma chave Pix que te mandei
 // acima 🙏". Só manda de novo se a cliente pedir a chave ("não achei a chave", "manda de novo o pix").
@@ -151,7 +153,7 @@ t = t.replace(/\[\[\s*PIX\b:?([^\]\n]*)\]\]|\[PIX(?::([^\]\n]*))?\]/g, (m, a, b)
         else if (total > valor) m1 = desc + 'R$ ' + fmt(total) + '. ' + garantir + '. No dia você paga R$ ' + fmt(total - valor) + '.';
         else m1 = desc + 'R$ ' + fmt(total) + '. ' + garantir + ' no dia.';
       }
-      // ---- mensagem 3: tipo da chave e nome de quem recebe ----
+      // ---- rótulo antes da chave (tipo e nome de quem recebe) e o pedido do print ----
       const k = semEsp(chave);
       const tipo = sp.tipo_chave ? 'Chave ' + String(sp.tipo_chave).trim().replace(/^chave\s+/i, '')
         : /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(k) ? 'Chave aleatória'
@@ -159,8 +161,12 @@ t = t.replace(/\[\[\s*PIX\b:?([^\]\n]*)\]\]|\[PIX(?::([^\]\n]*))?\]/g, (m, a, b)
         : /^\+55\d{10,11}$/.test(k) ? 'Chave celular'
         : /^\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}$/.test(k) ? 'Chave CNPJ'
         : /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(k) ? 'Chave CPF' : 'Chave Pix';
-      const recebedor = [].concat(sp.nome_recebedor || []).map((n) => String(n || '').trim()).filter(Boolean)[0] || '';
-      const m3 = tipo + (recebedor ? ' em nome de ' + recebedor : '') + '. Me manda o print do comprovante por aqui 🙏';
+      const recebedor = [].concat(sp.nome_recebedor || []).map((n) => String(n || '').replace(/\s+/g, ' ').trim()).filter(Boolean)[0] || '';
+      // 20/11 (pedido do Victor): antes da chave vai "Chave Pix ... :" dizendo o que é; a chave vem sozinha no balão
+      // seguinte (para copiar) e o pedido do print vem depois dela
+      const tipoNome = tipo.replace(/^Chave\s*/i, '').replace(/^pix\b\s*/i, '');
+      const rotulo = 'Chave Pix' + (tipoNome && !/^pix$/i.test(tipoNome) ? ' ' + tipoNome : '') + (recebedor ? ' em nome de ' + recebedor : '') + ':';
+      const m3 = 'Me manda o print do comprovante por aqui 🙏';
       const mRepetida = 'É a mesma chave Pix que te mandei acima 🙏';
 
       // ---- o texto da IA em volta: sai o que o sistema já diz (chave, sinal, comprovante) ----
@@ -172,7 +178,7 @@ t = t.replace(/\[\[\s*PIX\b:?([^\]\n]*)\]\]|\[PIX(?::([^\]\n]*))?\]/g, (m, a, b)
         (servOk && /R\$/.test(f) && /\b(fica|ficam|custa|custam|paga|pagar|valor|total|restante|falta|faltam)\b/i.test(f) && !/voucher/i.test(f));
       // frase que apresenta a chave ("Segue a chave:", "Chave Pix:", "Pix em nome de ..."); "confere se usou a chave certa?" fica
       const apresentaChave = (f) => /pix em nome|\b(segue|aqui vai|aqui est[áa]|te mando|te passo|vou te passar|mando|essa [ée]|a chave [ée])\b[^.!?]*\bchave\b|\bchave\b[^.!?]*:\s*$/i.test(f) ||
-        /^\s*(a\s+)?(chave|pix)(\s+pix)?\s*[:.]?\s*$/i.test(f);
+        /^\s*(a\s+)?(chave|pix)(\s+pix)?(\s+[ée])?\s*[:.]?\s*$/i.test(f);
       const saiSolta = (f) => apresentaChave(f) || /\bcomprovante\b|\bprint\b/i.test(f);
       const saiRepetida = apresentaChave;
       // chave escrita pela IA: vira a marca no primeiro lugar em que aparece e sai do resto
@@ -198,14 +204,15 @@ t = t.replace(/\[\[\s*PIX\b:?([^\]\n]*)\]\]|\[PIX(?::([^\]\n]*))?\]/g, (m, a, b)
       const depoisAqui = limpa(resto.join(' '));
       const depois = baloes.slice(i + 1).map((b) => ({ ...b, t: limpa(b.t) }));
       let pix;
-      if (modo === 'completo') pix = [m1, chave, m3];
+      if (modo === 'completo') pix = [m1, rotulo, chave, m3];
       else if (modo === 'repetida') pix = [mRepetida];
-      else if (modo === 'solta') pix = (antes.concat([{ t: aqui }], depois).some((b) => /\bsinal\b/i.test(b.t)) ? [] : [m1]).concat([chave, m3]);
+      else if (modo === 'solta') pix = (antes.concat([{ t: aqui }], depois).some((b) => /\bsinal\b/i.test(b.t)) ? [] : [m1]).concat([rotulo, chave, m3]);
       else pix = [];
       // frase curta antes ("Perfeito, Ana!") vai junto da primeira mensagem do Pix
       // (ela pode estar no balão da marca ou no último balão antes dele)
       const curta = (s) => s && s.length <= 40 && !s.includes('\n') && /[.!?…]$|\p{Extended_Pictographic}$/u.test(s);
-      if (pix.length && pix[0] !== chave) {
+      // o rótulo "Chave Pix ...:" fica sozinho no balão dele (não recebe a frase curta)
+      if (pix.length && pix[0] !== chave && pix[0] !== rotulo) {
         if (curta(aqui)) { pix[0] = aqui + ' ' + pix[0]; aqui = ''; }
         else if (!aqui) {
           const ult = antes.map((b) => b.t).filter(Boolean).length ? antes.filter((b) => b.t).slice(-1)[0] : null;
@@ -218,7 +225,7 @@ t = t.replace(/\[\[\s*PIX\b:?([^\]\n]*)\]\]|\[PIX(?::([^\]\n]*))?\]/g, (m, a, b)
     // erro aqui não pode mandar a marca para a cliente: tira a marca e manda a chave com o pedido do comprovante
     const tinha = baloes.some((b) => b.t.includes(MARCA));
     tirarMarca();
-    if (tinha && chaveReserva) baloes = baloes.concat([{ t: chaveReserva, ref: 0 }, { t: 'Essa é a chave Pix do sinal. Me manda o print do comprovante por aqui 🙏', ref: 0 }]);
+    if (tinha && chaveReserva) baloes = baloes.concat([{ t: 'Chave Pix do sinal:', ref: 0 }, { t: chaveReserva, ref: 0 }, { t: 'Me manda o print do comprovante por aqui 🙏', ref: 0 }]);
   }
   // nada sobrou (só a marca, e o Pix não sai): não manda balão (mesmo caminho do [[NAO_ENVIAR]])
   if (!baloes.length) return [{ json: { jid, semTexto: true } }];
@@ -246,10 +253,10 @@ t = t.replace(/\[\[\s*PIX\b:?([^\]\n]*)\]\]|\[PIX(?::([^\]\n]*))?\]/g, (m, a, b)
   const quem = nomes.length > 1 ? ` com a ${nomes[1]}` : '';
   const bloco = [
     `PIX PELO SISTEMA (vale acima de SINAL PARA RESERVAR e de qualquer regra sobre como escrever a chave Pix)`,
-    `- Quem manda o Pix do sinal é o sistema, sempre igual, em 3 mensagens: (1) o preço do serviço, o sinal e quanto fica para o dia; (2) a chave sozinha; (3) o tipo da chave, em nome de quem e o pedido do print do comprovante.`,
+    `- Quem manda o Pix do sinal é o sistema, sempre igual, em 4 mensagens: (1) o preço do serviço, o sinal e quanto fica para o dia; (2) "Chave Pix", o tipo e em nome de quem; (3) a chave sozinha, para copiar; (4) o pedido do print do comprovante.`,
     `- Na hora de pedir o sinal (ela escolheu o horário e você sabe o serviço), escreva numa linha só a marca [[PIX: serviço; dia e hora]]: o serviço com o nome da lista SERVIÇOS E PREÇOS e o dia e a hora que ela escolheu, com quem é. Ex.: [[PIX: Manicure; sábado às 8h${quem}]]. Dois serviços: [[PIX: Manicure + Pedicure; sábado às 8h${quem}]]. Sem certeza do serviço ou do horário: [[PIX]].`,
     `- Antes da marca, no máximo uma frase curta (ex.: "Perfeito, Ana!"). Você NÃO escreve a chave, o preço, o valor do sinal, o "no dia você paga" nem o pedido do comprovante: o sistema escreve.`,
-    `- Uma marca por resposta. [[PIX ...]] numa resposta sua de antes quer dizer que as 3 mensagens já saíram para ela.`,
+    `- Uma marca por resposta. [[PIX ...]] numa resposta sua de antes quer dizer que as mensagens do Pix já saíram para ela.`,
     `- A chave não sai duas vezes: se já foi mandada a ela nas últimas horas, o sistema responde só "É a mesma chave Pix que te mandei acima". Se ela disser que não achou a chave ou pedir de novo, use a marca outra vez.`,
     `- Sem sinal, sem marca: horário que já está na agenda, horário oferecido pela ${dona}, reparo, remarcação e cliente que já mandou o comprovante.`,
     `- O Pix nunca é motivo para perguntar_para_gleide.`,

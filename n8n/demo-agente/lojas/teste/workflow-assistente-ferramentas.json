@@ -18,7 +18,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000157",
+      "id": "00000000-0000-4000-8000-000000000172",
       "name": "Recebe pedido da assistente",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1,
@@ -136,13 +136,19 @@
             },
             {
               "name": "cliente_nome"
+            },
+            {
+              "name": "profissional"
+            },
+            {
+              "name": "citadas"
             }
           ]
         }
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000158",
+      "id": "00000000-0000-4000-8000-000000000173",
       "name": "Montar chamada",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -151,11 +157,11 @@
         0
       ],
       "parameters": {
-        "jsCode": "\nconst e = $input.first().json;\nconst empresa = 'ff4b7937-1abb-4803-83c8-e0896d94fc9f';\nconst v = (k) => (e[k] === undefined || e[k] === null ? '' : String(e[k]).trim());\nconst ou = (s) => (s === '' ? null : s);\nconst num = (k) => { const n = v(k).replace(/[^0-9,.-]/g, '').replace(/\\.(?=\\d{3}(\\D|$))/g, '').replace(',', '.'); return n === '' || n === '-' ? null : Number(n); };\nconst tel = (t) => { let d = String(t || '').replace(/\\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return d; };\n// \"2026-10-24T14:40\" no fuso do salão (Cuiabá, -04:00 o ano todo)\nconst quando = (k) => (v(k) ? v(k) + (/[+-]\\d\\d:?\\d\\d$|Z$/.test(v(k)) ? '' : '-04:00') : null);\nconst sim = (k) => /^(s|sim|true|1|yes)/i.test(v(k));\n// a IA manda \"0\" quando a Caroline não disse o valor (12/11/2026: 4 atendimentos ficaram com R$ 0): zero vira vazio\nconst valor = () => { const n = num('valor'); return n === null || n <= 0 ? null : n; };\n// \"marcar assim mesmo\" só vale depois que a Caroline viu o motivo da recusa (o fluxo manda pode_forcar = sim quando\n// houve uma recusa nos últimos 30 min). Em 11/11/2026 a IA forçou um horário sem ninguém pedir.\nconst forcar = () => sim('forcar');\nconst forcarIgnorado = false;\nconst base = { p_empresa_id: empresa, p_pedido_por: v('pedido_por') };\nlet funcao, args, enviar = false;\nswitch (v('acao')) {\n  case 'buscar_cliente':\n    // v2 (supabase/043): acha também nome escrito ou falado diferente do cadastro\n    funcao = 'n8n_assistente_buscar_cliente_v2'; args = { ...base, p_busca: v('busca') };\n    break;\n  case 'agenda_do_dia':\n    funcao = 'n8n_assistente_agenda_do_dia'; args = { ...base, p_data: ou(v('data')) };\n    break;\n  case 'resultado_avaliacao': {\n    // o que ela não disse fica vazio: a IA mandava \"0\" e \"não informado\" (teste de 09/11/2026), e isso gravaria valor zero na ficha\n    const inteiro = (k) => { const n = num(k); return n === null || n <= 0 ? '' : String(Math.trunc(n)); };\n    const texto = (k) => (/^(n[ãa]o informad[oa]|n[ãa]o sei|sem|nenhum|-|0([.,]0+)?|pensando|fechou)$/i.test(v(k)) ? '' : v(k));\n    // data só no formato AAAA-MM-DD: \"fevereiro\" ou \"início de fevereiro\" ia para o banco e travava a gravação inteira\n    // (09/11/2026). Texto que não é data vai junto do próximo passo.\n    // aceita AAAA-MM-DD ou DD/MM/AAAA, e só data que existe (2027-02-31 travava a gravação no banco)\n    const dataValida = (t) => {\n      let m = t.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/), a, mes, d;\n      if (m) { a = +m[1]; mes = +m[2]; d = +m[3]; } else if ((m = t.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/))) { d = +m[1]; mes = +m[2]; a = +m[3]; } else return '';\n      const x = new Date(Date.UTC(a, mes - 1, d));\n      return x.getUTCFullYear() === a && x.getUTCMonth() === mes - 1 && x.getUTCDate() === d ? x.toISOString().slice(0, 10) : '';\n    };\n    // próximo passo é sempre no futuro: \"fevereiro\" gravado com o ano que já passou vai para o ano seguinte\n    const hojeCuiaba = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);\n    let dataProx = dataValida(v('data_proximo_passo'));\n    if (dataProx && dataProx < hojeCuiaba) dataProx = dataValida(String(+dataProx.slice(0, 4) + 1) + dataProx.slice(4));\n    const resultado = { 'fechou': 'fechou', 'pensando': 'pensando', 'nao_fechou': 'nao_fechou', 'não fechou': 'nao_fechou', 'nao fechou': 'nao_fechou' }[v('resultado').toLowerCase()] || v('resultado');\n    // fechou esperando o cabelo (supabase/038): a data de perguntar de novo é calculada aqui, não pela IA:\n    // hoje + dias para o cabelo chegar + dias de confecção + 1 de folga. \"5 a 7 dias\" conta o maior.\n    const dias = (k) => { const ns = (v(k).match(/\\d+/g) || []).map(Number).filter((n) => n > 0 && n <= 120); return ns.length ? Math.max(...ns) : 0; };\n    const chegada = dias('dias_chegada'), confeccao = dias('dias_confeccao');\n    let prazo = '';\n    if (resultado === 'fechou' && !dataProx && (chegada || confeccao)) {\n      const x = new Date(hojeCuiaba + 'T12:00:00Z');\n      x.setUTCDate(x.getUTCDate() + chegada + confeccao + 1);\n      dataProx = x.toISOString().slice(0, 10);\n      prazo = '(' + [chegada ? 'cabelo chega em ~' + chegada + ' dias' : '', confeccao ? 'confecção ' + confeccao + ' dias' : ''].filter(Boolean).join(' + ') + ')';\n    }\n    const dataOk = dataProx !== '';\n    const passo = [v('proximo_passo'), prazo, dataOk || !v('data_proximo_passo') ? '' : '(' + v('data_proximo_passo') + ')'].filter(Boolean).join(' ');\n    const d = { resultado, tecnica_indicada: texto('tecnica_indicada'), tipo_cabelo: texto('tipo_cabelo'),\n      comprimento_cm: inteiro('comprimento_cm'), gramas: inteiro('gramas'), valor_orcado: num('valor') === null || num('valor') <= 0 ? '' : String(num('valor')),\n      motivo_nao_fechou: texto('motivo_nao_fechou'), proximo_passo: passo, data_proximo_passo: dataProx,\n      observacoes: texto('observacoes') };\n    funcao = 'n8n_assistente_resultado_avaliacao'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_dados: d };\n    break;\n  }\n  case 'status_atendimento':\n    funcao = 'n8n_assistente_status_agendamento';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_status: v('status'), p_valor: valor() };\n    break;\n  case 'registrar_atendimento':\n    funcao = 'n8n_assistente_registrar_atendimento_nome';\n    args = { ...base, p_telefone: tel(v('telefone')), p_nome: v('nome'), p_servico: v('servico'),\n      p_inicio: quando('inicio'), p_valor: valor(), p_observacoes: ou(v('observacoes')) };\n    break;\n  case 'anotar':\n    funcao = 'n8n_assistente_anotar_cliente'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };\n    break;\n  case 'liberar_horario':\n    funcao = 'n8n_assistente_liberar_horario'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')) };\n    break;\n  case 'horarios_livres':\n    funcao = 'n8n_assistente_horarios_livres';\n    args = { ...base, p_data: ou(v('data')), p_servico: ou(v('servico')), p_ignorar: ou(v('agendamento_id')) };\n    break;\n  case 'marcar_horario':\n    // v2 (supabase/037): aceita quanto tempo vai levar (\"vou gastar 1h30\"); sem minutos vale a duração do cadastro\n    funcao = 'n8n_assistente_marcar_horario_c';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_telefone: ou(v('telefone')), p_nome: ou(v('nome')), p_servico: v('servico'),\n      p_inicio: quando('inicio'), p_observacoes: ou(v('observacoes')), p_forcar: forcar(),\n      p_duracao_min: num('minutos') === null || num('minutos') <= 0 ? null : Math.round(num('minutos')), p_bloco_min: 150 };\n    break;\n  case 'ajustar_duracao':\n    funcao = 'n8n_assistente_ajustar_duracao';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_forcar: forcar() };\n    break;\n  case 'reagendar':\n    funcao = 'n8n_assistente_reagendar_confirma';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_inicio: quando('inicio'), p_servico: ou(v('servico')), p_forcar: forcar() };\n    break;\n  case 'atrasar_agenda':\n    funcao = 'n8n_assistente_atrasar_agenda';\n    args = { ...base, p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_a_partir: ou(v('a_partir')), p_data: ou(v('data')) };\n    break;\n  case 'concluir':\n    funcao = 'n8n_assistente_concluir_c';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_servico: ou(v('servico')), p_extras: ou(v('extras')), p_valor: valor() };\n    break;\n  case 'chegou':\n    funcao = 'n8n_assistente_chegou'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_chegou: !sim('desfazer') };\n    break;\n  case 'excluir_horario':\n    funcao = 'n8n_assistente_excluir_horario'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')) };\n    break;\n  case 'bloquear_dias':\n    funcao = 'n8n_assistente_bloquear_dias'; args = { ...base, p_de: ou(v('data')), p_ate: ou(v('ate')), p_motivo: ou(v('texto')) };\n    break;\n  case 'desbloquear_dias':\n    funcao = 'n8n_assistente_desbloquear_dias'; args = { ...base, p_dia: ou(v('data')) };\n    break;\n  case 'bloquear_horario':\n    funcao = 'n8n_assistente_bloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')), p_fim: ou(v('hora_fim')), p_motivo: ou(v('texto')) };\n    break;\n  case 'desbloquear_horario':\n    funcao = 'n8n_assistente_desbloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')) };\n    break;\n  case 'ver_bloqueios_horario':\n    funcao = 'n8n_assistente_ver_bloqueios_horario'; args = { ...base, p_dia: ou(v('data')) };\n    break;\n  case 'pausar_ia':\n    funcao = 'n8n_assistente_pausar_ia'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_pausar: !sim('desfazer') };\n    break;\n  case 'editar_cliente':\n    funcao = 'n8n_assistente_editar_cliente';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_nome: ou(v('nome')), p_aniversario: ou(v('aniversario')) };\n    break;\n  case 'avisar_cliente':\n    funcao = 'n8n_assistente_avisar_cliente'; enviar = true;\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_tipo: v('tipo') === 'remarcacao' ? 'remarcacao' : 'aviso', p_texto: ou(v('texto')) };\n    break;\n  case 'cadastrar_cliente':\n    funcao = 'n8n_assistente_cadastrar_cliente';\n    args = { ...base, p_telefone: v('telefone'), p_nome: ou(v('nome')), p_observacoes: ou(v('observacoes')) };\n    break;\n  case 'chamar_cliente':\n    funcao = 'n8n_assistente_chamar_cliente'; enviar = true;\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };\n    break;\n  // \"em janeiro dá um toque pra ela\" (supabase/039): a IA de atendimento manda o alô nessa data\n  case 'combinar_retorno': {\n    let m = v('data').match(/^(\\d{4})-(\\d{2})-(\\d{2})/), dia = '';\n    if (m) dia = m[1] + '-' + m[2] + '-' + m[3];\n    else if ((m = v('data').match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/))) dia = m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');\n    funcao = 'n8n_assistente_combinar_retorno';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_data: ou(dia), p_assunto: ou(v('texto')) };\n    break;\n  }\n  // regras que a Caroline manda guardar (\"a partir de agora, sempre…\", supabase/035)\n  case 'guardar_regra':\n    funcao = 'n8n_assistente_guardar_regra'; args = { ...base, p_texto: v('texto') };\n    break;\n  case 'tirar_regra':\n    funcao = 'n8n_assistente_tirar_regra'; args = { ...base, p_qual: v('texto') };\n    break;\n  // dúvidas que a dona já respondeu para a IA de atendimento (supabase/042)\n  case 'ver_respostas':\n    funcao = 'n8n_assistente_ver_respostas'; args = { ...base };\n    break;\n  case 'tirar_resposta':\n    funcao = 'n8n_assistente_tirar_resposta'; args = { ...base, p_qual: v('texto') };\n    break;\n  case 'ensinar_resposta':\n    funcao = 'n8n_assistente_ensinar_resposta'; args = { ...base, p_pergunta: v('busca'), p_resposta: v('texto') };\n    break;\n  default:\n    return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];\n}\n// Antes de gravar ou enviar: o id é mesmo da cliente de quem a Caroline falou? (12/11/2026: o resultado de uma cliente foi\n// para a ficha de outra.) Sem nome, ou em ferramenta que só lê ou que troca o nome, não confere.\nconst uuid = (t) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null);\nconst semConferir = ['buscar_cliente', 'agenda_do_dia', 'horarios_livres', 'editar_cliente', 'cadastrar_cliente', 'registrar_atendimento'];\nconst nomeFalado = semConferir.includes(v('acao')) ? '' : (v('cliente_nome') || (v('acao') === 'marcar_horario' ? v('nome') : ''));\nconst conferir = { p_empresa_id: empresa, p_cliente_id: uuid(v('cliente_id')), p_agendamento_id: uuid(v('agendamento_id')), p_nome: nomeFalado };\nreturn [{ json: { funcao, args, enviar, forcarIgnorado, conferir } }];\n"
+        "jsCode": "\nconst e = $input.first().json;\nconst empresa = 'ff4b7937-1abb-4803-83c8-e0896d94fc9f';\nconst v = (k) => (e[k] === undefined || e[k] === null ? '' : String(e[k]).trim());\nconst ou = (s) => (s === '' ? null : s);\nconst num = (k) => { const n = v(k).replace(/[^0-9,.-]/g, '').replace(/\\.(?=\\d{3}(\\D|$))/g, '').replace(',', '.'); return n === '' || n === '-' ? null : Number(n); };\nconst tel = (t) => { let d = String(t || '').replace(/\\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return d; };\n// \"2026-10-24T14:40\" no fuso do salão (Cuiabá, -04:00 o ano todo)\nconst quando = (k) => (v(k) ? v(k) + (/[+-]\\d\\d:?\\d\\d$|Z$/.test(v(k)) ? '' : '-04:00') : null);\nconst sim = (k) => /^(s|sim|true|1|yes)/i.test(v(k));\n// a IA manda \"0\" quando a Caroline não disse o valor (12/11/2026: 4 atendimentos ficaram com R$ 0): zero vira vazio\nconst valor = () => { const n = num('valor'); return n === null || n <= 0 ? null : n; };\n// \"marcar assim mesmo\" só vale depois que a Caroline viu o motivo da recusa (o fluxo manda pode_forcar = sim quando\n// houve uma recusa nos últimos 30 min). Em 11/11/2026 a IA forçou um horário sem ninguém pedir.\nconst forcar = () => sim('forcar');\nconst forcarIgnorado = false;\nconst base = { p_empresa_id: empresa, p_pedido_por: v('pedido_por') };\nlet funcao, args, enviar = false;\nconst profDita = (() => { const q = v('profissional').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase(); return /dud|eduard/.test(q) ? '7583f2c4-1977-427e-b383-4bc36cef8973' : /carol/.test(q) ? '7729e88f-c85a-4993-9935-09b096c1bc96' : null; })();\n\nswitch (v('acao')) {\n  case 'buscar_cliente':\n    // v2 (supabase/043): acha também nome escrito ou falado diferente do cadastro\n    funcao = 'n8n_assistente_buscar_cliente_v2'; args = { ...base, p_busca: v('busca') };\n    break;\n  case 'agenda_do_dia':\n    funcao = 'n8n_assistente_agenda_do_dia_prof'; args = { ...base, p_data: ou(v('data')) };\n    break;\n  case 'resultado_avaliacao': {\n    // o que ela não disse fica vazio: a IA mandava \"0\" e \"não informado\" (teste de 09/11/2026), e isso gravaria valor zero na ficha\n    const inteiro = (k) => { const n = num(k); return n === null || n <= 0 ? '' : String(Math.trunc(n)); };\n    const texto = (k) => (/^(n[ãa]o informad[oa]|n[ãa]o sei|sem|nenhum|-|0([.,]0+)?|pensando|fechou)$/i.test(v(k)) ? '' : v(k));\n    // data só no formato AAAA-MM-DD: \"fevereiro\" ou \"início de fevereiro\" ia para o banco e travava a gravação inteira\n    // (09/11/2026). Texto que não é data vai junto do próximo passo.\n    // aceita AAAA-MM-DD ou DD/MM/AAAA, e só data que existe (2027-02-31 travava a gravação no banco)\n    const dataValida = (t) => {\n      let m = t.match(/^(\\d{4})-(\\d{2})-(\\d{2})$/), a, mes, d;\n      if (m) { a = +m[1]; mes = +m[2]; d = +m[3]; } else if ((m = t.match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/))) { d = +m[1]; mes = +m[2]; a = +m[3]; } else return '';\n      const x = new Date(Date.UTC(a, mes - 1, d));\n      return x.getUTCFullYear() === a && x.getUTCMonth() === mes - 1 && x.getUTCDate() === d ? x.toISOString().slice(0, 10) : '';\n    };\n    // próximo passo é sempre no futuro: \"fevereiro\" gravado com o ano que já passou vai para o ano seguinte\n    const hojeCuiaba = new Date(Date.now() - 4 * 3600e3).toISOString().slice(0, 10);\n    let dataProx = dataValida(v('data_proximo_passo'));\n    if (dataProx && dataProx < hojeCuiaba) dataProx = dataValida(String(+dataProx.slice(0, 4) + 1) + dataProx.slice(4));\n    const resultado = { 'fechou': 'fechou', 'pensando': 'pensando', 'nao_fechou': 'nao_fechou', 'não fechou': 'nao_fechou', 'nao fechou': 'nao_fechou' }[v('resultado').toLowerCase()] || v('resultado');\n    // fechou esperando o cabelo (supabase/038): a data de perguntar de novo é calculada aqui, não pela IA:\n    // hoje + dias para o cabelo chegar + dias de confecção + 1 de folga. \"5 a 7 dias\" conta o maior.\n    const dias = (k) => { const ns = (v(k).match(/\\d+/g) || []).map(Number).filter((n) => n > 0 && n <= 120); return ns.length ? Math.max(...ns) : 0; };\n    const chegada = dias('dias_chegada'), confeccao = dias('dias_confeccao');\n    let prazo = '';\n    if (resultado === 'fechou' && !dataProx && (chegada || confeccao)) {\n      const x = new Date(hojeCuiaba + 'T12:00:00Z');\n      x.setUTCDate(x.getUTCDate() + chegada + confeccao + 1);\n      dataProx = x.toISOString().slice(0, 10);\n      prazo = '(' + [chegada ? 'cabelo chega em ~' + chegada + ' dias' : '', confeccao ? 'confecção ' + confeccao + ' dias' : ''].filter(Boolean).join(' + ') + ')';\n    }\n    const dataOk = dataProx !== '';\n    const passo = [v('proximo_passo'), prazo, dataOk || !v('data_proximo_passo') ? '' : '(' + v('data_proximo_passo') + ')'].filter(Boolean).join(' ');\n    const d = { resultado, tecnica_indicada: texto('tecnica_indicada'), tipo_cabelo: texto('tipo_cabelo'),\n      comprimento_cm: inteiro('comprimento_cm'), gramas: inteiro('gramas'), valor_orcado: num('valor') === null || num('valor') <= 0 ? '' : String(num('valor')),\n      motivo_nao_fechou: texto('motivo_nao_fechou'), proximo_passo: passo, data_proximo_passo: dataProx,\n      observacoes: texto('observacoes') };\n    funcao = 'n8n_assistente_resultado_avaliacao'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_dados: d };\n    break;\n  }\n  case 'status_atendimento':\n    funcao = 'n8n_assistente_status_agendamento';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_status: v('status'), p_valor: valor() };\n    break;\n  case 'registrar_atendimento':\n    funcao = 'n8n_assistente_registrar_atendimento_nome';\n    args = { ...base, p_telefone: tel(v('telefone')), p_nome: v('nome'), p_servico: v('servico'),\n      p_inicio: quando('inicio'), p_valor: valor(), p_observacoes: ou(v('observacoes')) };\n    break;\n  case 'anotar':\n    funcao = 'n8n_assistente_anotar_cliente'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };\n    break;\n  case 'liberar_horario':\n    funcao = 'n8n_assistente_liberar_horario'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')) };\n    break;\n  case 'horarios_livres':\n    funcao = 'n8n_assistente_horarios_livres';\n    args = { ...base, p_data: ou(v('data')), p_servico: ou(v('servico')), p_ignorar: ou(v('agendamento_id')) };\n    break;\n  case 'marcar_horario':\n    // v2 (supabase/037): aceita quanto tempo vai levar (\"vou gastar 1h30\"); sem minutos vale a duração do cadastro\n    funcao = 'n8n_assistente_marcar_horario_prof';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_telefone: ou(v('telefone')), p_nome: ou(v('nome')), p_servico: v('servico'),\n      p_inicio: quando('inicio'), p_observacoes: ou(v('observacoes')), p_forcar: forcar(),\n      p_duracao_min: num('minutos') === null || num('minutos') <= 0 ? null : Math.round(num('minutos')), p_bloco_min: 150, p_profissional_id: profDita || (v('pedido_por') === '5566900000096' ? '7583f2c4-1977-427e-b383-4bc36cef8973' : null) };\n    break;\n  case 'ajustar_duracao':\n    funcao = 'n8n_assistente_ajustar_duracao_prof';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_forcar: forcar() };\n    break;\n  case 'reagendar':\n    funcao = 'n8n_assistente_reagendar_prof';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_inicio: quando('inicio'), p_servico: ou(v('servico')), p_forcar: forcar(), p_profissional_id: profDita };\n    break;\n  case 'atrasar_agenda':\n    funcao = 'n8n_assistente_atrasar_agenda';\n    args = { ...base, p_minutos: num('minutos') === null ? null : Math.round(num('minutos')), p_a_partir: ou(v('a_partir')), p_data: ou(v('data')) };\n    break;\n  case 'concluir':\n    funcao = 'n8n_assistente_concluir_c';\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_servico: ou(v('servico')), p_extras: ou(v('extras')), p_valor: valor() };\n    break;\n  case 'chegou':\n    funcao = 'n8n_assistente_chegou'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_chegou: !sim('desfazer') };\n    break;\n  case 'excluir_horario':\n    funcao = 'n8n_assistente_excluir_horario'; args = { ...base, p_agendamento_id: ou(v('agendamento_id')) };\n    break;\n  case 'bloquear_dias':\n    funcao = 'n8n_assistente_bloquear_dias_v2'; args = { ...base, p_de: ou(v('data')), p_ate: ou(v('ate')), p_motivo: ou(v('texto')), p_profissional_id: profDita };\n    break;\n  case 'desbloquear_dias':\n    funcao = 'n8n_assistente_desbloquear_dias'; args = { ...base, p_dia: ou(v('data')) };\n    break;\n  case 'bloquear_horario':\n    funcao = 'n8n_assistente_bloquear_horario_v2'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')), p_fim: ou(v('hora_fim')), p_motivo: ou(v('texto')), p_profissional_id: profDita };\n    break;\n  case 'desbloquear_horario':\n    funcao = 'n8n_assistente_desbloquear_horario'; args = { ...base, p_dia: ou(v('data')), p_inicio: ou(v('hora_inicio')) };\n    break;\n  case 'ver_bloqueios_horario':\n    funcao = 'n8n_assistente_ver_bloqueios_horario'; args = { ...base, p_dia: ou(v('data')) };\n    break;\n  case 'pausar_ia':\n    funcao = 'n8n_assistente_pausar_ia'; args = { ...base, p_cliente_id: ou(v('cliente_id')), p_pausar: !sim('desfazer') };\n    break;\n  case 'editar_cliente':\n    funcao = 'n8n_assistente_editar_cliente';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_nome: ou(v('nome')), p_aniversario: ou(v('aniversario')) };\n    break;\n  case 'avisar_cliente':\n    funcao = 'n8n_assistente_avisar_cliente'; enviar = true;\n    args = { ...base, p_agendamento_id: ou(v('agendamento_id')), p_tipo: v('tipo') === 'remarcacao' ? 'remarcacao' : 'aviso', p_texto: ou(v('texto')) };\n    break;\n  case 'cadastrar_cliente':\n    funcao = 'n8n_assistente_cadastrar_cliente';\n    args = { ...base, p_telefone: v('telefone'), p_nome: ou(v('nome')), p_observacoes: ou(v('observacoes')) };\n    break;\n  case 'chamar_cliente':\n    funcao = 'n8n_assistente_chamar_cliente'; enviar = true;\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_texto: v('texto') };\n    break;\n  // \"em janeiro dá um toque pra ela\" (supabase/039): a IA de atendimento manda o alô nessa data\n  case 'combinar_retorno': {\n    let m = v('data').match(/^(\\d{4})-(\\d{2})-(\\d{2})/), dia = '';\n    if (m) dia = m[1] + '-' + m[2] + '-' + m[3];\n    else if ((m = v('data').match(/^(\\d{1,2})\\/(\\d{1,2})\\/(\\d{4})$/))) dia = m[3] + '-' + m[2].padStart(2, '0') + '-' + m[1].padStart(2, '0');\n    funcao = 'n8n_assistente_combinar_retorno';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_data: ou(dia), p_assunto: ou(v('texto')) };\n    break;\n  }\n  // regras que a Caroline manda guardar (\"a partir de agora, sempre…\", supabase/035)\n  case 'guardar_regra':\n    funcao = 'n8n_assistente_guardar_regra'; args = { ...base, p_texto: v('texto') };\n    break;\n  case 'tirar_regra':\n    funcao = 'n8n_assistente_tirar_regra'; args = { ...base, p_qual: v('texto') };\n    break;\n  // dúvidas que a dona já respondeu para a IA de atendimento (supabase/042)\n  case 'ver_respostas':\n    funcao = 'n8n_assistente_ver_respostas'; args = { ...base };\n    break;\n  case 'tirar_resposta':\n    funcao = 'n8n_assistente_tirar_resposta'; args = { ...base, p_qual: v('texto') };\n    break;\n  case 'ensinar_resposta':\n    funcao = 'n8n_assistente_ensinar_resposta'; args = { ...base, p_pergunta: v('busca'), p_resposta: v('texto') };\n    break;\n  // regras de quando a IA de atendimento marca (regras-da-agenda.js, supabase/071)\n  case 'regra_da_agenda':\n    funcao = 'n8n_assistente_regra_agenda';\n    args = { ...base, p_tipo: v('tipo'), p_dias: ou(v('texto')), p_de: ou(v('hora_inicio')), p_ate: ou(v('hora_fim')),\n      p_de_dia: ou(v('a_partir').slice(0, 10)), p_ate_dia: ou(v('ate').slice(0, 10)), p_periodo: ou(v('status')), p_estrito: sim('extras'),\n      p_qual: ou(v('busca')), p_fala: ou(v('observacoes')) };\n    break;\n  // cliente que não paga sinal (assistente-oferecer.js, supabase/075)\n  case 'sem_sinal':\n    funcao = 'n8n_assistente_sem_sinal';\n    args = { ...base, p_cliente_id: ou(v('cliente_id')), p_sem_sinal: !/tirar|desfaz|volta/i.test(v('status')), p_motivo: ou(v('texto')) };\n    break;\n  default:\n    return [{ json: { erro: 'ferramenta desconhecida: ' + v('acao') } }];\n}\n// assistente-consertos.js (20/11): \"17/11 virou 17/12\". Dia que ainda vai acontecer neste mês, gravado no mês que vem,\n// volta para a assistente perguntar o mês. Data que a dona já viu nessa pergunta (\"mes:17/12\" no pode_forcar, posto pelo\n// Contexto) passa. O forcar não serve para isso: ele também passaria por cima de horário ocupado.\nconst mesVisto = ((v('pode_forcar').match(/mes:([0-9\\/,]+)/) || [])[1] || '').split(',').filter(Boolean);\nif (['marcar_horario', 'reagendar'].includes(v('acao')) && v('inicio')) {\n  const ini = DateTime.fromISO(v('inicio').slice(0, 16), { zone: 'America/Cuiaba' });\n  const hoje = DateTime.now().setZone('America/Cuiaba').startOf('day');\n  const mesmoDiaEsteMes = ini.isValid ? hoje.set({ day: Math.min(ini.day, hoje.daysInMonth) }) : null;\n  if (ini.isValid && !mesVisto.includes(ini.toFormat('dd/LL')) && ini.startOf('month') > hoje.startOf('month') && mesmoDiaEsteMes.day === ini.day && mesmoDiaEsteMes >= hoje) {\n    return [{ json: { erro: 'NÃO GRAVEI: você ia marcar em ' + ini.toFormat('dd/LL') + ', mas o dia ' + ini.day + ' DESTE mês (' + mesmoDiaEsteMes.toFormat('dd/LL') + ') ainda vai acontecer. ' +\n      'Em 13/11 uma cliente pediu 17/11 e foi marcada em 17/12. Pergunte à Caroline em uma linha: \"É dia ' + mesmoDiaEsteMes.toFormat('dd/LL') + ' ou ' + ini.toFormat('dd/LL') + '?\" e grave o que ela disser. ' +\n      'Se ela confirmar ' + ini.toFormat('dd/LL') + ', chame de novo do mesmo jeito (sem forcar): o sistema já sabe que ela confirmou.' } }];\n  }\n}\n// assistente-oferecer.js (g): só grava na ficha de quem a dona citou nas mensagens recentes\nif ([\"concluir\",\"anotar\",\"chegou\",\"status_atendimento\"].includes(v('acao')) && v('citadas') && v('cliente_nome')) {\n  const normNome = (s) => String(s || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().replace(/sh/g, 's').replace(/th/g, 't').replace(/ph/g, 'f').replace(/qu/g, 'k').replace(/c(?=[aou])/g, 'k').replace(/ck/g, 'k').replace(/y/g, 'i').replace(/w/g, 'v').replace(/z/g, 's').replace(/(.)\\1+/g, '$1');\n  const palavras = (s) => normNome(s).split(/[^a-z]+/).filter((w) => w.length >= 3);\n  const textoCitado = palavras(v('citadas'));\n  const citou = palavras(v('cliente_nome')).some((n) => { const k = Math.min(4, n.length); return textoCitado.some((w) => w.length >= k && w.slice(0, k) === n.slice(0, k)); });\n  if (!citou) return [{ json: { pergunte: 'nada foi gravado: a Caroline não disse o nome \"' + v('cliente_nome') + '\" nas mensagens recentes, e cliente não se escolhe pela agenda do dia. Pergunte em uma linha \"De quem você fala?\" e, quando ela disser o nome, faça. Não diga que deu erro.' } }];\n}\n// Antes de gravar ou enviar: o id é mesmo da cliente de quem a Caroline falou? (12/11/2026: o resultado de uma cliente foi\n// para a ficha de outra.) Sem nome, ou em ferramenta que só lê ou que troca o nome, não confere.\nconst uuid = (t) => (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(t) ? t : null);\nconst semConferir = ['buscar_cliente', 'agenda_do_dia', 'horarios_livres', 'editar_cliente', 'cadastrar_cliente', 'registrar_atendimento'];\nconst nomeFalado = semConferir.includes(v('acao')) ? '' : (v('cliente_nome') || (v('acao') === 'marcar_horario' ? v('nome') : ''));\nconst conferir = { p_empresa_id: empresa, p_cliente_id: uuid(v('cliente_id')), p_agendamento_id: uuid(v('agendamento_id')), p_nome: nomeFalado };\nreturn [{ json: { funcao, args, enviar, forcarIgnorado, conferir } }];\n"
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000159",
+      "id": "00000000-0000-4000-8000-000000000174",
       "name": "Conferir cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -195,7 +201,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000160",
+      "id": "00000000-0000-4000-8000-000000000175",
       "name": "Cliente confere?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -229,7 +235,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000161",
+      "id": "00000000-0000-4000-8000-000000000176",
       "name": "Executar no banco",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -269,7 +275,7 @@
       "executeOnce": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000162",
+      "id": "00000000-0000-4000-8000-000000000177",
       "name": "Mandar para a cliente?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -303,7 +309,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000163",
+      "id": "00000000-0000-4000-8000-000000000178",
       "name": "Mandar para a cliente",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -313,7 +319,7 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'loja-teste' }}",
+        "url": "={{ $env.EVOLUTION_URL }}/message/send{{ (() => { try { const c = $('Endereço: cadastro').first().json.config || {}; const l = c.loja || {}; const t = String(JSON.parse($('Executar no banco').first().json.data).mensagem || ''); return (typeof l.foto_endereco === 'string' && l.foto_endereco && typeof l.mapa === 'string' && l.mapa && t.includes(l.mapa.trim())) ? l.foto_endereco : ''; } catch (e) { return ''; } })() ? 'Media' : 'Text' }}/{{ 'oi-studio-ngcx' }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -325,7 +331,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ number: JSON.parse($json.data).telefone, text: JSON.parse($json.data).mensagem }) }}",
+        "jsonBody": "={{ JSON.stringify((() => { const b = { number: JSON.parse($('Executar no banco').first().json.data).telefone, text: JSON.parse($('Executar no banco').first().json.data).mensagem }; const f = (() => { try { const c = $('Endereço: cadastro').first().json.config || {}; const l = c.loja || {}; const t = String(JSON.parse($('Executar no banco').first().json.data).mensagem || ''); return (typeof l.foto_endereco === 'string' && l.foto_endereco && typeof l.mapa === 'string' && l.mapa && t.includes(l.mapa.trim())) ? l.foto_endereco : ''; } catch (e) { return ''; } })(); if (!f) return b; const r = Object.assign({}, b); delete r.text; return Object.assign(r, { mediatype: 'image', mimetype: 'image/jpeg', fileName: 'endereco.jpg', media: f, caption: (() => { const t = String(JSON.parse($('Executar no banco').first().json.data).mensagem || ''); let e = ''; try { e = String(($('Endereço: cadastro').first().json.config || {}).endereco || '').trim(); } catch (x) {} const rua = e.split(',')[0].trim().toLowerCase(); return (!e || !rua || t.toLowerCase().includes(rua)) ? t : e + '\\n' + t; })() }); })()) }}",
         "options": {}
       },
       "retryOnFail": true,
@@ -334,7 +340,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000164",
+      "id": "00000000-0000-4000-8000-000000000179",
       "name": "Enviou?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -368,7 +374,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000165",
+      "id": "00000000-0000-4000-8000-000000000180",
       "name": "Registrar na conversa",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -400,7 +406,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000166",
+      "id": "00000000-0000-4000-8000-000000000181",
       "name": "Apagar contato não enviado",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -429,7 +435,7 @@
       "onError": "continueRegularOutput"
     },
     {
-      "id": "00000000-0000-4000-8000-000000000167",
+      "id": "00000000-0000-4000-8000-000000000182",
       "name": "Resposta",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
@@ -443,7 +449,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ (() => { let base = ((() => {\n  const m = $('Montar chamada').first().json;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }\n  const b = $('Executar no banco').first().json;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Caroline ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) return 'ERRO: o WhatsApp não enviou a mensagem (' + (r?.error?.message || 'sem resposta') + '). Nada foi enviado para a cliente.';\n  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;\n})()); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } base = 'OK: ' + JSON.stringify(o); } catch (e) {} } let gt = g.texto || ''; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } return base + gt; })() }}",
+              "value": "={{ (() => { try { if ($('Envio: conferir').isExecuted) { const ev = $('Envio: conferir').first().json; if (ev && ev.bloqueio) return ev.bloqueio; } } catch (e) {} let r = ((() => { let base = ((() => {\n  const m = $('Montar chamada').first().json;\n  try { const bq = $('Endereço: conferir').first().json.bloqueio; if (bq) return bq; } catch (e) {}\n  if (m.pergunte) return 'PERGUNTE: ' + m.pergunte;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }\n  const b = $('Executar no banco').first().json;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Caroline ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) { const em = String((r && r.error && (r.error.message || JSON.stringify(r.error))) || ''); return /exists.{0,4}false/.test(em) ? 'ERRO: esse número não tem WhatsApp. Nada foi enviado. Diga em uma frase que o número da cliente não tem WhatsApp e peça para conferir o número.' : 'ERRO: o WhatsApp não conseguiu mandar agora. Nada foi enviado. Diga em uma frase que não deu para mandar agora e que ela pode pedir de novo em alguns minutos.'; }\n  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;\n})()); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } base = 'OK: ' + JSON.stringify(o); } catch (e) {} } let gt = g.texto || ''; if ((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao) === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } return base + gt; })()); try { if ((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao) === 'n8n_assistente_reagendar_confirma' && /^\\s*OK/i.test(String(r))) r = r + String.fromCharCode(10, 10) + \"A CLIENTE AINDA NÃO SABE DESTA MUDANÇA (nada foi mandado a ela). Regra da Caroline: horário mudado a pedido dela = avise a cliente UMA vez, agora, com avisar_cliente (tipo aviso, sem texto: a mensagem sai pronta com o horário antigo e o novo). Só não avise se a Caroline disse que ela mesma avisa ou que já combinou direto com a cliente. Na resposta à Caroline diga se avisou (\\\"Avisei a *Nome* ✅\\\").\"; } catch (e) {} return r; })() }}",
               "type": "string"
             }
           ]
@@ -452,7 +458,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000388",
+      "id": "00000000-0000-4000-8000-000000000403",
       "name": "Precisa da Google?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
@@ -471,7 +477,7 @@
           "conditions": [
             {
               "id": "g1",
-              "leftValue": "={{ [\"n8n_assistente_agenda_do_dia\",\"n8n_assistente_horarios_livres\",\"n8n_assistente_marcar_horario\",\"n8n_assistente_reagendar_confirma\"].includes($('Montar chamada').first().json.funcao) && !$('Montar chamada').first().json.erro }}",
+              "leftValue": "={{ [\"n8n_assistente_agenda_do_dia\",\"n8n_assistente_horarios_livres\",\"n8n_assistente_marcar_horario\",\"n8n_assistente_reagendar_confirma\"].includes((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao)) && !$('Montar chamada').first().json.erro }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -486,7 +492,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000389",
+      "id": "00000000-0000-4000-8000-000000000404",
       "name": "Google: config",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -518,7 +524,7 @@
       "alwaysOutputData": true
     },
     {
-      "id": "00000000-0000-4000-8000-000000000390",
+      "id": "00000000-0000-4000-8000-000000000405",
       "name": "Google: links",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -531,7 +537,7 @@
       }
     },
     {
-      "id": "00000000-0000-4000-8000-000000000391",
+      "id": "00000000-0000-4000-8000-000000000406",
       "name": "Google: ler agenda",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -559,7 +565,7 @@
       "waitBetweenTries": 1000
     },
     {
-      "id": "00000000-0000-4000-8000-000000000392",
+      "id": "00000000-0000-4000-8000-000000000407",
       "name": "Google: eventos do dia",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -570,6 +576,419 @@
       "parameters": {
         "jsCode": "\nconst lerIcsData = (v, tz) => {\n  const m = /^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})(Z)?)?$/.exec(String(v || '').trim());\n  if (!m) return null;\n  const o = { year: +m[1], month: +m[2], day: +m[3], hour: +(m[4] || 0), minute: +(m[5] || 0), second: +(m[6] || 0) };\n  const d = m[7] ? DateTime.fromObject(o, { zone: 'utc' }) : DateTime.fromObject(o, { zone: m[4] ? (tz || 'America/Cuiaba') : 'America/Cuiaba' });\n  return d.isValid ? { d: d.setZone('America/Cuiaba'), diaInteiro: !m[4] } : null;\n};\nconst lerIcs = (texto) => {\n  const saida = [];\n  for (const bloco of String(texto || '').replace(/\\r?\\n[ \\t]/g, '').split('BEGIN:VEVENT').slice(1)) {\n    const campo = (k) => { const m = new RegExp('^' + k + '((?:;[^:\\r\\n]*)?):(.*)$', 'm').exec(bloco); return m ? { par: m[1], val: m[2].trim() } : null; };\n    if (/^TRANSP:TRANSPARENT/m.test(bloco) || /^STATUS:CANCELLED/m.test(bloco)) continue;\n    const s = campo('DTSTART'); if (!s) continue;\n    const e = campo('DTEND');\n    const tz = (k) => { const m = /TZID=([^;:]+)/.exec(k ? k.par : ''); return m ? m[1] : null; };\n    const ini = lerIcsData(s.val, tz(s)); if (!ini) continue;\n    const fimL = e ? lerIcsData(e.val, tz(e)) : null;\n    const a = ini.diaInteiro ? ini.d.startOf('day') : ini.d;\n    let b = fimL ? (fimL.diaInteiro ? fimL.d.startOf('day') : fimL.d) : (ini.diaInteiro ? a.plus({ days: 1 }) : a.plus({ hours: 1 }));\n    // 13/11/2026: a Caroline cria o evento na Google sem acertar o fim (111 de 114 têm 1 h cravada), mas o\n    // atendimento leva pelo menos 1h30 (pedido dela). Evento com hora ocupa no mínimo 90 min.\n    if (!ini.diaInteiro) { const m = b.diff(a, 'minutes').minutes; if (m === 60) b = a.plus({ minutes: 150 }); else if (m < 90) b = a.plus({ minutes: 90 }); }\n    const titulo = ((campo('SUMMARY') || {}).val || 'ocupado').split(String.fromCharCode(92) + 'n').join(' ').split(String.fromCharCode(92)).join('');\n    if (b > a) saida.push([a, b, titulo, ini.diaInteiro]);\n  }\n  return saida;\n};\nconst m = $('Montar chamada').first().json;\nconst NL = String.fromCharCode(10);\nconst a = m.args || {};\nconst links = [].concat($('Google: config').first().json.config?.loja?.google_agenda_ics || []).filter(Boolean);\nif (!links.length) return [{ json: { texto: '' } }];\nconst respostas = $input.all().map((i) => i.json);\nconst dataTxt = String(a.p_data || a.p_inicio || '').slice(0, 10);\nconst dia = dataTxt ? DateTime.fromISO(dataTxt, { zone: 'America/Cuiaba' }) : DateTime.now().setZone('America/Cuiaba');\nif (!respostas.every((r) => typeof r.data === 'string' && r.data.includes('BEGIN:VCALENDAR')))\n  return [{ json: { texto: NL + NL + 'ATENÇÃO: não consegui ler a Google Agenda da dona agora. O resultado acima é só da agenda do app: avise que pode ter cliente marcada na Google que você não está vendo.' } }];\nconst ini = dia.startOf('day'), fim = ini.plus({ days: 1 });\nconst eventos = respostas.flatMap((r) => lerIcs(r.data)).filter(([x, y]) => x < fim && y > ini).sort((p, q) => p[0] - q[0]);\nconst hh = (d) => d.toFormat('HH:mm');\nconst lista = eventos.map(([x, y, t, todo]) => '- ' + (todo ? 'dia inteiro' : hh(x) + ' às ' + hh(y)) + ': ' + t).join(NL);\n// minutos do dia ocupados na Google (a Resposta tira de horarios_livres o que encavala)\nconst ocupados = eventos.map(([x, y]) => [Math.max(0, x.diff(ini, 'minutes').minutes), Math.min(1440, y.diff(ini, 'minutes').minutes)]);\nreturn [{ json: { ocupados, texto: NL + NL + 'GOOGLE AGENDA DA DONA em ' + ini.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (clientes que ainda não estão no app; conta como ocupado, junto com o app):' + NL +\n  (lista || '- nada marcado na Google neste dia') + NL +\n  'Não diga que um horário está livre olhando só o app: confira esta lista. Não marque nem ofereça horário que bata com ela sem a dona confirmar.' } }];\n"
       }
+    },
+    {
+      "name": "Endereço: cadastro",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        460
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/empresas?select=config&id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000427",
+      "name": "Endereço: conferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        330,
+        260
+      ],
+      "parameters": {
+        "jsCode": "const m = $('Montar chamada').first().json;\nlet cfg = {}; try { cfg = $('Endereço: cadastro').first().json.config || {}; } catch (e) {}\nconst t = (v) => (typeof v === 'string' ? v.trim() : '');\nconst end = t(cfg.endereco), mapa = t((cfg.loja || {}).mapa);\nconst norm = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\\s+/g, ' ');\nconst txt = String((m.args && m.args.p_texto) || '');\nlet bloqueio = '';\nif (m.enviar && txt) {\n  const n = norm(txt);\n  const rua = norm(end.split(',')[0] || '');            // \"rua dos angicos\"\n  const numero = (end.match(/\\d+/) || [''])[0];        // \"690\"\n  const falaDeRua = /(^|[^a-z])(rua|r\\.|avenida|av\\.?|travessa|alameda|rodovia|estrada|pra[cç]a)\\s+[a-z0-9]/.test(n);\n  const ruaErrada = falaDeRua && (!rua || !n.includes(rua) || (numero && !n.includes(numero)));\n  const links = txt.match(/(https?:\\/\\/|www\\.)\\S+|\\S*(goo\\.gl|maps\\.|waze\\.)\\S*/gi) || [];\n  const deMapa = (l) => /goo\\.gl|maps|waze|localiza/i.test(l);\n  const linkErrado = links.some((l) => deMapa(l) && (!mapa || !norm(mapa).includes(norm(l.replace(/[).,;!]+$/, '')).replace(/^https?:\\/\\//, ''))));\n  const enfeite = /\\[\\s*(link|mapa|localiza)[^\\]]*\\]/i.test(txt);\n  if (ruaErrada || linkErrado || enfeite) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto tem ' + (ruaErrada ? 'um endereço que não é o do cadastro do salão' : 'um link de mapa que não existe no cadastro do salão') + '. ' +\n      (end ? 'O ÚNICO endereço que vale é: ' + end + (mapa ? ' | mapa: ' + mapa : ' (não há link de mapa cadastrado: não mande link nenhum)') + '. Reescreva o texto com esse endereço, exatamente assim, e mande de novo agora.'\n           : 'Não há endereço cadastrado no app: não mande endereço. Diga à dona que falta preencher o endereço em Dados do salão.');\n  }\n}\nreturn [{ json: { ...m, bloqueio } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000428",
+      "name": "Endereço confere?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        440,
+        260
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ec1",
+              "leftValue": "={{ !$json.bloqueio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000429",
+      "name": "Envio: conversa da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&select=direcao,autor,conteudo,criado_em,clientes!inner(telefone)&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&clientes.telefone=eq.{{ (() => { try { return String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, '') || '0'; } catch (e) { return '0'; } })() }}&criado_em=gte.{{ $now.minus({ hours: 30 }).toUTC().toISO() }}&order=criado_em.desc&limit=40",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000430",
+      "name": "Envio: horários da cliente",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/agendamentos?select=id,inicio,status,servicos(nome),clientes!inner(telefone)&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&clientes.telefone=eq.{{ (() => { try { return String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, '') || '0'; } catch (e) { return '0'; } })() }}&status=eq.agendado&inicio=gte.{{ $now.minus({ hours: 2 }).toUTC().toISO() }}&order=inicio",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000431",
+      "name": "Envio: conferir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const TZ = 'America/Cuiaba';\nconst agora = DateTime.now().setZone(TZ);\nlet b = {}; try { b = JSON.parse($('Executar no banco').first().json.data || '{}'); } catch (e) {}\nconst txt = String(b.mensagem || '');\nconst tel = String(b.telefone || '').replace(/\\D/g, '');\nconst falhou = (x) => !x || x.error || (x.code && x.message);\nconst lerTudo = (nome) => { try { return $(nome).all().map((i) => i.json); } catch (e) { return [{ error: 'não rodou' }]; } };\nconst rMsgs = lerTudo('Envio: conversa da cliente'), rAgs = lerTudo('Envio: horários da cliente');\nconst leuMsgs = !rMsgs.some((x) => x && (x.error || (x.code && x.message)));\nconst leuAgs = !rAgs.some((x) => x && (x.error || (x.code && x.message)));\nconst msgs = rMsgs.filter((x) => x && x.criado_em && !falhou(x));\nconst ags = rAgs.filter((x) => x && x.inicio && !falhou(x));\nconst hm = (s) => DateTime.fromISO(s).setZone(TZ).toFormat('HH:mm');\nconst norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();\nconst n = norm(txt);\nlet bloqueio = '', recado = false;\n\n// 4. vazio\nif (!/[a-z0-9]/.test(n)) bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto estava vazio. Escreva a mensagem e mande de novo.';\n\n// 1. ela está conversando com a IA de atendimento agora\nconst ultimaDela = msgs.find((x) => x.direcao === 'entrada');\nconst minDela = ultimaDela ? agora.diff(DateTime.fromISO(ultimaDela.criado_em), 'minutes').minutes : 1e9;\nconst falaDeHorario = /\\b\\d{1,2} ?(h\\b|h\\d{2}|:\\d{2}|horas?\\b)|amanha|\\bhoje\\b|segunda|terca|quarta|quinta|sexta|sabado|domingo|\\bdia \\d|\\b\\d{1,2}\\/\\d{1,2}\\b|horario|agenda|\\bvaga|marcar|remarc|reagend|reserv|encaix/.test(n);\nif (!bloqueio && leuMsgs && minDela <= 4 && falaDeHorario) {\n  recado = true;\n  bloqueio = 'GUARDEI COMO RECADO (nada foi mandado à cliente agora): ela está conversando com a IA de atendimento neste momento (última mensagem dela às ' + hm(ultimaDela.criado_em) + '). ' +\n    'Se eu mandasse, ela receberia duas conversas ao mesmo tempo com ofertas diferentes. O seu texto foi passado para a IA de atendimento, que vai usar na próxima resposta a ela. ' +\n    'Diga à Caroline em UMA linha: \"*Nome* está conversando com a IA agora; passei seu recado pra IA usar na resposta ✅\". NÃO chame chamar_cliente nem avisar_cliente de novo para ela agora e não diga que mandou.';\n}\n\n// 2. confirmação repetida\nconst ehConfirmacao = (s) => /confirm(ar|ando|ad[oa]|amos|o\\b|ei)|lembrando (do|que|seu)|lembrete/.test(s) && /horario|amanha|\\bhoje\\b|atendimento/.test(s);\nconst ehMudanca = /\\bmud|remarc|reagend|\\btroc|passou para|passamos para|em vez de|novo horario|cancel|desmarc/.test(n);\nif (!bloqueio && leuMsgs && ehConfirmacao(n) && !ehMudanca) {\n  const ant = msgs.find((x) => x.direcao === 'saida' && ehConfirmacao(norm(x.conteudo)) && agora.diff(DateTime.fromISO(x.criado_em), 'hours').hours < 20);\n  if (ant) {\n    const resp = msgs.filter((x) => x.direcao === 'entrada' && x.criado_em > ant.criado_em).pop();\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela já recebeu confirmação deste horário às ' + hm(ant.criado_em) + ' («' + String(ant.conteudo).replace(/\\s+/g, ' ').slice(0, 140) + '»)' +\n      (resp ? ' e respondeu às ' + hm(resp.criado_em) + ': «' + String(resp.conteudo).replace(/\\s+/g, ' ').slice(0, 100) + '»' : ' e ainda não respondeu') +\n      '. A Caroline quer UMA confirmação por cliente: não mande outra. Conte a ela em uma linha se a cliente já confirmou ou não.';\n  }\n}\n\n// 3. diz que está marcado/confirmado sem horário no app (ou com a data errada)\nconst afirma = /\\b(confirmad[oa]s?|confirmadissim[oa]|marcad[oa]s?|reservad[oa]s?|agendad[oa]s?|garantid[oa]s?|marquei|reservei|agendei)\\b/.test(n) && !/cancel|desmarc/.test(n);\nif (!bloqueio && leuAgs && afirma) {\n  const lista = ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + (a.servicos && a.servicos.nome ? ' (' + a.servicos.nome + ')' : '')).join('; ');\n  if (!ags.length) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que o horário está marcado/confirmado/reservado, mas ela NÃO tem nenhum horário futuro no app. ' +\n      'Primeiro grave com marcar_horario (dia, hora e serviço) e veja que voltou OK; só depois avise. Se a Caroline só quer oferecer, escreva como oferta, sem dizer que está marcado.';\n  } else {\n    const dias = new Set(ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat('dd/LL')));\n    const citadas = [...n.matchAll(/\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((x) => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0'));\n    if (citadas.length && citadas.every((d) => !dias.has(d))) {\n      bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto fala de ' + [...new Set(citadas)].join(', ') + ', mas os horários dela no app são: ' + lista +\n        '. Confira o dia e o MÊS (em 13/11 uma cliente foi avisada de 17/12 quando o horário era 17/11) e mande de novo com a data certa.';\n    }\n  }\n}\n// 5. assistente-consertos.js (20/11, Vanessa): texto parecido com o que o salão mandou a ela nos últimos 10 min.\n// \"Parecido\" = texto igual, ou o MESMO horário/dia citado e pelo menos 2 palavras do assunto em comum (sem contar nome, dia e palavras de horário)\n// (as duas desculpas da Vanessa falavam de \"14:30 amanhã\"; uma oferta nova de \"10h\" passa).\nconst COMUNS_ENV = new Set('oi ola tudo bem bom dia boa tarde noite para voce voces pode como mais pelo pela com que nao sim esta ta fica ficar caroline horario horarios amanha hoje segunda terca quarta quinta sexta sabado domingo pediu pedir manha tarde'.split(' '));\n// nome próprio (palavra com maiúscula fora do começo da frase, como o nome da cliente) também não conta como assunto\nconst nomes = (s) => new Set([...String(s || '').matchAll(/(?<![.!?]\\s)(?<!^)\\b([A-ZÀ-Ú][a-zà-ú]+)/g)].map((m) => norm(m[1])));\nconst palavras = (s) => { const nm = nomes(s); return new Set(norm(s).replace(/[^a-z0-9 ]+/g, ' ').split(/\\s+/).filter((w) => w.length > 3 && !COMUNS_ENV.has(w) && !nm.has(w))); };\nconst marcas = (s) => new Set([...norm(s).matchAll(/\\b(\\d{1,2})(?:h|:)(\\d{2})?\\b|\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((m) => m[1] !== undefined ? m[1] + ':' + (m[2] || '00') : m[3] + '/' + m[4]));\nconst igualTxt = (s) => norm(s).replace(/[^a-z0-9]+/g, ' ').trim();\nif (!bloqueio && leuMsgs) {\n  const novas = palavras(txt), horasNovas = marcas(txt);\n  const recente = msgs.find((x) => x.direcao === 'saida' && agora.diff(DateTime.fromISO(x.criado_em), 'minutes').minutes <= 10 && (() => {\n    if (igualTxt(x.conteudo) === igualTxt(txt)) return true;\n    const velhas = palavras(x.conteudo), horasVelhas = marcas(x.conteudo);\n    let comuns = 0; for (const w of novas) if (velhas.has(w)) comuns++;\n    const mesmaHora = [...horasNovas].some((h) => horasVelhas.has(h));\n    return mesmaHora && comuns >= 2;\n  })());\n  if (recente) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): às ' + hm(recente.criado_em) + ' ela já recebeu uma mensagem parecida: «' + String(recente.conteudo).replace(/\\s+/g, ' ').slice(0, 160) + '». ' +\n      'Duas mensagens quase iguais em poucos minutos confundem a cliente. Se a Caroline quer acrescentar algo, mande SÓ o que é novo, curto; se não há nada novo, não mande e conte isso à Caroline em uma linha.';\n  }\n}\n// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente;\n// volta para a assistente escrever do jeito da Caroline (prompt-assistente, seção G).\nconst robo = /fase de teste|em teste|estamos testando|\\bsistema\\b|\\brobo\\b|intelig[eê]ncia artificial|\\bsou (a|uma) (ia|assistente)|assistente virtual|confirmad[ií]ssim/i.test(txt);\nconst enfeite = /[\\u2728\\u{1F485}\\u{1F60A}\\u2764\\u2705\\u{1F496}\\u{1F497}\\u{1F338}\\u{1F31F}]/u.test(txt);\nif (!bloqueio && (robo || enfeite)) {\n  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +\n    ', e a cliente lê como se fosse a Caroline. Reescreva curto, do jeito dela (seção G: \"Oi Ana, ficou sexta às 14h 🙏\"), e mande de novo.';\n}\n// 7. assistente-oferecer.js (24/11, Stela): \"A Carol reservou ... Pode ser?\" deixa a cliente sem saber se está marcado\nif (!bloqueio && (afirma || /\\b(reservou|marcou|agendou|garantiu)\\b/.test(n)) && /(pode ser|tudo bem|ok|certo|combinado|consegue|fechado|beleza|serve|da certo|dá certo)\\s*\\??\\s*[\\u{1F64F}]?\\s*$/iu.test(txt.trim()) && /\\?\\s*[\\u{1F64F}]?\\s*$/u.test(txt.trim())) {\n  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Se não puder, me avisa por aqui\". ' +\n    'Se a Caroline só quer oferecer, escreva como oferta, sem dizer reservado. Se a cliente tinha outro horário combinado, diga a troca e o motivo em poucas palavras.';\n}\nreturn [{ json: { bloqueio, recado, telefone: tel, chave: tel.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2'), texto: txt } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000432",
+      "name": "Envio liberado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ev1",
+              "leftValue": "={{ !$json.bloqueio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000433",
+      "name": "Envio: é recado?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "ev2",
+              "leftValue": "={{ !!$json.recado }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000434",
+      "name": "Recado: ler",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "get",
+        "key": "=teste:recado_dona:{{ $('Envio: conferir').first().json.chave }}",
+        "propertyName": "anterior",
+        "keyType": "string",
+        "options": {}
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000435",
+      "name": "Recado: juntar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const ant = String($input.first().json.anterior || '').trim();\nconst novo = '[' + DateTime.now().setZone('America/Cuiaba').toFormat('HH:mm') + '] ' + String($('Envio: conferir').first().json.texto || '').trim();\nreturn [{ json: { valor: ((ant ? ant + '\\n' : '') + novo).slice(-1500) } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000436",
+      "name": "Recado: guardar",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "operation": "set",
+        "key": "=teste:recado_dona:{{ $('Envio: conferir').first().json.chave }}",
+        "value": "={{ $json.valor }}",
+        "expire": true,
+        "ttl": 10800
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Apagar contato bloqueado",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        400
+      ],
+      "parameters": {
+        "method": "DELETE",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?id=eq.{{ JSON.parse($('Executar no banco').first().json.data).contato_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "name": "Recado: contato não entregue",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        600
+      ],
+      "parameters": {
+        "method": "PATCH",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/contatos?id=eq.{{ JSON.parse($('Executar no banco').first().json.data).contato_id }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ resultado: 'sem_resposta', mensagem: '[recado passado à IA, não enviado] ' + $('Envio: conferir').first().json.texto }) }}"
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000442",
+      "name": "Sinal: foi marcação?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1350,
+        -300
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "s1",
+              "leftValue": "={{ String($('Montar chamada').first().json.funcao || '').startsWith('n8n_assistente_marcar_horario') &&(() => { try { return !!JSON.parse($json.data || '{}').agendamento_id; } catch (e) { return false; } })() }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000443",
+      "name": "Sinal: vincular ao horário",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1350,
+        -500
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/rpc/n8n_assistente_vincular_sinal",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ p_empresa_id: 'ff4b7937-1abb-4803-83c8-e0896d94fc9f', p_agendamento_id: JSON.parse($('Executar no banco').first().json.data).agendamento_id }) }}",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "id": "3e1bfb79-41db-441a-8363-a17852453b0a",
@@ -591,7 +1010,7 @@
           "conditions": [
             {
               "id": "trava1",
-              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099','5500000000001'].includes((() => { const d = String(JSON.parse($json.data).telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
+              "leftValue": "={{ ['556699270860','556600000010','556600000011','556600000012','556600000013','556600000014','556600000015','556600000016','556600000017','556600000018','556600000019','556600000020','556600000021','556600000022','556600000023','556600000024','556600000025','556600000026','556600000027','556600000028','556600000029','556600000030','556600000031','556600000032','556600000033','556600000034','556600000035','556600000036','556600000037','556600000038','556600000039','556600000040','556600000041','556600000042','556600000043','556600000044','556600000045','556600000046','556600000047','556600000048','556600000049','556600000050','556600000051','556600000052','556600000053','556600000054','556600000055','556600000056','556600000057','556600000058','556600000059','556600000060','556600000061','556600000062','556600000063','556600000064','556600000065','556600000066','556600000067','556600000068','556600000069','556600000070','556600000071','556600000072','556600000073','556600000074','556600000075','556600000076','556600000077','556600000078','556600000079','556600000080','556600000081','556600000082','556600000083','556600000084','556600000085','556600000086','556600000087','556600000088','556600000089','556600000090','556600000091','556600000092','556600000093','556600000094','556600000095','556600000096','556600000097','556600000098','556600000099'].includes((() => { const d = String(JSON.parse($('Executar no banco').first().json.data).telefone || '').split('@')[0].replace(/\\D/g, ''); return /^55\\d{2}9\\d{8}$/.test(d) ? d.slice(0, 4) + d.slice(5) : d; })()) }}",
               "rightValue": "",
               "operator": {
                 "type": "boolean",
@@ -622,7 +1041,7 @@
       "main": [
         [
           {
-            "node": "Conferir cliente",
+            "node": "Endereço: cadastro",
             "type": "main",
             "index": 0
           }
@@ -665,6 +1084,11 @@
             "node": "Mandar para a cliente?",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Sinal: foi marcação?",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -673,7 +1097,7 @@
       "main": [
         [
           {
-            "node": "Trava de teste: Mandar para a cliente",
+            "node": "Envio: conversa da cliente",
             "type": "main",
             "index": 0
           }
@@ -798,6 +1222,182 @@
             "index": 0
           }
         ]
+      ]
+    },
+    "Endereço: cadastro": {
+      "main": [
+        [
+          {
+            "node": "Endereço: conferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endereço: conferir": {
+      "main": [
+        [
+          {
+            "node": "Endereço confere?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Endereço confere?": {
+      "main": [
+        [
+          {
+            "node": "Conferir cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: conversa da cliente": {
+      "main": [
+        [
+          {
+            "node": "Envio: horários da cliente",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: horários da cliente": {
+      "main": [
+        [
+          {
+            "node": "Envio: conferir",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: conferir": {
+      "main": [
+        [
+          {
+            "node": "Envio liberado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio liberado?": {
+      "main": [
+        [
+          {
+            "node": "Trava de teste: Mandar para a cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Envio: é recado?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Envio: é recado?": {
+      "main": [
+        [
+          {
+            "node": "Recado: ler",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apagar contato bloqueado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: ler": {
+      "main": [
+        [
+          {
+            "node": "Recado: juntar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: juntar": {
+      "main": [
+        [
+          {
+            "node": "Recado: guardar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: guardar": {
+      "main": [
+        [
+          {
+            "node": "Recado: contato não entregue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recado: contato não entregue": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apagar contato bloqueado": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sinal: foi marcação?": {
+      "main": [
+        [
+          {
+            "node": "Sinal: vincular ao horário",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
       ]
     },
     "Trava de teste: Mandar para a cliente": {

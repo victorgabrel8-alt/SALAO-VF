@@ -190,6 +190,58 @@ const livre = (ini, fim) => !ocupados.some(([a, b]) => ini < b && fim > a);
 const tipoPedido = tipoServico(p.servico, p.motivo, p.durInformada ? p.dur : 0);
 const noExpediente = (ini, fim) => intervalos(ini.startOf('day')).some(([a, b]) => ini >= a && fim <= b);
 
+// Regras da agenda que a dona deu à assistente (supabase/071; 24/11/2026, Caroline). Sem as chaves, nada muda.
+//   config.ia_horas = [{ dias: ['seg'], de: '00:00', ate: '11:00', de_dia, ate_dia }]: a IA não COMEÇA horário nessa faixa;
+//   config.ia_periodo = { sab: { primeiro: 'manha', estrito: true } }: esse período vem primeiro; estrito = o outro só
+//   abre quando o primeiro lota.
+const SEMANA_REGRA = { 1: 'seg', 2: 'ter', 3: 'qua', 4: 'qui', 5: 'sex', 6: 'sab', 7: 'dom' };
+const NOME_DIA_REGRA = { seg: 'segunda', ter: 'terça', qua: 'quarta', qui: 'quinta', sex: 'sexta', sab: 'sábado', dom: 'domingo' };
+let REGRAS_HORA = [], PERIODO_DIA = {};
+try {
+  const cfgR = $('Supabase: config do salão').first().json.config || {};
+  if (Array.isArray(cfgR.ia_horas)) REGRAS_HORA = cfgR.ia_horas.filter((r) => r && /^\\d{2}:\\d{2}$/.test(r.de || '') && /^\\d{2}:\\d{2}$/.test(r.ate || ''));
+  if (cfgR.ia_periodo && typeof cfgR.ia_periodo === 'object') PERIODO_DIA = cfgR.ia_periodo;
+} catch (e) {}
+const hmRegra = (d) => (d.minute ? d.toFormat("H'h'mm") : d.toFormat("H'h'"));
+const regraQueBarra = (t) => { const d = t.toISODate(), k = SEMANA_REGRA[t.weekday], h = t.toFormat('HH:mm');
+  return REGRAS_HORA.find((r) => (!Array.isArray(r.dias) || !r.dias.length || r.dias.includes(k)) && (!r.de_dia || d >= r.de_dia) &&
+    (!r.ate_dia || d <= r.ate_dia) && h >= r.de && h < r.ate) || null; };
+const podeComecar = (t) => !regraQueBarra(t);
+// o horário que já é da cliente (vaga-da-propria-cliente.js, quando ligado) não é recusado pela regra
+const jaDaCliente = (ini, fim) => typeof daCliente === 'function' && !!daCliente(ini, fim);
+const textoRegra = (r) => (Array.isArray(r.dias) && r.dias.length ? r.dias.map((k) => NOME_DIA_REGRA[k] || k).join(', ') : 'todos os dias') +
+  (r.de_dia || r.ate_dia ? ' (de ' + (r.de_dia || 'hoje').split('-').reverse().join('/') + ' até ' + (r.ate_dia || 'sempre').split('-').reverse().join('/') + ')' : '') +
+  ': não começa horário ' + (r.de === '00:00' ? 'antes das ' + r.ate : r.ate >= '24:00' ? 'a partir das ' + r.de : 'das ' + r.de + ' até antes das ' + r.ate);
+const motivoRegra = (t) => 'é regra da dona (' + textoRegra(regraQueBarra(t)) + ')';
+// o primeiro início livre de um período (manhã = antes das 12h) num dia, com as mesmas regras de quem oferece
+const primeiroLivreDoPeriodo = (dia, manha) => { for (const [a, b] of intervalos(dia.startOf('day'))) {
+  for (let x = a; x.plus({ minutes: p.dur }) <= b; x = x.plus({ minutes: PASSO_MIN })) {
+    if ((x.hour < 12) !== manha || x < agora.plus({ minutes: ANTECEDENCIA_MIN }) || !podeComecar(x)) continue;
+    if (typeof noAlmocoFlex === 'function' && noAlmocoFlex(x, x.plus({ minutes: p.dur }))) continue;
+    if (livre(x, x.plus({ minutes: p.dur }))) return x;
+  } } return null; };
+// dia com período estrito: início no OUTRO período é fechado enquanto o primeiro tiver vaga (devolve essa vaga)
+const periodoFechado = (t) => { const r = PERIODO_DIA[SEMANA_REGRA[t.weekday]];
+  if (!r || !r.estrito || !['manha', 'tarde'].includes(r.primeiro) || (t.hour < 12) === (r.primeiro === 'manha')) return null;
+  return primeiroLivreDoPeriodo(t, r.primeiro === 'manha'); };
+const motivoPeriodo = (t) => { const x = periodoFechado(t), r = PERIODO_DIA[SEMANA_REGRA[t.weekday]];
+  return 'é regra da dona: ' + NOME_DIA_REGRA[SEMANA_REGRA[t.weekday]] + ' a ' + (r.primeiro === 'manha' ? 'tarde' : 'manhã') + ' só abre quando a ' +
+    (r.primeiro === 'manha' ? 'manhã' : 'tarde') + ' lota, e ainda tem ' + hmRegra(x) + ' (data_hora_inicio: ' + iso(x) + '): diga isso de um jeito simples e ofereça esse horário'; };
+// na sugestão de 2 horários: o período que a dona quer primeiro, quando a cliente não pediu período e ele tem vaga
+const preferirPeriodo = (v) => { if (p.periodo !== 'qualquer' || !v.length) return v; const r = PERIODO_DIA[SEMANA_REGRA[v[0].weekday]];
+  if (!r || !['manha', 'tarde'].includes(r.primeiro)) return v; const w = v.filter((x) => (x.hour < 12) === (r.primeiro === 'manha')); return w.length ? w : v; };
+// o que vale no dia, para a IA ler junto do quadro (os inícios do quadro já respeitam)
+const regrasDoDia = (dia) => { const k = SEMANA_REGRA[dia.weekday], d = dia.toISODate();
+  const hs = REGRAS_HORA.filter((r) => (!Array.isArray(r.dias) || !r.dias.length || r.dias.includes(k)) && (!r.de_dia || d >= r.de_dia) && (!r.ate_dia || d <= r.ate_dia)).map(textoRegra);
+  const r = PERIODO_DIA[k]; if (r && ['manha', 'tarde'].includes(r.primeiro)) hs.push('primeiro a ' + (r.primeiro === 'manha' ? 'manhã' : 'tarde') + (r.estrito ? ', a outra só quando ela lota' : ''));
+  return hs.length ? '\\nREGRAS DA DONA neste dia (já aplicadas nos inícios abaixo; nunca ofereça início fora deles, nem se a cliente insistir): ' + hs.join('; ') + '.' : ''; };
+// a cliente pediu o período que está fechado: a IA conta e oferece o que tem
+const notaPeriodo = (dia) => { if (p.periodo === 'qualquer') return ''; const r = PERIODO_DIA[SEMANA_REGRA[dia.weekday]];
+  if (!r || !r.estrito || !['manha', 'tarde'].includes(r.primeiro) || p.periodo.startsWith('manh') === (r.primeiro === 'manha')) return '';
+  const x = primeiroLivreDoPeriodo(dia, r.primeiro === 'manha');
+  return x ? 'NO ' + NOME_DIA_REGRA[SEMANA_REGRA[dia.weekday]].toUpperCase() + ' A ' + (r.primeiro === 'manha' ? 'TARDE' : 'MANHÃ') + ' SÓ ABRE QUANDO A ' + (r.primeiro === 'manha' ? 'MANHÃ' : 'TARDE') +
+    ' LOTA (regra da dona). Ainda tem ' + hmRegra(x) + ' (data_hora_inicio: ' + iso(x) + '): diga isso de um jeito simples e ofereça esse horário. ' : ''; };
+
 // ---- horários futuros desta cliente ----
 // Do app (Supabase): os marcados pela IA E pela Gleide, só os que ainda vão acontecer.
 if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
@@ -232,6 +284,8 @@ if (['listar', 'cancelar', 'remarcar'].includes(p.acao)) {
       ' O horário dela de ' + fmt(alvo.ini) + ' continua valendo.' }); }
   if (novo < agora.plus({ minutes: ANTECEDENCIA_REMARCAR_MIN })) return saida({ resposta: 'O novo horário já passou ou está muito em cima da hora. Ofereça outro.' });
   if (!noExpediente(novo, fimNovo)) return saida({ resposta: 'O novo horário fica fora do expediente (ou o serviço não cabe antes do almoço/fechamento). Consulte os horários livres e ofereça outro.' });
+  if (!podeComecar(novo)) return saida({ resposta: 'NÃO REMARCADO: o novo horário ' + motivoRegra(novo) + '. Consulte os horários livres e ofereça outro.' });
+  if (periodoFechado(novo)) return saida({ resposta: 'NÃO REMARCADO: o novo horário ' + motivoPeriodo(novo) + '.' });
   if (semEle.some(([a, b]) => novo < b && fimNovo > a)) return saida({ resposta: 'O novo horário está ocupado. Consulte os horários livres e ofereça outro.' });
   // mesma anotação do CRM ("Reagendado de 20/10 às 13:00"): o app mostra o horário antigo
   const observacoes = [alvo.obs, 'Reagendado de ' + alvo.ini.toFormat('dd/LL') + ' às ' + alvo.ini.toFormat('HH:mm')].filter(Boolean).join('\\n');
@@ -250,6 +304,8 @@ if (p.acao === 'consultar') {
         if (t < agora.plus({ minutes: ANTECEDENCIA_MIN })) continue;
         if (p.periodo.startsWith('manh') && t.hour >= 12) continue;
         if (p.periodo.startsWith('tard') && t.hour < 12) continue;
+        // regras da dona (supabase/071): faixa em que a IA não começa e período que só abre quando o outro lota
+        if (!podeComecar(t) || periodoFechado(t)) continue;
         if (livre(t, t.plus({ minutes: p.dur }))) v.push(t);
       }
     }
@@ -270,6 +326,7 @@ if (p.acao === 'consultar') {
   // do dia por período fica só para a IA: se a cliente pedir outros horários, ela oferece 1 ou 2 inícios novos (prompt v7.1).
   // Sem nome de cliente: só o horário reservado.
   const sugestao = (v) => {
+    v = preferirPeriodo(v);
     const m = v.find((t) => t.hour < 12), t = v.find((x) => x.hour >= 12);
     const dois = m && t ? [m, t] : [v[0], v.find((x) => x.diff(v[0], 'minutes').minutes >= 120) || v[v.length - 1]];
     return dois.filter((x, i) => x && (i === 0 || +x !== +dois[0])).map((x) => hm(x) + ' (data_hora_inicio: ' + iso(x) + ')').join(' ou ');
@@ -292,6 +349,8 @@ if (p.acao === 'consultar') {
         // hoje: o que já passou (ou está a menos de 1 h) não conta
         if (y <= inicioHoje) return;
         if (x < inicioHoje) { x = inicioHoje; const m = x.minute % PASSO_MIN; if (m || x.second) x = x.plus({ minutes: PASSO_MIN - m }).startOf('minute'); }
+        // regras da dona (supabase/071): o trecho livre começa no primeiro início que a regra deixa
+        while (x < y && (!podeComecar(x) || periodoFechado(x))) x = x.plus({ minutes: PASSO_MIN });
         if (x >= y) return;
         const cabe = y.diff(x, 'minutes').minutes >= p.dur;
         partes.push((cabe ? 'livre das ' : 'vago das ') + hm(x) + ' às ' + hm(y) + (cabe ? '' : ' (não cabe o serviço de ' + p.dur + ' min)'));
@@ -304,7 +363,7 @@ if (p.acao === 'consultar') {
     return 'QUADRO DO DIA — ' + dia.setLocale('pt-BR').toFormat('cccc, dd/LL') + ' (' + dia.toFormat('yyyy-LL-dd') + '), serviço de ' + p.dur + ' min:\\n' +
       'OFEREÇA À CLIENTE SÓ ESTES 2 HORÁRIOS: ' + sugestao(v) + '. Não mande o quadro abaixo de cara.\\n' +
       'Quadro do dia (só para você, não mande à cliente nem comente se a agenda está aberta ou cheia; se ela perguntar se tem outros horários, ofereça 1 ou 2 inícios NOVOS e exatos tirados daqui):\\n' +
-      linhas.join('\\n') + '\\nInícios que cabem o serviço (de 30 em 30 min): ' + faixas(v) +
+      linhas.join('\\n') + regrasDoDia(dia) + '\\nInícios que cabem o serviço (de 30 em 30 min): ' + faixas(v) +
       '. Se ela disser outro horário, confira esse horário exato com consultar_horarios_livres antes de marcar; se estiver livre e ela já escolheu, pode marcar.';
   };
   const pedido = DateTime.fromISO(p.dia).setZone(TZ).startOf('day');
@@ -329,6 +388,9 @@ if (p.acao === 'consultar') {
         : comeca ? 'o serviço (' + p.dur + ' min) não termina antes do almoço/fechamento'
         : 'fica fora do horário de funcionamento';
     }
+    // regras da dona (supabase/071), antes do "ocupado"; o horário que já é da cliente segue o caminho dele
+    else if (!podeComecar(t) && !jaDaCliente(t, f)) motivo = motivoRegra(t);
+    else if (periodoFechado(t) && !jaDaCliente(t, f)) motivo = motivoPeriodo(t);
     else if (!livre(t, f)) motivo = 'já está ocupado';
     if (!motivo) return [{ json: { acao: 'consultar', ok: true, resposta: 'LIVRE: ' + fmt(t) + ' está disponível para ' + p.dur + ' min (data_hora_inicio: ' + iso(t) + '). Pode oferecer à cliente.' } }];
     const alt = vagasDoDia(pedido);
@@ -346,7 +408,7 @@ if (p.acao === 'consultar') {
   let resposta;
   if (!opcoes.length && barrado) resposta = avisoRegra(pedido, tipoPedido) + ' Também não há horário livre para esse serviço nos próximos ' + DIAS_BUSCA + ' dias: diga isso à cliente e pergunte se pode ser mais para frente.';
   else if (!opcoes.length) resposta = 'Sem horários livres para ' + p.dur + ' min nos próximos ' + DIAS_BUSCA + ' dias. Diga isso à cliente e use transferir_para_humano para a equipe ver um encaixe.';
-  else if (diaAlternativo) resposta = (barrado ? avisoRegra(pedido, tipoPedido) : fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +
+  else if (diaAlternativo) resposta = notaPeriodo(pedido) + (barrado ? avisoRegra(pedido, tipoPedido) : fechado ? 'O salão está FECHADO em ' + nomeDia + '.' : 'Não há horário livre em ' + nomeDia + (p.periodo !== 'qualquer' ? ' no período da ' + p.periodo : '') + '.') +
     ' Próximo dia com vaga: ' + quadro(diaAlternativo, opcoes);
   else resposta = quadro(pedido, opcoes);
   return [{ json: { acao: 'consultar', ok: true, resposta } }];
@@ -358,6 +420,9 @@ const fim = ini.plus({ minutes: p.dur });
 if (ini < agora) return saida({ resposta: 'Esse horário já passou. Consulte os horários livres de novo.' });
 if (!podeNoDia(ini.startOf('day'), tipoPedido)) return saida({ resposta: 'NÃO AGENDADO: ' + avisoRegra(ini.startOf('day'), tipoPedido) });
 if (!noExpediente(ini, fim)) return saida({ resposta: 'Esse horário está fora do horário de funcionamento (ou não cabe a duração do serviço). Consulte os horários livres de novo.' });
+// regras da dona (supabase/071): não marca nem se a cliente insistir (antes do "ocupado"; o horário que já é dela segue o caminho dele)
+if (!podeComecar(ini) && !jaDaCliente(ini, fim)) return saida({ resposta: 'NÃO AGENDADO: esse horário ' + motivoRegra(ini) + '. Diga isso à cliente de um jeito simples e consulte os horários livres para oferecer outro.' });
+if (periodoFechado(ini) && !jaDaCliente(ini, fim)) return saida({ resposta: 'NÃO AGENDADO: esse horário ' + motivoPeriodo(ini) + '.' });
 if (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' });
 return [{ json: {
   acao: 'criar', ok: true,

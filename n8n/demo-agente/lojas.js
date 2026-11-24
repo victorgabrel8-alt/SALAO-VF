@@ -63,7 +63,8 @@ function carregarLoja(dir, slug, env = {}) {
   // a assistente da Gleide age nos dados dela para esses números: a dona de outra loja não pode ser um deles
   const daGleide = [GLEIDE_ASSISTENTE, ...String(env.ASSISTENTE_NUMEROS || '').split(',')].map((s) => s.trim()).filter(Boolean).map(semNove);
   const repetido = loja.assistente_numeros.find((n) => daGleide.includes(semNove(n)));
-  if (repetido) throw new Error(`assistente_numeros: ${repetido} já é número da assistente da Gleide`);
+  // Loja Teste: o Victor (dono de tudo) testa a assistente pelo celular dele, que também é número da assistente da Gleide (24/11)
+  if (repetido && slug !== 'teste') throw new Error(`assistente_numeros: ${repetido} já é número da assistente da Gleide`);
   return { ...loja, pasta, permitidos: loja.permitidos || [], trocas: loja.trocas || [], cidade: loja.cidade || 'Sinop' };
 }
 

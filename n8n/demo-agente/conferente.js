@@ -219,7 +219,7 @@ module.exports = ({ node, ifNode, cond, workflow: wf, loja }) => {
       method: 'POST', url: gemini.parameters.url,
       authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi',
       sendBody: true, specifyBody: 'json',
-      jsonBody: '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.pedido }] }], generationConfig: { temperature: 0.2 } }) }}',
+      jsonBody: '={{ JSON.stringify({ contents: [{ parts: [{ text: $json.pedido }] }], generationConfig: { temperature: 0.2, thinkingConfig: { thinkingLevel: \'low\' } } }) }}',
       options: { timeout: TEMPO_GEMINI },
     }, { ...(gemini.credentials ? { credentials: gemini.credentials } : {}), onError: 'continueRegularOutput', alwaysOutputData: true }),
     novo('Conferente: decidir', 'n8n-nodes-base.code', 2, pos(4, -1), { jsCode: codDecidir }, { onError: 'continueRegularOutput', alwaysOutputData: true }),

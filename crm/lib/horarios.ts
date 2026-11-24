@@ -1,5 +1,5 @@
 import { avisoAlmoco, conflitaComAlmoco, lerAlmoco } from "@/lib/almoco";
-import { bloqueioDoDia, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
+import { bloqueioDoDia, bloqueioParaProfissional, bloqueiosHorarioDoDia } from "@/lib/bloqueios";
 import { agoraNoSalao, dataNoSalao, formatarHora, inicioDoDia, somarDias } from "@/lib/formato";
 import { supabase } from "@/lib/supabase/client";
 
@@ -58,6 +58,15 @@ async function profissionaisAtivas(empresaId: string): Promise<string[]> {
   return ((data ?? []) as { id: string }[]).map((p) => p.id);
 }
 
+// A profissional do horário, para os bloqueios de uma só (supabase/076): null = a dona (a primeira do cadastro);
+// undefined = não se sabe de quem é (qualquer bloqueio do dia vale).
+async function profissionalDoBloqueio(empresaId: string, profissionalId?: string | null): Promise<string | undefined> {
+  if (profissionalId === undefined) return undefined;
+  if (profissionalId) return profissionalId;
+  const ativas = await profissionaisAtivas(empresaId);
+  return ativas[0];
+}
+
 // O que já ocupa o dia: horários a atender e concluídos (falta e cancelado liberam a vaga).
 // Sem fim gravado, conta 1 h; atendimento que passa da meia-noite ocupa até o fim do dia.
 // profissionalId: na loja com mais de uma profissional (Caroline e Duda), só os horários DESSA
@@ -110,8 +119,9 @@ export async function conferirHorario(
   ignorarId?: string,
   profissionalId?: string | null,
 ): Promise<string | null> {
-  const bloqueio = bloqueioDoDia(config, dia);
-  if (bloqueio) return `Esse dia está marcado como sem atender${bloqueio.motivo ? ` (${bloqueio.motivo})` : ""}. Escolha outro dia.`;
+  const alvo = await profissionalDoBloqueio(empresaId, profissionalId);
+  const bloqueio = bloqueioParaProfissional(config, dia, alvo);
+  if (bloqueio) return `Esse dia está marcado como sem atender${bloqueio.profissional ? ` para a ${bloqueio.profissional}` : ""}${bloqueio.motivo ? ` (${bloqueio.motivo})` : ""}. Escolha outro dia.`;
   const faixa = expediente(config, dia);
   if (!faixa) return "O salão não abre nesse dia. Escolha outro dia.";
   const ini = emMinutos(horaInicio.slice(0, 5));
@@ -121,7 +131,7 @@ export async function conferirHorario(
   }
   const almoco = lerAlmoco(config);
   if (almoco && conflitaComAlmoco(almoco, horaInicio.slice(0, 5), duracaoMin)) return avisoAlmoco(almoco);
-  const horas = bloqueiosHorarioDoDia(config, dia).find((b) => ini < emMinutos(b.fim) && fim > emMinutos(b.inicio));
+  const horas = bloqueiosHorarioDoDia(config, dia, alvo).find((b) => ini < emMinutos(b.fim) && fim > emMinutos(b.inicio));
   if (horas) return `Esse horário está bloqueado (${horas.inicio} às ${horas.fim}${horas.motivo ? `, ${horas.motivo}` : ""}). Escolha outro horário.`;
   const ocupados = await ocupadosDoDia(empresaId, dia, ignorarId, profissionalId);
   if ("erro" in ocupados) return `Não foi possível conferir a agenda: ${ocupados.erro}`;
@@ -144,10 +154,12 @@ export async function horariosLivres(
 ): Promise<string[]> {
   const faixa = expediente(config, dia);
   if (!faixa) return [];
+  const alvo = await profissionalDoBloqueio(empresaId, profissionalId);
+  if (bloqueioParaProfissional(config, dia, alvo)) return [];
   const resultado = await ocupadosDoDia(empresaId, dia, ignorarId, profissionalId);
   const ocupados = [
     ...("erro" in resultado ? [] : resultado.map((o) => [o.ini, o.fim] as const)),
-    ...bloqueiosHorarioDoDia(config, dia).map((b) => [emMinutos(b.inicio), emMinutos(b.fim)] as const),
+    ...bloqueiosHorarioDoDia(config, dia, alvo).map((b) => [emMinutos(b.inicio), emMinutos(b.fim)] as const),
   ];
   const almoco = lerAlmoco(config);
   const agora = agoraNoSalao();

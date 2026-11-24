@@ -223,6 +223,34 @@
       "waitBetweenTries": 3000,
       "onError": "continueRegularOutput",
       "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000a92",
+      "name": "Cópia ao Victor (pausa)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1500,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '👀 Cópia: a IA passou a conversa para humano\\n\\n' + (() => { const m = ($('Avisar a Caroline (WhatsApp)').first().json || {}).message || {}; return m.conversation || (m.extendedTextMessage || {}).text || ''; })() }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -286,6 +314,11 @@
         [
           {
             "node": "Resposta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cópia ao Victor (pausa)",
             "type": "main",
             "index": 0
           }
