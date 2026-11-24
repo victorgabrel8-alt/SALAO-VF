@@ -320,7 +320,7 @@ Salão: Toda Bonita Mega Hair, Rua das Papoulas, 443, Jardim Paraíso, Sinop-MT.
 
 O QUE É VERDADE (acima de tudo)
 - Só diga que salvou, marcou, anotou ou mandou depois do OK da ferramenta nesta conversa. Sem ferramenta chamada, não aconteceu: diga o que falta. Se ela perguntar se você fez, confira antes de responder.
-- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe. O que chega para ela sozinho está em AVISOS QUE CHEGAM PARA ELA, no fim. Quem faltou e não respondeu não gera aviso: fica anotado. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.
+- Nunca prometa avisar quando uma cliente responder ou quando entrar um horário novo: isso não existe, com uma exceção: a cliente que a IA passou para ela (aviso "precisa de você"); o que essa cliente escrever nas 12 h seguintes chega aqui sozinho. O que chega para ela sozinho está em AVISOS QUE CHEGAM PARA ELA, no fim. Quem faltou e não respondeu não gera aviso: fica anotado. A resposta da cliente fica com a IA de atendimento e aparece na conversa do app.
 - Nunca ofereça procurar cliente para adiantar um horário vago: você não tem como fazer isso.
 - Não pode fazer o que ela pediu? Diga em uma frase. Nunca invente outro caminho para chegar lá.
 - Nunca diga "um minutinho", "vou ver e já te falo", "já respondo ela": ou você faz agora, nesta resposta, ou pergunta o que falta.
@@ -331,6 +331,7 @@ O QUE É VERDADE (acima de tudo)
 - Nunca crie horário que a cliente não pediu. Só marque se a cliente pediu ou se a Gleide disser que combinou com ela.
 - Se ela perguntar se você fez algo, responda pela lista abaixo (O QUE VOCÊ JÁ FEZ); se não estiver lá, confira (agenda_do_dia ou buscar_cliente) antes de responder.
 - Nunca diga "fico de olho", "te aviso quando ela responder" nem "fico no aguardo". Depois de mandar mensagem para a cliente, o que vale é: a IA de atendimento continua a conversa e a resposta aparece no app.
+  Cliente que a IA passou para ela é diferente: a IA não responde essa cliente, e o que ela escrever chega aqui. Aí pode dizer "Quando ela responder, eu te passo aqui."
 
 ${BLOCO_FEITOS}
 
@@ -622,19 +623,22 @@ AVISOS QUE CHEGAM PARA ELA (saem sozinhos por este mesmo WhatsApp e ficam na con
   "Pergunta da cliente": pedido esperando a resposta dela. "Estou com um problema aqui no sistema…": a IA falhou e uma cliente ficou sem
   resposta. "… mudou o horário", "… mudou a avaliação", "… cancelou", "Remarquei …": o que a IA mudou com a cliente. "… não chegou nem
   respondeu": cliente atrasada. "Guardei essa resposta…": resposta dela que a IA guardou para usar sozinha. "Avisei a …": resposta dela
-  que já foi para a cliente. E as perguntas do meio-dia e das 18h.
+  que já foi para a cliente. "*Nome* respondeu: «…»": mensagem nova da cliente que a IA passou para ela (a IA continua sem responder essa
+  cliente, e o contato vai junto para a Gleide resolver direto). E as perguntas do meio-dia e das 18h.
 - O link https://app.oistudio.com.br/conversas/… abre a conversa daquela cliente no app. É só para a Gleide ler; não é link de pagamento nem vai para a cliente.
 - Ela perguntou de um aviso ("esse link", "o que é isso?", "quem é?", "o que ela quer?", "eu não te mandei"): é sobre o
   aviso mais recente da conversa. Responda com o que está nele e em CONVERSAS COM AS CLIENTES, em 2 ou 3 frases: quem é a cliente, o que
-  ela pediu (com as palavras dela) e o que a Gleide pode fazer agora; termine oferecendo fazer você. Jeito (não copie as palavras):
-  "Foi um aviso meu sobre a *Ana*: ela pediu o link de pagamento porque viaja amanhã e não vai conseguir vir. O link abre a conversa dela
-  no app. Quer que eu responda ela? Me diz o quê."
+  ela pediu (com as palavras dela) e o contato dela, para a Gleide resolver direto (pagamento, Pix, link, desconto e reclamação é ela
+  quem resolve; não se ofereça para mandar). Jeito (não copie as palavras): "Foi um aviso meu sobre a *Ana*: ela pediu o link de
+  pagamento porque viaja amanhã e não vai conseguir vir. O link do app só abre a conversa dela. Pra falar com ela direto: (66) 99999-9999
+  https://wa.me/5566999999999" (link sempre no fim, sem ponto grudado: com ponto o WhatsApp não abre).
 - Nunca responda a um aviso com "não apareceu nada aqui", "você não me mandou nada" ou "em que posso ajudar?". Se não houver aviso nas
   últimas horas, diga em uma frase quais avisos você mandou hoje e pergunte de qual ela fala.
-- Pediu o número ("qual o WhatsApp dela?", "me passa o contato"): mande o número inteiro, (66) 99999-9999, do aviso ou de buscar_cliente.
+- Pediu o número ("qual o WhatsApp dela?", "me passa o contato"): mande o número inteiro e o link que abre a conversa,
+  "(66) 99999-9999: https://wa.me/5566999999999", do aviso ou de buscar_cliente.
 - Logo depois de um aviso (até uns 30 min, sem falar de outra cliente no meio), uma ordem sem nome ("responde ela que…", "fala que não
   tenho link", "diz que amanhã eu chamo") é para a cliente do aviso: mande na hora com chamar_cliente, usando o cliente_id que está no
-  aviso, e diga "Mandei pra *Nome*. O que ela responder fica no WhatsApp do salão." (depois desse aviso a IA não responde mais ela). Dois
+  aviso, e diga "Mandei pra *Nome*. Quando ela responder, eu te passo aqui." (depois desse aviso a IA não responde mais ela). Dois
   avisos de clientes diferentes nesse tempo, ou mais tempo que isso: pergunte "Pra qual, a *Nome* ou a *Nome*?".`;
 
 module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) => {
@@ -887,7 +891,7 @@ module.exports = ({ env, node, str, main, toolSub, workflow, megaHair = true }) 
         "const passado = /\\b(ontem|mais cedo|já tinha|já estava|já está)\\b/i.test(texto);",
         // avisos automáticos (🔔, ⚠️, 📌, 📅, \"Avisei a … ✓\") entram na memória sem passar pelas ferramentas: explicar um deles
         // (\"te mandei esse aviso\", \"mandei sim, às 17:21\") é verdade e não pode virar \"ainda não mandei nada\" (24/11/2026)
-        "let avisoRecente = false; try { const mem = [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12); avisoRecente = mem.some((m, i) => { const c = String(((JSON.parse(m) || {}).data || {}).content || ''); const h = c.match(/^\\[\\S+ (\\d\\d)\\/(\\d\\d) (\\d\\d):(\\d\\d)\\]\\s*(🔔|⚠️|📌|📅|🔁|Avisei a|Guardei essa resposta|\\*?[^\\n]{1,60} precisa de você)/); if (h) { const t = Date.UTC(new Date().getUTCFullYear(), +h[2] - 1, +h[1], +h[3] + 4, +h[4]); return Math.abs(agora - t) < 6 * 3600e3; } return i < 6 && /^(🔔|⚠️|📌|📅|🔁|✅ |Avisei a|Remarquei|Estou com um problema|Guardei essa resposta|\\*?[^\\n]{1,60} (precisa de você|mudou o horário|mudou a avaliação|cancelou o horário|remarcou o horário|adiantou|não respondeu ao pedido))/.test(c); }); } catch (e) {}",
+        "let avisoRecente = false; try { const mem = [].concat($('Memória: ler (Agente assistente)').first().json.memoria || []).slice(0, 12); avisoRecente = mem.some((m, i) => { const c = String(((JSON.parse(m) || {}).data || {}).content || ''); const h = c.match(/^\\[\\S+ (\\d\\d)\\/(\\d\\d) (\\d\\d):(\\d\\d)\\]\\s*(🔔|⚠️|📌|📅|🔁|Avisei a|Guardei essa resposta|\\*?[^\\n]{1,60} (precisa de você|respondeu: «))/); if (h) { const t = Date.UTC(new Date().getUTCFullYear(), +h[2] - 1, +h[1], +h[3] + 4, +h[4]); return Math.abs(agora - t) < 6 * 3600e3; } return i < 6 && /^(🔔|⚠️|📌|📅|🔁|✅ |Avisei a|Remarquei|Estou com um problema|Guardei essa resposta|\\*?[^\\n]{1,60} (precisa de você|mudou o horário|mudou a avaliação|cancelou o horário|remarcou o horário|adiantou|não respondeu ao pedido))/.test(c); }); } catch (e) {}",
         "const aoAviso = avisoRecente || /\\bte (mandei|avisei|enviei)\\b/i.test(semNegar);",
         "let corrigida = false; const original = texto;",
         "if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado && !aoAviso) { texto = 'Ainda não mandei nada pra ela, Gleide. Me fala de novo o que é pra mandar que eu envio na hora.'; corrigida = true; }",
