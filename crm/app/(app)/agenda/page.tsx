@@ -156,8 +156,9 @@ function AgendaPageConteudo() {
   const [ano, mes] = dia.split("-").map(Number);
 
   // Loja com mais de uma profissional: Todas (com a etiqueta de quem é) ou só a agenda de uma delas.
-  // Horário sem profissional é da dona (a primeira cadastrada).
-  const [filtro, setFiltro] = useState<string>("todas");
+  // Horário sem profissional é da dona (a primeira cadastrada). Login ligado a uma profissional (supabase/070) abre na
+  // agenda dela; a profissional que não é a dona fica só na dela (sem os botões).
+  const [filtro, setFiltro] = useState<string>(() => empresa.profissional?.id ?? "todas");
   const deQuem = (a: Atendimento) => a.profissional_id ?? ordem[0] ?? null;
   const filtrando = variasProfissionais && filtro !== "todas" && ordem.includes(filtro);
   const visiveis = ok?.atendimentos.filter((a) => a.status !== "cancelado" && (!filtrando || deQuem(a) === filtro)) ?? [];
@@ -406,7 +407,7 @@ function AgendaPageConteudo() {
           </p>
         ))}
         {/* Loja com mais de uma profissional: ver todas (com etiqueta) ou só a agenda de uma */}
-        {ok && variasProfissionais && (
+        {ok && variasProfissionais && !empresa.soDela && (
           <div className="mb-3 flex flex-wrap gap-2">
             {[{ id: "todas", nome: "Todas" }, ...ok.profissionais].map((p) => (
               <button
