@@ -5758,6 +5758,34 @@
       "onError": "continueRegularOutput",
       "alwaysOutputData": true,
       "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000a93",
+      "name": "Cópia ao Victor (Conferente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2400,
+        260
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '👀 O Conferente barrou uma resposta da IA\\nCliente: ' + ($('Extrair dados').first().json.nome || '') + ' (' + String($('Extrair dados').first().json.telefone || '').slice(-4) + ')' + '\\nIa dizer: «' + String($json.texto || '').slice(0, 300) + '»' + '\\nMotivo: ' + (Array.isArray($json.falhas) ? $json.falhas.map((f) => f.tipo + (f.detalhe ? ' (' + String(f.detalhe).slice(0, 80) + ')' : '')).join('; ') : '-') + '\\nSaiu: «' + String($json.texto_final || '').slice(0, 300) + '»' }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -7627,6 +7655,11 @@
         [
           {
             "node": "Conferente: registrar",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cópia ao Victor (Conferente)",
             "type": "main",
             "index": 0
           }

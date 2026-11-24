@@ -14438,6 +14438,48 @@
           "convertFieldsToString": false
         }
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000a94",
+      "name": "Victor: erro da assistente?",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1960,
+        1500
+      ],
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "jsCode": "const c = $('Conferir resposta').first().json || {};\nconst ag = $('Agente assistente').first().json || {};\nlet pedido = ''; try { pedido = String($('Juntar mensagens').first().json.texto || ''); } catch (e) {}\nconst num = String($('Extrair dados').first().json.numero || '');\nconst ler = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; if (x && x.error) return 'ERRO: ' + x.error; } catch (e) {} return t; };\nconst passos = Array.isArray(ag.intermediateSteps) ? ag.intermediateSteps : [];\nconst falhas = passos.map((s) => ({ t: s.action && s.action.tool, r: ler(s.observation) })).filter((f) => /^\\s*(ERRO|N[ÃA]O (MARQUEI|REAGENDEI|MUDEI|ENVIADO|SALVO|AGENDADO|PERGUNTADO)|Received tool input)/i.test(f.r));\nlet motivo = '';\nif (!String(ag.output || '').trim()) motivo = 'a assistente não conseguiu responder (Gemini fora ou erro); ela recebeu: «' + String(c.texto || '').slice(0, 120) + '»';\nelse if (c.corrigida) motivo = 'ia dizer que fez sem ter feito: «' + String(c.original || '').slice(0, 200) + '». Ela recebeu: «' + String(c.texto || '').slice(0, 160) + '»';\nelse if (falhas.length) motivo = falhas.map((f) => f.t + ': ' + String(f.r).replace(/\\s+/g, ' ').slice(0, 180)).join(' | ') + '\\nResposta à dona: «' + String(c.texto || '').slice(0, 200) + '»';\nif (!motivo) return [];\nreturn [{ json: { texto: '👀 Assistente da loja · pedido de ' + num.slice(-4) + ': «' + pedido.replace(/\\s+/g, ' ').slice(0, 300) + '»\\n⚠️ ' + motivo } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000a95",
+      "name": "Cópia ao Victor (assistente)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2940,
+        2100
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: $json.texto }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -14762,6 +14804,11 @@
           },
           {
             "node": "Resposta corrigida?",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Victor: erro da assistente?",
             "type": "main",
             "index": 0
           }
@@ -15343,6 +15390,17 @@
           {
             "node": "Agente assistente",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Victor: erro da assistente?": {
+      "main": [
+        [
+          {
+            "node": "Cópia ao Victor (assistente)",
+            "type": "main",
             "index": 0
           }
         ]

@@ -354,6 +354,34 @@
       },
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000a91",
+      "name": "Cópia ao Victor (pergunta)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        600,
+        200
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.EVOLUTION_URL }}/message/sendText/{{ 'karol-manicure' }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.EVOLUTION_API_KEY }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ number: '556699270860', text: '👀 Cópia: a IA perguntou à dona\\n\\n' + ((() => { const m = ($('Enviar pergunta à Caroline').first().json || {}).message || {}; return m.conversation || (m.extendedTextMessage || {}).text || ''; })() || JSON.stringify($('Recebe pergunta da IA').first().json).slice(0, 500)) }) }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     }
   ],
   "connections": {
@@ -384,6 +412,11 @@
         [
           {
             "node": "Guardar pedido",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Cópia ao Victor (pergunta)",
             "type": "main",
             "index": 0
           }

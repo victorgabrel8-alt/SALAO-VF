@@ -952,6 +952,8 @@ if (LOJA) {
   // 24/11: a assistente oferece horário pela agenda da IA, cliente sem sinal, reserva sem "pode ser?", "mandei" só se mandou
   // (assistente-oferecer.js, supabase/075). Depois dos módulos que mexem no "Envio: conferir" e no "Conferir resposta".
   if (LOJA.assistente_oferecer) require('./assistente-oferecer.js')({ workflow, agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, agendaId: lerAgendaId() });
+  // 24/11: cópia ao Victor de cada dúvida e erro da IA e da assistente (copia-victor.js). Depois do Conferente e do pedido-numerado.
+  if (LOJA.copia_victor) require('./copia-victor.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pausaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, numero: LOJA.copia_victor });
   // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado
   // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });
