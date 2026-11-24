@@ -111,3 +111,14 @@ test('assistente: mais ágil (junta mensagens por 10 s e não imita digitação 
   assert.equal(noA('Aguardar (juntar mensagens)').parameters.amount, 10);
   assert.ok(noA('Ritmo humano').parameters.jsCode.includes('Math.min(2500'));
 });
+
+test('assistente: com as funções por profissional, a Google Agenda continua sendo lida (ver o dia, marcar, remarcar)', () => {
+  const F = JSON.parse(fs.readFileSync(path.join(PASTA, 'workflow-assistente-ferramentas.json'), 'utf8'));
+  const g = F.nodes.find((n) => n.name === 'Precisa da Google?').parameters.conditions.conditions[0].leftValue;
+  const M = "$('Montar chamada').first().json.funcao";
+  const le = (fn) => eval(g.slice(4, -3).split(M).join(JSON.stringify(fn)).replace("!$('Montar chamada').first().json.erro", 'true'));
+  for (const fn of ['agenda_do_dia_prof', 'marcar_horario_prof', 'reagendar_prof', 'horarios_livres']) assert.equal(le('n8n_assistente_' + fn), true, fn);
+  assert.equal(le('n8n_assistente_concluir'), false);
+  const r = JSON.stringify(F.nodes.find((n) => n.name === 'Resposta').parameters);
+  assert.ok(r.includes('n8n_assistente_reagendar_prof'), 'o aviso "a cliente ainda não sabe" não reconhece a remarcação por profissional');
+});
