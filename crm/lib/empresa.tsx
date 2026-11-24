@@ -37,6 +37,9 @@ export function EmpresaProvider({ children }: { children: ReactNode }) {
     supabase()
       .from("usuarios_empresa")
       .select("papel, empresas (id, nome, config, nicho), profissionais (id, nome)")
+      // login em mais de um salão: sempre o ligado primeiro (sem ordem, o banco devolvia um ou outro depois de
+      // qualquer atualização na linha, como ligar a profissional)
+      .order("criado_em")
       .limit(1)
       .maybeSingle()
       .then(({ data, error }) => {
