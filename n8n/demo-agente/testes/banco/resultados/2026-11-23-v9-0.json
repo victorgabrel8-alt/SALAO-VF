@@ -1,0 +1,1781 @@
+{
+ "resumo": {
+  "rotulo": "v9-0",
+  "quando": "2026-11-23T23:35:50.160Z",
+  "prompt": "VERSÃO 9.0",
+  "letras": 47678,
+  "modelo": "gemini-3-flash-preview",
+  "juiz": "gemini-3-flash-preview",
+  "vezes": 1,
+  "casos": 46,
+  "passaram": 23,
+  "media": 7.16,
+  "criterios": {
+   "calor": 1.48,
+   "responde": 1.91,
+   "conduz": 1.17,
+   "especifica": 1.43,
+   "fiel": 1.87,
+   "esperado": 1.2
+  },
+  "falhas": {
+   "mais de uma pergunta": 3,
+   "balão longo": 4,
+   "emoji em assunto delicado": 3,
+   "pediu concordância": 1,
+   "vendeu a vantagem": 1,
+   "faltou dizer": 2,
+   "valor fora da tabela do app": 1
+  },
+  "tokens": {
+   "entrada": 1152631,
+   "cache": 782251,
+   "saida": 119423,
+   "chamadas": 114
+  }
+ },
+ "resultados": [
+  {
+   "id": "abre-saber-mais",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Olá, Carla! Boa noite 🥰\n\nSou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop. A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez, com toda a atenção que o cabelo precisa.",
+      "O que você gostaria de mudar no seu cabelo hoje? 😊"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta seguiu rigorosamente as instruções para o primeiro contato, sendo empática e utilizando uma pergunta aberta correta."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "abre-quanto-custa",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Juliana! Boa noite. Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "O valor do seu caso a Gleide passa na avaliação, que é gratuita, então não precisa se preocupar com valor agora. O que você queria mudar no seu cabelo?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta seguiu perfeitamente todas as instruções do campo esperado e utilizou uma pergunta aberta ideal para o primeiro contato."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "abre-alongar",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 9,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Boa noite, Patrícia! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊 A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez.",
+      "Que bacana que você quer alongar! O que te fez pensar em colocar o mega agora? É pra alguma ocasião ou vontade antiga?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "mais de uma pergunta",
+       "grave": false,
+       "detalhe": "2 perguntas"
+      }
+     ],
+     "juiz": {
+      "defeitos": [],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA cumpriu perfeitamente o protocolo de primeiro contato, demonstrando interesse genuíno e seguindo todas as instruções do caso."
+     },
+     "nota": 9,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45876
+    }
+   ]
+  },
+  {
+   "id": "abre-volume",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Boa noite, Sueli! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊 A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez.",
+      "O volume faz muita diferença mesmo! O que mais te incomoda no seu cabelo hoje?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta seguiu exatamente o esperado, demonstrando empatia e focando em entender a dor da cliente antes de qualquer convite."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "abre-de-onde",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Neide! Bom dia. Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊 A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez.",
+      "O que você tinha vontade de mudar no seu cabelo?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A frase 'A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez' soa como texto de propaganda/institucional, o que reduz o calor natural da conversa.",
+       "O miolo da resposta é uma frase pronta (muleta) que não depende do que a cliente disse."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA respondeu e conduziu bem com uma pergunta aberta, mas incluiu frases institucionais prontas que tiram a naturalidade."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "abre-audio-valores",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Boa noite, Anny! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "O valor do seu caso a Gleide passa na avaliação, que é gratuita, então não precisa se preocupar com valor agora. O que te fez pensar no mega agora?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou o detalhe específico 'cabelo comprido' mencionado pela cliente no áudio.",
+       "A pergunta 'O que te fez pensar no mega agora?' não cumpre exatamente o que foi pedido no campo esperado ('pergunta como ela imagina o cabelo').",
+       "A resposta é genérica e não reage ao conteúdo específico da fala da Anny, servindo para qualquer pessoa que perguntasse preço."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 0,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA ignorou o único detalhe fornecido pela cliente (cabelo comprido) e alterou a pergunta de condução solicitada."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45872
+    }
+   ]
+  },
+  {
+   "id": "abre-duas-telas-e-arrumar",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 5.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Aliny! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "A mão de obra pra colocar fica a partir de R$ 150 por tela. Sobre a tela que está grossa, a Gleide faz esse tipo de ajuste sim, mas vou confirmar com ela sobre o valor e te aviso por aqui assim que ela me responder.\n\nVocê já usa mega hair ou é a primeira vez que vai colocar essas telas?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "61 palavras: \"A mão de obra pra colocar fica a partir de R$ 150 por tela. …\""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'Você já usa mega hair ou é a primeira vez que vai colocar essas telas?' é redundante e ignora o contexto, pois a cliente já afirmou que tem as telas e que uma está grossa.",
+       "O uso de 'a partir de R$ 150' no valor da mão de obra, quando o valor fixo informado é R$ 150 por tela.",
+       "Não seguiu a sugestão de condução do campo 'esperado' (perguntar da última manutenção)."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 1,
+      "esperado": 1,
+      "motivo": "A IA ignorou o fato óbvio de que a cliente já usa o cabelo ao fazer uma pergunta de formulário redundante."
+     },
+     "nota": 5.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "abre-ponto-americano",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 4.2,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Boa noite, Débora! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊",
+      "A Gleide trabalha com o ponto americano, sim! O valor certinho para o seu caso ela passa na avaliação, que é gratuita, então não precisa se preocupar com isso agora. O que você gostaria de mudar no seu cabelo hoje?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Omitiu o valor de R$ 150 por tela da aplicação, que é um fato conhecido e solicitado no campo esperado.",
+       "O trecho 'não precisa se preocupar com isso agora' soa levemente desnecessário ou evasivo para uma pergunta direta de preço.",
+       "A pergunta final 'O que você gostaria de mudar' é genérica demais para quem já demonstrou conhecimento técnico ao citar o ponto americano."
+      ],
+      "calor": 1,
+      "responde": 0,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 1,
+      "esperado": 0,
+      "motivo": "A IA falhou ao não informar o valor fixo da aplicação (R$ 150 por tela) conforme exigido nas instruções do caso."
+     },
+     "nota": 4.2,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "abre-engano",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 10,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Boa noite, Marcos! Tudo bem?",
+      "Acho que você acabou mandando essa mensagem pro lugar errado 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.\n\nVocê estava procurando pelo salão ou foi engano mesmo?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "Identificou com precisão o engano do cliente e agiu conforme o esperado, sendo educada sem tentar vender."
+     },
+     "nota": 10,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "abre-localizacao",
+   "etapa": "primeiro contato",
+   "origem": "real",
+   "nota": 5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Fica na Rua das Papoulas, 443, Jardim Paraíso, aqui em Sinop.",
+      "Vou te mandar o link do mapa também, que ajuda a chegar certinho: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8 😊"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A resposta termina sem um próximo passo ou pergunta para dar continuidade ao atendimento",
+       "Não utilizou o nome da cliente (Kelly) nesta interação",
+       "Ignorou o contexto anterior de que ela quer alongar o cabelo, limitando-se a ser um GPS",
+       "Faltou o calor de uma consultora; a resposta é puramente informativa"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 0,
+      "especifica": 0,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA entregou a localização, mas falhou gravemente ao não conduzir a conversa de volta para o serviço, terminando sem uma pergunta."
+     },
+     "nota": 5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "descobre-os-dois",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Comprimento e volume juntos dão um destaque lindo! 🥰 Pra ter esse resultado, a Gleide olha seu cabelo de perto e te mostra as opções de fios na avaliação, que é gratuita e sem compromisso.\n\nVocê é aqui de Sinop?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Convidou para a avaliação antes de entender o motivo ou o estado do cabelo da cliente, contrariando o critério 'esperado'",
+       "Usou uma pergunta fechada de formulário ('Você é aqui de Sinop?') em vez de uma pergunta aberta que fizesse a cliente falar",
+       "Não buscou entender como o cabelo está hoje ou o que a fez pensar no mega agora"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 0,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A IA convidou para a avaliação precocemente e usou uma pergunta fechada, ignorando a necessidade de entender o caso da cliente primeiro."
+     },
+     "nota": 5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45876
+    }
+   ]
+  },
+  {
+   "id": "descobre-fino-natural",
+   "etapa": "valor",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Para o cabelo fininho, o segredo pra ficar bem natural é a técnica e a distribuição das mechas, pra dar volume sem pesar o seu fio. A Gleide consegue ver direitinho qual a melhor opção pra você na avaliação, que é gratuita e sem compromisso. 🥰\n\nVocê é aqui de Sinop?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta final 'Você é aqui de Sinop?' é uma pergunta fechada de formulário que quebra o ritmo, já que a cliente já expressou o desejo e o motivo.",
+       "A IA mencionou a avaliação, mas não fez o convite efetivo (sugerir horários ou perguntar se quer agendar), falhando na condução ideal para este estágio."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA usou uma pergunta de formulário desnecessária em vez de avançar para o convite da avaliação, já que a cliente já tinha contado o que queria."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "descobre-queda-emagrecimento",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 6.5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "É bem comum o cabelo sentir as mudanças no corpo, Rosana. Pra devolver esse volume com segurança, a Gleide precisa olhar seu fio de perto e ver a técnica e a quantidade certa pra encher sem pesar, já que ele passou por essa fase de queda.\n\nVocê é aqui de Sinop? 😊"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "emoji em assunto delicado",
+       "grave": false,
+       "detalhe": ""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "Uso de emoji (😊) no balão 1, contrariando a instrução específica do campo 'esperado' que pedia 'sem emoji'.",
+       "Condução através de pergunta fechada ('Você é aqui de Sinop?'), o que é classificado como pergunta de formulário (nota 1)."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA descumpriu a restrição de não usar emojis para este caso e usou uma pergunta fechada na condução."
+     },
+     "nota": 6.5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "descobre-bariatrica-medo",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 4.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendo seu receio, Lúcia. Depois da bariátrica é comum o cabelo ficar mais sensível mesmo, né? 🥰",
+      "O que protege o fio é escolher a técnica certa e a quantidade de cabelo que não pese demais, e a Gleide olha tudo isso com cuidado na avaliação. Ela vê como está seu fio hoje e o cabelo que você já tem.\n\nVocê é aqui de Sinop?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "pediu concordância",
+       "grave": false,
+       "detalhe": "\"comum o cabelo ficar mais sensível mesmo, né?\""
+      },
+      {
+       "regra": "emoji em assunto delicado",
+       "grave": false,
+       "detalhe": ""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "Uso de emoji (🥰) contrariando a instrução específica do campo esperado ('sem emoji')",
+       "Uso de frase-muleta em 'escolher a técnica certa... a Gleide olha tudo isso', que é uma variação do exemplo de nota 0 em especifica",
+       "Condução fraca com pergunta de formulário ('Você é aqui de Sinop?') após a cliente relatar um problema de saúde e medo real"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA usou emoji proibido para o caso e falhou na condução ao usar uma pergunta genérica de cadastro após um relato de queda de cabelo."
+     },
+     "nota": 4.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "nunca-usou-insiste-valor",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 6.3,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Seu loiro está lindo, Rafaela! O bom do mega é que você consegue esse tom claríssimo e acinzentado sem precisar descolorir mais o seu próprio fio, o que ajuda muito a manter a saúde do seu cabelo. 😊",
+      "O valor total depende da quantidade de cabelo que a Gleide vai usar para o acabamento ficar bem natural no seu corte. Na avaliação, que é gratuita, ela olha o tom de perto, escolhe o cabelo com você e já te passa o orçamento certinho.\n\nTenho amanhã às 09h ou às 14h. Qual desses horários fica melhor para você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres",
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "59 palavras: \"O valor total depende da quantidade de cabelo que a Gleide v…\""
+      },
+      {
+       "regra": "vendeu a vantagem",
+       "grave": false,
+       "detalhe": "\"o que ajuda muito\""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "A IA descumpriu a instrução do campo 'esperado' que exigia uma pergunta aberta para a cliente contar o resultado que quer ou o que a incomoda.",
+       "A IA ofereceu horários de avaliação diretamente, ignorando a estratégia de condução definida para este caso específico."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA ignorou a ordem de fazer uma pergunta aberta e pulou direto para a oferta de horários de avaliação."
+     },
+     "nota": 6.3,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "nunca-usou-de-fora-quer-enviar",
+   "etapa": "convite",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Rafaela, o mega hair é feito com cabelo humano mesmo, é a mesma coisa 😊 O que muda é o jeito que ele é preparado para prender no seu fio. Sobre o envio do cabelo para sua cidade, eu vou confirmar com a Gleide se ela faz e já te aviso por aqui.",
+      "Dá para dividir a compra do cabelo em até 10x sem juros no cartão. Como você é de fora, a Gleide faz uma avaliação por ligação de voz para te explicar sobre os valores e os cuidados. Tenho amanhã às 09h ou às 14h, qual fica melhor para você?"
+     ],
+     "usadas": [
+      "perguntar_para_gleide",
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou o acolhimento ao sonho antigo da cliente ('vontade de ponhar faz tempo')",
+       "Não acolheu o medo do preço ('tava ficando muito caro')",
+       "Não utilizou os detalhes específicos fornecidos no vídeo e áudio (loiro acinzentado, comprimento na cintura)",
+       "A frase 'é a mesma coisa' é seca e desconsidera a confusão da cliente sobre a facilidade de cuidar do mega hair"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA ignorou o acolhimento emocional e o receio financeiro solicitados no campo esperado, limitando-se a uma resposta técnica."
+     },
+     "nota": 7.5,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "cabelo-vende",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Vendemos sim, Tânia! A Gleide trabalha com várias opções de cabelo humano aqui no salão. 😊",
+      "Qual o comprimento que você está procurando?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'Qual o comprimento que você está procurando?' é uma pergunta fechada de formulário para uma cliente que ainda não detalhou o que deseja (conduz).",
+       "O trecho 'A Gleide trabalha com várias opções de cabelo humano aqui no salão' é uma frase genérica que não utiliza o caso da cliente (especifica).",
+       "A IA deixou de perguntar sobre a cor e se a cliente pretende aplicar o mega no salão, descumprindo parte do que foi solicitado (esperado)."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA limitou a condução a uma pergunta técnica de formulário e não cumpriu todos os requisitos do campo esperado."
+     },
+     "nota": 7.5,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "cabelo-orcamento-completo",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Anotei aqui, Vanessa: 200 gramas de loiro mesclado, com 65 cm e pontas cheias.",
+      "Já pedi o valor para a Gleide e te aviso por aqui assim que ela me passar! ✨"
+     ],
+     "usadas": [
+      "pedir_orcamento_cabelo",
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Falta de calor: a resposta é puramente funcional e transacional ('Anotei aqui'), sem uma saudação ou reação empática ao interesse da cliente.",
+       "Condução passiva: a IA encerra a interação sem fazer uma pergunta que mantenha a cliente engajada (como perguntar se ela também pretende fazer a aplicação) ou convidá-la para uma avaliação presencial.",
+       "Omissão de diferencial: embora opcional, não mencionou o parcelamento em 10x, o que ajudaria a manter o interesse da cliente enquanto ela espera pelo preço de um produto de alto valor."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA agiu como uma anotadora de pedidos passiva, perdendo a oportunidade de conduzir a cliente para o serviço de aplicação ou consulta."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "cabelo-valor-vago",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "O valor certinho do seu caso a Gleide passa na avaliação, que é gratuita, então não precisa se preocupar com o preço agora 😊",
+      "O que mais te incomoda no seu cabelo hoje?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "O trecho 'não precisa se preocupar com o preço agora' soa condescendente e dismissivo, pois a cliente demonstrou que o preço é justamente a preocupação dela no momento.",
+       "A resposta ignora a necessidade de explicar minimamente por que o valor varia (quantidade, tipo de cabelo), partindo direto para uma frase pronta."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A condução foi correta com pergunta aberta, mas o tom foi condescendente ao dizer para a cliente não se preocupar com o que ela perguntou."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "cabelo-80cm",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "80 centímetros fica um cabelão lindo! ✨ O valor certinho pro seu caso a Gleide passa na avaliação, que é gratuita e sem compromisso, então não precisa se preocupar com preço agora.",
+      "Você já usa mega hoje ou seria a sua primeira vez?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "O trecho 'não precisa se preocupar com preço agora' é desatencioso e minimiza a intenção da cliente, que entrou em contato justamente para saber o preço.",
+       "A pergunta 'Você já usa mega hoje ou seria a sua primeira vez?' é uma pergunta fechada, o que fere o critério de condução que pede uma pergunta aberta para fazê-la falar.",
+       "A resposta não explicou que o valor depende da quantidade de cabelo (gramas/telas) que a Gleide define, conforme solicitado no critério esperado."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA foi um pouco desatenciosa ao dizer para a cliente não se preocupar com o preço e usou uma pergunta fechada."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "cabelo-cacheado",
+   "etapa": "cabelo",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Jéssica! Boa noite 😊 Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop.",
+      "Temos sim! A Gleide trabalha com vários tipos de cabelo, inclusive os cacheados, e ela mesma faz a seleção para combinar bem com o fio e a curvatura de cada cliente.\n\nO que você gostaria de mudar no seu cabelo hoje?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Temos sim! (Afirmou ter estoque de forma genérica, ignorando a instrução do campo 'esperado' de explicar que a Gleide trabalha sob encomenda ou conforme a necessidade)",
+       "ela mesma faz a seleção para combinar bem com o fio e a curvatura de cada cliente (Frase-muleta que serve para qualquer caso, reduzindo a especificidade)"
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "Afirmou ter o cabelo em estoque ignorando a instrução de explicar o processo de seleção personalizada ou encomenda da Gleide."
+     },
+     "nota": 7.5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "dinheiro-mais-ou-menos",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 4,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendo sua preocupação com o valor, Marina. O orçamento total depende da quantidade de cabelo que você vai precisar e do tipo de fio que escolher, por isso a Gleide passa o valor exato na avaliação.",
+      "Como a avaliação é gratuita e sem compromisso, você fica sabendo o valor certinho pro seu caso sem gastar nada. Tenho amanhã às 9h ou às 14h, qual fica melhor pra você? 😊"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [
+      {
+       "regra": "faltou dizer",
+       "grave": true,
+       "detalhe": "/10x/"
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "Ignorou a instrução de explicar que o cabelo de 80 cm é a maior parte do valor.",
+       "Repetiu o convite de horário do zero, o que foi expressamente proibido no critério esperado.",
+       "Não mencionou o parcelamento em 10x sem juros, que seria o argumento ideal para quem está preocupada com o orçamento.",
+       "Uso de frase genérica/muleta sobre a Gleide passar o valor na avaliação."
+      ],
+      "calor": 1,
+      "responde": 1,
+      "conduz": 0,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A IA ignorou as orientações do campo esperado, repetindo o convite de horário e omitindo o parcelamento e a explicação sobre os 80cm."
+     },
+     "nota": 4,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "dinheiro-ta-caro",
+   "etapa": "objeção",
+   "origem": "típico",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Eu compreendo, Priscila. O que mais muda o valor final é a quantidade e a qualidade do cabelo, e na avaliação gratuita a Gleide consegue ver exatamente o que você precisa pra te passar o orçamento do seu caso.",
+      "Dá pra dividir tudo, o cabelo e a colocação, em até 10x sem juros no cartão de crédito. Você é aqui de Sinop?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta final 'Você é aqui de Sinop?' é fechada e ignora a instrução do campo 'esperado' de entender o que a cliente imaginava de valor ou o que pesa para ela.",
+       "O trecho 'na avaliação gratuita a Gleide consegue ver exatamente o que você precisa' é uma frase-muleta que não se conecta ao caso específico da Priscila.",
+       "A resposta é educada, mas o tom é puramente explicativo/informativo, faltando uma reação mais natural à surpresa da cliente com o preço."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA falhou na condução ao não investigar a percepção de valor da cliente, optando por uma pergunta de localização que não ajuda a fechar a venda."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45876
+    }
+   ]
+  },
+  {
+   "id": "dinheiro-vou-ver",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Tudo bem, Aline! Sem pressa 😊",
+      "Só pra eu saber, você é aqui de Sinop?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'você é aqui de Sinop?' é uma pergunta fechada de formulário, o que é classificado como um próximo passo fraco no critério conduz.",
+       "A resposta ignorou o objetivo específico da cliente (sair do ombro para a cintura), falhando em usar os detalhes do caso dela no critério especifica."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA respeitou o tempo da cliente com simpatia, mas utilizou uma pergunta fechada de cadastro que enfraquece a condução da conversa."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "dinheiro-vou-pensar",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Faz sentido, Letícia! Pensa com calma 😊",
+      "O que mais te deixou em dúvida, seria o valor ou encontrar um dia bom pra vir?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "O trecho 'O que mais te deixou em dúvida, seria o valor ou encontrar um dia bom pra vir?' exerce pressão de venda sobre uma cliente que acabou de pedir tempo para pensar.",
+       "A pergunta no balão 2 é uma técnica de fechamento (opções limitadas) que ignora o critério de condução que pede perguntas abertas ou apenas deixar a porta aberta.",
+       "Ignorou o fato de ser a 'primeira vez' dela ao tentar converter a dúvida em algo financeiro ou de agenda."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 0,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA pressionou a cliente com uma pergunta de contorno de objeção ('valor ou dia') logo após ela dizer que precisava pensar, violando a instrução de não pressionar."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "cidade-outra",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendo! Como você é de outra cidade, a Gleide faz a avaliação por ligação de voz aqui pelo WhatsApp mesmo. Assim ela já te orienta sobre os valores e o melhor caminho pro seu caso.",
+      "Tenho amanhã às 09h ou às 14h. Qual desses fica melhor pra você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Comentou sobre a distância ('Como você é de outra cidade'), contrariando a instrução do campo esperado ('Não comenta a distância').",
+       "Não vinculou a avaliação ao desejo de 'efeito natural' mencionado pela cliente, conforme exigido no campo esperado.",
+       "Uso de frase genérica 'melhor caminho pro seu caso', que serve para qualquer cliente."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A resposta descumpriu as orientações específicas do campo esperado ao mencionar a distância e ignorar o objetivo de efeito natural."
+     },
+     "nota": 7.5,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45876
+    }
+   ]
+  },
+  {
+   "id": "cidade-marido-leva",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 4,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendo, Ivone! Como você mora fora, a Gleide faz uma avaliação por ligação de voz aqui pelo WhatsApp mesmo. Ela te explica como funciona e já te passa os valores, aí você só vem a Sinop quando for pra colocar.",
+      "O valor muda bastante de acordo com o comprimento e a quantidade de cabelo, por isso ela avalia antes. O que mais te incomoda no seu cabelo hoje? 😊"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "faltou dizer",
+       "grave": true,
+       "detalhe": "/gratuit/"
+      }
+     ],
+     "juiz": {
+      "defeitos": [],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA foi empática ao entender a logística da cliente, ofereceu a solução correta (avaliação por voz) e usou uma pergunta aberta ideal para a condução."
+     },
+     "nota": 4,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "duvida-fita-amarrar",
+   "etapa": "dúvida",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Dá pra amarrar sim, Michele! A Gleide planeja onde coloca cada fita justamente pra você ter essa liberdade de prender sem o mega aparecer 😊",
+      "Você costuma usar ele mais preso no dia a dia ou é pra alguma ocasião?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou a instrução do campo 'esperado' de retomar os horários já oferecidos (16h ou 17h30).",
+       "Ao fazer uma pergunta de sondagem ('dia a dia ou ocasião') em vez de fechar o agendamento, a IA esfriou a condução que já estava em estágio avançado."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A IA respondeu bem a dúvida técnica, mas falhou gravemente ao não retomar os horários oferecidos, conforme exigido no critério esperado."
+     },
+     "nota": 7.5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "duvida-duracao-fita",
+   "etapa": "dúvida",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "A manutenção da fita adesiva também é recomendada a cada 60 dias, Sandra. É o tempo ideal pra manter seu fio saudável e o mega bem confortável 😊",
+      "E faz quanto tempo que você fez a última manutenção na queratina?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou o comentário subjetivo da cliente ('achei legal a fita'), perdendo a oportunidade de validar o interesse dela e criar conexão.",
+       "O trecho 'E faz quanto tempo que você fez a última manutenção na queratina?' é uma pergunta fechada de formulário, o que torna a condução fraca."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta foi tecnicamente precisa, mas ignorou o entusiasmo da cliente e utilizou uma pergunta de coleta de dados em vez de uma pergunta aberta."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45871
+    }
+   ]
+  },
+  {
+   "id": "duvida-antes-depois",
+   "etapa": "dúvida",
+   "origem": "típico",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Pra encher as pontas e deixar o cabelo encorpado, a Gleide avalia a quantidade exata pra não pesar no seu fio. Tem vários resultados pra você dar uma olhadinha no nosso Instagram: https://instagram.com/todabonitasinopmegahair 🥰\n\nVocê é aqui de Sinop?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'Você é aqui de Sinop?' é uma pergunta fechada de formulário.",
+       "Não seguiu a instrução do campo 'esperado' de continuar a conversa a partir das pontas ralas, mudando o assunto para localização."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA respondeu bem sobre as fotos, mas usou uma pergunta fechada de formulário e ignorou o gancho das pontas ralas na condução."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "troca-metodo-quer-natural",
+   "etapa": "troca de método",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendi, Juliana! Pra ficar bem natural e fácil de amarrar sem aparecer, a técnica e a distribuição das mechas fazem toda a diferença. 😊",
+      "Como você quer mudar o método, o ideal é a Gleide dar uma olhadinha no seu cabelo e nessas telas que você já tem pra te indicar o melhor caminho. A avaliação é gratuita, você é daqui de Sinop?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "O uso da palavra 'telas' no balão 2 descumpre a instrução específica do campo 'esperado' para este caso.",
+       "A condução foi fraca ao finalizar com uma pergunta fechada de formulário ('você é daqui de Sinop?'), ignorando a oportunidade de oferecer horários específicos após ter usado a ferramenta de consulta de agenda."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 1,
+      "esperado": 1,
+      "motivo": "A IA utilizou o termo proibido 'telas' e não aproveitou a consulta de horários para fazer um convite efetivo, preferindo uma pergunta fechada."
+     },
+     "nota": 7.5,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "troca-metodo-convite",
+   "etapa": "troca de método",
+   "origem": "real",
+   "nota": 5.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Pesar na raiz e marcar quando prende é bem chatinho mesmo, Juliana. A Gleide olha a saúde do seu fio e a distribuição das mechas pra técnica ficar bem leve e você conseguir prender com tranquilidade 😊",
+      "Pra gente ver um horário, você usa quantas telas hoje? E faz quanto tempo que fez a última manutenção?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "mais de uma pergunta",
+       "grave": false,
+       "detalhe": "2 perguntas"
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "A IA perguntou 'você usa quantas telas hoje?', o que é proibido no campo 'esperado' deste caso.",
+       "A IA perguntou sobre o tempo da última manutenção, tratando o caso como manutenção, o que o campo 'esperado' proíbe explicitamente.",
+       "A IA conduziu para o agendamento pedindo dados técnicos em vez de convidar para a avaliação gratuita conforme a instrução."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 0,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A IA descumpriu as restrições do caso ao falar em telas e tratar como manutenção, ignorando o convite para avaliação."
+     },
+     "nota": 5.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "ja-usa-so-colocar",
+   "etapa": "manutenção",
+   "origem": "típico",
+   "nota": 9.2,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Ah, você já é experiente no mega então! ✨",
+      "Quantas telas você usa hoje?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A condução é fraca por se limitar a uma pergunta fechada de formulário ('Quantas telas você usa hoje?'), sem encaminhar para o agendamento ou oferecer horários conforme o critério esperado."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta é empática e específica, mas a condução é burocrática ao focar apenas no dado técnico sem proatividade para o agendamento."
+     },
+     "nota": 9.2,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "ja-usa-90-gramas",
+   "etapa": "manutenção",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendi, 90 gramas é uma quantidade boa! 😊 Faz quanto tempo que você fez a última manutenção?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A IA não ofereceu o horário para a manutenção, descumprindo a instrução específica do campo 'esperado'.",
+       "O próximo passo foi uma pergunta de triagem ('Faz quanto tempo...') em vez de conduzir para a avaliação/agendamento, o que atrasa a conversão."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA ignorou a instrução de oferecer um horário para a manutenção, preferindo fazer mais uma pergunta de triagem."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45871
+    }
+   ]
+  },
+  {
+   "id": "promo-manutencao",
+   "etapa": "promoção",
+   "origem": "típico",
+   "nota": 6.5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Dirce! Essa condição de parcelamento em 10x é pra quem vai fazer a aplicação do mega hair novo, tá? Na manutenção você pode pagar no Pix ou no cartão.",
+      "Quer aproveitar pra marcar a sua? Faz quanto tempo que você fez a última manutenção?"
+     ],
+     "usadas": [],
+     "falhas": [
+      {
+       "regra": "mais de uma pergunta",
+       "grave": false,
+       "detalhe": "2 perguntas"
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "Omitiu a informação obrigatória de que o pagamento da manutenção no cartão possui os juros da maquininha, conforme solicitado no campo esperado.",
+       "Iniciou a condução com uma pergunta fechada ('Quer aproveitar pra marcar a sua?'), o que enfraquece o engajamento.",
+       "A resposta foi muito direta ao negar o benefício, faltando um pouco mais de acolhimento antes de passar para a cobrança."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 1,
+      "esperado": 1,
+      "motivo": "A IA falhou ao omitir a informação sobre os juros da maquininha na manutenção e usou uma pergunta fechada na condução."
+     },
+     "nota": 6.5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45846
+    }
+   ]
+  },
+  {
+   "id": "promo-anuncio",
+   "etapa": "promoção",
+   "origem": "típico",
+   "nota": 9.2,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Oi, Thaís! Sou a assistente virtual do Toda Bonita Mega Hair, aqui em Sinop 😊 A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez.",
+      "Dá pra dividir tudo, cabelo e colocação, em até 10x sem juros no cartão. O que você gostaria de mudar no seu cabelo hoje?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou o termo específico 'promoção de natal' usado pela cliente, tratando o benefício de forma genérica.",
+       "O trecho 'A Gleide trabalha com mega hair há 20 anos e atende uma cliente por vez' é uma frase pronta institucional que não personaliza o atendimento para o caso da Thaís."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A resposta cumpre os requisitos técnicos e conduz bem a conversa, mas falha em espelhar o vocabulário da cliente (Natal) e usa frases prontas."
+     },
+     "nota": 9.2,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "agenda-quer-marcar",
+   "etapa": "agendar",
+   "origem": "típico",
+   "nota": 5.8,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Consigo ver pra você agora mesmo! Você é aqui de Sinop? 😊"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A IA usou a ferramenta de consulta de horários, mas não informou os horários disponíveis na resposta, ignorando a pergunta direta da cliente ('tem amanhã?')",
+       "Fez uma pergunta de localização ('Você é aqui de Sinop?') em vez de entregar o que a cliente pediu e o que o campo 'esperado' exigia",
+       "Não mencionou o contexto da noiva ou do casamento nesta resposta específica"
+      ],
+      "calor": 2,
+      "responde": 1,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A IA consultou a agenda mas não informou os horários para a cliente, falhando no objetivo principal da interação e no critério esperado."
+     },
+     "nota": 5.8,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "agenda-escolhe-horario",
+   "etapa": "agendar",
+   "origem": "típico",
+   "nota": 5.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Marcado, Daniela! Sua avaliação gratuita ficou pra amanhã, às 14h 🥰",
+      "O salão fica na Rua das Papoulas, 443, Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8\n\nA Gleide atende uma cliente por vez, então esse tempo fica reservado só pra você. Peço pra chegar no horário, porque 15 minutinhos de atraso já mexem em toda a agenda dela. Se tiver qualquer imprevisto, é só me avisar antes que a gente vê outro horário sem custo, tá bom?"
+     ],
+     "usadas": [
+      "criar_agendamento"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "62 palavras: \"O salão fica na Rua das Papoulas, 443, Jardim Paraíso: https…\""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "O trecho 'Peço pra chegar no horário, porque 15 minutinhos de atraso já mexem em toda a agenda dela' é burocrático e quebra o clima de uma noiva que vai casar.",
+       "A despedida 'tá bom?' após uma lista de regras de atraso não cumpre o requisito de se despedir com carinho.",
+       "Ignorou o contexto específico (casamento) no fechamento, usando um texto que parece copiado e colado."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA priorizou passar instruções rígidas sobre atrasos em vez de manter o tom carinhoso e celebrar o momento da noiva."
+     },
+     "nota": 5.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45875
+    }
+   ]
+  },
+  {
+   "id": "agenda-nao-vou-poder",
+   "etapa": "agenda",
+   "origem": "real",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Imagina, Beatriz, sem problemas! Obrigada por avisar 💛 Já tirei seu horário de hoje.",
+      "Quer que eu veja outro dia pra você?"
+     ],
+     "usadas": [
+      "cancelar_agendamento"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou o fato de a cliente estar passando por um problema pessoal (não desejou que desse tudo certo como pedido no critério 'esperado')",
+       "A pergunta final 'Quer que eu veja outro dia pra você?' é uma pergunta fechada, considerada um passo de condução fraco"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA falhou em acolher a situação da cliente (problema pessoal) e usou uma pergunta fechada para a remarcação."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45851
+    }
+   ]
+  },
+  {
+   "id": "agenda-faltou-esqueci",
+   "etapa": "agenda",
+   "origem": "real",
+   "nota": 4,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Bom dia, Regina! Imagina, imprevistos acontecem mesmo 😊",
+      "Como você acabou perdendo o horário hoje sem avisar, a Gleide reserva a próxima vaga mediante um sinal de R$ 20, que a gente desconta do valor do serviço depois. Tenho amanhã às 09:00 ou às 14:00, qual fica melhor pra você?\n\nPix (celular): 66 99959-6740\nAí é só me mandar o comprovante por aqui pra eu deixar reservado pra você 💛"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [
+      {
+       "regra": "balão longo",
+       "grave": false,
+       "detalhe": "62 palavras: \"Como você acabou perdendo o horário hoje sem avisar, a Gleid…\""
+      },
+      {
+       "regra": "valor fora da tabela do app",
+       "grave": true,
+       "detalhe": "R$ 20"
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "a Gleide reserva a próxima vaga mediante um sinal de R$ 20 (A IA inventou uma cobrança de sinal que não existe nas instruções)",
+       "Como você acabou perdendo o horário hoje sem avisar (Tom levemente punitivo ao introduzir a cobrança)",
+       "a avaliação é gratuita (As instruções dizem que a avaliação é gratuita e a IA não deve falar de sinal ou multa)"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 0,
+      "especifica": 2,
+      "fiel": 0,
+      "esperado": 1,
+      "motivo": "A IA inventou uma regra de cobrança de sinal de R$ 20 para o reagendamento, violando as instruções de fidelidade e a gratuidade da avaliação."
+     },
+     "nota": 4,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "queda-nao-dispensa",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 8.2,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "É bem comum o cabelo passar por fases assim, Rosângela. Na avaliação gratuita a Gleide olha seu fio de perto e vê direitinho o que dá pra fazer pra devolver o volume que você quer. 😊\n\nVocê é aqui de Sinop?"
+     ],
+     "usadas": [
+      "anotar_no_crm"
+     ],
+     "falhas": [
+      {
+       "regra": "emoji em assunto delicado",
+       "grave": false,
+       "detalhe": ""
+      }
+     ],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'Você é aqui de Sinop?' é uma pergunta fechada de formulário, o que torna a condução fraca e burocrática logo após a cliente relatar um problema sensível como a queda de cabelo."
+      ],
+      "calor": 2,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA foi empática e seguiu as instruções sobre a queda, mas a condução foi prejudicada por uma pergunta de formulário."
+     },
+     "nota": 8.2,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45877
+    }
+   ]
+  },
+  {
+   "id": "manutencao-nao-negocia",
+   "etapa": "objeção",
+   "origem": "real",
+   "nota": 6.7,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Esse valor de R$ 150 por tela já é a mão de obra completa, Marlene, não tem nenhum outro valor por fora não 😊 É o serviço de manutenção prontinho.",
+      "Se você quiser conhecer o trabalho da Gleide, tenho horário amanhã às 9h ou às 14h. Qual fica melhor pra você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou a forte objeção de preço da cliente (que paga R$ 50 e o salão cobra R$ 150) e saltou direto para o agendamento.",
+       "O convite para amanhã soa agressivo e desconectado após a cliente demonstrar que achou o valor alto no trecho 'Se você quiser conhecer o trabalho da Gleide, tenho horário amanhã'."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 0,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA ignorou o choque de preço da cliente e tentou empurrar um agendamento imediato, falhando na condução."
+     },
+     "nota": 6.7,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45788
+    }
+   ]
+  },
+  {
+   "id": "convite-cedo-fininho",
+   "etapa": "descoberta",
+   "origem": "real",
+   "nota": 5,
+   "passou": false,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendi, Joana. Pra dar volume em cabelo fininho sem pesar, a Gleide escolhe a técnica e a distribuição das mechas olhando bem de perto o seu fio ✨",
+      "Você imagina ele só com mais preenchimento ou quer aproveitar pra alongar também?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Uso de frase-muleta: 'a Gleide escolhe a técnica e a distribuição das mechas olhando bem de perto o seu fio'",
+       "Fez eco do que a cliente disse: 'cabelo fininho'",
+       "Condução por pergunta fechada de formulário (preenchimento ou alongar), em vez de pergunta aberta sobre o que incomoda",
+       "Descumpriu o critério 'esperado' ao fazer eco e não focar no incômodo da cliente"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 0,
+      "fiel": 2,
+      "esperado": 0,
+      "motivo": "A resposta utilizou uma frase-muleta proibida, fez eco da fala da cliente e falhou em conduzir com uma pergunta aberta sobre a dor da Joana."
+     },
+     "nota": 5,
+     "passou": false,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "depois-convite-pergunta-cidade",
+   "etapa": "convite",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Atendemos aqui em Sinop! O salão fica na Rua das Papoulas, 443, no Jardim Paraíso: https://maps.app.goo.gl/TpCuMzh3PzwPJgQu8",
+      "Você é aqui de Sinop ou mora em outra cidade? 😊"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A resposta ignora o contexto anterior da cliente (cabelo fininho que some ao prender), tornando-se uma resposta puramente informativa que serviria para qualquer pessoa.",
+       "O tom no balão 1 é seco e funcional, sem a empatia de uma consultora que está tratando de uma insegurança estética."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "Cumpriu o objetivo técnico e o esperado para o caso, mas falhou em manter a personalização e o acolhimento sobre o problema do cabelo."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45873
+    }
+   ]
+  },
+  {
+   "id": "convite-sem-saber-cidade",
+   "etapa": "convite",
+   "origem": "real",
+   "nota": 7.5,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Entendi, Alícia. Pra encher as pontas ralas e dar o comprimento que você quer, o segredo é a quantidade certa de cabelo pra não pesar no seu fio, e a Gleide vê isso de perto na avaliação gratuita.\n\nVocê é aqui de Sinop?"
+     ],
+     "usadas": [],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "A pergunta 'Você é aqui de Sinop?' é fechada, o que é classificado como uma condução fraca (pergunta de formulário)",
+       "O convite para a avaliação ficou passivo, apenas mencionando que a Gleide 'vê isso de perto' em vez de chamar a cliente para o agendamento",
+       "O tom no primeiro balão é informativo/técnico ('o segredo é a quantidade certa'), faltando um pouco mais de calor natural na recepção do desejo da cliente"
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 1,
+      "especifica": 2,
+      "fiel": 2,
+      "esperado": 1,
+      "motivo": "A IA usou bem os termos da cliente, mas a condução foi prejudicada por uma pergunta fechada e pela falta de um convite direto para a avaliação."
+     },
+     "nota": 7.5,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  },
+  {
+   "id": "de-fora-apos-saber",
+   "etapa": "convite",
+   "origem": "real",
+   "nota": 8.3,
+   "passou": true,
+   "rodadas": [
+    {
+     "baloes": [
+      "Como você é de Lucas, a Gleide faz a avaliação por ligação de voz aqui pelo WhatsApp mesmo. Ela entende o que você quer e já te orienta sobre a quantidade e os valores pro seu caso.",
+      "Tenho amanhã às 09h ou às 14h. Qual fica melhor pra você?"
+     ],
+     "usadas": [
+      "consultar_horarios_livres"
+     ],
+     "falhas": [],
+     "juiz": {
+      "defeitos": [
+       "Ignorou o desejo da cliente de ter cabelo 'mais comprido e mais cheio' e o incômodo com as 'pontas ralas' nesta resposta.",
+       "O tom é puramente funcional e logístico, sem a simpatia natural esperada para uma consultoria de alto valor."
+      ],
+      "calor": 1,
+      "responde": 2,
+      "conduz": 2,
+      "especifica": 1,
+      "fiel": 2,
+      "esperado": 2,
+      "motivo": "A IA resolveu bem a questão da distância, mas ignorou o problema estético da cliente (pontas ralas) e foi muito funcional."
+     },
+     "nota": 8.3,
+     "passou": true,
+     "semFiltro": false,
+     "situacoes": null,
+     "letras": 45874
+    }
+   ]
+  }
+ ]
+}

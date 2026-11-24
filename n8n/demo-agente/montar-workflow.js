@@ -143,6 +143,9 @@ const pausaWorkflow = {
 const GEMINI_HTTP = { authentication: 'predefinedCredentialType', nodeCredentialType: 'googlePalmApi' };
 const LER_BUFFER = "[].concat($('Buffer: ler mensagens').item.json.mensagens || []).map((m) => { try { const o = JSON.parse(m); if (o && typeof o.texto === 'string') return o; } catch (e) {} return { id: '', texto: String(m) }; })";
 // Várias mensagens seguidas chegam numeradas; a IA marca com --- onde quer outra mensagem e o Quebrar mensagens manda até 3 balões
+// Modelo reserva do agente de atendimento (24/11/2026): entra só quando o gemini-3-flash-preview falha. O 2.5 Flash
+// e o gemini-3-flash não respondem mais nesta chave; o gemini-flash-latest cai junto com o principal na sobrecarga.
+const MODELO_RESERVA = 'models/gemini-3.5-flash';
 const REGRA_CITAR = `
 
 MENSAGENS SEGUIDAS (numeradas)
@@ -156,7 +159,7 @@ Padrão: 1 parágrafo de 1 ou 2 frases curtas; no máximo 2 parágrafos; 3 só q
 Exemplo de estrutura (UMA resposta sem CTA obrigatório, com valores reais do cadastro):
 “A manutenção fica a partir de R$ 150 por tela.”
 
-Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de venda de fios avulsos da seção 04. Pergunta de ENDEREÇO segue a seção 07 (endereço + mapa; sem convite automático). Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
+Não inclua “quer ver horários?” quando ela apenas pediu preço. Se pediu preço dos FIOS PARA COMPRA AVULSA, não apresente mão de obra nem avaliação, e siga o caminho de compra de cabelo da parte 7. Pergunta de ENDEREÇO segue a parte 12 (endereço + mapa; sem convite automático). Nunca envie a justificativa de uma pergunta ou outra pergunta em mensagem nova antes de receber a resposta da cliente. Mensagens extras também podem vir de segmentação ou reexecução no n8n e exigem proteção no fluxo.`;
 
 const nodes = [
   // Senha no webhook: a Evolution manda o cabeçalho x-webhook-token (webhook/set da instância) e o n8n recusa
@@ -379,6 +382,9 @@ const nodes = [
     promptType: 'define',
     text: "={{ $('Montar entrada').first().json.texto_cliente }}",
     // returnIntermediateSteps: o "Quebrar mensagens" vê se o áudio saiu (o prompt manda não escrever nada depois)
+    // needsFallback: se o Gemini Flash falhar (24/11 00:02: erro 503 "high demand" do Google), o agente tenta o
+    // "Gemini reserva" antes de cair no pedido de desculpas. Testado num fluxo temporário com o principal quebrado.
+    needsFallback: true,
     options: { systemMessage: '=' + prompt + REGRA_CITAR, returnIntermediateSteps: true },
   // Gemini falhou (sobrecarga, erro de ferramenta): tenta de novo; se ainda falhar, segue sem resposta e o
   // Quebrar mensagens manda o pedido de desculpas. Antes a execução morria com a trava presa (2 min) e a
@@ -388,6 +394,11 @@ const nodes = [
   node('Gemini Flash', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2560, 200], {
     // 0.6 (era 0.4 até 22/11): o Victor achou a conversa fria e repetitiva; um pouco mais de variação na escrita
     modelName: 'models/gemini-3-flash-preview', options: { temperature: 0.6 },
+  }, GEMINI ? { credentials: GEMINI } : {}),
+
+  // Reserva: outro modelo (a sobrecarga é por modelo), mesma chave e mesma temperatura. Só roda quando o principal falha.
+  node('Gemini reserva', '@n8n/n8n-nodes-langchain.lmChatGoogleGemini', 1, [2640, 200], {
+    modelName: MODELO_RESERVA, options: { temperature: 0.6 },
   }, GEMINI ? { credentials: GEMINI } : {}),
 
   node('Memória (Redis)', '@n8n/n8n-nodes-langchain.memoryRedisChat', 1.5, [2720, 200], {
@@ -437,6 +448,9 @@ const nodes = [
       "}",
       "// sem negrito/markdown: mensagem de gente não tem *asterisco*",
       "t = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/\\*([^*\\n]+)\\*/g, '$1').replace(/^#+\\s*/gm, '').replace(/^\\s*[-•]\\s+/gm, '');",
+      "// pedido de concordância no fim da frase ('..., né?', '..., tá bom?'): o prompt proíbe e o modelo escreve mesmo assim (23/11).",
+      "// Vira ponto final. Só pega a muleta depois de VÍRGULA ('Como ele tá?' é pergunta de verdade e não muda).",
+      "t = t.replace(/,[ \\t]*(?:n[ée]|t[áa](?: bom)?)(?:,[ \\t]*[A-ZÀ-Ú][A-Za-zÀ-ú]+)?\\?/g, '.');",
       "// frases de robô que a IA às vezes insiste em usar: tira antes de enviar (se sobrar texto)",
       "const semRobo = t.replace(/\\s*(como|em que) (posso|eu posso|poderia) (te |lhe )?ajudar( você)?( hoje)?\\s*\\?/gi, '').replace(/\\s*(posso te ajudar|te ajudo) (em|com) (mais )?(algo|alguma coisa)( mais)?\\s*\\?/gi, '').replace(/, do Toda Bonita Mega Hair/gi, '').trim();",
       "if (semRobo) t = semRobo;",
@@ -511,8 +525,10 @@ const nodes = [
       "// no máximo 2 balões (26/10: 3 balões era texto demais)",
       "if (baloes.length > 2) baloes = [baloes[0], { t: baloes.slice(1).map(b => b.t).join('\\n\\n'), ref: 0 }];",
       "baloes = baloes.filter(b => b.t);",
-      "// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10)",
-      "baloes.forEach(b => { b.t = b.t.replace(/(https?:\\/\\/\\S*?)[.,;:!?]+(?=\\s|$)/g, '$1'); });",
+      "// Pontuação grudada no fim de um link (ex.: 'wa.me/c/556696795639.') faz o WhatsApp abrir 'Page Not Found' (28/10).",
+      "// Parêntese também (24/11: 'Jardim Paraíso (https://maps.app.goo.gl/...)' virou 'Invalid Dynamic Link'): o link",
+      "// entre parênteses sai dos parênteses ('Jardim Paraíso: link'); o que sobrar colado no fim do link é tirado.",
+      "baloes.forEach(b => { b.t = b.t.replace(/[ \\t]*\\(([^()\\n]*?)(https?:\\/\\/[^\\s()]+)[ \\t]*\\)/g, (m, antes, url) => antes.trim() ? ', ' + antes.trim() + ' ' + url : ': ' + url).replace(/(https?:\\/\\/\\S*?)[.,;:!?)\\]\"»]+(?=\\s|$)/g, '$1'); });",
       "// Responder citando só quando a mensagem chegou enquanto a IA ainda respondia outra (a resposta sai",
       "// depois de outra e ficaria solta): cita a última mensagem do bloco",
       "let msgs = [];",
@@ -683,6 +699,7 @@ const connections = {
   'Digitando...': main('Enviar mensagem'),
   'Enviar mensagem': main('Um balão por vez'),
   'Gemini Flash': { ai_languageModel: [[{ node: 'Agente IA', type: 'ai_languageModel', index: 0 }]] },
+  'Gemini reserva': { ai_languageModel: [[{ node: 'Agente IA', type: 'ai_languageModel', index: 1 }]] },
   'Memória (Redis)': { ai_memory: [[{ node: 'Agente IA', type: 'ai_memory', index: 0 }]] },
   'consultar_horarios_livres': { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] },
   'criar_agendamento': { ai_tool: [[{ node: 'Agente IA', type: 'ai_tool', index: 0 }]] },
@@ -1023,6 +1040,8 @@ if (LOJA) {
     fs.writeFileSync(saida('workflow-rotinas.json'), JSON.stringify(rotinasWorkflow, null, 2));
   }
 }
+// foto, áudio e vídeo com modelo reserva quando o principal falha (24/11/2026); por último, depois de quem mexe no pedido
+require('./midia-reserva.js')({ workflow, ifNode, cond, modelo: MODELO_RESERVA });
 // errorWorkflow já no JSON gerado (o id do "Alerta de erro" fica em .workflow-alerta-id depois do 1º envio)
 const alertaIdFile = saida(alerta.idFile);
 if (fs.existsSync(alertaIdFile)) alerta.ligarEm([agendaWorkflow, pausaWorkflow, crmWorkflow, assistente.ferramentasWorkflow, assistente.assistenteWorkflow,
