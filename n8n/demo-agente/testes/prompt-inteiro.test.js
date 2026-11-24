@@ -100,9 +100,10 @@ test('assistente: ferramentas dizem o mesmo que o texto (forcar com a ordem dela
   const desc = (n) => { const p = noA(n).parameters; return (p.description || p.toolDescription || '') + JSON.stringify(p.workflowInputs ? p.workflowInputs.value : {}); };
   for (const n of ['marcar_horario', 'reagendar', 'ajustar_duracao']) assert.doesNotMatch(desc(n), /Vazio na primeira tentativa, sempre/, n);
   for (const n of ['bloquear_dias', 'bloquear_horario', 'desbloquear_dias', 'desbloquear_horario', 'status_atendimento']) assert.doesNotMatch(desc(n), /DEPOIS do sim|só depois do sim/i, n);
-  assert.ok(!noA('resultado_avaliacao'), 'a ferramenta de avaliação de mega hair voltou');
+  assert.ok(noA('resultado_avaliacao'), 'a ferramenta de avaliação sumiu (a Caroline tem avaliações no app)');
   // o que a IA lê: a descrição e a descrição de cada campo (os nomes de coluna internos não contam)
-  const lido = wfA.nodes.filter((n) => /toolWorkflow|toolCode/.test(n.type)).map((n) => (n.parameters.description || n.parameters.toolDescription || '') + JSON.stringify((n.parameters.workflowInputs || {}).value || {})).join('');
+  const lido = wfA.nodes.filter((n) => /toolWorkflow|toolCode/.test(n.type)).map((n) => (n.parameters.description || n.parameters.toolDescription || '') +
+    Object.values((n.parameters.workflowInputs || {}).value || {}).map((v) => (String(v).match(/`([\s\S]*?)`/) || [])[1] || '').join(' ')).join(' ');
   assert.doesNotMatch(lido, /cabelo|selagem|hidrata/i);
 });
 

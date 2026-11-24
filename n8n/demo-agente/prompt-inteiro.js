@@ -141,6 +141,8 @@ module.exports.assistente = ({ assistenteWorkflow, loja }) => {
   if (!loja.prompt_assistente) return false;
   let texto = fs.readFileSync(path.join(loja.pasta, loja.prompt_assistente), 'utf8').replace(/\r\n/g, '\n').trim();
   if (!/@@[A-Z_]+@@/.test(texto)) return false; // prompt antigo, sem as marcas: fica como está
+  // o texto novo manda gravar o horário ditado pela dona com forcar = sim na primeira chamada: isso só vale com o assistente-marcar.js
+  if (!loja.assistente_marcar) throw new Error('prompt-inteiro (assistente): ligue "assistente_marcar" no loja.json (sem ele o forcar da primeira chamada é ignorado)');
   const agente = assistenteWorkflow.nodes.find((n) => n.name === 'Agente assistente');
   if (!agente) throw new Error('prompt-inteiro: sem o nó "Agente assistente"');
   const todas = expressoes(String(agente.parameters.options.systemMessage || ''));

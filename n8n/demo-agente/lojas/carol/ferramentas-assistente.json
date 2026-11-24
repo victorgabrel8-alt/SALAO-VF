@@ -64,6 +64,16 @@
     }
   },
   "resultado_avaliacao": {
-    "remover": true
+    "descricao": "Grava como foi uma avaliação que ela contou (fechou, ficou de pensar, não fechou). Use na hora, sem pedir confirmação; gravar de novo corrige a anterior.",
+    "campos": {
+      "tecnica_indicada": "Serviço que ela indicou, com o nome da lista (ex.: Alongamento molde F1 – aplicação). Vazio se ela não disse",
+      "tipo_cabelo": "Deixe vazio (não se aplica ao studio)",
+      "comprimento_cm": "Deixe vazio (não se aplica ao studio)",
+      "gramas": "Deixe vazio (não se aplica ao studio)",
+      "valor": "Valor combinado em reais, só o número. Vazio se ela não disse (nunca 0)",
+      "data_proximo_passo": "Data do próximo passo AAAA-MM-DD, se ela disse",
+      "dias_chegada": "Deixe vazio (não se aplica ao studio)",
+      "dias_confeccao": "Deixe vazio (não se aplica ao studio)"
+    }
   }
 }
