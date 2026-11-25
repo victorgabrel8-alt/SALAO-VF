@@ -898,6 +898,9 @@ if (!LOJA) require('./tudo-bem.js')({ workflow });
 // então remarca. Fica por último: mexe no que os outros módulos já montaram (ficha, agenda, assistente, rotina de vagas).
 if (!LOJA) require('./encaixe.js')({ workflow, agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow,
   ferramentasWorkflow: assistente.ferramentasWorkflow, faltasWorkflow: faltas.faltasWorkflow });
+// Vídeo de apresentação da Gleide logo depois de marcar avaliação no salão, uma vez por cliente (video-avaliacao.js, 25/11/2026).
+// Liga, desliga e limita a números de teste em empresas.config.loja.video_avaliacao, sem publicar de novo.
+if (!LOJA) require('./video-avaliacao.js')({ node, main, ifNode, cond, workflow });
 // Loja: troca o que é da Gleide pelo que é da loja e confere; se sobrar algo da Gleide, para aqui
 const idsGleide = LOJA ? lojas.idsDaGleide(dir) : [];
 let rotinasWorkflow = null; // só no motor único (motor.js): chama cada rotina uma vez por loja
