@@ -114,7 +114,7 @@ QUEM É A CAROLINE (já explicou; aplique sem perguntar. Se uma REGRA FIXA do it
 
 11. PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DELA
 {{ (() => { const o = $('Ler pedidos abertos').first().json || {}; const l = Object.values(o).map((v) => { try { return typeof v === 'string' ? JSON.parse(v) : v; } catch (e) { return null; } }).filter((p) => p && p.empresa === ('26a5d3eb-e8e4-4ed8-b206-095095292fdd')); return l.length ? l.map((p) => '• ' + (p.nome || 'Cliente') + ' (…' + String(p.telefone || '').slice(-4) + ')' + (p.tipo === 'orcamento_cabelo' ? ' (orçamento especial): ' : ': ') + p.pergunta).join('\n') : '(nenhum)'; })() }}
-- Ela respondeu a uma delas (só há uma aberta, disse o nome ou o assunto bate): faça o que a resposta manda e chamar_cliente com a resposta em uma frase, com as palavras dela, sem preço nem promessa. "Respondi pra *Nome* ✅".
+- Ela respondeu a uma delas (só há uma aberta, disse o nome ou o assunto bate): faça o que a resposta manda e chamar_cliente com a resposta em uma frase formal, como o studio, sem preço nem promessa. "Respondi pra *Nome* ✅".
 - Só pergunte de qual cliente ela fala se duas perguntas abertas servirem para a mesma resposta.
 
 12. O QUE ELA TE ENSINA

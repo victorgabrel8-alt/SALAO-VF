@@ -89,4 +89,22 @@ test('o jeito certo sai: motivo pessoal, formal; e assunto da cliente não é ba
   assert.strictEqual(enviar('Olá, Ana! Para o seu casamento, temos sábado às 10:00. Podemos reservar para você?'), '');
 });
 
+// ---------- pendências de 24/11: resposta que era só o registro interno, e "mandei" sem ter mandado ----------
+const conferir = (output, passos = []) => {
+  const dados = { 'Agente assistente': [{ output, intermediateSteps: passos }], Contexto: [{ lista: [] }] };
+  return new Function('$', codigo(assistente, 'Conferir resposta'))((nome) => no(dados[nome] || []))[0].json.texto;
+};
+
+test('resposta que era só o registro interno diz o que foi feito, não "👍"', () => {
+  const passos = [
+    { action: { tool: 'reagendar', toolInput: { cliente_nome: 'Giovanna Donatelli' } }, observation: ok({ nome: 'Giovanna Donatelli' }) },
+    { action: { tool: 'avisar_cliente', toolInput: { cliente_nome: 'Giovanna Donatelli' } }, observation: JSON.stringify([{ resposta: 'OK: mensagem enviada para a cliente (tel. 5527992681944): Olá' }]) },
+  ];
+  assert.strictEqual(conferir('O QUE VOCÊ JÁ FEZ:\n- reagendar Giovanna', passos), 'Remarquei *Giovanna*, Avisei *Giovanna* ✅');
+});
+
+test('"mandei" sem ter chamado o envio pergunta se manda agora, sem pedir para repetir', () => {
+  assert.strictEqual(conferir('Mandei pra *Cintia* ✅'), '⚠️ Ainda não mandei nada pra ela. Quer que eu mande agora?');
+});
+
 module.exports = { codigo, no, ok };

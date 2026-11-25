@@ -181,6 +181,23 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     "if (afirma && !enviou && recusados.length && !passado) { texto = (fica ? fica + '\\n\\n' : '') + '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
     'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {');
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode', 'Nada foi gravado nem enviado.', "' + (gravou ? 'O que voltou OK ficou gravado; nenhuma mensagem foi enviada.' : 'Nada foi gravado nem enviado.') + '");
+  // 25/11: "mandei" sem ter chamado o envio pedia para a Caroline repetir o pedido inteiro; agora pergunta se manda, e o
+  // "sim" dela basta (a nota da memória conta à assistente o que ela recebeu)
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', "texto = 'Ainda não mandei nada pra ela, Gleide. Me fala de novo o que é pra mandar que eu envio na hora.';",
+    "texto = '⚠️ Ainda não mandei nada pra ela. Quer que eu mande agora?';");
+  // 25/11: resposta que era só o registro interno virava "👍" depois do corte, e a Caroline não sabia o que tinha sido
+  // feito. Agora diz o que as ferramentas fizeram com OK ("Remarquei *Giovanna*, Avisei *Giovanna* ✅").
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', "if (!texto) texto = ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';", [
+    "if (!texto) {",
+    "  const VERBO = { marcar_horario: 'Marquei', reagendar: 'Remarquei', ajustar_duracao: 'Ajustei o tempo de', chamar_cliente: 'Mandei pra', avisar_cliente: 'Avisei',",
+    "    anotar: 'Anotei na ficha de', concluir: 'Concluí', chegou: 'Marquei a chegada de', status_atendimento: 'Atualizei o horário de', cadastrar_cliente: 'Cadastrei',",
+    "    editar_cliente: 'Atualizei a ficha de', liberar_horario: 'Liberei o horário de', bloquear_horario: 'Bloqueei o horário', bloquear_dias: 'Bloqueei o dia', guardar_regra: 'Guardei a regra' };",
+    "  const feito = [...new Set(passos.filter((s) => VERBO[s.action?.tool] && ok(lerResposta(s.observation))).map((s) => {",
+    "    const i = s.action.toolInput || {}; const n = String(i.cliente_nome || i.nome || '').trim().split(/\\s+/)[0];",
+    "    return VERBO[s.action.tool] + (n ? ' *' + n + '*' : ''); }))];",
+    "  texto = feito.length ? feito.join(', ') + ' ✅' : ag.output ? '👍' : 'Desculpa, deu um erro aqui. Pode repetir?';",
+    "}",
+  ].join('\n'));
 
   // h. teste de 24/11 (8 pedidos reais numa cópia): 3 respostas terminaram com o registro interno colado
   // ("O QUE VOCÊ JÁ FEZ: (nada ainda)", "*O QUE EU JÁ FIZ:* ..."). Corta dali até o fim antes de mandar à dona.
