@@ -23,6 +23,8 @@ create table if not exists agencia_usuarios (
 );
 
 alter table agencia_usuarios enable row level security;
+-- além do RLS sem política: o app (anon e logins) não lê nem grava nesta tabela; só a função abaixo
+revoke all on agencia_usuarios from anon, authenticated;
 
 comment on table agencia_usuarios is 'Logins da agência: veem a conversa da assistente de todas as lojas no app (080)';
 

@@ -137,9 +137,9 @@ export function lerMensagem(r: Registro): MensagemAssistente | null {
   // reação tirada (texto vazio) não aparece
   if (reacao) return txt(reacao.text) ? { ...base, tipo: "reacao", texto: txt(reacao.text) } : null;
   const botao = obj(m.buttonsResponseMessage) ?? obj(m.templateButtonReplyMessage);
-  if (botao) return { ...base, tipo: "texto", texto: txt(botao.selectedDisplayText) };
+  if (botao) return txt(botao.selectedDisplayText).trim() ? { ...base, tipo: "texto", texto: txt(botao.selectedDisplayText) } : null;
   const lista = obj(m.listResponseMessage);
-  if (lista) return { ...base, tipo: "texto", texto: txt(lista.title) };
+  if (lista) return txt(lista.title).trim() ? { ...base, tipo: "texto", texto: txt(lista.title) } : null;
 
   // Apagar, editar, chaves de criptografia e avisos do WhatsApp não são mensagens da conversa
   const ignorar = ["protocolMessage", "editedMessage", "secretEncryptedMessage", "senderKeyDistributionMessage", "pollUpdateMessage", "keepInChatMessage", "encReactionMessage"];
