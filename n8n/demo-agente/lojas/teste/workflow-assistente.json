@@ -10147,7 +10147,7 @@
         2260
       ],
       "parameters": {
-        "description": "Manda pelo número do salão uma mensagem para uma cliente, sem precisar de horário. Use quando a Caroline pediu para falar com a cliente (o pedido dela já é o sim).",
+        "description": "A IA de atendimento escreve, no jeito da Caroline, e manda pelo número do salão a mensagem que a Caroline pediu para uma cliente, sem precisar de horário. Use quando a Caroline pediu para falar com a cliente (o pedido dela já é o sim).",
         "workflowId": {
           "__rl": true,
           "value": "ID_DO_WORKFLOW_FERRAMENTAS",
@@ -10161,7 +10161,8 @@
             "pode_forcar": "={{ $('Contexto').first().json.podeForcar }}",
             "cliente_id": "={{ $fromAI('cliente_id', `cliente_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
-            "texto": "={{ $fromAI('texto', `O texto da mensagem (o que a Caroline ditou, ou o que você escreveu fazendo o que ela pediu)`, 'string') }}"
+            "texto": "={{ $fromAI('texto', `O PEDIDO da Caroline para a cliente: o que dizer, com dia, hora e serviço que ela disse. Não é a mensagem pronta: quem escreve para a cliente é a IA de atendimento. Com ditado = sim, as palavras exatas dela`, 'string') }}",
+            "ditado": "={{ $fromAI('ditado', `sim só quando a Caroline ditou as palavras exatas, ou é o endereço ou a chave Pix; vazio no resto`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -10518,6 +10519,16 @@
             {
               "id": "cliente_nome",
               "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ditado",
+              "displayName": "ditado",
               "required": false,
               "defaultMatch": false,
               "display": true,
@@ -10936,7 +10947,7 @@
         2260
       ],
       "parameters": {
-        "description": "Manda mensagem para a cliente pelo número do salão sobre um horário dela. Use quando a Caroline pediu (o pedido dela já é o sim).",
+        "description": "A IA de atendimento escreve e manda à cliente, pelo número do salão, o aviso sobre um horário dela. Use quando a Caroline pediu (o pedido dela já é o sim).",
         "workflowId": {
           "__rl": true,
           "value": "ID_DO_WORKFLOW_FERRAMENTAS",
@@ -10951,7 +10962,8 @@
             "agendamento_id": "={{ $fromAI('agendamento_id', `agendamento_id (uuid exato, das pendências ou de buscar_cliente / agenda_do_dia)`, 'string') }}",
             "cliente_nome": "={{ $fromAI('cliente_nome', `Primeiro nome da cliente de quem a Caroline falou. Preencha sempre: o sistema confere se o id é mesmo dela e recusa se for de outra`, 'string') }}",
             "tipo": "={{ $fromAI('tipo', `\"aviso\" (horário mudado, cancelamento, recado) ou \"remarcacao\" (imprevisto da Caroline: pede para a cliente remarcar)`, 'string') }}",
-            "texto": "={{ $fromAI('texto', `Vazio para a mensagem pronta (horário mudado / remarcação). Outro aviso: o texto da mensagem`, 'string') }}"
+            "texto": "={{ $fromAI('texto', `Vazio para horário mudado ou remarcação (a IA de atendimento escreve). Outro aviso: o PEDIDO da Caroline (o que dizer), não a mensagem pronta`, 'string') }}",
+            "ditado": "={{ $fromAI('ditado', `sim só quando a Caroline ditou as palavras exatas, ou é o endereço ou a chave Pix; vazio no resto`, 'string') }}"
           },
           "matchingColumns": [],
           "schema": [
@@ -11308,6 +11320,16 @@
             {
               "id": "cliente_nome",
               "displayName": "cliente_nome",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            },
+            {
+              "id": "ditado",
+              "displayName": "ditado",
               "required": false,
               "defaultMatch": false,
               "display": true,

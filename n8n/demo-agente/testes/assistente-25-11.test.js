@@ -84,7 +84,7 @@ test('texto que fala como se fosse a Caroline ou conta o assunto dela não sai',
     assert.match(enviar(t), /fala como se fosse a Caroline ou conta um assunto dela/, t);
 });
 
-test('o jeito certo sai: motivo pessoal, formal; e assunto da cliente não é barrado', { skip: !DateTime }, () => {
+test('o jeito certo sai: motivo pessoal; e assunto da cliente não é barrado', { skip: !DateTime }, () => {
   assert.strictEqual(enviar('Olá, Gabriela! Tudo bem? A Caroline não poderá atender sábado às 14:00 por um motivo pessoal. Podemos remarcar?'), '');
   assert.strictEqual(enviar('Olá, Ana! Para o seu casamento, temos sábado às 10:00. Podemos reservar para você?'), '');
 });

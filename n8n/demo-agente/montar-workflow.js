@@ -1044,6 +1044,9 @@ if (LOJA) {
   if ([].concat(LOJA.pendencias_sem || []).includes('atraso_confirmar')) require('./pendencias-loja.js').semVeioOuLibera({ faltasWorkflow: faltas.faltasWorkflow });
   // 24/11: a cliente diz que não vem -> aviso à dona na hora, sem depender da IA (nao-vem.js, supabase/078)
   if (LOJA.aviso_nao_vem) require('./nao-vem.js')({ node, workflow, loja: LOJA, REDIS });
+  // 25/11: uma voz só com a cliente: a IA de atendimento escreve o que a assistente manda à cliente e guarda na memória dela
+  // (voz-unica.js). Depois dos módulos que mexem nas ferramentas (envio, consertos, oferecer), antes do prompt inteiro.
+  if (LOJA.voz_unica) require('./voz-unica.js')({ node, ifNode, cond, ferramentasWorkflow: assistente.ferramentasWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, loja: LOJA, GEMINI, GEMINI_HTTP });
   // 23/11: prompt inteiro (loja.json: "prompt_inteiro": true): o prompt da loja é todo o texto de regras; dos blocos colados acima fica só o dado
   // (prompt-inteiro.js). Tem que ser o último a mexer no texto do agente, antes do paraLoja.
   if (LOJA.prompt_inteiro) require('./prompt-inteiro.js')({ workflow, loja: LOJA });

@@ -13,7 +13,7 @@
 //    com o que o salão mandou nos últimos 10 minutos não sai; a assistente manda só o que for novo.
 // 4. Tom (PDF erro 12): mensagem para a cliente com "fase de teste", "sistema", "assistente", "confirmadíssimo" ou emoji
 //    de enfeite (✨ 💅 😊 ❤️ ✅) não sai. 25/11: nem a que fala como se fosse a Caroline ("minha prova", "não vou
-//    conseguir") ou conta um assunto dela; volta para a assistente reescrever formal, como o studio.
+//    conseguir") ou conta um assunto dela; volta para reescrever como o studio, sem o assunto dela.
 
 const VINCULAR = 'Sinal: vincular ao horário';
 
@@ -108,19 +108,19 @@ module.exports = ({ node, ifNode, cond, ferramentasWorkflow: F, assistenteWorkfl
     '}',
     '// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente.',
     '// 25/11 (Cintia: "não vou conseguir por causa da minha prova"): também não sai texto que fala como se fosse a Caroline',
-    '// ou conta um assunto dela. A mensagem é do studio, formal, e o motivo dela vira "um motivo pessoal".',
+    '// ou conta um assunto dela. A mensagem é do studio, e o motivo dela vira "um motivo pessoal".',
     "const robo = /fase de teste|em teste|estamos testando|\\bsistema\\b|\\brobo\\b|intelig[eê]ncia artificial|\\bsou (a|uma) (ia|assistente)|assistente virtual|confirmad[ií]ssim/i.test(txt);",
     "const enfeite = /[\\u2728\\u{1F485}\\u{1F60A}\\u2764\\u2705\\u{1F496}\\u{1F497}\\u{1F338}\\u{1F31F}]/u.test(txt);",
     "const ASSUNTO_DELA = '(prova|faculdade|compromisso|consulta|viagem|aula|exame|m[eé]dic[oa]|dentista|hospital|velório|enterro)';",
     "const pessoal = new RegExp('\\\\b(minha|meu)\\\\s+' + ASSUNTO_DELA + '|\\\\bn[aã]o vou (conseguir|poder)\\\\b|\\\\b(caroline|carol)\\\\s+(tem|ter[aá]|vai ter|est[aá] (com|em)|estar[aá] (com|em))\\\\s+(uma?\\\\s+)?' + ASSUNTO_DELA + '|\\\\bpor causa d[aeo]\\\\s+' + ASSUNTO_DELA, 'i').test(txt);",
     'if (!bloqueio && (robo || enfeite || pessoal)) {',
     "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (pessoal ? 'o texto fala como se fosse a Caroline ou conta um assunto dela' : robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +",
-    "    '. A mensagem é do studio: formal e simples, \"a Caroline\" e nunca \"eu\", nada do que ela te contou. Se ela não vai atender: \"a Caroline não poderá atender nesse horário por um motivo pessoal\" e ofereça remarcar. Reescreva e mande de novo.';",
+    "    '. A mensagem é do studio, no jeito da Caroline: \"a Caroline\" e nunca \"eu\", nada do que ela te contou. Se ela não vai atender: \"a Caroline não poderá atender nesse horário por um motivo pessoal\" e ofereça remarcar. Reescreva e mande de novo.';",
     '}',
     'return [{ json: { bloqueio, recado, telefone: tel,',
   ].join('\n'));
 
-  // ---------- 7. aviso pronto formal e regra que não se empilha (25/11, supabase/081) ----------
+  // ---------- 7. aviso pronto (reserva quando a IA não escreve, voz-unica.js) e regra que não se empilha (25/11, supabase/081) ----------
   // avisar_cliente sem texto: "a Caroline não poderá atender ... por um motivo pessoal. Podemos remarcar?"
   trocar('Montar chamada', "funcao = 'n8n_assistente_avisar_cliente'; enviar = true;", "funcao = 'n8n_assistente_avisar_cliente_v2'; enviar = true;");
   // guardar_regra: trocar = número da regra que a nova substitui; sem ele, regra repetida ou incompleta volta recusada
