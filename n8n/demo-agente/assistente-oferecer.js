@@ -181,6 +181,18 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     "if (afirma && !enviou && recusados.length && !passado) { texto = (fica ? fica + '\\n\\n' : '') + '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
     'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado) {');
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode', 'Nada foi gravado nem enviado.', "' + (gravou ? 'O que voltou OK ficou gravado; nenhuma mensagem foi enviada.' : 'Nada foi gravado nem enviado.') + '");
+
+  // h. teste de 24/11 (8 pedidos reais numa cópia): 3 respostas terminaram com o registro interno colado
+  // ("O QUE VOCÊ JÁ FEZ: (nada ainda)", "*O QUE EU JÁ FIZ:* ..."). Corta dali até o fim antes de mandar à dona.
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', "let texto = String(ag.output || '')",
+    "let texto = String(ag.output || '').replace(/(^|\\n)[\\s*_]*O QUE (VOC[ÊE]|EU) J[ÁA] F(EZ|IZ)\\b[\\s\\S]*$/i, '')");
+  // "Perguntei pra *Rebeca* ✅" sem ter chamado chamar_cliente passava: a conferência só olhava avisei/mandei/enviei
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', '\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada',
+    '\\b(avisei|mandei|enviei|perguntei)\\b|mensagem (foi )?enviada');
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', '(avisei|mandei|enviei|anotei|', '(avisei|mandei|enviei|perguntei|anotei|');
+
+  // i. busca de cliente tolerante a nome falado (supabase/079: "Jaque" traz a Jaqueline e a Jackelined)
+  trocarUma(achar(F, 'Montar chamada'), 'jsCode', "funcao = 'n8n_assistente_buscar_cliente_v2'", "funcao = 'n8n_assistente_buscar_cliente_v3'");
 };
 
 module.exports.ID_AGENDA = ID_AGENDA;
