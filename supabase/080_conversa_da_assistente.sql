@@ -40,6 +40,8 @@ language sql stable security definer set search_path = public as $$
            case when jsonb_typeof(e.config->'assistente_numeros') = 'array' then e.config->'assistente_numeros' else '[]'::jsonb end
          ) with ordinality as n(numero, ordem)
    where e.ativo
+     -- a Loja Teste (config.teste) tem números falsos: fica fora da lista
+     and coalesce(e.config->>'teste', '') <> 'true'
      and coalesce(e.instancia_whatsapp, '') <> ''
      and n.numero ~ '^55[0-9]{10,11}$'
      and exists (select 1 from agencia_usuarios a where a.user_id = auth.uid())
