@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Avatar } from "@/components/Avatar";
+import { tituloDaConversa, type ConversaAssistente } from "@/lib/assistente";
 import { useEmpresa } from "@/lib/empresa";
 import { guardar, lembrar } from "@/lib/memoriaTela";
 import { buscarExcluidas } from "@/lib/excluidas";
@@ -218,6 +219,48 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
   );
 }
 
+// Conversas da assistente com a dona e a equipe (supabase/079): fixas no topo, para quem o banco libera (a agência).
+// A conversa fica no WhatsApp do studio; a linha só abre a tela que lê de lá.
+function useConversasDaAssistente(): ConversaAssistente[] {
+  const [lista, setLista] = useState<ConversaAssistente[]>(() => lembrar("conversas:assistente") ?? []);
+  useEffect(() => {
+    let ativo = true;
+    supabase()
+      .rpc("assistente_conversas")
+      .then(({ data, error }) => {
+        // sem a função no banco ou sem acesso: nada aparece
+        const r = error ? [] : ((data ?? []) as ConversaAssistente[]);
+        guardar("conversas:assistente", r);
+        if (ativo) setLista(r);
+      });
+    return () => {
+      ativo = false;
+    };
+  }, []);
+  return lista;
+}
+
+function LinhaAssistente({ conversa: c, mostrarLoja }: { conversa: ConversaAssistente; mostrarLoja: boolean }) {
+  return (
+    <li className="group">
+      <Link
+        href={`/conversas/assistente/${c.empresa_id}/${c.numero}`}
+        className="flex w-full items-center gap-3 bg-perola text-left active:bg-campo"
+      >
+        <span aria-hidden className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-grafite text-ouro-antigo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 3l1.9 4.8L19 9.7l-4 3.4 1.2 5.2L12 15.6l-4.2 2.7L9 13.1 5 9.7l5.1-1.9Z" />
+          </svg>
+        </span>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 border-t border-campo py-3.5 group-first:border-t-0">
+          <span className="truncate text-[16px] font-bold text-texto">{tituloDaConversa(c)}</span>
+          <span className="truncate text-[15px] text-texto-2">{mostrarLoja ? `${c.loja} · só leitura` : "WhatsApp do studio · só leitura"}</span>
+        </span>
+      </Link>
+    </li>
+  );
+}
+
 export default function ConversasPage() {
   return <ConversasPageConteudo />;
 }
@@ -236,6 +279,9 @@ function ConversasPageConteudo() {
   const [achadas, setAchadas] = useState<{ texto: string; conversas: Conversa[] } | null>(null);
   // Só uma linha aberta (deslizada) por vez, como no iPhone
   const [aberta, setAberta] = useState<string | null>(null);
+  const assistentes = useConversasDaAssistente();
+  // a agência vê a assistente de várias lojas: aí cada linha diz de qual loja é
+  const variasLojas = assistentes.some((a) => a.empresa_id !== empresa.id);
 
   useEffect(() => {
     let ativo = true;
@@ -331,6 +377,15 @@ function ConversasPageConteudo() {
           })}
         </div>
       </header>
+
+      {/* A conversa da assistente com a dona fica fixa no topo (só sem busca, na aba Todas) */}
+      {assistentes.length > 0 && !texto && filtro === "todas" && (
+        <ul aria-label="Conversas da assistente" className="mx-5 mt-1 overflow-hidden border-t border-borda">
+          {assistentes.map((a) => (
+            <LinhaAssistente key={`${a.empresa_id}-${a.numero}`} conversa={a} mostrarLoja={variasLojas} />
+          ))}
+        </ul>
+      )}
 
       {!resultado && <p className="carregando-calmo px-5 pt-5 text-texto-2">Carregando…</p>}
       {resultado && "erro" in resultado && <p className="m-4 rounded-2xl bg-rose p-4 text-rose-texto">Erro ao ler as conversas: {resultado.erro}</p>}
