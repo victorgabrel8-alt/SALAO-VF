@@ -172,7 +172,13 @@ module.exports = ({ node, workflow, agendaWorkflow: A, faltasWorkflow: FW, loja 
     ".map((x) => hm(x) + ' com ' + comQuem(x, x.plus({ minutes: p.dur })) + ' (data_hora_inicio: ' + iso(x) + ')').join(' ou ');");
   t('const res = ocupados.filter(([x, y]) => x < b && y > a)', 'const res = ocupadosQuadro().filter(([x, y]) => x < b && y > a)');
   t("    else if (!livre(t, f)) motivo = 'já está ocupado';",
-    "    else if (!livre(t, f)) { const o = outraLivre(t, f); motivo = o ? 'a ' + PEDIDA.nome + ' já tem cliente nesse horário, MAS a ' + o.nome + ' está livre nele: diga isso de um jeito positivo (\"a ' + o.nome + ' tem esse horário\") e ofereça' : 'já está ocupado'; }");
+    // 25/11 (sexta 14h, 150 min, prova às 16h): "já está ocupado" sem ninguém às 14h confundiu a Caroline. Quando nada começa
+    // antes do horário pedido, o motivo é que o serviço não cabe antes do próximo compromisso, e diz a hora dele.
+    "    else if (!livre(t, f)) { const o = outraLivre(t, f); motivo = o ? 'a ' + PEDIDA.nome + ' já tem cliente nesse horário, MAS a ' + o.nome + ' está livre nele: diga isso de um jeito positivo (\"a ' + o.nome + ' tem esse horário\") e ofereça' : (() => {" +
+    " const batem = ORDEM.map((x) => x.ocupados.filter(([a, b]) => t < b && f > a)).filter((l) => l.length);" +
+    " if (!batem.length || batem.some((l) => l.some(([a]) => a <= t))) return 'já está ocupado';" +
+    " const prox = batem.map((l) => l.reduce((m, [a]) => (a < m ? a : m), l[0][0])).reduce((m, a) => (a > m ? a : m));" +
+    " return 'não cabe: o serviço leva ' + p.dur + ' min e às ' + prox.toFormat('HH:mm') + ' já tem compromisso na agenda (cliente marcada ou horário fechado)'; })(); }");
   // criar com a profissional pedida ocupada: avisa se outra está livre
   t("if (!livre(ini, fim)) return saida({ resposta: 'Esse horário acabou de ser ocupado. Consulte os horários livres de novo e ofereça outras opções.' });",
     "if (!livre(ini, fim)) { const o = outraLivre(ini, fim); return saida({ resposta: o ? 'NÃO AGENDADO: a ' + PEDIDA.nome + ' já tem cliente nesse horário, mas a ' + o.nome + ' está livre nele. Ofereça a ' + o.nome + ' de um jeito positivo; se a cliente aceitar, chame de novo com profissional = ' + o.nome + '.'" +

@@ -220,6 +220,7 @@
   "assistente_modelo": "models/gemini-3.5-flash",
   "assistente_espera": 5,
   "bloqueio_por_profissional": true,
+  "horarios_colados": true,
   "pendencias_sem": [
     "atendimento_sem_status",
     "atraso_confirmar"

@@ -12,7 +12,8 @@
 // 3. Mensagem repetida (20/11, Vanessa: duas desculpas em 1 minuto): mandar para a mesma cliente um texto parecido
 //    com o que o salão mandou nos últimos 10 minutos não sai; a assistente manda só o que for novo.
 // 4. Tom (PDF erro 12): mensagem para a cliente com "fase de teste", "sistema", "assistente", "confirmadíssimo" ou emoji
-//    de enfeite (✨ 💅 😊 ❤️ ✅) não sai; volta para a assistente reescrever do jeito da Caroline.
+//    de enfeite (✨ 💅 😊 ❤️ ✅) não sai. 25/11: nem a que fala como se fosse a Caroline ("minha prova", "não vou
+//    conseguir") ou conta um assunto dela; volta para a assistente reescrever formal, como o studio.
 
 const VINCULAR = 'Sinal: vincular ao horário';
 
@@ -81,8 +82,9 @@ module.exports = ({ node, ifNode, cond, ferramentasWorkflow: F, assistenteWorkfl
   // ---------- 3. mensagem parecida para a mesma cliente em menos de 10 minutos ----------
   trocar('Envio: conferir', 'return [{ json: { bloqueio, recado, telefone: tel,', [
     '// 5. assistente-consertos.js (20/11, Vanessa): texto parecido com o que o salão mandou a ela nos últimos 10 min.',
-    '// "Parecido" = texto igual, ou o MESMO horário/dia citado e pelo menos 2 palavras do assunto em comum (sem contar nome, dia e palavras de horário)',
-    '// (as duas desculpas da Vanessa falavam de "14:30 amanhã"; uma oferta nova de "10h" passa).',
+    '// "Parecido" = texto igual, ou o MESMO horário/dia citado, nenhum horário/dia novo e pelo menos 2 palavras do assunto em comum',
+    '// (sem contar nome, dia e palavras de horário). As duas desculpas da Vanessa falavam de "14:30 amanhã"; uma oferta nova de "10h"',
+    '// passa, e a da Cintia (25/11: quinta 17h de novo, mas com sexta 13h e 13h30 que ela ainda não tinha recebido) também passa.',
     "const COMUNS_ENV = new Set('oi ola tudo bem bom dia boa tarde noite para voce voces pode como mais pelo pela com que nao sim esta ta fica ficar caroline horario horarios amanha hoje segunda terca quarta quinta sexta sabado domingo pediu pedir manha tarde'.split(' '));",
     '// nome próprio (palavra com maiúscula fora do começo da frase, como o nome da cliente) também não conta como assunto',
     "const nomes = (s) => new Set([...String(s || '').matchAll(/(?<![.!?]\\s)(?<!^)\\b([A-ZÀ-Ú][a-zà-ú]+)/g)].map((m) => norm(m[1])));",
@@ -96,21 +98,39 @@ module.exports = ({ node, ifNode, cond, ferramentasWorkflow: F, assistenteWorkfl
     '    const velhas = palavras(x.conteudo), horasVelhas = marcas(x.conteudo);',
     '    let comuns = 0; for (const w of novas) if (velhas.has(w)) comuns++;',
     '    const mesmaHora = [...horasNovas].some((h) => horasVelhas.has(h));',
-    '    return mesmaHora && comuns >= 2;',
+    '    const horaNova = [...horasNovas].some((h) => !horasVelhas.has(h));',
+    '    return mesmaHora && !horaNova && comuns >= 2;',
     '  })());',
     '  if (recente) {',
-    "    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): às ' + hm(recente.criado_em) + ' ela já recebeu uma mensagem parecida: «' + String(recente.conteudo).replace(/\\s+/g, ' ').slice(0, 160) + '». ' +",
+    "    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela recebeu uma mensagem quase igual às ' + hm(recente.criado_em) + '. Foi esta: «' + String(recente.conteudo).replace(/\\s+/g, ' ').slice(0, 160) + '». ' +",
     "      'Duas mensagens quase iguais em poucos minutos confundem a cliente. Se a Caroline quer acrescentar algo, mande SÓ o que é novo, curto; se não há nada novo, não mande e conte isso à Caroline em uma linha.';",
     '  }',
     '}',
-    '// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente;',
-    '// volta para a assistente escrever do jeito da Caroline (prompt-assistente, seção G).',
+    '// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente.',
+    '// 25/11 (Cintia: "não vou conseguir por causa da minha prova"): também não sai texto que fala como se fosse a Caroline',
+    '// ou conta um assunto dela. A mensagem é do studio, formal, e o motivo dela vira "um motivo pessoal".',
     "const robo = /fase de teste|em teste|estamos testando|\\bsistema\\b|\\brobo\\b|intelig[eê]ncia artificial|\\bsou (a|uma) (ia|assistente)|assistente virtual|confirmad[ií]ssim/i.test(txt);",
     "const enfeite = /[\\u2728\\u{1F485}\\u{1F60A}\\u2764\\u2705\\u{1F496}\\u{1F497}\\u{1F338}\\u{1F31F}]/u.test(txt);",
-    'if (!bloqueio && (robo || enfeite)) {',
-    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +",
-    "    ', e a cliente lê como se fosse a Caroline. Reescreva curto, do jeito dela (seção G: \"Oi Ana, ficou sexta às 14h 🙏\"), e mande de novo.';",
+    "const ASSUNTO_DELA = '(prova|faculdade|compromisso|consulta|viagem|aula|exame|m[eé]dic[oa]|dentista|hospital|velório|enterro)';",
+    "const pessoal = new RegExp('\\\\b(minha|meu)\\\\s+' + ASSUNTO_DELA + '|\\\\bn[aã]o vou (conseguir|poder)\\\\b|\\\\b(caroline|carol)\\\\s+(tem|ter[aá]|vai ter|est[aá] (com|em)|estar[aá] (com|em))\\\\s+(uma?\\\\s+)?' + ASSUNTO_DELA + '|\\\\bpor causa d[aeo]\\\\s+' + ASSUNTO_DELA, 'i').test(txt);",
+    'if (!bloqueio && (robo || enfeite || pessoal)) {',
+    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (pessoal ? 'o texto fala como se fosse a Caroline ou conta um assunto dela' : robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +",
+    "    '. A mensagem é do studio: formal e simples, \"a Caroline\" e nunca \"eu\", nada do que ela te contou. Se ela não vai atender: \"a Caroline não poderá atender nesse horário por um motivo pessoal\" e ofereça remarcar. Reescreva e mande de novo.';",
     '}',
     'return [{ json: { bloqueio, recado, telefone: tel,',
   ].join('\n'));
+
+  // ---------- 7. aviso pronto formal e regra que não se empilha (25/11, supabase/081) ----------
+  // avisar_cliente sem texto: "a Caroline não poderá atender ... por um motivo pessoal. Podemos remarcar?"
+  trocar('Montar chamada', "funcao = 'n8n_assistente_avisar_cliente'; enviar = true;", "funcao = 'n8n_assistente_avisar_cliente_v2'; enviar = true;");
+  // guardar_regra: trocar = número da regra que a nova substitui; sem ele, regra repetida ou incompleta volta recusada
+  trocar('Montar chamada', "funcao = 'n8n_assistente_guardar_regra'; args = { ...base, p_texto: v('texto') };",
+    "funcao = 'n8n_assistente_guardar_regra_v2'; args = { ...base, p_texto: v('texto'), p_trocar: ou(v('trocar')) };");
+  const entrada = F.nodes.find((n) => /executeWorkflowTrigger/.test(n.type));
+  if (!entrada?.parameters?.workflowInputs?.values) throw new Error('assistente-consertos: a entrada das ferramentas mudou');
+  if (!entrada.parameters.workflowInputs.values.some((x) => x.name === 'trocar')) entrada.parameters.workflowInputs.values.push({ name: 'trocar' });
+  const regra = achar('guardar_regra', A);
+  const w = regra.parameters.workflowInputs;
+  w.value.trocar = "={{ $fromAI('trocar', `Número da regra (da lista REGRAS FIXAS) que esta substitui, quando é o mesmo assunto ou ela mudou a regra. Vazio quando é regra nova`, 'string') }}";
+  if (!w.schema.some((x) => x.id === 'trocar')) w.schema.push({ ...w.schema.find((x) => x.id === 'texto'), id: 'trocar', displayName: 'trocar' });
 };

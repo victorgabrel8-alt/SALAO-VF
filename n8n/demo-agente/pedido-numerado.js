@@ -211,10 +211,46 @@ module.exports = ({ workflow: W, perguntaWorkflow: P, pendenciasWorkflow: PEND, 
   }
 
   // =============== 3c. Assistente: pedido respondido por ela sai da lista ===============
-  // Na loja a chave é "<slug>:pedido:…" e o "Pedidos respondidos" só aceitava "pedido:…" no começo: quando a dona
-  // respondia falando com a assistente (sem citar), o pedido ficava aberto 3 dias. Com o número, isso apareceria nas
-  // pendências, no resumo e na ficha como "sem resposta" depois de respondido.
-  if (A) trocar(achar(A, 'Pedidos respondidos'), 'jsCode', 'return /^pedido:/.test(k) && p &&', 'return /(^|:)pedido:[^:]+$/.test(k) && p && p.pergunta &&');
+  // Na loja a chave é "<slug>:pedido:…" (o original só aceitava "pedido:…" no começo e o pedido ficava aberto 3 dias).
+  // Conta como respondido quando a assistente, no pedido da dona:
+  //   - mandou mensagem à cliente (chamar_cliente / avisar_cliente), como antes;
+  //   - ou mexeu no horário ou na ficha da cliente sem mandar mensagem (25/11, Rebeca #14: a Caroline respondeu "pode
+  //     reservar", a assistente regravou o horário e anotou, e o #14 foi cobrado de novo às 18h e no outro dia ao meio-dia).
+  //     A cliente é achada pelos dados que as ferramentas devolveram: final do telefone e primeiro nome.
+  if (A) {
+    const resp = achar(A, 'Pedidos respondidos');
+    if (!/if \(!tels\.length\) return \[\];/.test(resp.parameters.jsCode)) throw new Error('pedido_numerado: o "Pedidos respondidos" mudou');
+    resp.parameters.jsCode = [
+      "const passos = $('Agente assistente').first().json.intermediateSteps || [];",
+      "const lerResposta = (o) => { const t = typeof o === 'string' ? o : JSON.stringify(o || ''); try { const j = JSON.parse(t); const x = Array.isArray(j) ? j[0] : j; if (x && typeof x.resposta === 'string') return x.resposta; } catch (e) {} return t; };",
+      "const so = (t) => String(t || '').replace(/\\D/g, '');",
+      "const nome1 = (t) => String(t || '').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase().trim().split(/\\s+/)[0] || '';",
+      "const ok = (s) => /^\\s*OK\\b/.test(lerResposta(s.observation));",
+      "// objetos que a ferramenta devolveu depois de \"OK:\" (antes do quadro da Google, que vem depois de uma linha em branco)",
+      "const objs = (s) => { const m = /^\\s*OK:\\s*([\\s\\S]*?)(?:\\n\\n|$)/.exec(lerResposta(s.observation)); if (!m) return []; try { const j = JSON.parse(m[1]); return (Array.isArray(j) ? j : [j]).filter((x) => x && typeof x === 'object'); } catch (e) { return []; } };",
+      "// 1. mensagem para a cliente: o telefone vem na resposta",
+      "const tels = passos.filter((s) => ['chamar_cliente', 'avisar_cliente'].includes(s.action?.tool)).map((s) => lerResposta(s.observation))",
+      "  .map((r) => (/^\\s*OK\\b[^(]*\\(tel\\. (\\d+)\\)/.exec(r) || [])[1]).filter(Boolean).map((t) => so(t).slice(-8));",
+      "// 2. horário ou ficha da cliente mexidos: final do telefone e primeiro nome (do que a ferramenta devolveu ou da cliente já vista nesta conversa)",
+      "const vistas = passos.flatMap(objs);",
+      "const MEXE = ['marcar_horario', 'reagendar', 'ajustar_duracao', 'excluir_horario', 'liberar_horario', 'anotar'];",
+      "const mexidas = passos.filter((s) => MEXE.includes(s.action?.tool) && ok(s)).flatMap((s) => {",
+      "  const e = s.action.toolInput || {};",
+      "  const ligadas = vistas.filter((o) => (e.cliente_id && o.cliente_id === e.cliente_id) || (e.agendamento_id && o.agendamento_id === e.agendamento_id));",
+      "  return [...objs(s), ...ligadas].map((o) => ({ fim: so(o.tel_final || o.telefone).slice(-4), nome: nome1(o.nome || e.cliente_nome) })).filter((x) => x.fim.length === 4);",
+      "});",
+      "if (!tels.length && !mexidas.length) return [];",
+      "const abertos = $('Ler pedidos abertos').first().json || {};",
+      "return Object.entries(abertos).filter(([k, v]) => {",
+      "  try {",
+      "    const p = typeof v === 'string' ? JSON.parse(v) : v;",
+      "    if (!/(^|:)pedido:[^:]+$/.test(k) || !p || !p.pergunta) return false;",
+      "    const t = so(p.telefone);",
+      "    return tels.includes(t.slice(-8)) || mexidas.some((x) => t.endsWith(x.fim) && (!x.nome || !p.nome || x.nome === nome1(p.nome)));",
+      "  } catch (e) { return false; }",
+      "}).map(([k]) => ({ json: { chave: k } }));",
+    ].join('\n');
+  }
 
   // =============== 3b. Resumo da noite: pedidos ainda abertos ===============
   if (loja.resumo_noite && FALTAS) {

@@ -118,7 +118,7 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
   trocarUma(achar(F, 'Envio: conferir'), 'jsCode', 'return [{ json: { bloqueio, recado, telefone: tel,', [
     '// 7. assistente-oferecer.js (24/11, Stela): "A Carol reservou ... Pode ser?" deixa a cliente sem saber se está marcado',
     "if (!bloqueio && (afirma || /\\b(reservou|marcou|agendou|garantiu)\\b/.test(n)) && /(pode ser|tudo bem|ok|certo|combinado|consegue|fechado|beleza|serve|da certo|dá certo)\\s*\\??\\s*[\\u{1F64F}]?\\s*$/iu.test(txt.trim()) && /\\?\\s*[\\u{1F64F}]?\\s*$/u.test(txt.trim())) {",
-    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Se não puder, me avisa por aqui\". ' +",
+    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Caso não possa, avise por aqui, por gentileza\". ' +",
     "    'Se a Caroline só quer oferecer, escreva como oferta, sem dizer reservado. Se a cliente tinha outro horário combinado, diga a troca e o motivo em poucas palavras.';",
     '}',
     'return [{ json: { bloqueio, recado, telefone: tel,',
@@ -191,8 +191,10 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     '\\b(avisei|mandei|enviei|perguntei)\\b|mensagem (foi )?enviada');
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode', '(avisei|mandei|enviei|anotei|', '(avisei|mandei|enviei|perguntei|anotei|');
 
-  // i. busca de cliente tolerante a nome falado (supabase/079: "Jaque" traz a Jaqueline e a Jackelined)
-  trocarUma(achar(F, 'Montar chamada'), 'jsCode', "funcao = 'n8n_assistente_buscar_cliente_v2'", "funcao = 'n8n_assistente_buscar_cliente_v3'");
+  // i. busca de cliente tolerante a nome falado (supabase/079: "Jaque" traz a Jaqueline e a Jackelined), com a
+  //    conversa_recente de cada cliente achada (supabase/081, 25/11: a Gabriela avisou de manhã que não vinha e à tarde a
+  //    assistente não sabia, porque só lia as últimas 3 horas)
+  trocarUma(achar(F, 'Montar chamada'), 'jsCode', "funcao = 'n8n_assistente_buscar_cliente_v2'", "funcao = 'n8n_assistente_buscar_cliente_v4'");
 };
 
 module.exports.ID_AGENDA = ID_AGENDA;
