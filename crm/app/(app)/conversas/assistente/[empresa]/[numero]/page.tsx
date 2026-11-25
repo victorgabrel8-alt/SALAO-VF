@@ -26,11 +26,15 @@ async function lerPagina(empresa: string, numero: string, ate: number | null): P
   return j;
 }
 
-// Junta sem repetir, na ordem da conversa (mesma hora: fica a ordem em que chegaram)
+// Junta sem repetir, na ordem da conversa. No mesmo segundo, a dona antes da assistente (a resposta vem depois da
+// pergunta); depois, a ordem em que chegaram
 function juntar(a: MensagemAssistente[], b: MensagemAssistente[]): MensagemAssistente[] {
   const porId = new Map<string, MensagemAssistente>();
   for (const m of [...a, ...b]) porId.set(m.id, m);
-  return [...porId.values()].map((m, i) => ({ m, i })).sort((x, y) => x.m.em - y.m.em || x.i - y.i).map(({ m }) => m);
+  return [...porId.values()]
+    .map((m, i) => ({ m, i }))
+    .sort((x, y) => x.m.em - y.m.em || Number(x.m.daAssistente) - Number(y.m.daAssistente) || x.i - y.i)
+    .map(({ m }) => m);
 }
 
 const iso = (em: number) => new Date(em * 1000).toISOString();
@@ -107,9 +111,10 @@ function ConversaAssistente() {
       setEstado((e) => {
         if (!e) return e;
         const mensagens = juntar(p.mensagens, e.mensagens);
-        // nada novo: chegou ao começo
         const novas = mensagens.length - e.mensagens.length;
-        return { ...e, mensagens, mais: p.mais && novas > 0, antes: novas > 0 ? Math.min(p.antes ?? e.antes ?? 0, e.antes ?? Infinity) : e.antes };
+        if (novas > 0) return { ...e, mensagens, mais: p.mais, antes: Math.min(p.antes ?? e.antes ?? 0, e.antes ?? Infinity) };
+        // Só repetidas: muitas no mesmo segundo; a próxima pede do segundo anterior. Sem mais nada: chegou ao começo
+        return { ...e, mais: p.mais && !!e.antes, antes: e.antes ? e.antes - 1 : null };
       });
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Não deu para ler as mensagens mais antigas.");

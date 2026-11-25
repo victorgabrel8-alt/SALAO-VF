@@ -111,9 +111,10 @@ export function lerMensagem(r: Registro): MensagemAssistente | null {
   const daAssistente = Boolean(r.key?.fromMe);
   const base = { id, daAssistente, em };
 
-  if (typeof m.conversation === "string") return { ...base, tipo: "texto", texto: m.conversation };
+  // texto vazio (edição ou apagada) não aparece
+  if (typeof m.conversation === "string") return m.conversation.trim() ? { ...base, tipo: "texto", texto: m.conversation } : null;
   const ext = obj(m.extendedTextMessage);
-  if (ext) return { ...base, tipo: "texto", texto: txt(ext.text) };
+  if (ext) return txt(ext.text).trim() ? { ...base, tipo: "texto", texto: txt(ext.text) } : null;
   if (obj(m.audioMessage)) return { ...base, tipo: "audio", texto: "" };
   const foto = obj(m.imageMessage);
   if (foto) return { ...base, tipo: "foto", texto: txt(foto.caption) };
