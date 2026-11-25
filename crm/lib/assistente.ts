@@ -1,4 +1,4 @@
-// Conversa da assistente com a dona (e a equipe) no WhatsApp do studio (supabase/079).
+// Conversa da assistente com a dona (e a equipe) no WhatsApp do studio (supabase/080).
 // Essa conversa não fica no banco: o servidor do app lê o histórico da Evolution (app/api/assistente/route.ts) e entrega
 // já no formato abaixo. Este arquivo é usado pelo servidor e pelas telas: não tem chave nenhuma.
 

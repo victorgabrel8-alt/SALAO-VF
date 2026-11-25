@@ -1,5 +1,5 @@
 -- =====================================================================
--- 079 - Conversa da assistente no app (pedido do Victor, 25/11/2026)
+-- 080 - Conversa da assistente no app (pedido do Victor, 25/11/2026)
 --
 -- A conversa da assistente com a dona (e com a Duda, no Studio Caroline Ferreira) não fica no banco: fica no WhatsApp
 -- do studio. O app passa a mostrar essa conversa em Conversas, lendo o histórico da Evolution pelo servidor do app
@@ -24,7 +24,7 @@ create table if not exists agencia_usuarios (
 
 alter table agencia_usuarios enable row level security;
 
-comment on table agencia_usuarios is 'Logins da agência: veem a conversa da assistente de todas as lojas no app (079)';
+comment on table agencia_usuarios is 'Logins da agência: veem a conversa da assistente de todas as lojas no app (080)';
 
 -- O Victor
 insert into agencia_usuarios (user_id) values ('16e52f6d-49cf-449e-9cc1-a7f62718fae7') on conflict do nothing;

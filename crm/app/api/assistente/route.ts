@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 import type { ConversaAssistente } from "@/lib/assistente";
 import { lerConversa } from "@/lib/evolutionAssistente";
 
-// Conversa da assistente com a dona no WhatsApp do studio (supabase/079). Só leitura: nada aqui envia mensagem.
+// Conversa da assistente com a dona no WhatsApp do studio (supabase/080). Só leitura: nada aqui envia mensagem.
 // GET /api/assistente?empresa=<id>&numero=<5566...>&ate=<segundos>  -> PaginaAssistente (as mais novas até "ate")
 //
 // Quem pode ler: a função assistente_conversas() do banco, chamada com o login de quem pediu (o cookie da sessão).

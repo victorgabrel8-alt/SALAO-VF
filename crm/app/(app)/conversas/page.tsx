@@ -219,7 +219,7 @@ function LinhaDeslizante({ conversa: c, aberta, aoAbrir }: { conversa: Conversa;
   );
 }
 
-// Conversas da assistente com a dona e a equipe (supabase/079): fixas no topo, para quem o banco libera (a agência).
+// Conversas da assistente com a dona e a equipe (supabase/080): fixas no topo, para quem o banco libera (a agência).
 // A conversa fica no WhatsApp do studio; a linha só abre a tela que lê de lá.
 function useConversasDaAssistente(): ConversaAssistente[] {
   const [lista, setLista] = useState<ConversaAssistente[]>(() => lembrar("conversas:assistente") ?? []);

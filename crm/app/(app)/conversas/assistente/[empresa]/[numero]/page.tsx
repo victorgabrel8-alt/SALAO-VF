@@ -8,7 +8,7 @@ import { dataNoSalao, formatarDiaLongo, formatarHora, hojeNoSalao } from "@/lib/
 import { lembrar } from "@/lib/memoriaTela";
 import { supabase } from "@/lib/supabase/client";
 
-// Conversa da assistente com a dona (ou a profissional) no WhatsApp do studio (supabase/079).
+// Conversa da assistente com a dona (ou a profissional) no WhatsApp do studio (supabase/080).
 // Só leitura: a tela não manda mensagem. A conversa vem da Evolution pelo servidor do app (app/api/assistente/route.ts).
 // A dona fica à esquerda (balão claro) e a assistente à direita (balão escuro), com a hora de Cuiabá.
 
