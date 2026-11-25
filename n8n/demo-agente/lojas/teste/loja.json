@@ -221,6 +221,7 @@
   "assistente_espera": 5,
   "bloqueio_por_profissional": true,
   "horarios_colados": true,
+  "voz_unica": true,
   "pendencias_sem": [
     "atendimento_sem_status",
     "atraso_confirmar"

@@ -145,6 +145,9 @@
             },
             {
               "name": "citadas"
+            },
+            {
+              "name": "ditado"
             }
           ]
         }
@@ -264,7 +267,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($('Montar chamada').first().json.args) }}",
+        "jsonBody": "={{ JSON.stringify((() => { try { if ($('Voz: pronta').isExecuted) return $('Voz: pronta').first().json.args; } catch (e) {} return $('Montar chamada').first().json.args; })()) }}",
         "options": {
           "response": {
             "response": {
@@ -452,7 +455,7 @@
             {
               "id": "a-resposta",
               "name": "resposta",
-              "value": "={{ (() => { try { if ($('Envio: conferir').isExecuted) { const ev = $('Envio: conferir').first().json; if (ev && ev.bloqueio) return ev.bloqueio; } } catch (e) {} let r = ((() => { let base = ((() => {\n  const m = $('Montar chamada').first().json;\n  try { const bq = $('Endereço: conferir').first().json.bloqueio; if (bq) return bq; } catch (e) {}\n  if (m.pergunte) return 'PERGUNTE: ' + m.pergunte;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }\n  const b = $('Executar no banco').first().json;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Caroline ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) { const em = String((r && r.error && (r.error.message || JSON.stringify(r.error))) || ''); return /exists.{0,4}false/.test(em) ? 'ERRO: esse número não tem WhatsApp. Nada foi enviado. Diga em uma frase que o número da cliente não tem WhatsApp e peça para conferir o número.' : 'ERRO: o WhatsApp não conseguiu mandar agora. Nada foi enviado. Diga em uma frase que não deu para mandar agora e que ela pode pedir de novo em alguns minutos.'; }\n  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;\n})()); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } base = 'OK: ' + JSON.stringify(o); } catch (e) {} } let gt = g.texto || ''; if ((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao) === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } return base + gt; })()); try { if ((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao) === 'n8n_assistente_reagendar_confirma' && /^\\s*OK/i.test(String(r))) r = r + String.fromCharCode(10, 10) + \"A CLIENTE AINDA NÃO SABE DESTA MUDANÇA (nada foi mandado a ela). Regra da Caroline: horário mudado a pedido dela = avise a cliente UMA vez, agora, com avisar_cliente (tipo aviso, sem texto: a mensagem sai pronta com o horário antigo e o novo). Só não avise se a Caroline disse que ela mesma avisa ou que já combinou direto com a cliente. Na resposta à Caroline diga se avisou (\\\"Avisei a *Nome* ✅\\\").\"; } catch (e) {} return r; })() }}",
+              "value": "={{ (() => { try { if ($('Voz: pronta').isExecuted && $('Voz: pronta').first().json.bloqueio) return $('Voz: pronta').first().json.bloqueio; } catch (e) {} try { if ($('Envio: conferir').isExecuted) { const ev = $('Envio: conferir').first().json; if (ev && ev.bloqueio) return ev.bloqueio; } } catch (e) {} let r = ((() => { let base = ((() => {\n  const m = $('Montar chamada').first().json;\n  try { const bq = $('Endereço: conferir').first().json.bloqueio; if (bq) return bq; } catch (e) {}\n  if (m.pergunte) return 'PERGUNTE: ' + m.pergunte;\n  if (m.erro) return 'ERRO: ' + m.erro;\n  if (!$('Executar no banco').isExecuted) { const d = $('Conferir cliente').first().json.data; try { return 'ERRO: ' + JSON.parse(d); } catch (e) { return 'ERRO: ' + (d || 'não consegui conferir a cliente'); } }\n  const b = $('Executar no banco').first().json;\n  if (b.error) return 'ERRO: ' + (b.error.message || b.message || JSON.stringify(b.error)) + (m.forcarIgnorado ? ' (O forcar foi ignorado: a Caroline ainda não viu este motivo. Conte o motivo a ela em uma frase e pergunte se marca assim mesmo; não tente de novo agora.)' : '');\n  if (!m.enviar) return 'OK: ' + (b.data || 'feito');\n  const r = $('Mandar para a cliente').isExecuted ? $('Mandar para a cliente').first().json : null;\n  if (!r || !r.key?.id) { const em = String((r && r.error && (r.error.message || JSON.stringify(r.error))) || ''); return /exists.{0,4}false/.test(em) ? 'ERRO: esse número não tem WhatsApp. Nada foi enviado. Diga em uma frase que o número da cliente não tem WhatsApp e peça para conferir o número.' : 'ERRO: o WhatsApp não conseguiu mandar agora. Nada foi enviado. Diga em uma frase que não deu para mandar agora e que ela pode pedir de novo em alguns minutos.'; }\n  return 'OK: mensagem enviada para a cliente (tel. ' + JSON.parse(b.data).telefone + '): ' + JSON.parse(b.data).mensagem;\n})()); const g = $('Google: eventos do dia').isExecuted ? $('Google: eventos do dia').first().json : null; if (!g) return base; if ($('Montar chamada').first().json.funcao === 'n8n_assistente_horarios_livres' && base.startsWith('OK: {') && Array.isArray(g.ocupados)) { try { const o = JSON.parse(base.slice(4)); const dur = Number(o.duracao_min) || 60; const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; if (Array.isArray(o.livres)) { const antes = o.livres.length; o.livres = o.livres.filter((h) => !g.ocupados.some(([x, y]) => min(h) < y && min(h) + dur > x)); if (o.livres.length !== antes) o.obs = (o.obs ? o.obs + '; ' : '') + 'já sem os horários que encavalam com a Google Agenda'; if (!o.livres.length) o.obs = 'nenhum horário livre nesse dia (app + Google Agenda)'; } base = 'OK: ' + JSON.stringify(o); } catch (e) {} } let gt = g.texto || ''; if ((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao) === 'n8n_assistente_agenda_do_dia' && base.startsWith('OK: [')) { try { const ap = JSON.parse(base.slice(4)); const NL = String.fromCharCode(10); const min = (h) => { const [a, b] = String(h).split(':').map(Number); return a * 60 + b; }; const pri = (n) => String(n || '').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''); gt = gt.split(NL).map((l) => { if (!l.startsWith('- ') || l.charAt(4) !== ':') return l; const h = l.slice(2, 7), t = l.slice(l.indexOf(': ', 8) + 2); const x = ap.find((a) => a.hora && a.status !== 'cancelado' && Math.abs(min(a.hora) - min(h)) <= 30 && pri(a.nome).length > 2 && (pri(a.nome) === pri(t) || pri(a.nome).slice(0, 4) === pri(t).slice(0, 4))); return x ? l + ' -> JÁ ESTÁ NO APP como ' + x.nome + ' às ' + x.hora + ' (é a mesma cliente: não peça contato nem cadastro de novo)' : l; }).join(NL); } catch (e) {} } return base + gt; })()); try { if ((({ n8n_assistente_agenda_do_dia_prof: 'n8n_assistente_agenda_do_dia', n8n_assistente_marcar_horario_prof: 'n8n_assistente_marcar_horario', n8n_assistente_reagendar_prof: 'n8n_assistente_reagendar_confirma', n8n_assistente_ajustar_duracao_prof: 'n8n_assistente_ajustar_duracao' })[$('Montar chamada').first().json.funcao] || $('Montar chamada').first().json.funcao) === 'n8n_assistente_reagendar_confirma' && /^\\s*OK/i.test(String(r))) r = r + String.fromCharCode(10, 10) + \"A CLIENTE AINDA NÃO SABE DESTA MUDANÇA (nada foi mandado a ela). Regra da Caroline: horário mudado a pedido dela = avise a cliente UMA vez, agora, com avisar_cliente (tipo aviso, sem texto: a mensagem sai pronta com o horário antigo e o novo). Só não avise se a Caroline disse que ela mesma avisa ou que já combinou direto com a cliente. Na resposta à Caroline diga se avisou (\\\"Avisei a *Nome* ✅\\\").\"; } catch (e) {} return r; })() }}",
               "type": "string"
             }
           ]
@@ -733,7 +736,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const TZ = 'America/Cuiaba';\nconst agora = DateTime.now().setZone(TZ);\nlet b = {}; try { b = JSON.parse($('Executar no banco').first().json.data || '{}'); } catch (e) {}\nconst txt = String(b.mensagem || '');\nconst tel = String(b.telefone || '').replace(/\\D/g, '');\nconst falhou = (x) => !x || x.error || (x.code && x.message);\nconst lerTudo = (nome) => { try { return $(nome).all().map((i) => i.json); } catch (e) { return [{ error: 'não rodou' }]; } };\nconst rMsgs = lerTudo('Envio: conversa da cliente'), rAgs = lerTudo('Envio: horários da cliente');\nconst leuMsgs = !rMsgs.some((x) => x && (x.error || (x.code && x.message)));\nconst leuAgs = !rAgs.some((x) => x && (x.error || (x.code && x.message)));\nconst msgs = rMsgs.filter((x) => x && x.criado_em && !falhou(x));\nconst ags = rAgs.filter((x) => x && x.inicio && !falhou(x));\nconst hm = (s) => DateTime.fromISO(s).setZone(TZ).toFormat('HH:mm');\nconst norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();\nconst n = norm(txt);\nlet bloqueio = '', recado = false;\n\n// 4. vazio\nif (!/[a-z0-9]/.test(n)) bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto estava vazio. Escreva a mensagem e mande de novo.';\n\n// 1. ela está conversando com a IA de atendimento agora\nconst ultimaDela = msgs.find((x) => x.direcao === 'entrada');\nconst minDela = ultimaDela ? agora.diff(DateTime.fromISO(ultimaDela.criado_em), 'minutes').minutes : 1e9;\nconst falaDeHorario = /\\b\\d{1,2} ?(h\\b|h\\d{2}|:\\d{2}|horas?\\b)|amanha|\\bhoje\\b|segunda|terca|quarta|quinta|sexta|sabado|domingo|\\bdia \\d|\\b\\d{1,2}\\/\\d{1,2}\\b|horario|agenda|\\bvaga|marcar|remarc|reagend|reserv|encaix/.test(n);\nif (!bloqueio && leuMsgs && minDela <= 4 && falaDeHorario) {\n  recado = true;\n  bloqueio = 'GUARDEI COMO RECADO (nada foi mandado à cliente agora): ela está conversando com a IA de atendimento neste momento (última mensagem dela às ' + hm(ultimaDela.criado_em) + '). ' +\n    'Se eu mandasse, ela receberia duas conversas ao mesmo tempo com ofertas diferentes. O seu texto foi passado para a IA de atendimento, que vai usar na próxima resposta a ela. ' +\n    'Diga à Caroline em UMA linha: \"*Nome* está conversando com a IA agora; passei seu recado pra IA usar na resposta ✅\". NÃO chame chamar_cliente nem avisar_cliente de novo para ela agora e não diga que mandou.';\n}\n\n// 2. confirmação repetida\nconst ehConfirmacao = (s) => /confirm(ar|ando|ad[oa]|amos|o\\b|ei)|lembrando (do|que|seu)|lembrete/.test(s) && /horario|amanha|\\bhoje\\b|atendimento/.test(s);\nconst ehMudanca = /\\bmud|remarc|reagend|\\btroc|passou para|passamos para|em vez de|novo horario|cancel|desmarc/.test(n);\nif (!bloqueio && leuMsgs && ehConfirmacao(n) && !ehMudanca) {\n  const ant = msgs.find((x) => x.direcao === 'saida' && ehConfirmacao(norm(x.conteudo)) && agora.diff(DateTime.fromISO(x.criado_em), 'hours').hours < 20);\n  if (ant) {\n    const resp = msgs.filter((x) => x.direcao === 'entrada' && x.criado_em > ant.criado_em).pop();\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela já recebeu confirmação deste horário às ' + hm(ant.criado_em) + ' («' + String(ant.conteudo).replace(/\\s+/g, ' ').slice(0, 140) + '»)' +\n      (resp ? ' e respondeu às ' + hm(resp.criado_em) + ': «' + String(resp.conteudo).replace(/\\s+/g, ' ').slice(0, 100) + '»' : ' e ainda não respondeu') +\n      '. A Caroline quer UMA confirmação por cliente: não mande outra. Conte a ela em uma linha se a cliente já confirmou ou não.';\n  }\n}\n\n// 3. diz que está marcado/confirmado sem horário no app (ou com a data errada)\n// \"ela quer já deixar reservados seus horários\", \"pra deixar marcado?\": é vontade, não diz que já está (24/11, Maila)\nconst semVontade = n.replace(/\\b(quer|queria|gostaria|deseja|pretende|deixar|deixarmos)\\b(\\s+[a-z]+){0,3}?\\s+(confirmad|marcad|reservad|agendad|garantid)[a-z]*/g, ' ');\nconst afirma = /\\b(confirmad[oa]s?|confirmadissim[oa]|marcad[oa]s?|reservad[oa]s?|agendad[oa]s?|garantid[oa]s?|marquei|reservei|agendei)\\b/.test(semVontade) && !/cancel|desmarc/.test(n);\nif (!bloqueio && leuAgs && afirma) {\n  const lista = ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + (a.servicos && a.servicos.nome ? ' (' + a.servicos.nome + ')' : '')).join('; ');\n  if (!ags.length) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que o horário está marcado/confirmado/reservado, mas ela NÃO tem nenhum horário futuro no app. ' +\n      'Primeiro grave com marcar_horario (dia, hora e serviço) e veja que voltou OK; só depois avise. Se a Caroline pediu para perguntar ou oferecer, reescreva sem dizer que está marcado ou reservado e chame chamar_cliente de novo agora, nesta mesma resposta.';\n  } else {\n    const dias = new Set(ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat('dd/LL')));\n    const citadas = [...n.matchAll(/\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((x) => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0'));\n    if (citadas.length && citadas.every((d) => !dias.has(d))) {\n      bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto fala de ' + [...new Set(citadas)].join(', ') + ', mas os horários dela no app são: ' + lista +\n        '. Confira o dia e o MÊS (em 13/11 uma cliente foi avisada de 17/12 quando o horário era 17/11) e mande de novo com a data certa.';\n    }\n  }\n}\n// 5. assistente-consertos.js (20/11, Vanessa): texto parecido com o que o salão mandou a ela nos últimos 10 min.\n// \"Parecido\" = texto igual, ou o MESMO horário/dia citado, nenhum horário/dia novo e pelo menos 2 palavras do assunto em comum\n// (sem contar nome, dia e palavras de horário). As duas desculpas da Vanessa falavam de \"14:30 amanhã\"; uma oferta nova de \"10h\"\n// passa, e a da Cintia (25/11: quinta 17h de novo, mas com sexta 13h e 13h30 que ela ainda não tinha recebido) também passa.\nconst COMUNS_ENV = new Set('oi ola tudo bem bom dia boa tarde noite para voce voces pode como mais pelo pela com que nao sim esta ta fica ficar caroline horario horarios amanha hoje segunda terca quarta quinta sexta sabado domingo pediu pedir manha tarde'.split(' '));\n// nome próprio (palavra com maiúscula fora do começo da frase, como o nome da cliente) também não conta como assunto\nconst nomes = (s) => new Set([...String(s || '').matchAll(/(?<![.!?]\\s)(?<!^)\\b([A-ZÀ-Ú][a-zà-ú]+)/g)].map((m) => norm(m[1])));\nconst palavras = (s) => { const nm = nomes(s); return new Set(norm(s).replace(/[^a-z0-9 ]+/g, ' ').split(/\\s+/).filter((w) => w.length > 3 && !COMUNS_ENV.has(w) && !nm.has(w))); };\nconst marcas = (s) => new Set([...norm(s).matchAll(/\\b(\\d{1,2})(?:h|:)(\\d{2})?\\b|\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((m) => m[1] !== undefined ? m[1] + ':' + (m[2] || '00') : m[3] + '/' + m[4]));\nconst igualTxt = (s) => norm(s).replace(/[^a-z0-9]+/g, ' ').trim();\nif (!bloqueio && leuMsgs) {\n  const novas = palavras(txt), horasNovas = marcas(txt);\n  const recente = msgs.find((x) => x.direcao === 'saida' && agora.diff(DateTime.fromISO(x.criado_em), 'minutes').minutes <= 10 && (() => {\n    if (igualTxt(x.conteudo) === igualTxt(txt)) return true;\n    const velhas = palavras(x.conteudo), horasVelhas = marcas(x.conteudo);\n    let comuns = 0; for (const w of novas) if (velhas.has(w)) comuns++;\n    const mesmaHora = [...horasNovas].some((h) => horasVelhas.has(h));\n    const horaNova = [...horasNovas].some((h) => !horasVelhas.has(h));\n    return mesmaHora && !horaNova && comuns >= 2;\n  })());\n  if (recente) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela recebeu uma mensagem quase igual às ' + hm(recente.criado_em) + '. Foi esta: «' + String(recente.conteudo).replace(/\\s+/g, ' ').slice(0, 160) + '». ' +\n      'Duas mensagens quase iguais em poucos minutos confundem a cliente. Se a Caroline quer acrescentar algo, mande SÓ o que é novo, curto; se não há nada novo, não mande e conte isso à Caroline em uma linha.';\n  }\n}\n// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente.\n// 25/11 (Cintia: \"não vou conseguir por causa da minha prova\"): também não sai texto que fala como se fosse a Caroline\n// ou conta um assunto dela. A mensagem é do studio, formal, e o motivo dela vira \"um motivo pessoal\".\nconst robo = /fase de teste|em teste|estamos testando|\\bsistema\\b|\\brobo\\b|intelig[eê]ncia artificial|\\bsou (a|uma) (ia|assistente)|assistente virtual|confirmad[ií]ssim/i.test(txt);\nconst enfeite = /[\\u2728\\u{1F485}\\u{1F60A}\\u2764\\u2705\\u{1F496}\\u{1F497}\\u{1F338}\\u{1F31F}]/u.test(txt);\nconst ASSUNTO_DELA = '(prova|faculdade|compromisso|consulta|viagem|aula|exame|m[eé]dic[oa]|dentista|hospital|velório|enterro)';\nconst pessoal = new RegExp('\\\\b(minha|meu)\\\\s+' + ASSUNTO_DELA + '|\\\\bn[aã]o vou (conseguir|poder)\\\\b|\\\\b(caroline|carol)\\\\s+(tem|ter[aá]|vai ter|est[aá] (com|em)|estar[aá] (com|em))\\\\s+(uma?\\\\s+)?' + ASSUNTO_DELA + '|\\\\bpor causa d[aeo]\\\\s+' + ASSUNTO_DELA, 'i').test(txt);\nif (!bloqueio && (robo || enfeite || pessoal)) {\n  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (pessoal ? 'o texto fala como se fosse a Caroline ou conta um assunto dela' : robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +\n    '. A mensagem é do studio: formal e simples, \"a Caroline\" e nunca \"eu\", nada do que ela te contou. Se ela não vai atender: \"a Caroline não poderá atender nesse horário por um motivo pessoal\" e ofereça remarcar. Reescreva e mande de novo.';\n}\n// 7. assistente-oferecer.js (24/11, Stela): \"A Carol reservou ... Pode ser?\" deixa a cliente sem saber se está marcado\nif (!bloqueio && (afirma || /\\b(reservou|marcou|agendou|garantiu)\\b/.test(n)) && /(pode ser|tudo bem|ok|certo|combinado|consegue|fechado|beleza|serve|da certo|dá certo)\\s*\\??\\s*[\\u{1F64F}]?\\s*$/iu.test(txt.trim()) && /\\?\\s*[\\u{1F64F}]?\\s*$/u.test(txt.trim())) {\n  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Caso não possa, avise por aqui, por gentileza\". ' +\n    'Se a Caroline só quer oferecer, escreva como oferta, sem dizer reservado. Se a cliente tinha outro horário combinado, diga a troca e o motivo em poucas palavras.';\n}\nreturn [{ json: { bloqueio, recado, telefone: tel, chave: tel.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2'), texto: txt } }];"
+        "jsCode": "const TZ = 'America/Cuiaba';\nconst agora = DateTime.now().setZone(TZ);\nlet b = {}; try { b = JSON.parse($('Executar no banco').first().json.data || '{}'); } catch (e) {}\nconst txt = String(b.mensagem || '');\nconst tel = String(b.telefone || '').replace(/\\D/g, '');\nconst falhou = (x) => !x || x.error || (x.code && x.message);\nconst lerTudo = (nome) => { try { return $(nome).all().map((i) => i.json); } catch (e) { return [{ error: 'não rodou' }]; } };\nconst rMsgs = lerTudo('Envio: conversa da cliente'), rAgs = lerTudo('Envio: horários da cliente');\nconst leuMsgs = !rMsgs.some((x) => x && (x.error || (x.code && x.message)));\nconst leuAgs = !rAgs.some((x) => x && (x.error || (x.code && x.message)));\nconst msgs = rMsgs.filter((x) => x && x.criado_em && !falhou(x));\nconst ags = rAgs.filter((x) => x && x.inicio && !falhou(x));\nconst hm = (s) => DateTime.fromISO(s).setZone(TZ).toFormat('HH:mm');\nconst norm = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();\nconst n = norm(txt);\nlet bloqueio = '', recado = false;\n\n// 4. vazio\nif (!/[a-z0-9]/.test(n)) bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto estava vazio. Escreva a mensagem e mande de novo.';\n\n// 1. ela está conversando com a IA de atendimento agora\nconst ultimaDela = msgs.find((x) => x.direcao === 'entrada');\nconst minDela = ultimaDela ? agora.diff(DateTime.fromISO(ultimaDela.criado_em), 'minutes').minutes : 1e9;\nconst falaDeHorario = /\\b\\d{1,2} ?(h\\b|h\\d{2}|:\\d{2}|horas?\\b)|amanha|\\bhoje\\b|segunda|terca|quarta|quinta|sexta|sabado|domingo|\\bdia \\d|\\b\\d{1,2}\\/\\d{1,2}\\b|horario|agenda|\\bvaga|marcar|remarc|reagend|reserv|encaix/.test(n);\nif (!bloqueio && leuMsgs && minDela <= 4 && falaDeHorario) {\n  recado = true;\n  bloqueio = 'GUARDEI COMO RECADO (nada foi mandado à cliente agora): ela está conversando com a IA de atendimento neste momento (última mensagem dela às ' + hm(ultimaDela.criado_em) + '). ' +\n    'Se eu mandasse, ela receberia duas conversas ao mesmo tempo com ofertas diferentes. O seu texto foi passado para a IA de atendimento, que vai usar na próxima resposta a ela. ' +\n    'Diga à Caroline em UMA linha: \"*Nome* está conversando com a IA agora; passei seu recado pra IA usar na resposta ✅\". NÃO chame chamar_cliente nem avisar_cliente de novo para ela agora e não diga que mandou.';\n}\n\n// 2. confirmação repetida\nconst ehConfirmacao = (s) => /confirm(ar|ando|ad[oa]|amos|o\\b|ei)|lembrando (do|que|seu)|lembrete/.test(s) && /horario|amanha|\\bhoje\\b|atendimento/.test(s);\nconst ehMudanca = /\\bmud|remarc|reagend|\\btroc|passou para|passamos para|em vez de|novo horario|cancel|desmarc/.test(n);\nif (!bloqueio && leuMsgs && ehConfirmacao(n) && !ehMudanca) {\n  const ant = msgs.find((x) => x.direcao === 'saida' && ehConfirmacao(norm(x.conteudo)) && agora.diff(DateTime.fromISO(x.criado_em), 'hours').hours < 20);\n  if (ant) {\n    const resp = msgs.filter((x) => x.direcao === 'entrada' && x.criado_em > ant.criado_em).pop();\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela já recebeu confirmação deste horário às ' + hm(ant.criado_em) + ' («' + String(ant.conteudo).replace(/\\s+/g, ' ').slice(0, 140) + '»)' +\n      (resp ? ' e respondeu às ' + hm(resp.criado_em) + ': «' + String(resp.conteudo).replace(/\\s+/g, ' ').slice(0, 100) + '»' : ' e ainda não respondeu') +\n      '. A Caroline quer UMA confirmação por cliente: não mande outra. Conte a ela em uma linha se a cliente já confirmou ou não.';\n  }\n}\n\n// 3. diz que está marcado/confirmado sem horário no app (ou com a data errada)\n// \"ela quer já deixar reservados seus horários\", \"pra deixar marcado?\": é vontade, não diz que já está (24/11, Maila)\nconst semVontade = n.replace(/\\b(quer|queria|gostaria|deseja|pretende|deixar|deixarmos)\\b(\\s+[a-z]+){0,3}?\\s+(confirmad|marcad|reservad|agendad|garantid)[a-z]*/g, ' ');\nconst afirma = /\\b(confirmad[oa]s?|confirmadissim[oa]|marcad[oa]s?|reservad[oa]s?|agendad[oa]s?|garantid[oa]s?|marquei|reservei|agendei)\\b/.test(semVontade) && !/cancel|desmarc/.test(n);\nif (!bloqueio && leuAgs && afirma) {\n  const lista = ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat(\"dd/LL 'às' HH:mm\") + (a.servicos && a.servicos.nome ? ' (' + a.servicos.nome + ')' : '')).join('; ');\n  if (!ags.length) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que o horário está marcado/confirmado/reservado, mas ela NÃO tem nenhum horário futuro no app. ' +\n      'Primeiro grave com marcar_horario (dia, hora e serviço) e veja que voltou OK; só depois avise. Se a Caroline pediu para perguntar ou oferecer, reescreva sem dizer que está marcado ou reservado e chame chamar_cliente de novo agora, nesta mesma resposta.';\n  } else {\n    const dias = new Set(ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat('dd/LL')));\n    const citadas = [...n.matchAll(/\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((x) => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0'));\n    if (citadas.length && citadas.every((d) => !dias.has(d))) {\n      bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto fala de ' + [...new Set(citadas)].join(', ') + ', mas os horários dela no app são: ' + lista +\n        '. Confira o dia e o MÊS (em 13/11 uma cliente foi avisada de 17/12 quando o horário era 17/11) e mande de novo com a data certa.';\n    }\n  }\n}\n// 5. assistente-consertos.js (20/11, Vanessa): texto parecido com o que o salão mandou a ela nos últimos 10 min.\n// \"Parecido\" = texto igual, ou o MESMO horário/dia citado, nenhum horário/dia novo e pelo menos 2 palavras do assunto em comum\n// (sem contar nome, dia e palavras de horário). As duas desculpas da Vanessa falavam de \"14:30 amanhã\"; uma oferta nova de \"10h\"\n// passa, e a da Cintia (25/11: quinta 17h de novo, mas com sexta 13h e 13h30 que ela ainda não tinha recebido) também passa.\nconst COMUNS_ENV = new Set('oi ola tudo bem bom dia boa tarde noite para voce voces pode como mais pelo pela com que nao sim esta ta fica ficar caroline horario horarios amanha hoje segunda terca quarta quinta sexta sabado domingo pediu pedir manha tarde'.split(' '));\n// nome próprio (palavra com maiúscula fora do começo da frase, como o nome da cliente) também não conta como assunto\nconst nomes = (s) => new Set([...String(s || '').matchAll(/(?<![.!?]\\s)(?<!^)\\b([A-ZÀ-Ú][a-zà-ú]+)/g)].map((m) => norm(m[1])));\nconst palavras = (s) => { const nm = nomes(s); return new Set(norm(s).replace(/[^a-z0-9 ]+/g, ' ').split(/\\s+/).filter((w) => w.length > 3 && !COMUNS_ENV.has(w) && !nm.has(w))); };\nconst marcas = (s) => new Set([...norm(s).matchAll(/\\b(\\d{1,2})(?:h|:)(\\d{2})?\\b|\\b(\\d{1,2})\\/(\\d{1,2})\\b/g)].map((m) => m[1] !== undefined ? m[1] + ':' + (m[2] || '00') : m[3] + '/' + m[4]));\nconst igualTxt = (s) => norm(s).replace(/[^a-z0-9]+/g, ' ').trim();\nif (!bloqueio && leuMsgs) {\n  const novas = palavras(txt), horasNovas = marcas(txt);\n  const recente = msgs.find((x) => x.direcao === 'saida' && agora.diff(DateTime.fromISO(x.criado_em), 'minutes').minutes <= 10 && (() => {\n    if (igualTxt(x.conteudo) === igualTxt(txt)) return true;\n    const velhas = palavras(x.conteudo), horasVelhas = marcas(x.conteudo);\n    let comuns = 0; for (const w of novas) if (velhas.has(w)) comuns++;\n    const mesmaHora = [...horasNovas].some((h) => horasVelhas.has(h));\n    const horaNova = [...horasNovas].some((h) => !horasVelhas.has(h));\n    return mesmaHora && !horaNova && comuns >= 2;\n  })());\n  if (recente) {\n    bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ela recebeu uma mensagem quase igual às ' + hm(recente.criado_em) + '. Foi esta: «' + String(recente.conteudo).replace(/\\s+/g, ' ').slice(0, 160) + '». ' +\n      'Duas mensagens quase iguais em poucos minutos confundem a cliente. Se a Caroline quer acrescentar algo, mande SÓ o que é novo, curto; se não há nada novo, não mande e conte isso à Caroline em uma linha.';\n  }\n}\n// 6. assistente-consertos.js (PDF erro 12): fala de teste/sistema/IA ou emoji de enfeite não chega à cliente.\n// 25/11 (Cintia: \"não vou conseguir por causa da minha prova\"): também não sai texto que fala como se fosse a Caroline\n// ou conta um assunto dela. A mensagem é do studio, e o motivo dela vira \"um motivo pessoal\".\nconst robo = /fase de teste|em teste|estamos testando|\\bsistema\\b|\\brobo\\b|intelig[eê]ncia artificial|\\bsou (a|uma) (ia|assistente)|assistente virtual|confirmad[ií]ssim/i.test(txt);\nconst enfeite = /[\\u2728\\u{1F485}\\u{1F60A}\\u2764\\u2705\\u{1F496}\\u{1F497}\\u{1F338}\\u{1F31F}]/u.test(txt);\nconst ASSUNTO_DELA = '(prova|faculdade|compromisso|consulta|viagem|aula|exame|m[eé]dic[oa]|dentista|hospital|velório|enterro)';\nconst pessoal = new RegExp('\\\\b(minha|meu)\\\\s+' + ASSUNTO_DELA + '|\\\\bn[aã]o vou (conseguir|poder)\\\\b|\\\\b(caroline|carol)\\\\s+(tem|ter[aá]|vai ter|est[aá] (com|em)|estar[aá] (com|em))\\\\s+(uma?\\\\s+)?' + ASSUNTO_DELA + '|\\\\bpor causa d[aeo]\\\\s+' + ASSUNTO_DELA, 'i').test(txt);\nif (!bloqueio && (robo || enfeite || pessoal)) {\n  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): ' + (pessoal ? 'o texto fala como se fosse a Caroline ou conta um assunto dela' : robo ? 'o texto fala de teste, sistema, IA/assistente ou \"confirmadíssimo\"' : 'o texto tem emoji de enfeite (✨ 💅 😊 ❤️ ✅)') +\n    '. A mensagem é do studio, no jeito da Caroline: \"a Caroline\" e nunca \"eu\", nada do que ela te contou. Se ela não vai atender: \"a Caroline não poderá atender nesse horário por um motivo pessoal\" e ofereça remarcar. Reescreva e mande de novo.';\n}\n// 7. assistente-oferecer.js (24/11, Stela): \"A Carol reservou ... Pode ser?\" deixa a cliente sem saber se está marcado\nif (!bloqueio && (afirma || /\\b(reservou|marcou|agendou|garantiu)\\b/.test(n)) && /(pode ser|tudo bem|ok|certo|combinado|consegue|fechado|beleza|serve|da certo|dá certo)\\s*\\??\\s*[\\u{1F64F}]?\\s*$/iu.test(txt.trim()) && /\\?\\s*[\\u{1F64F}]?\\s*$/u.test(txt.trim())) {\n  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Caso não possa, avise por aqui, por gentileza\". ' +\n    'Se a Caroline só quer oferecer, escreva como oferta, sem dizer reservado. Se a cliente tinha outro horário combinado, diga a troca e o motivo em poucas palavras.';\n}\nreturn [{ json: { bloqueio, recado, telefone: tel, chave: tel.replace(/^(55\\d\\d)9(\\d{8})$/, '$1$2'), texto: txt } }];"
       }
     },
     {
@@ -994,6 +997,276 @@
       "onError": "continueRegularOutput"
     },
     {
+      "id": "00000000-0000-4000-8000-000000000465",
+      "name": "Voz: escrever?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -120,
+        420
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vz1",
+              "leftValue": "={{ ['chamar_cliente', 'avisar_cliente'].includes($('Recebe pedido da assistente').first().json.acao) && !/^s/i.test(String($('Recebe pedido da assistente').first().json.ditado || '')) && !!$('Montar chamada').first().json.args && !$('Montar chamada').first().json.erro && !$('Montar chamada').first().json.pergunte }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000466",
+      "name": "Voz: quem é",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        320
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/{{ $('Montar chamada').first().json.args.p_cliente_id ? 'clientes?select=id,nome,telefone,observacoes&id=eq.' + $('Montar chamada').first().json.args.p_cliente_id : 'agendamentos?select=inicio,status,observacoes,cliente:clientes(id,nome,telefone,observacoes)&id=eq.' + ($('Montar chamada').first().json.args.p_agendamento_id || '00000000-0000-0000-0000-000000000000') }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000467",
+      "name": "Voz: conversa",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        320,
+        320
+      ],
+      "parameters": {
+        "method": "GET",
+        "url": "={{ $env.SUPABASE_URL }}/rest/v1/mensagens?empresa_id=eq.ff4b7937-1abb-4803-83c8-e0896d94fc9f&select=autor,tipo,conteudo,criado_em&empresa_id=eq.{{ 'ff4b7937-1abb-4803-83c8-e0896d94fc9f' }}&cliente_id=eq.{{ (($('Voz: quem é').first().json.cliente || $('Voz: quem é').first().json).id) || '00000000-0000-0000-0000-000000000000' }}&criado_em=gte.{{ $now.minus(7, 'days').toUTC().toISO() }}&order=criado_em.desc&limit=12",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "={{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true,
+      "executeOnce": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000468",
+      "name": "Voz: preparar",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        320
+      ],
+      "parameters": {
+        "jsCode": "\nconst TZ = 'America/Cuiaba';\nconst e = $('Recebe pedido da assistente').first().json;\nconst m = $('Montar chamada').first().json;\nconst q = $('Voz: quem é').first().json || {};\nconst cli = q.cliente || q;\nconst nome = String(cli.nome || '').trim().split(/\\s+/)[0];\nconst ficha = String(cli.observacoes || '').replace(/\\s+/g, ' ').trim().slice(0, 500);\nconst quando = (s) => DateTime.fromISO(s).setZone(TZ).setLocale('pt-BR');\nconst msgs = $('Voz: conversa').all().map((i) => i.json).filter((x) => x && x.criado_em).reverse();\nconst conversa = msgs.map((x) => quando(x.criado_em).toFormat('dd/LL HH:mm') + ' ' + (x.autor === 'cliente' ? 'ela' : 'studio') + ': ' +\n  String(x.conteudo || '[' + (x.tipo || 'mensagem') + ']').replace(/\\s+/g, ' ').slice(0, 300)).join('\\n');\nconst hora = (d) => (d.minute ? d.toFormat(\"H'h'mm\") : d.toFormat(\"H'h'\"));\nlet pedido = String(m.args.p_texto || '').trim();\n// avisar_cliente sem texto: o pedido sai do horário (remarcação: a Caroline não vai atender; aviso: o horário mudou)\nif (!pedido && e.acao === 'avisar_cliente' && q.inicio) {\n  const h = quando(q.inicio);\n  const dia = h.toFormat('cccc, dd/LL') + ' às ' + hora(h);\n  if (m.args.p_tipo === 'remarcacao') pedido = 'Avise que a Caroline não vai conseguir atender ' + dia + ' por um motivo pessoal e pergunte qual dia fica melhor para remarcar.';\n  else {\n    const de = (/.*Reagendado de (\\d\\d\\/\\d\\d às \\d\\d:\\d\\d)/.exec(String(q.observacoes || '')) || [])[1];\n    if (de) pedido = 'Avise que o horário dela mudou: era ' + de + ' e agora é ' + dia + '. Pergunte se fica bom para ela.';\n  }\n}\nif (!pedido) return [{ json: { pular: true } }];\nconst ultima = msgs.length ? quando(msgs[msgs.length - 1].criado_em) : null;\nconst hoje = DateTime.now().setZone(TZ);\nconst instrucao = [\n  'Você é a IA de atendimento do ' + \"Loja Teste\" + ' no WhatsApp, e escreve como a Caroline escreve. A Caroline (dona) pediu, pela assistente dela, para mandar agora uma mensagem a esta cliente' + (nome ? ' (' + nome + ')' : '') + '. Agora é ' + hoje.setLocale('pt-BR').toFormat(\"cccc, dd/LL HH:mm\") + '.',\n  '',\n  'PEDIDO DA CAROLINE (é o que dizer, escrito pela assistente; não é a mensagem pronta):',\n  pedido,\n  '',\n  'O QUE A FICHA DIZ DELA: ' + (ficha || '(nada)'),\n  '',\n  'CONVERSA COM ELA NOS ÚLTIMOS 7 DIAS (mais antiga primeiro; \"studio\" é você ou a Caroline):',\n  conversa || '(nenhuma mensagem)',\n  '',\n  'O JEITO DE ESCREVER (o mesmo de toda conversa com as clientes):',\n  \"Você escreve como a Caroline escreve no celular entre uma cliente e outra: curto, simpático, sem enfeite.\\n- Uma ou duas frases por mensagem. Cada parágrafo vira uma mensagem; no máximo dois por resposta.\\n- Cumprimente uma vez, na primeira resposta, neste formato: \\\"Oi Ana boa tarde\\\". Depois, direto ao assunto.\\n- Palavras dela: \\\"Tenho sim\\\", \\\"Dá sim\\\", \\\"Tabom\\\", \\\"Pode ser\\\", \\\"pra\\\", \\\"Eu quem agradeço\\\". O studio é \\\"a gente\\\": \\\"a gente faz\\\", \\\"a gente aceita\\\", \\\"aqui a gente não faz\\\", \\\"a gente usa\\\".\\n- Hora escrita como se fala: 8h, 10h30, 14h.\\n- Emoji é raro e só os dela: 🙏 ao marcar, 🥹 quando não tem horário, 😍 quando ela manda foto.\\n- Sem lista, negrito, título ou travessão. Sem \\\"querida\\\", \\\"linda\\\" ou \\\"amor\\\".\\n- A simpatia está em lembrar o que ela contou (o horário do serviço dela, o filho doente) e achar um horário que sirva. Uma frase de acolhimento quando ela conta um problema, e já a solução.\\n- Não diga o motivo da sua pergunta, não anuncie o que vai fazer ou acabou de fazer, não elogie a escolha, não repita o que acabou de dizer e não termine com oferta de ajuda.\\n- Agradecimento ou \\\"ok\\\" depois de tudo resolvido, quando a sua última mensagem não era uma pergunta: \\\"Eu quem agradeço\\\", ou escreva só [[NAO_ENVIAR]] para não mandar nada. Cumprimento não é encerramento: cumprimento se responde.\\n\\nMais duas respostas do jeito certo:\\nEla perguntou as formas de pagamento e os horários, sem dizer o serviço: \\\"A gente aceita Pix, cartão e dinheiro. O que você quer fazer?\\\"\\nEla perguntou se faz unha de fibra: \\\"Fibra a gente não faz. Aqui o alongamento é no molde F1 e fica R$ [preço da lista].\\\"\",\n  '',\n  'Nesta mensagem:',\n  '- Diga o que a Caroline pediu, com os dias, horas e serviços do pedido. Preço ou valor, só se estiver no pedido. Oferecer é perguntar se dá (\"Tenho sábado às 14h, dá pra você?\"): não escreva \"encaixei\", \"marquei\", \"reservei\" nem \"garantido\" se o pedido não diz que já está reservado. 🙏 só quando o pedido diz que ficou marcado ou reservado.',\n  '- O que a Caroline conta à assistente fica no studio: nunca diga o motivo dela (prova, compromisso, saúde, viagem, família) nem fale de outra cliente. Se ela não vai atender: diga que a Caroline não vai conseguir atender nesse horário por um motivo pessoal e ofereça remarcar.',\n  '- A Caroline aparece como \"a Caroline\"; o studio é \"a gente\". Nunca escreva como se fosse ela (\"eu não vou conseguir\", \"minha prova\").',\n  '- ' + (ultima && ultima.hasSame(hoje, 'day') ? 'A conversa de hoje já começou: sem cumprimento.' : 'Comece com o cumprimento do jeito dela, uma vez, com ' + (hoje.hour < 12 ? 'bom dia' : hoje.hour < 18 ? 'boa tarde' : 'boa noite') + '.'),\n  '- Leve em conta a conversa: não repita o que ela já recebeu e não ofereça o que ela já recusou. Se ela já disse algo que muda o pedido (avisou que não pode nesse dia, já marcou outro horário, pediu para não receber mensagem), não escreva a mensagem: responda só \"CONFERIR: \" e o que ela disse, em uma frase.',\n  '- Não diga que é IA, sistema, robô ou assistente.',\n  'Responda só com a mensagem (ou com o CONFERIR).',\n].join('\\n');\nreturn [{ json: { pular: false, instrucao, pedido } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000469",
+      "name": "Voz: tem pedido?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        760,
+        320
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vz2",
+              "leftValue": "={{ !$json.pular }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000470",
+      "name": "Voz: escrever (Gemini)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        220
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ contents: [{ parts: [{ text: $json.instrucao }] }], generationConfig: { temperature: 0.5, thinkingConfig: { thinkingLevel: 'low' } } }) }}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "credentials": {
+        "googlePalmApi": {
+          "id": "1dUDElLglPj5J1iG",
+          "name": "Google Gemini(PaLM) Api teste"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000471",
+      "name": "Voz: pronta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        220
+      ],
+      "parameters": {
+        "jsCode": "\nconst m = $('Montar chamada').first().json;\nconst args = { ...m.args };\nconst g = $input.first().json || {};\nlet t = String((g.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || '').join('') || '').trim();\nt = t.replace(/\\*\\*(.+?)\\*\\*/g, '$1').replace(/^[\"“«]+|[\"”»]+$/g, '').trim();\nconst conferir = /^CONFERIR\\s*:?\\s*/i.exec(t);\nif (conferir) return [{ json: { args, escrita: false, bloqueio: 'NÃO ENVIADO (nada chegou à cliente): a conversa com ela muda o pedido: ' +\n  (t.slice(conferir[0].length).trim() || 'ela já respondeu algo sobre isso') + ' Conte isso à Caroline em uma linha e pergunte o que ela quer fazer.' } }];\n// sem resposta do Gemini: segue com o texto da assistente (as travas do envio continuam valendo)\nif (t) args.p_texto = t;\nreturn [{ json: { args, escrita: !!t } }];"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000472",
+      "name": "Voz: conferir com a Caroline?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1420,
+        220
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "vz3",
+              "leftValue": "={{ !!$json.bloqueio }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000473",
+      "name": "Voz: memória da cliente",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2620,
+        0
+      ],
+      "parameters": {
+        "operation": "keys",
+        "keyPattern": "=teste:memoria:{{ String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, '').slice(0, 4) }}*{{ String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, '').slice(-8) }}",
+        "getValues": false
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000474",
+      "name": "Voz: guardar na memória da IA",
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        2840,
+        0
+      ],
+      "parameters": {
+        "operation": "push",
+        "tail": false,
+        "list": "={{ (() => { const j = $('Voz: memória da cliente').first().json || {}; const ks = [].concat(j.keys || Object.keys(j)).map(String).filter((k) => /memoria:/.test(k)); const t = String(JSON.parse($('Executar no banco').first().json.data).telefone || '').replace(/\\D/g, ''); return ks[0] || 'teste:memoria:' + t.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2'); })() }}",
+        "messageData": "={{ JSON.stringify({ type: 'ai', data: { content: JSON.parse($('Executar no banco').first().json.data).mensagem, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}"
+      },
+      "credentials": {
+        "redis": {
+          "id": "bSZHOsNCSsDVJpK7",
+          "name": "Redis local"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
       "id": "3e1bfb79-41db-441a-8363-a17852453b0a",
       "name": "Trava de teste: Mandar para a cliente",
       "type": "n8n-nodes-base.if",
@@ -1147,7 +1420,7 @@
       "main": [
         [
           {
-            "node": "Resposta",
+            "node": "Voz: memória da cliente",
             "type": "main",
             "index": 0
           }
@@ -1176,7 +1449,7 @@
         ],
         [
           {
-            "node": "Executar no banco",
+            "node": "Voz: escrever?",
             "type": "main",
             "index": 0
           }
@@ -1220,7 +1493,7 @@
       "main": [
         [
           {
-            "node": "Executar no banco",
+            "node": "Voz: escrever?",
             "type": "main",
             "index": 0
           }
@@ -1401,6 +1674,137 @@
           }
         ],
         []
+      ]
+    },
+    "Voz: escrever?": {
+      "main": [
+        [
+          {
+            "node": "Voz: quem é",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar no banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: quem é": {
+      "main": [
+        [
+          {
+            "node": "Voz: conversa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: conversa": {
+      "main": [
+        [
+          {
+            "node": "Voz: preparar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: preparar": {
+      "main": [
+        [
+          {
+            "node": "Voz: tem pedido?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: tem pedido?": {
+      "main": [
+        [
+          {
+            "node": "Voz: escrever (Gemini)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar no banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: escrever (Gemini)": {
+      "main": [
+        [
+          {
+            "node": "Voz: pronta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: pronta": {
+      "main": [
+        [
+          {
+            "node": "Voz: conferir com a Caroline?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: conferir com a Caroline?": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Executar no banco",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: memória da cliente": {
+      "main": [
+        [
+          {
+            "node": "Voz: guardar na memória da IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voz: guardar na memória da IA": {
+      "main": [
+        [
+          {
+            "node": "Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Trava de teste: Mandar para a cliente": {
