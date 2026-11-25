@@ -1033,6 +1033,8 @@ if (LOJA) {
   if (LOJA.assistente_oferecer) require('./assistente-oferecer.js')({ workflow, agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow, agendaId: lerAgendaId() });
   // 24/11: bloqueio de uma profissional só; a assistente pergunta se a outra continua (bloqueio-por-profissional.js, supabase/076 e 077)
   if (LOJA.bloqueio_por_profissional && LOJA.equipe) require('./bloqueio-por-profissional.js')({ agendaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, ferramentasWorkflow: assistente.ferramentasWorkflow });
+  // 25/11: horários colados: nos 2 sugeridos, primeiro o que encosta numa cliente marcada (horarios-colados.js)
+  if (LOJA.horarios_colados && LOJA.equipe) require('./horarios-colados.js')({ agendaWorkflow });
   // 24/11: cópia ao Victor de cada dúvida e erro da IA e da assistente (copia-victor.js). Depois do Conferente e do pedido-numerado.
   if (LOJA.copia_victor) require('./copia-victor.js')({ workflow, perguntaWorkflow: pedidos.perguntaWorkflow, pausaWorkflow, assistenteWorkflow: assistente.assistenteWorkflow, numero: LOJA.copia_victor });
   // 24/11: a assistente não pergunta "fulana veio?" (loja.json "pendencias_sem"); o sem baixa vai no resumo da noite.

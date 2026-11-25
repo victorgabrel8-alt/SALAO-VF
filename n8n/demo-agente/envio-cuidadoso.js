@@ -79,12 +79,14 @@ if (!bloqueio && leuMsgs && ehConfirmacao(n) && !ehMudanca) {
 }
 
 // 3. diz que está marcado/confirmado sem horário no app (ou com a data errada)
-const afirma = /\b(confirmad[oa]s?|confirmadissim[oa]|marcad[oa]s?|reservad[oa]s?|agendad[oa]s?|garantid[oa]s?|marquei|reservei|agendei)\b/.test(n) && !/cancel|desmarc/.test(n);
+// "ela quer já deixar reservados seus horários", "pra deixar marcado?": é vontade, não diz que já está (24/11, Maila)
+const semVontade = n.replace(/\b(quer|queria|gostaria|deseja|pretende|deixar|deixarmos)\b(\s+[a-z]+){0,3}?\s+(confirmad|marcad|reservad|agendad|garantid)[a-z]*/g, ' ');
+const afirma = /\b(confirmad[oa]s?|confirmadissim[oa]|marcad[oa]s?|reservad[oa]s?|agendad[oa]s?|garantid[oa]s?|marquei|reservei|agendei)\b/.test(semVontade) && !/cancel|desmarc/.test(n);
 if (!bloqueio && leuAgs && afirma) {
   const lista = ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat("dd/LL 'às' HH:mm") + (a.servicos && a.servicos.nome ? ' (' + a.servicos.nome + ')' : '')).join('; ');
   if (!ags.length) {
     bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que o horário está marcado/confirmado/reservado, mas ela NÃO tem nenhum horário futuro no app. ' +
-      'Primeiro grave com marcar_horario (dia, hora e serviço) e veja que voltou OK; só depois avise. Se a Caroline só quer oferecer, escreva como oferta, sem dizer que está marcado.';
+      'Primeiro grave com marcar_horario (dia, hora e serviço) e veja que voltou OK; só depois avise. Se a Caroline pediu para perguntar ou oferecer, reescreva sem dizer que está marcado ou reservado e chame chamar_cliente de novo agora, nesta mesma resposta.';
   } else {
     const dias = new Set(ags.map((a) => DateTime.fromISO(a.inicio).setZone(TZ).toFormat('dd/LL')));
     const citadas = [...n.matchAll(/\b(\d{1,2})\/(\d{1,2})\b/g)].map((x) => x[1].padStart(2, '0') + '/' + x[2].padStart(2, '0'));

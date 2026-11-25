@@ -118,7 +118,7 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
   trocarUma(achar(F, 'Envio: conferir'), 'jsCode', 'return [{ json: { bloqueio, recado, telefone: tel,', [
     '// 7. assistente-oferecer.js (24/11, Stela): "A Carol reservou ... Pode ser?" deixa a cliente sem saber se está marcado',
     "if (!bloqueio && (afirma || /\\b(reservou|marcou|agendou|garantiu)\\b/.test(n)) && /(pode ser|tudo bem|ok|certo|combinado|consegue|fechado|beleza|serve|da certo|dá certo)\\s*\\??\\s*[\\u{1F64F}]?\\s*$/iu.test(txt.trim()) && /\\?\\s*[\\u{1F64F}]?\\s*$/u.test(txt.trim())) {",
-    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Se não puder, me avisa por aqui\". ' +",
+    "  bloqueio = 'NÃO ENVIADO (nada chegou à cliente): o texto diz que está reservado e termina perguntando se pode. Reserva afirma: tire a pergunta do fim e diga \"Caso não possa, avise por aqui, por gentileza\". ' +",
     "    'Se a Caroline só quer oferecer, escreva como oferta, sem dizer reservado. Se a cliente tinha outro horário combinado, diga a troca e o motivo em poucas palavras.';",
     '}',
     'return [{ json: { bloqueio, recado, telefone: tel,',
@@ -172,13 +172,47 @@ module.exports = ({ workflow: W, agendaWorkflow: AG, assistenteWorkflow: A, ferr
     a.value = a.value.replace(de, () => "if (m.pergunte) return 'PERGUNTE: ' + m.pergunte;\n  " + de);
   }
 
-  // e. "mandei" quando todo envio desta resposta foi recusado
+  // e. "mandei" quando todo envio desta resposta foi recusado. As linhas do que deu certo ficam (24/11, Maila: "concluída ✅"
+  // sumiu e a Caroline só recebeu "Não mandei"), e a nota da memória não diz "nada foi gravado" quando algo foi.
   // (24/11, PR #217: a condição ganhou "&& !aoAviso" — resposta da dona a um aviso do sistema não é cobrada)
   trocarUma(achar(A, 'Conferir resposta'), 'jsCode',
     'if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado && !aoAviso) {',
     "const recusados = novos.filter((f) => ENVIO.includes(f.t) && !ok(f.r) && !/^GUARDEI COMO RECADO/i.test(f.r));\n" +
-    "if (afirma && !enviou && recusados.length && !passado && !aoAviso) { texto = '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
+    "const fica = gravou ? original.split('\\n').filter((l) => l.trim() && !/\\b(avisei|mandei|enviei|perguntei|chamei)\\b|mensagem (foi )?enviada/i.test(l)).join('\\n').trim() : '';\n" +
+    "if (afirma && !enviou && recusados.length && !passado && !aoAviso) { texto = (fica ? fica + '\\n\\n' : '') + '⚠️ Não mandei: ' + recusados[0].r.replace(/^N[ÃA]O ENVIADO \\(nada chegou à cliente\\):\\s*/i, '').replace(/^ERRO:\\s*/i, '').split(/(?<=\\.)\\s/)[0].replace(/\\s*\\([^)]*\\)/g, ''); corrigida = true; }\n" +
     'else if (afirma && !enviou && !haPouco(ENVIO, 20) && !passado && !aoAviso) {');
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', 'Nada foi gravado nem enviado.', "' + (gravou ? 'O que voltou OK ficou gravado; nenhuma mensagem foi enviada.' : 'Nada foi gravado nem enviado.') + '");
+  // 25/11: "mandei" sem ter chamado o envio pedia para a Caroline repetir o pedido inteiro; agora pergunta se manda, e o
+  // "sim" dela basta (a nota da memória conta à assistente o que ela recebeu)
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', "texto = 'Ainda não mandei nada pra ela, Gleide. Me fala de novo o que é pra mandar que eu envio na hora.';",
+    "texto = '⚠️ Ainda não mandei nada pra ela. Quer que eu mande agora?';");
+  // 25/11: resposta que era só o registro interno virava "👍" (hoje "Certo.") depois do corte, e a Caroline não sabia o que tinha sido
+  // feito. Agora diz o que as ferramentas fizeram com OK ("Remarquei *Giovanna*, Avisei *Giovanna* ✅").
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', "if (!texto) texto = ag.output ? 'Certo.' : 'Desculpa, deu um erro aqui. Pode repetir?';", [
+    "if (!texto) {",
+    "  const VERBO = { marcar_horario: 'Marquei', reagendar: 'Remarquei', ajustar_duracao: 'Ajustei o tempo de', chamar_cliente: 'Mandei pra', avisar_cliente: 'Avisei',",
+    "    anotar: 'Anotei na ficha de', concluir: 'Concluí', chegou: 'Marquei a chegada de', status_atendimento: 'Atualizei o horário de', cadastrar_cliente: 'Cadastrei',",
+    "    editar_cliente: 'Atualizei a ficha de', liberar_horario: 'Liberei o horário de', bloquear_horario: 'Bloqueei o horário', bloquear_dias: 'Bloqueei o dia', guardar_regra: 'Guardei a regra' };",
+    "  const feito = [...new Set(passos.filter((s) => VERBO[s.action?.tool] && ok(lerResposta(s.observation))).map((s) => {",
+    "    const i = s.action.toolInput || {}; const n = String(i.cliente_nome || i.nome || '').trim().split(/\\s+/)[0];",
+    "    return VERBO[s.action.tool] + (n ? ' *' + n + '*' : ''); }))];",
+    "  texto = feito.length ? feito.join(', ') + ' ✅' : ag.output ? 'Certo.' : 'Desculpa, deu um erro aqui. Pode repetir?';",
+    "}",
+  ].join('\n'));
+
+  // h. teste de 24/11 (8 pedidos reais numa cópia): 3 respostas terminaram com o registro interno colado
+  // ("O QUE VOCÊ JÁ FEZ: (nada ainda)", "*O QUE EU JÁ FIZ:* ..."). Corta dali até o fim antes de mandar à dona.
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', "let texto = String(ag.output || '')",
+    "let texto = String(ag.output || '').replace(/(^|\\n)[\\s*_]*O QUE (VOC[ÊE]|EU) J[ÁA] F(EZ|IZ)\\b[\\s\\S]*$/i, '')");
+  // "Perguntei pra *Rebeca* ✅" sem ter chamado chamar_cliente passava: a conferência só olhava avisei/mandei/enviei
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', '\\b(avisei|mandei|enviei)\\b|mensagem (foi )?enviada',
+    '\\b(avisei|mandei|enviei|perguntei)\\b|mensagem (foi )?enviada');
+  trocarUma(achar(A, 'Conferir resposta'), 'jsCode', '(avisei|mandei|enviei|anotei|', '(avisei|mandei|enviei|perguntei|anotei|');
+
+  // i. busca de cliente tolerante a nome falado (supabase/079: "Jaque" traz a Jaqueline e a Jackelined), com a
+  //    conversa_recente de cada cliente achada (supabase/081, 25/11: a Gabriela avisou de manhã que não vinha e à tarde a
+  //    assistente não sabia, porque só lia as últimas 3 horas)
+  trocarUma(achar(F, 'Montar chamada'), 'jsCode', "funcao = 'n8n_assistente_buscar_cliente_v2'", "funcao = 'n8n_assistente_buscar_cliente_v4'");
 };
 
 module.exports.ID_AGENDA = ID_AGENDA;

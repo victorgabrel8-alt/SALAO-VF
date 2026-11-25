@@ -125,6 +125,7 @@
   "assistente_oferecer": true,
   "copia_victor": "556699270860",
   "bloqueio_por_profissional": true,
+  "horarios_colados": true,
   "pendencias_sem": [
     "atendimento_sem_status",
     "atraso_confirmar"
