@@ -9,7 +9,7 @@
 -- n8n_assistente_guardar_regra_v2: regra não se empilha. p_trocar = número da regra que a nova substitui (fica no lugar
 --   dela). Sem p_trocar: recusa regra igual ou quase igual a uma que já existe (diz qual) e regra que só se entende na
 --   conversa ("adote mais essa pergunta"), para a assistente escrever a regra inteira.
--- n8n_assistente_buscar_cliente_v4: a v3 com a conversa_recente de cada cliente achada (até 3 clientes): as últimas
+-- n8n_assistente_buscar_cliente_v4: a v3 com a conversa_recente das 3 primeiras clientes achadas: as últimas
 --   mensagens dos últimos 7 dias, com dia e hora. Caso Gabriela (25/11): ela avisou às 9h37 que não vinha sábado e às
 --   15h38 a assistente disse que estava agendada e que ela não tinha respondido (só lia as últimas 3 horas).
 -- Permissões: funções do n8n que tinham ficado abertas para a chave pública do app (anon e logins) passam a ser só do
@@ -97,9 +97,9 @@ create or replace function n8n_assistente_buscar_cliente_v4(p_empresa_id uuid, p
 returns jsonb language plpgsql set search_path to 'public' as $$
 declare v jsonb := n8n_assistente_buscar_cliente_v3(p_empresa_id, p_pedido_por, p_busca);
 begin
-  if jsonb_typeof(v) <> 'array' or jsonb_array_length(v) = 0 or jsonb_array_length(v) > 3 then return v; end if;
+  if jsonb_typeof(v) <> 'array' or jsonb_array_length(v) = 0 then return v; end if;
   return (
-    select jsonb_agg(c || jsonb_build_object('conversa_recente', coalesce((
+    select jsonb_agg(case when e.ord > 3 then c else c || jsonb_build_object('conversa_recente', coalesce((
       select jsonb_agg(m.linha order by m.criado_em)
         from (select x.criado_em,
                      to_char(x.criado_em at time zone 'America/Cuiaba', 'DD/MM HH24:MI') || ' ' ||
@@ -107,7 +107,7 @@ begin
                      left(regexp_replace(coalesce(nullif(x.conteudo, ''), '[' || coalesce(x.tipo, 'mensagem') || ']'), '\s+', ' ', 'g'), 200) as linha
                 from mensagens x
                where x.empresa_id = p_empresa_id and x.cliente_id = (c->>'cliente_id')::uuid and x.criado_em > now() - interval '7 days'
-               order by x.criado_em desc limit 6) m), '[]'::jsonb)) order by e.ord)
+               order by x.criado_em desc limit 6) m), '[]'::jsonb)) end order by e.ord)
       from jsonb_array_elements(v) with ordinality as e(c, ord));
 end $$;
 
