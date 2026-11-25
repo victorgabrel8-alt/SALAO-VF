@@ -77,6 +77,10 @@ const conversa = msgs.map((x) => quando(x.criado_em).toFormat('dd/LL HH:mm') + '
 const hora = (d) => (d.minute ? d.toFormat("H'h'mm") : d.toFormat("H'h'"));
 let pedido = String(m.args.p_texto || '').trim();
 // avisar_cliente sem texto: o pedido sai do horário (remarcação: a Caroline não vai atender; aviso: o horário mudou)
+// endereço, link do mapa ou chave Pix: sai como está (o endereço já foi conferido no texto da assistente)
+if (/\brua\b|\bavenida\b|\bav\.|maps\.|goo\.gl|maps\.app|\bpix\b|@|\bcnpj\b|\bcpf\b/i.test(pedido)) return [{ json: { pular: true } }];
+// horário que já passou ou não está mais marcado: o banco recusa a remarcação; não gasta a escrita
+if (e.acao === 'avisar_cliente' && q.inicio && (q.status !== 'agendado' || DateTime.fromISO(q.inicio) < DateTime.now())) return [{ json: { pular: true } }];
 if (!pedido && e.acao === 'avisar_cliente' && q.inicio) {
   const h = quando(q.inicio);
   const dia = h.toFormat('cccc, dd/LL') + ' às ' + hora(h);
@@ -107,6 +111,7 @@ const instrucao = [
   '- Diga o que a Caroline pediu, com os dias, horas e serviços do pedido. Preço ou valor, só se estiver no pedido. Oferecer é perguntar se dá ("Tenho sábado às 14h, dá pra você?"): não escreva "encaixei", "marquei", "reservei" nem "garantido" se o pedido não diz que já está reservado. 🙏 só quando o pedido diz que ficou marcado ou reservado.',
   '- O que a Caroline conta à assistente fica no studio: nunca diga o motivo dela (prova, compromisso, saúde, viagem, família) nem fale de outra cliente. Se ela não vai atender: diga que a Caroline não vai conseguir atender nesse horário por um motivo pessoal e ofereça remarcar.',
   '- A Caroline aparece como "a Caroline"; o studio é "a gente". Nunca escreva como se fosse ela ("eu não vou conseguir", "minha prova").',
+  '- Um parágrafo só (sai numa mensagem).',
   '- ' + (ultima && ultima.hasSame(hoje, 'day') ? 'A conversa de hoje já começou: sem cumprimento.' : 'Comece com o cumprimento do jeito dela, uma vez, com ' + (hoje.hour < 12 ? 'bom dia' : hoje.hour < 18 ? 'boa tarde' : 'boa noite') + '.'),
   '- Leve em conta a conversa: não repita o que ela já recebeu e não ofereça o que ela já recusou. Se ela já disse algo que muda o pedido (avisou que não pode nesse dia, já marcou outro horário, pediu para não receber mensagem), não escreva a mensagem: responda só "CONFERIR: " e o que ela disse, em uma frase.',
   '- Não diga que é IA, sistema, robô ou assistente.',
@@ -189,7 +194,7 @@ return [{ json: { args, escrita: !!t } }];`;
     node('Voz: guardar na memória da IA', 'n8n-nodes-base.redis', 1, [rx + 440, ry], {
       operation: 'push', tail: false,
       // a chave que já existe (com ou sem o 9); sem nenhuma, a do jeito que o WhatsApp manda (sem o 9)
-      list: `={{ (() => { const j = $('Voz: memória da cliente').first().json || {}; const ks = [].concat(j.keys || Object.keys(j)).map(String).filter((k) => /memoria:/.test(k)); const t = ${TEL}; return ks[0] || 'memoria:' + t.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2'); })() }}`,
+      list: `={{ (() => { const j = $('Voz: memória da cliente').first().json || {}; const ks = [].concat(j.keys || Object.keys(j)).map(String).filter((k) => /memoria:/.test(k)); const t = ${TEL}; const sem9 = t.replace(/^(55\\d{2})9(\\d{8})$/, '$1$2'); return ks.find((k) => k.endsWith(':' + sem9)) || ks.find((k) => k.endsWith(':' + t)) || 'memoria:' + sem9; })() }}`,
       messageData: "={{ JSON.stringify({ type: 'ai', data: { content: JSON.parse($('Executar no banco').first().json.data).mensagem, tool_calls: [], invalid_tool_calls: [], additional_kwargs: {}, response_metadata: {} } }) }}",
     }, { credentials: REDIS, onError: 'continueRegularOutput' }),
   );

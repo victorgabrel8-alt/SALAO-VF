@@ -93,3 +93,12 @@ test('ferramentas: o texto é o pedido, e ditado = sim manda as palavras dela se
   }
   assert.match(no('Voz: escrever?').parameters.conditions.conditions[0].leftValue, /ditado/);
 });
+
+test('endereço, Pix e horário que já passou não passam pela escrita', () => {
+  const base = { 'Recebe pedido da assistente': [{ acao: 'chamar_cliente' }], 'Voz: quem é': [{ id: 'c', nome: 'Ana' }], 'Voz: conversa': [] };
+  for (const p of ['Rua dos Angicos, 690, Jardim Imperial\nhttps://maps.app.goo.gl/x', 'A chave Pix é 66999999999'])
+    assert.strictEqual(rodar('Voz: preparar', { ...base, 'Montar chamada': [{ args: { p_cliente_id: 'c', p_texto: p } }] }).pular, true, p);
+  const passado = rodar('Voz: preparar', { 'Recebe pedido da assistente': [{ acao: 'avisar_cliente' }], 'Montar chamada': [{ args: { p_agendamento_id: 'a', p_tipo: 'remarcacao', p_texto: null } }],
+    'Voz: quem é': [{ inicio: '2026-01-02T12:00:00+00:00', status: 'agendado', cliente: { id: 'c', nome: 'Ana' } }] });
+  assert.strictEqual(passado.pular, true);
+});
