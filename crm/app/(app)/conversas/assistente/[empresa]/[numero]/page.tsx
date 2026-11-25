@@ -187,13 +187,14 @@ function ConversaAssistente() {
             onClick={() => atualizar()}
             disabled={atualizando}
             aria-label="Atualizar a conversa"
-            className="vidro flex h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-semibold active:scale-95 disabled:opacity-60"
+            className="vidro flex h-10 min-w-10 shrink-0 items-center justify-center gap-1.5 rounded-full px-3 text-sm font-semibold active:scale-95 disabled:opacity-60"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden className={atualizando ? "animate-spin" : ""}>
               <path d="M21 12a9 9 0 1 1-2.6-6.4" />
               <path d="M21 3v6h-6" />
             </svg>
-            Atualizar
+            {/* no celular só o ícone, para o nome caber */}
+            <span className="max-sm:hidden">Atualizar</span>
           </button>
         </div>
       </header>
