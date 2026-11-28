@@ -15,6 +15,9 @@ const env = Object.fromEntries(
 const lojas = require('./lojas.js');
 const iLoja = process.argv.indexOf('--loja');
 const LOJA = iLoja > 0 ? lojas.carregarLoja(dir, process.argv[iLoja + 1] || '', env) : null;
+// números que a IA ignora logo na entrada (numeros-bloqueados.json; 'gleide' = sem --loja)
+const BLOQUEADOS = (() => { try { const b = JSON.parse(fs.readFileSync(path.join(dir, 'numeros-bloqueados.json'), 'utf8'))[LOJA ? LOJA.slug : 'gleide'];
+  return (Array.isArray(b) ? b : []).map((n) => String(n).replace(/\D/g, '')).filter((n) => n.length >= 10); } catch (e) { return []; } })();
 // pasta onde ficam os JSON gerados e os .workflow-*-id (a da loja, ou esta para a Gleide)
 const saida = (arquivo) => path.join(LOJA ? LOJA.pasta : dir, path.basename(arquivo));
 
@@ -184,7 +187,10 @@ const nodes = [
       // pergunta da IA (ver pedidos-workflows.js)
       str('citado', "={{ $json.body.data.contextInfo?.stanzaId || $json.body.data.message?.extendedTextMessage?.contextInfo?.stanzaId || '' }}"),
       // Trava de segurança da demo: se NUMEROS_PERMITIDOS estiver preenchido, só esses números recebem resposta.
-      bool('permitido', "={{ !$env.NUMEROS_PERMITIDOS || $env.NUMEROS_PERMITIDOS.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) }}"),
+      // Número bloqueado (numeros-bloqueados.json, por loja; 27/11/2026: robô de vendas da Trinks na Gleide) nunca passa.
+      bool('permitido', BLOQUEADOS.length
+        ? "={{ !('" + BLOQUEADOS.join(',') + "').split(',').includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) && (!$env.NUMEROS_PERMITIDOS || $env.NUMEROS_PERMITIDOS.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0])) }}"
+        : "={{ !$env.NUMEROS_PERMITIDOS || $env.NUMEROS_PERMITIDOS.split(',').map(s => s.trim()).includes(($json.body.data.key.remoteJid.endsWith('@lid') && $json.body.data.key.remoteJidAlt ? $json.body.data.key.remoteJidAlt : $json.body.data.key.remoteJid).split('@')[0]) }}"),
     ] },
     options: {},
   }),
