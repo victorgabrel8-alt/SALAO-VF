@@ -38,7 +38,8 @@ function conferir(baloes, caso, ctx) {
   if (!permite.has('sinal')) { const m = texto.match(/\bsinal\b|\bmulta\b|taxa de falta|R\$\s?20\b/i); if (m) falha('falou de sinal ou cobrança', true, '"' + m[0] + '"'); }
   const fora = valores(texto).filter((v) => !(ctx.precosDaTabela || []).includes(v) && !(caso.valores_permitidos || []).includes(v));
   if (fora.length) falha('valor fora da tabela do app', true, 'R$ ' + fora.join(', R$ '));
-  { const m = texto.match(/26\/11|dia 26\b|at[eé] (quinta|o fim do m[eê]s)/i); if (m) falha('disse a data final da promoção', false, '"' + m[0] + '"'); }
+  // a data da promoção É dita (prazo real, Victor 24/11); falha só a data velha (acabava em 26/11, foi para 10/12 em 28/11)
+  { const m = texto.match(/26\/11|dia 26\b/i); if (m) falha('disse a data velha da promoção', false, '"' + m[0] + '"'); }
   if (caso.sem_emoji && EMOJI.test(texto)) falha('emoji em assunto delicado', false, '');
   for (const f of caso.ferramenta_deve || []) if (!usadas.includes(f)) falha('não usou ' + f, true, 'usou: ' + (usadas.join(', ') || 'nenhuma'));
   for (const f of caso.ferramenta_nao || []) if (usadas.includes(f)) falha('usou ' + f + ' sem dever', true, '');
