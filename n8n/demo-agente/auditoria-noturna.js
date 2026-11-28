@@ -22,7 +22,7 @@ const LOJAS = [
     regras: [
       'Venda consultiva de serviço caro: acolher, entender o caso, convidar para a avaliação gratuita.',
       'Quem nunca usou mega não recebe valor nenhum (nem mão de obra) e nenhuma pergunta técnica (gramas, telas, cm).',
-      '"Quanto custa?" se responde sem número: do que depende o valor, e os 10x sem juros com o prazo real (até 26/11/2026). Nunca "não precisa se preocupar com o preço".',
+      '"Quanto custa?" se responde sem número: do que depende o valor, e os 10x sem juros com o prazo real (até 10/12/2026). Nunca "não precisa se preocupar com o preço".',
       'Os 10x aparecem uma vez por conversa, sem "o que ajuda" depois.',
       'Quem já usa e pede informação da manutenção recebe a informação antes da pergunta.',
       'Foto que não abriu: o CERTO é agradecer, dizer com leveza que não abriu e pedir de novo. Erro é ser seco ou deixar para "a ligação".',
